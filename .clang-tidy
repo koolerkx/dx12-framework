@@ -1,25 +1,60 @@
 ---
 Checks: >
   -*,
+
   clang-analyzer-*,
-  google-*,
   bugprone-*,
   performance-*,
-  readability-*,
   modernize-*,
-  cppcoreguidelines-*,
+  readability-*,
   misc-*,
-  portability-*,
-  -clang-diagnostic-invalid-utf8,
-  -clang-diagnostic-invalid-source-encoding
+  cppcoreguidelines-*,
+
+  -google-*,
+  -hicpp-*,
+  -portability-*,
+
+  -readability-identifier-length,
+  -readability-magic-numbers,
+  -readability-braces-around-statements,
+  -readability-uppercase-literal-suffix,
+  -readability-function-size,
+  -readability-convert-member-functions-to-static,
+  -readability-make-member-function-const,
+  -readability-non-const-parameter,
+  -readability-implicit-bool-conversion,
+  -readability-else-after-return,
+  -readability-redundant-member-init
+
+  -modernize-use-auto,
+  -modernize-loop-convert,
+  -modernize-use-trailing-return-type,
+  -modernize-use-using,
+  -modernize-return-braced-init-list,
+
+  -bugprone-easily-swappable-parameters,
+
+  -performance-noexcept-move-constructor,
+  -performance-no-int-to-ptr,
+
+  -misc-non-private-member-variables-in-classes,
+  -misc-unused-parameters,
+  -misc-definitions-in-headers,
+  -misc-include-cleaner*,
+
+  -cppcoreguidelines-avoid-const-or-ref-data-members,
+  -cppcoreguidelines-owning-memory,
+  -cppcoreguidelines-non-private-member-variables-in-classes,
+  -cppcoreguidelines-pro-type-reinterpret-cast,
+  -cppcoreguidelines-pro-type-union-access,
+  -cppcoreguidelines-special-member-functions,
+  -cppcoreguidelines-c-copy-assignment-signature,
+  -cppcoreguidelines-macro-usage,
+  -cppcoreguidelines-pro-type-static-cast-downcast,
 
 CheckOptions:
-  - key: google-runtime-int
-    value: '1'
-  - key: google-runtime-references
-    value: '1'
   - key: readability-identifier-naming.Enabled
-    value: 'true'
+    value: "true"
 
   # Google naming rules
   - key: readability-identifier-naming.ClassCase
@@ -32,7 +67,7 @@ CheckOptions:
     value: PascalCase
 
   - key: readability-identifier-naming.FunctionCase
-    value: camelBack
+    value: PascalCase
 
   - key: readability-identifier-naming.VariableCase
     value: snake_case
@@ -44,18 +79,20 @@ CheckOptions:
   - key: readability-identifier-naming.ClassMemberCase
     value: snake_case
   - key: readability-identifier-naming.ClassMemberSuffix
-    value: '_'
+    value: "_"
   - key: readability-identifier-naming.MethodCase
-    value: camelBack
+    value: PascalCase
 
-  - key: readability-identifier-naming.ConstantCase
-    value: UPPER_CASE
+  # - key: readability-identifier-naming.ConstantCase
+  #   value: UPPER_CASE
   - key: readability-identifier-naming.GlobalConstantCase
     value: UPPER_CASE
   - key: readability-identifier-naming.StaticConstantCase
     value: UPPER_CASE
   - key: readability-identifier-naming.ConstexprVariableCase
     value: UPPER_CASE
+  - key: readability-identifier-naming.ConstantParameterCase
+    value: snake_case
 
   # Custom naming rules
   - key: readability-identifier-naming.MacroDefinitionCase
@@ -64,12 +101,7 @@ CheckOptions:
     value: UPPER_CASE
 
   - key: cppcoreguidelines-avoid-magic-numbers.IgnoredNumbers
-    value: '0;1;2;4;8;16'
-  - key: cppcoreguidelines-avoid-magic-numbers.IgnoredConstructs
-    value: 'array;vector;static_cast'
+    value: { 0, 1, 2, 3, 4, 5, 8, 16 }
 
-WarningsAsErrors: ''
-HeaderFilterRegex: '.*'
-AnalyzeTemporaryDtors: false
-FormatStyle: google
-...
+WarningsAsErrors: ""
+HeaderFilterRegex: "^(?!.*ThirdParty).*(app)/.*"
