@@ -17,7 +17,7 @@ bool DescriptorHeapAllocator::Initialize(ID3D12Device* device, D3D12_DESCRIPTOR_
   D3D12_DESCRIPTOR_HEAP_DESC heap_desc = {};
   heap_desc.Type = type;
   heap_desc.NumDescriptors = capacity;
-  heap_desc.NodeMask = 0;
+  heap_desc.NodeMask = 0;  // マルチGPU関連
   heap_desc.Flags = shader_visible_ ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
   HRESULT hr = device->CreateDescriptorHeap(&heap_desc, IID_PPV_ARGS(&heap_));
@@ -27,7 +27,9 @@ bool DescriptorHeapAllocator::Initialize(ID3D12Device* device, D3D12_DESCRIPTOR_
   }
 
   heap_start_cpu_ = heap_->GetCPUDescriptorHandleForHeapStart();
-  heap_start_gpu_ = heap_->GetGPUDescriptorHandleForHeapStart();
+  if(shader_visible) {
+    heap_start_gpu_ = heap_->GetGPUDescriptorHandleForHeapStart();
+  }
 
   const wchar_t* typeName;
   switch (type) {

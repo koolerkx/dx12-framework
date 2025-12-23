@@ -62,8 +62,8 @@ class DescriptorHeapAllocator {
   uint32_t allocated_ = 0;
   bool shader_visible_ = false;
 
-  D3D12_CPU_DESCRIPTOR_HANDLE heap_start_cpu_ = {};
-  D3D12_GPU_DESCRIPTOR_HANDLE heap_start_gpu_ = {};
+  D3D12_CPU_DESCRIPTOR_HANDLE heap_start_cpu_ = D3D12_CPU_DESCRIPTOR_HANDLE{0};
+  D3D12_GPU_DESCRIPTOR_HANDLE heap_start_gpu_ = D3D12_GPU_DESCRIPTOR_HANDLE{0};
 
   std::priority_queue<uint32_t, std::vector<uint32_t>, std::greater<uint32_t>> free_list_ = {};
 
