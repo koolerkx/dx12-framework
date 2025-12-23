@@ -22,6 +22,16 @@ add_library(graphic STATIC
     depth_buffer.cpp
     fence_manager.h
     fence_manager.cpp
+
+    pipeline_state_builder.h
+    pipeline_state_builder.cpp
+    root_signature_builder.h
+    root_signature_builder.cpp
+    sampler_builder.h
+    sampler_builder.cpp
+
+    mesh.h
+    mesh.cpp
 )
 
 target_include_directories(graphic PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)

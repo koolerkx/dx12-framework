@@ -13,6 +13,8 @@
 
 #include "WICTextureLoader12.h"
 #include "d3dx12.h"
+#include "pipeline_state_builder.h"
+#include "root_signature_builder.h"
 #include "types.h"
 
 using namespace DirectX;
@@ -84,197 +86,55 @@ bool Graphic::Initalize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_he
     {{0.4f, 0.7f, 0.0f}, {1.0f, 0.0f}},    // 右上
   };
 
+  uint16_t indices[] = {0, 1, 2, 2, 1, 3};
+
   // Create vertex buffer
-  D3D12_HEAP_PROPERTIES heapprop = {};
-  heapprop.Type = D3D12_HEAP_TYPE_UPLOAD;
-  heapprop.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-  heapprop.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-
-  D3D12_RESOURCE_DESC resdesc = {};
-  resdesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-  resdesc.Width = sizeof(vertices);
-  resdesc.Height = 1;
-  resdesc.DepthOrArraySize = 1;
-  resdesc.MipLevels = 1;
-  resdesc.Format = DXGI_FORMAT_UNKNOWN;
-  resdesc.SampleDesc.Count = 1;
-  resdesc.Flags = D3D12_RESOURCE_FLAG_NONE;
-  resdesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-
-  ID3D12Resource* vertBuff = nullptr;
-  hr = device_->CreateCommittedResource(
-    &heapprop, D3D12_HEAP_FLAG_NONE, &resdesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&vertBuff));
-
-  if (FAILED(hr)) {
-    std::cerr << "Failed to create vertex buffer." << std::endl;
+  if (!quadMesh_.Create(device_.Get(), vertices, 4, indices, 6)) {
+    std::cerr << "Failed to create mesh." << std::endl;
     return false;
   }
 
-  Vertex* vertMap = nullptr;
-  hr = vertBuff->Map(0, nullptr, (void**)&vertMap);
-  std::copy(std::begin(vertices), std::end(vertices), vertMap);
-  vertBuff->Unmap(0, nullptr);
-
-  vertex_buffer_view_.BufferLocation = vertBuff->GetGPUVirtualAddress();  // バッファの仮想アドレス
-  vertex_buffer_view_.SizeInBytes = sizeof(vertices);                     // 全バイト数
-  vertex_buffer_view_.StrideInBytes = sizeof(vertices[0]);                // 1頂点あたりのバイト数
-
-  unsigned short indices[] = {0, 1, 2, 2, 1, 3};
-
-  ID3D12Resource* idxBuff = nullptr;
-
-  resdesc.Width = sizeof(indices);
-  hr = device_->CreateCommittedResource(
-    &heapprop, D3D12_HEAP_FLAG_NONE, &resdesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&idxBuff));
-
-  unsigned short* mappedIdx = nullptr;
-  idxBuff->Map(0, nullptr, (void**)&mappedIdx);
-  std::copy(std::begin(indices), std::end(indices), mappedIdx);
-  idxBuff->Unmap(0, nullptr);
-
-  index_buffer_view_.BufferLocation = idxBuff->GetGPUVirtualAddress();
-  index_buffer_view_.Format = DXGI_FORMAT_R16_UINT;
-  index_buffer_view_.SizeInBytes = sizeof(indices);
-
   // Read Shader
-  ID3DBlob* _vsBlob = nullptr;
-  ID3DBlob* _psBlob = nullptr;
+  ComPtr<ID3DBlob> vsBlob;
+  ComPtr<ID3DBlob> psBlob;
 
-  if (FAILED(D3DReadFileToBlob(L"Content/shaders/basic.vs.cso", &_vsBlob))) {
+  if (FAILED(D3DReadFileToBlob(L"Content/shaders/basic.vs.cso", &vsBlob))) {
     throw std::runtime_error("Failed to read vertex shader");
   }
 
-  if (FAILED(D3DReadFileToBlob(L"Content/shaders/basic.ps.cso", &_psBlob))) {
+  if (FAILED(D3DReadFileToBlob(L"Content/shaders/basic.ps.cso", &psBlob))) {
     throw std::runtime_error("Failed to read pixel shader");
   }
 
-  D3D12_SHADER_BYTECODE vsBytecode{};
-  vsBytecode.pShaderBytecode = _vsBlob->GetBufferPointer();
-  vsBytecode.BytecodeLength = _vsBlob->GetBufferSize();
-
-  D3D12_SHADER_BYTECODE psBytecode{};
-  psBytecode.pShaderBytecode = _psBlob->GetBufferPointer();
-  psBytecode.BytecodeLength = _psBlob->GetBufferSize();
-
   // Input layout
-  D3D12_INPUT_ELEMENT_DESC inputLayout[] = {
+  std::vector<D3D12_INPUT_ELEMENT_DESC> inputLayout = {
     {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
     {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}};
 
   // Graphics pipeline
-  D3D12_GRAPHICS_PIPELINE_STATE_DESC gpipeline = {};
-  gpipeline.pRootSignature = nullptr;
-  gpipeline.VS.pShaderBytecode = _vsBlob->GetBufferPointer();
-  gpipeline.VS.BytecodeLength = _vsBlob->GetBufferSize();
-  gpipeline.PS.pShaderBytecode = _psBlob->GetBufferPointer();
-  gpipeline.PS.BytecodeLength = _psBlob->GetBufferSize();
+  try {
+    root_signature_ = RootSignatureBuilder()
+                        .AllowInputLayout()
+                        .AddDescriptorTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+                          1,
+                          0,  // register(t0)
+                          D3D12_SHADER_VISIBILITY_PIXEL)
+                        .AddStaticSampler(SamplerPresets::CreatePointSampler(0))
+                        .Build(device_.Get());
 
-  // デフォルトのサンプルマスクを表す定数(0xffffffff)
-  gpipeline.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
-
-  // まだアンチエイリアスは使わないためfalse
-  gpipeline.RasterizerState.MultisampleEnable = false;
-  gpipeline.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;   // カリングしない
-  gpipeline.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;  // 中身を塗りつぶす
-  gpipeline.RasterizerState.DepthClipEnable = true;            // 深度方向のクリッピングは有効に
-
-  // Alpha Blend
-  gpipeline.BlendState.AlphaToCoverageEnable = false;
-  gpipeline.BlendState.IndependentBlendEnable = false;
-
-  D3D12_RENDER_TARGET_BLEND_DESC renderTargetBlendDesc = {};
-
-  // ひとまず加算や乗算やαブレンディングは使用しない
-  renderTargetBlendDesc.BlendEnable = false;
-  renderTargetBlendDesc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
-  // ひとまず論理演算は使用しない
-  renderTargetBlendDesc.LogicOpEnable = false;
-
-  gpipeline.BlendState.RenderTarget[0] = renderTargetBlendDesc;
-
-  // Rasterizer State
-  gpipeline.RasterizerState.MultisampleEnable = false;         // まだアンチェリは使わない
-  gpipeline.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;   // カリングしない
-  gpipeline.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;  // 中身を塗りつぶす
-  gpipeline.RasterizerState.DepthClipEnable = true;            // 深度方向のクリッピングは有効に
-
-  // 残り
-  gpipeline.RasterizerState.FrontCounterClockwise = false;
-  gpipeline.RasterizerState.DepthBias = D3D12_DEFAULT_DEPTH_BIAS;
-  gpipeline.RasterizerState.DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
-  gpipeline.RasterizerState.SlopeScaledDepthBias = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
-  gpipeline.RasterizerState.AntialiasedLineEnable = false;
-  gpipeline.RasterizerState.ForcedSampleCount = 0;
-  gpipeline.RasterizerState.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
-
-  gpipeline.InputLayout.pInputElementDescs = inputLayout;     // レイアウト先頭アドレス
-  gpipeline.InputLayout.NumElements = _countof(inputLayout);  // レイアウト配列数
-
-  // Depth stencil
-  gpipeline.DepthStencilState.DepthEnable = false;
-  gpipeline.DepthStencilState.StencilEnable = false;
-
-  // Input layout
-  gpipeline.InputLayout.pInputElementDescs = inputLayout;     // レイアウト先頭アドレス
-  gpipeline.InputLayout.NumElements = _countof(inputLayout);  // レイアウト配列数
-
-  // Vertex related setting
-  gpipeline.IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED;   // ストリップ時のカットなし
-  gpipeline.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;  // 三角形で構成
-
-  // Render target
-  gpipeline.NumRenderTargets = 1;                        // 今は１つのみ
-  gpipeline.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;  // 0～1に正規化されたRGBA
-
-  // Sample
-  gpipeline.SampleDesc.Count = 1;    // サンプリングは1ピクセルにつき１
-  gpipeline.SampleDesc.Quality = 0;  // クオリティは最低
-
-  // Root signature
-
-  D3D12_ROOT_SIGNATURE_DESC rootSignatureDesc = {};
-  rootSignatureDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-
-  // Root parameter
-  D3D12_DESCRIPTOR_RANGE descTblRange = {};
-  descTblRange.NumDescriptors = 1;                           // テクスチャひとつ
-  descTblRange.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;  // 種別はテクスチャ
-  descTblRange.BaseShaderRegister = 0;                       // 0番スロットから
-  descTblRange.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-
-  D3D12_ROOT_PARAMETER rootparam = {};
-  rootparam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-  rootparam.DescriptorTable.pDescriptorRanges = &descTblRange;  // デスクリプタレンジのアドレス
-  rootparam.DescriptorTable.NumDescriptorRanges = 1;            // デスクリプタレンジ数
-  rootparam.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;   // ピクセルシェーダから見える
-
-  rootSignatureDesc.pParameters = &rootparam;  // ルートパラメータの先頭アドレス
-  rootSignatureDesc.NumParameters = 1;         // ルートパラメータ数
-
-  // Sampler
-  D3D12_STATIC_SAMPLER_DESC samplerDesc = {};
-  samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;                 // 横繰り返し
-  samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;                 // 縦繰り返し
-  samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;                 // 奥行繰り返し
-  samplerDesc.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;  // ボーダーの時は黒
-  samplerDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;                    // 補間しない(ニアレストネイバー)
-  samplerDesc.MaxLOD = D3D12_FLOAT32_MAX;                                 // ミップマップ最大値
-  samplerDesc.MinLOD = 0.0f;                                              // ミップマップ最小値
-  samplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;               // オーバーサンプリングの際リサンプリングしない？
-  samplerDesc.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;           // ピクセルシェーダからのみ可視
-
-  rootSignatureDesc.pStaticSamplers = &samplerDesc;
-  rootSignatureDesc.NumStaticSamplers = 1;
-
-  ID3DBlob* errorBlob = nullptr;
-  ID3DBlob* rootSigBlob = nullptr;
-  hr = D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1_0, &rootSigBlob, &errorBlob);
-  hr = device_->CreateRootSignature(
-    0, rootSigBlob->GetBufferPointer(), rootSigBlob->GetBufferSize(), IID_PPV_ARGS(root_signature_.GetAddressOf()));
-  rootSigBlob->Release();
-
-  gpipeline.pRootSignature = root_signature_.Get();
-  hr = device_->CreateGraphicsPipelineState(&gpipeline, IID_PPV_ARGS(pipeline_state_.GetAddressOf()));
+    pipeline_state_ = PipelineStateBuilder()
+                        .SetRootSignature(root_signature_.Get())
+                        .SetVertexShader(vsBlob.Get())
+                        .SetPixelShader(psBlob.Get())
+                        .SetInputLayout(inputLayout)
+                        .SetRenderTargetFormat(DXGI_FORMAT_R8G8B8A8_UNORM)
+                        .SetCullMode(D3D12_CULL_MODE_NONE)
+                        .SetBlendMode(BlendMode::AlphaBlend)
+                        .Build(device_.Get());
+  } catch (const std::exception& e) {
+    std::cerr << "Initialization failed: " << e.what() << std::endl;
+    return false;
+  }
 
   viewport_.Width = static_cast<FLOAT>(frame_buffer_width_);    // 出力先の幅(ピクセル数)
   viewport_.Height = static_cast<FLOAT>(frame_buffer_height_);  // 出力先の高さ(ピクセル数)
@@ -312,10 +172,10 @@ bool Graphic::Initalize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_he
     0,                // FirstSubresource
     1,                // NumSubresources
     0,                // BaseOffset
-    &footprint,       // 輸出的佈局結構
-    &numRows,         // 輸出的行數 (Height)
-    &rowSizeInBytes,  // 輸出的每行實際數據大小 (不含對齊 Padding)
-    &totalBytes       // 輸出的總 Buffer 大小
+    &footprint,       // output layout structure
+    &numRows,         // output row count (Height)
+    &rowSizeInBytes,  // output actual data size per row (excluding alignment Padding)
+    &totalBytes       // output total Buffer size
   );
 
   // Create upload buffer
@@ -430,8 +290,7 @@ void Graphic::BeginRender() {
   command_list_->SetGraphicsRootSignature(root_signature_.Get());
 
   command_list_->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-  command_list_->IASetVertexBuffers(0, 1, &vertex_buffer_view_);
-  command_list_->IASetIndexBuffer(&index_buffer_view_);
+  quadMesh_.Draw(command_list_.Get());
 
   command_list_->SetGraphicsRootSignature(root_signature_.Get());
 

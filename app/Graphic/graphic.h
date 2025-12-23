@@ -7,6 +7,7 @@
 #include "depth_buffer.h"
 #include "descriptor_heap_manager.h"
 #include "fence_manager.h"
+#include "mesh.h"
 #include "swapchain_manager.h"
 #include "types.h"
 
@@ -48,9 +49,7 @@ class Graphic {
   D3D12_VIEWPORT viewport_ = {};
   D3D12_RECT scissor_rect_ = {};
 
-  // Buffer
-  D3D12_VERTEX_BUFFER_VIEW vertex_buffer_view_ = {};
-  D3D12_INDEX_BUFFER_VIEW index_buffer_view_ = {};
+  Mesh quadMesh_;
 
   // texture
   ComPtr<ID3D12DescriptorHeap> texture_descriptor_heap_ = nullptr;
