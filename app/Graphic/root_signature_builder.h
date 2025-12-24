@@ -20,6 +20,7 @@ class RootSignatureBuilder {
   RootSignatureBuilder& AddDescriptorTable(D3D12_DESCRIPTOR_RANGE_TYPE rangeType,
     UINT numDescriptors,
     UINT baseShaderRegister,
+    UINT registerSpace = 0,
     D3D12_SHADER_VISIBILITY visibility = D3D12_SHADER_VISIBILITY_ALL);
 
   RootSignatureBuilder& AddStaticSampler(const D3D12_STATIC_SAMPLER_DESC& samplerDesc) {

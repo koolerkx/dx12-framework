@@ -4,12 +4,17 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 
+#include <memory>
+#include <vector>
+
+#include "Texture/texture_manager.h"
 #include "depth_buffer.h"
 #include "descriptor_heap_manager.h"
 #include "fence_manager.h"
 #include "mesh.h"
 #include "swapchain_manager.h"
 #include "types.h"
+
 
 class Graphic {
  public:
@@ -20,6 +25,9 @@ class Graphic {
   void BeginRender();
   void EndRender();
   void Shutdown();
+
+  // helper
+  void ExecuteSync(std::function<void(ID3D12GraphicsCommandList*)> cb);
 
   static constexpr int FRAME_BUFFER_COUNT = 2;
 
@@ -52,8 +60,8 @@ class Graphic {
   Mesh quadMesh_;
 
   // texture
-  ComPtr<ID3D12DescriptorHeap> texture_descriptor_heap_ = nullptr;
-  ComPtr<ID3D12Resource> texture_buffer_ = nullptr;
+  TextureManager texture_manager_;
+  std::vector<std::shared_ptr<Texture>> myTexture;
 
   // Initialization
   bool EnableDebugLayer();

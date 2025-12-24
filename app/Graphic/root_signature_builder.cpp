@@ -32,13 +32,13 @@ ComPtr<ID3D12RootSignature> RootSignatureBuilder::Build(ID3D12Device* device) {
 }
 
 RootSignatureBuilder& RootSignatureBuilder::AddDescriptorTable(
-  D3D12_DESCRIPTOR_RANGE_TYPE rangeType, UINT numDescriptors, UINT baseShaderRegister, D3D12_SHADER_VISIBILITY visibility) {
+  D3D12_DESCRIPTOR_RANGE_TYPE rangeType, UINT numDescriptors, UINT baseShaderRegister, UINT registerSpace, D3D12_SHADER_VISIBILITY visibility) {
   // Descriptor Range
   D3D12_DESCRIPTOR_RANGE range = {};
   range.RangeType = rangeType;
   range.NumDescriptors = numDescriptors;
   range.BaseShaderRegister = baseShaderRegister;
-  range.RegisterSpace = 0;
+  range.RegisterSpace = registerSpace;
   range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
   ranges_.push_back(range);
 
