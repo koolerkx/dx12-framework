@@ -3,7 +3,7 @@
 #include <string>
 
 #include "d3d12.h"
-#include "types.h"
+#include "Core/types.h"
 
 class GpuResource {
  public:

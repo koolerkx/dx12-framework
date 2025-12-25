@@ -8,12 +8,12 @@
 
 #include <cstdint>
 #include <iostream>
-#include <memory>
 #include <vector>
 
+#include "Core/types.h"
 #include "pipeline_state_builder.h"
 #include "root_signature_builder.h"
-#include "types.h"
+
 
 using namespace DirectX;
 

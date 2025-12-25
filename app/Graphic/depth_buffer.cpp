@@ -7,7 +7,7 @@
 #include <iostream>
 
 #include "d3dx12.h"
-#include "types.h"
+#include "Core/types.h"
 
 bool DepthBuffer::Initialize(ID3D12Device* device, UINT width, UINT height, DescriptorHeapManager& descriptor_manager, DXGI_FORMAT format) {
   assert(device != nullptr);

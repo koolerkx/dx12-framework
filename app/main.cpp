@@ -11,7 +11,7 @@
 #include "Application/Application.h"
 #include "Game/game.h"
 #include "Graphic/graphic.h"
-#include "utils.h"
+#include "Core/utils.h"
 
 template <typename T>
 using ComPtr = Microsoft::WRL::ComPtr<T>;

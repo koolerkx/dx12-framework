@@ -4,7 +4,7 @@
 
 #include <vector>
 
-#include "types.h"
+#include "Core/types.h"
 
 enum class BlendMode { Opaque, AlphaBlend, Additive, Premultiplied, NonPremultiplied };
 

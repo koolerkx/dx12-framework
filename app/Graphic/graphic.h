@@ -13,7 +13,7 @@
 #include "fence_manager.h"
 #include "mesh.h"
 #include "swapchain_manager.h"
-#include "types.h"
+#include "Core/types.h"
 
 class Graphic {
  public:

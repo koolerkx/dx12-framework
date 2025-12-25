@@ -1,6 +1,6 @@
 #include "gpu_resource.h"
 
-#include "utils.h"
+#include "Core/utils.h"
 
 void GpuResource::TransitionTo(ID3D12GraphicsCommandList* command_list, D3D12_RESOURCE_STATES new_state, UINT subresource) {
   if (!resource_) {

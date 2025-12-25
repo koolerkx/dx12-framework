@@ -9,8 +9,8 @@
 #include <vector>
 
 #include "descriptor_heap_manager.h"
-#include "types.h"
-#include "utils.h"
+#include "Core/types.h"
+#include "Core/utils.h"
 
 class Graphic;
 

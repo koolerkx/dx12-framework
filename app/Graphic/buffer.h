@@ -4,7 +4,7 @@
 
 #include <stdexcept>
 
-#include "types.h"
+#include "Core/types.h"
 
 class Buffer {
  protected:

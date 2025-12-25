@@ -6,8 +6,6 @@ add_library(graphic STATIC
     graphic.cpp
     graphic.h
     d3dx12.h
-    types.h
-    ../utils.h
 
     gpu_resource.h
     gpu_resource.cpp
@@ -37,7 +35,10 @@ add_library(graphic STATIC
     Texture/texture_manager.cpp
 )
 
+target_link_libraries(app PRIVATE framework)
+
 target_include_directories(graphic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
+target_include_directories(graphic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../Framework)
 target_include_directories(graphic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 set_msvc_runtime(graphic)

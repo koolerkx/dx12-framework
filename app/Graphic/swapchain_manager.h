@@ -8,7 +8,7 @@
 
 #include "descriptor_heap_allocator.h"
 #include "descriptor_heap_manager.h"
-#include "types.h"
+#include "Core/types.h"
 
 class SwapChainManager {
  public:
