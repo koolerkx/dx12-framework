@@ -44,6 +44,7 @@ class TextureManager {
 
   // Optional cleanup on each frame end
   void CleanUploadBuffers() {
+    std::lock_guard<std::mutex> lock(upload_mutex_);
     upload_buffers_.clear();
   }
 
@@ -55,7 +56,8 @@ class TextureManager {
   // cache
   std::unordered_map<std::wstring, std::shared_ptr<Texture>> texture_cache_;
 
-  // temp upload buffer
+  // upload buffer
+  std::mutex upload_mutex_;
   std::vector<ComPtr<ID3D12Resource>> upload_buffers_;
 
   bool TextureUpload(const std::wstring& path,

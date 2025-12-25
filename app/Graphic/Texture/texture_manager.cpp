@@ -51,7 +51,11 @@ bool TextureManager::TextureUpload(const std::wstring& path,
     std::cerr << "Failed to create texture upload buffer." << std::endl;
     return false;
   }
-  upload_buffers_.push_back(textureUpload);
+
+  {
+    std::lock_guard<std::mutex> lock(upload_mutex_);
+    upload_buffers_.push_back(textureUpload);
+  }
 
   // Copy CPU data to upload buffer
   UINT8* pMappedData = nullptr;
@@ -183,7 +187,10 @@ std::vector<std::shared_ptr<Texture>> TextureManager::LoadTextures(const std::ve
 
     texture_cache_[task.path] = tex;
     results.push_back(tex);
-    upload_buffers_.push_back(task.upload_buffer);
+    {
+      std::lock_guard<std::mutex> lock(upload_mutex_);
+      upload_buffers_.push_back(task.upload_buffer);
+    }
   }
 
   return results;
