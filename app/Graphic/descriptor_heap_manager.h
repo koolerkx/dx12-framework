@@ -33,6 +33,8 @@ class DescriptorHeapManager {
   void PrintStats() const;
 
  private:
+  std::mutex begin_frame_mutex_;
+
   DescriptorHeapAllocator rtv_heap_;
   DescriptorHeapAllocator dsv_heap_;
 

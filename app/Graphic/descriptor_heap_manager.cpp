@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <iostream>
+#include <mutex>
 
 bool DescriptorHeapManager::Initalize(ID3D12Device* device) {
   assert(device != nullptr);
@@ -27,6 +28,7 @@ bool DescriptorHeapManager::Initalize(ID3D12Device* device) {
 }
 
 void DescriptorHeapManager::BeginFrame() {
+  std::lock_guard<std::mutex> lock(begin_frame_mutex_);
   srv_heap_.Reset();
   sampler_heap_.Reset();
 }

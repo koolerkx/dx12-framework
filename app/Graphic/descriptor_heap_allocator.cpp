@@ -27,7 +27,7 @@ bool DescriptorHeapAllocator::Initialize(ID3D12Device* device, D3D12_DESCRIPTOR_
   }
 
   heap_start_cpu_ = heap_->GetCPUDescriptorHandleForHeapStart();
-  if(shader_visible) {
+  if (shader_visible) {
     heap_start_gpu_ = heap_->GetGPUDescriptorHandleForHeapStart();
   }
 
@@ -61,6 +61,7 @@ bool DescriptorHeapAllocator::Initialize(ID3D12Device* device, D3D12_DESCRIPTOR_
 
 DescriptorHeapAllocator::Allocation DescriptorHeapAllocator::Allocate(uint32_t count) {
   assert(count > 0);
+  std::lock_guard<std::mutex> lock(alloc_mutex_);
 
   if (!free_list_.empty() && count == 1) {
     // Allocate from free list
@@ -96,6 +97,7 @@ DescriptorHeapAllocator::Allocation DescriptorHeapAllocator::Allocate(uint32_t c
 }
 
 void DescriptorHeapAllocator::Free(const Allocation& allocation) {
+  std::lock_guard<std::mutex> lock(alloc_mutex_);
   if (!allocation.IsValid()) {
     return;
   }
@@ -108,6 +110,7 @@ void DescriptorHeapAllocator::Free(const Allocation& allocation) {
 }
 
 void DescriptorHeapAllocator::Reset() {
+  std::lock_guard<std::mutex> lock(alloc_mutex_);
   allocated_ = 0;
   while (!free_list_.empty()) {
     free_list_.pop();

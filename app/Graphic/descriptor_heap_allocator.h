@@ -4,6 +4,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <mutex>
 #include <queue>
 #include <vector>
 
@@ -55,6 +56,8 @@ class DescriptorHeapAllocator {
   }
 
  private:
+  std::mutex alloc_mutex_;
+
   ComPtr<ID3D12DescriptorHeap> heap_ = nullptr;
   D3D12_DESCRIPTOR_HEAP_TYPE type_ = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
   uint32_t descriptor_size_ = 0;
