@@ -23,12 +23,17 @@ bool FenceManager::Initialize(ID3D12Device* device) {
   return true;
 }
 
-void FenceManager::SignalFence(ID3D12CommandQueue* command_queue) {
+UINT64 FenceManager::SignalFence(ID3D12CommandQueue* command_queue) {
   assert(command_queue != nullptr);
   assert(fence_ != nullptr);
 
-  command_queue->Signal(fence_.Get(), fence_value_);
+  std::lock_guard<std::mutex> lock(fence_mutex_);
+  UINT64 value_to_signal = fence_value_;
+
+  command_queue->Signal(fence_.Get(), value_to_signal);
   fence_value_++;
+
+  return value_to_signal;
 }
 
 void FenceManager::WaitForFenceValue(UINT64 fence_value) {

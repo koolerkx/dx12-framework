@@ -154,7 +154,8 @@ bool Graphic::Initalize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_he
   command_allocator_->Reset();
   command_list_->Reset(command_allocator_.Get(), nullptr);
 
-  myTexture = texture_manager_.LoadTextures(std::vector<std::wstring>{L"Content/textures/metal_plate_diff_1k.png", L"Content/textures/metal_plate_disp_1k.png"});
+  myTexture = texture_manager_.LoadTextures(
+    std::vector<std::wstring>{L"Content/textures/metal_plate_diff_1k.png", L"Content/textures/metal_plate_disp_1k.png"});
 
   command_list_->Close();
   ID3D12CommandList* cmds[] = {command_list_.Get()};
@@ -330,4 +331,19 @@ void Graphic::ExecuteSync(std::function<void(ID3D12GraphicsCommandList*)> cb) {
   command_queue_->ExecuteCommandLists(1, lists);
 
   fence_manager_.WaitForGpu(command_queue_.Get());
+}
+
+uint64_t Graphic::ExecuteAsync(std::function<void(ID3D12GraphicsCommandList*)> cb) {
+  std::lock_guard<std::mutex> lock(command_list_mutex_);  // TODO: remove this mutex and assign command allocator for each thread
+
+  command_allocator_->Reset();
+  command_list_->Reset(command_allocator_.Get(), nullptr);
+
+  cb(command_list_.Get());
+
+  command_list_->Close();
+  ID3D12CommandList* lists[] = {command_list_.Get()};
+  command_queue_->ExecuteCommandLists(1, lists);
+
+  return static_cast<uint64_t>(fence_manager_.SignalFence(command_queue_.Get()));
 }

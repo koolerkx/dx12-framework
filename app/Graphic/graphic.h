@@ -15,7 +15,6 @@
 #include "swapchain_manager.h"
 #include "types.h"
 
-
 class Graphic {
  public:
   Graphic() = default;
@@ -27,11 +26,26 @@ class Graphic {
   void Shutdown();
 
   // helper
+  /**
+   * @brief This function will execute a command list, the command list will record by caller in cb
+   * @param cb
+   */
   void ExecuteSync(std::function<void(ID3D12GraphicsCommandList*)> cb);
+
+  /**
+   * @brief This function will execute a command list, the command list will record by caller in cb.
+   * This function run asynchronously, it won't wait for GPU to finish. So be remind that cleanup should not do immediately and wait for gpu
+   * before next step.
+   * @param cb
+   * @return uint64_t
+   */
+  uint64_t ExecuteAsync(std::function<void(ID3D12GraphicsCommandList*)> cb);
 
   static constexpr int FRAME_BUFFER_COUNT = 2;
 
  private:
+  std::mutex command_list_mutex_;
+
   // Core
   ComPtr<ID3D12Device5> device_ = nullptr;  /// @note D3D Device, RTX graphic card required
   ComPtr<IDXGIFactory6> dxgi_factory_ = nullptr;

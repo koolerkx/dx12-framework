@@ -2,8 +2,11 @@
 
 #include <basetsd.h>
 
+#include <mutex>
+
 #include "d3d12.h"
 #include "types.h"
+
 
 class FenceManager {
  public:
@@ -17,7 +20,9 @@ class FenceManager {
 
   bool Initialize(ID3D12Device* device);
   void WaitForGpu(ID3D12CommandQueue* command_queue);
-  void SignalFence(ID3D12CommandQueue* command_queue);
+
+  /// @return value to signal
+  UINT64 SignalFence(ID3D12CommandQueue* command_queue);
   void WaitForFenceValue(UINT64 fence_value);
 
   UINT64 GetCurrentFenceValue() const {
@@ -33,6 +38,7 @@ class FenceManager {
   }
 
  private:
+  std::mutex fence_mutex_;
   ComPtr<ID3D12Fence> fence_ = nullptr;
   HANDLE fence_event_ = nullptr;
   UINT64 fence_value_ = 0;
