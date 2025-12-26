@@ -42,14 +42,20 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
   graphic.Initialize(app.GetHwnd(), window_width, window_height);
 
   Game game(graphic);
+  game.Initialize();
 
-  const std::function<void(float dt)> OnUpdate = [&]([[maybe_unused]] float dt) { game.OnUpdate(dt); };
+  const std::function<void(float dt)> OnUpdate = [&]([[maybe_unused]] float dt) {
+    game.OnUpdate(dt);
+    game.OnRender();
+  };
 
   const std::function<void(float fdt)> OnFixedUpdate = [&]([[maybe_unused]] float fdt) { game.OnFixedUpdate(fdt); };
 
   app.Run(OnUpdate, OnFixedUpdate);
 
+  game.Shutdown();
   graphic.Shutdown();
+
   return 0;
 } catch (const std::exception& e) {
   std::cerr << "Exception: " << e.what() << std::endl;

@@ -1,17 +1,26 @@
 #pragma once
 
+#include <memory>
+
 #include "Graphic/graphic.h"
 #include "scene.h"
 
 class Game {
  public:
   Game(Graphic& graphic);
-  ~Game() = default;
+  ~Game();
 
-  void OnUpdate([[maybe_unused]] float dt);
-  void OnFixedUpdate([[maybe_unused]] float dt);
+  void Initialize();
+  void Shutdown() {};
+
+  void OnUpdate(float dt);
+  void OnFixedUpdate(float dt);
+  void OnRender();
 
  private:
   Graphic& graphic_;
-  Scene scene_;
+
+  std::unique_ptr<IScene> current_scene_;
+
+  RenderWorld render_world_;
 };

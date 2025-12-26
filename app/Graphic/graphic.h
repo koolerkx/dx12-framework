@@ -41,10 +41,11 @@ class Graphic {
   void EndFrame(const RenderFrameContext& frame);
   void RenderScene(const RenderFrameContext& frame, const RenderWorld& world);
 
-  std::vector<std::shared_ptr<Texture>> myTexture;
-  std::shared_ptr<Texture> myTexture2;
-
   static constexpr int FRAME_BUFFER_COUNT = 2;
+
+  TextureManager& GetTextureManager() {
+    return texture_manager_;
+  }
 
  private:
   // Core

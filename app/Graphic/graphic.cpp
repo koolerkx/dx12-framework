@@ -170,10 +170,6 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
   scissor_rect_.right = scissor_rect_.left + frame_buffer_width_;   // 切り抜き右座標
   scissor_rect_.bottom = scissor_rect_.top + frame_buffer_height_;  // 切り抜き下座標
 
-  myTexture = texture_manager_.LoadTextures(
-    std::vector<std::wstring>{L"Content/textures/metal_plate_diff_1k.png", L"Content/textures/metal_plate_disp_1k.png"});
-  myTexture2 = texture_manager_.LoadTexture(L"Content/textures/metal_plate_nor_dx_1k.png");
-
   ui_renderer_ = std::make_unique<UiRenderer>(root_signature_.Get(), pipeline_state_.Get(), &quadMesh_);
 
   ui_pass_ = std::make_unique<UiPass>(ui_renderer_.get());
