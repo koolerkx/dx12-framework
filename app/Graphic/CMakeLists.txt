@@ -29,8 +29,17 @@ add_library(graphic STATIC
     mesh.h
     mesh.cpp
 
+    Texture/texture.h
     Texture/texture_manager.h
     Texture/texture_manager.cpp
+
+    render_world.h
+    ui_renderer.h
+    ui_renderer.cpp
+    render_pass_manager.h
+    render_pass_manager.cpp
+    ui_pass.h
+    ui_pass.cpp
 )
 
 target_link_libraries(app PRIVATE framework)

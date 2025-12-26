@@ -12,17 +12,9 @@
 #include "Core/types.h"
 #include "Core/utils.h"
 #include "descriptor_heap_manager.h"
+#include "texture.h"
 
 class Graphic;
-
-struct Texture {
-  ComPtr<ID3D12Resource> resource;
-  uint32_t srv_index;
-
-  uint32_t GetBindlessIndex() const {
-    return srv_index;
-  }
-};
 
 class TextureManager {
  public:

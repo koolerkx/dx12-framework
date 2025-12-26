@@ -16,6 +16,8 @@
 
 using namespace DirectX;
 
+constexpr std::array<float, 4> CLEAR_COLOR = {1.0f, 1.0f, 0.0f, 1.0f};
+
 struct Vertex {
   XMFLOAT3 pos;
   XMFLOAT2 uv;
@@ -167,10 +169,16 @@ bool Graphic::Initalize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_he
     return false;
   }
 
+  ui_renderer_ = std::make_unique<UiRenderer>(root_signature_.Get(), pipeline_state_.Get(), &quadMesh_);
+
+  ui_pass_ = std::make_unique<UiPass>(ui_renderer_.get(), this);
+  render_pass_manager_ = std::make_unique<RenderPassManager>();
+  render_pass_manager_->SetUiPass(ui_pass_.get());
+
   return true;
 }
 
-void Graphic::BeginRender() {
+RenderFrameContext Graphic::BeginFrame() {
   command_allocator_->Reset();
   command_list_->Reset(command_allocator_.Get(), nullptr);
 
@@ -182,78 +190,38 @@ void Graphic::BeginRender() {
   D3D12_CPU_DESCRIPTOR_HANDLE rtv = swap_chain_manager_.GetCurrentRTV();
   D3D12_CPU_DESCRIPTOR_HANDLE dsv = depth_buffer_.GetDSV();
 
+  command_list_->ClearRenderTargetView(rtv, CLEAR_COLOR.data(), 0, nullptr);
+  depth_buffer_.Clear(command_list_.Get(), 1.0, 0);
+  command_list_->OMSetRenderTargets(1, &rtv, FALSE, &dsv);
+
   command_list_->RSSetViewports(1, &viewport_);
   command_list_->RSSetScissorRects(1, &scissor_rect_);
 
-  float clearColor[] = {1.0f, 1.0f, 0.0f, 1.0f};
-  command_list_->ClearRenderTargetView(rtv, clearColor, 0, nullptr);
-  depth_buffer_.Clear(command_list_.Get(), 1.0, 0);
+  return RenderFrameContext{.frame_index = 0,  // TODO: change to swap_chain_manager_.GetCurrentBackBufferIndex()
+    .command_list = command_list_.Get(),
+    .device = device_.Get(),
+    .descriptor_manager = &descriptor_heap_manager_,
 
-  command_list_->OMSetRenderTargets(1, &rtv, FALSE, &dsv);
-
-  // Drawing Logic
-
-  command_list_->SetGraphicsRootSignature(root_signature_.Get());
-  command_list_->SetPipelineState(pipeline_state_.Get());
-
-  command_list_->SetGraphicsRootDescriptorTable(
-    3, descriptor_heap_manager_.GetSrvAllocator().GetHeap()->GetGPUDescriptorHandleForHeapStart());
-  command_list_->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-  // --------------------------------------------
-
-  FrameCB frameCBData = {};
-  XMMATRIX view = XMMatrixIdentity();
-  XMMATRIX proj = XMMatrixOrthographicOffCenterLH(0.0f,  // Left
-    static_cast<float>(frame_buffer_width_),             // Right
-    static_cast<float>(frame_buffer_height_),            // Bottom
-    0.0f,                                                // Top
-    0.0f,                                                // Near plane
-    1.0f                                                 // Far plane
-  );
-
-  XMMATRIX viewProj = view * proj;
-
-  XMStoreFloat4x4(&frameCBData.view, XMMatrixTranspose(view));
-  XMStoreFloat4x4(&frameCBData.proj, XMMatrixTranspose(proj));
-  XMStoreFloat4x4(&frameCBData.viewProj, XMMatrixTranspose(viewProj));
-
-  frameCBData.cameraPos = XMFLOAT3(0.0f, 0.0f, 0.0f);
-  frameCBData.time = 0.0f;
-  frameCBData.screenSize = XMFLOAT2(static_cast<float>(frame_buffer_width_), static_cast<float>(frame_buffer_height_));
-  frameCB_.Update(frameCBData);
-
-  ObjectCB objData = {};
-
-  XMMATRIX scale = XMMatrixScaling(200.0f, 200.0f, 1.0f);
-  XMMATRIX translation = XMMatrixTranslation(300.0f, 300.0f, 0.0f);
-  XMMATRIX world = scale * translation;
-  XMMATRIX wvp = world * viewProj;
-
-  XMStoreFloat4x4(&objData.world, XMMatrixTranspose(world));
-  XMStoreFloat4x4(&objData.worldViewProj, XMMatrixTranspose(wvp));
-  objData.color = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-
-  objectCB_.Update(objData);
-  command_list_->SetGraphicsRootConstantBufferView(1, objectCB_.GetGPUAddress());
-
-  uint32_t indexA = myTexture[0]->GetBindlessIndex();
-  command_list_->SetGraphicsRoot32BitConstants(2, 1, &indexA, 0);
-
-  quadMesh_.Draw(command_list_.Get());
+    // HACK: consider refactor the location of the constant buffer
+    .frame_cb = &frameCB_,
+    .object_cb = &objectCB_,
+    .screen_width = frame_buffer_width_,
+    .screen_height = frame_buffer_height_};
 }
 
-void Graphic::EndRender() {
-  swap_chain_manager_.TransitionToPresent(command_list_.Get());
+void Graphic::EndFrame(const RenderFrameContext& frame) {
+  swap_chain_manager_.TransitionToPresent(frame.command_list);
 
-  command_list_->Close();
-
-  ID3D12CommandList* cmdlists[] = {command_list_.Get()};
-  command_queue_->ExecuteCommandLists(1, cmdlists);
+  frame.command_list->Close();
+  ID3D12CommandList* command_lists[] = {frame.command_list};
+  command_queue_->ExecuteCommandLists(1, command_lists);
 
   fence_manager_.WaitForGpu(command_queue_.Get());
-
   swap_chain_manager_.Present(1, 0);
+}
+
+void Graphic::RenderScene(const RenderFrameContext& frame, const RenderWorld& world) {
+  render_pass_manager_->Execute(frame, world);
 }
 
 bool Graphic::EnableDebugLayer() {

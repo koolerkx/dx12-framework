@@ -14,8 +14,11 @@
 #include "descriptor_heap_manager.h"
 #include "fence_manager.h"
 #include "mesh.h"
+#include "render_frame_context.h"
+#include "render_pass_manager.h"
 #include "swapchain_manager.h"
-
+#include "ui_pass.h"
+#include "ui_renderer.h"
 
 class Graphic {
  public:
@@ -23,9 +26,7 @@ class Graphic {
   ~Graphic() = default;
 
   bool Initalize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_height);
-  void BeginRender();
-  void EndRender();
-  void Shutdown();
+  void Shutdown() {};
 
   // helper
   /**
@@ -43,6 +44,13 @@ class Graphic {
    * @return uint64_t
    */
   uint64_t ExecuteAsync(std::function<void(ID3D12GraphicsCommandList*)> cb);
+
+  RenderFrameContext BeginFrame();
+  void EndFrame(const RenderFrameContext& frame);
+  void RenderScene(const RenderFrameContext& frame, const RenderWorld& world);
+
+  std::vector<std::shared_ptr<Texture>> myTexture;
+  std::shared_ptr<Texture> myTexture2;
 
   static constexpr int FRAME_BUFFER_COUNT = 2;
 
@@ -81,8 +89,10 @@ class Graphic {
 
   // texture
   TextureManager texture_manager_;
-  std::vector<std::shared_ptr<Texture>> myTexture;
-  std::shared_ptr<Texture> myTexture2;
+
+  std::unique_ptr<UiRenderer> ui_renderer_;
+  std::unique_ptr<UiPass> ui_pass_;
+  std::unique_ptr<RenderPassManager> render_pass_manager_;
 
   // Initialization
   bool EnableDebugLayer();

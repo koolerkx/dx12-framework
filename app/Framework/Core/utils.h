@@ -1,5 +1,6 @@
 #pragma once
 
+#include <d3d12.h>
 #include <dxgiformat.h>
 #include <windows.h>
 
@@ -62,4 +63,38 @@ inline const std::string GetDxgiFormatName(DXGI_FORMAT format) {
       return "UNKNOWN";
   }
 }
+
+// Debug Wrapper
+#if defined(DEBUG) || defined(_DEBUG)
+struct DebugCommandGroupWrapper final {
+  ID3D12GraphicsCommandList* command_list_{};
+
+  DebugCommandGroupWrapper(ID3D12GraphicsCommandList* command_list, const wchar_t* label) noexcept : command_list_(command_list) {
+    if (!command_list_ || !label) return;
+    const UINT bytes = static_cast<UINT>((wcslen(label) + 1) * sizeof(wchar_t));
+    command_list_->BeginEvent(0, label, bytes);
+  }
+
+  ~DebugCommandGroupWrapper() noexcept {
+    if (command_list_) command_list_->EndEvent();
+  }
+
+  DebugCommandGroupWrapper(const DebugCommandGroupWrapper&) = delete;
+  DebugCommandGroupWrapper& operator=(const DebugCommandGroupWrapper&) = delete;
+  DebugCommandGroupWrapper(DebugCommandGroupWrapper&&) = delete;
+  DebugCommandGroupWrapper& operator=(DebugCommandGroupWrapper&&) = delete;
+};
+
+template <class Fn>
+inline void CommandListEventGroup(ID3D12GraphicsCommandList* command_list, const wchar_t* label, Fn&& fn) {
+  DebugCommandGroupWrapper wrapper(command_list, label);
+  std::forward<Fn>(fn)();
+}
+#else
+template <class Fn>
+inline void CommandListEventGroup(ID3D12GraphicsCommandList* /*command_list*/, const wchar_t* /*label*/, Fn&& fn) {
+  std::forward<Fn>(fn)();
+}
+#endif
+
 }  // namespace utils

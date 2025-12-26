@@ -1,10 +1,11 @@
 #pragma once
 
-#include "../Graphic/graphic.h"
+#include "Graphic/graphic.h"
+#include "scene.h"
 
 class Game {
  public:
-  Game(Graphic& graphic) : graphic_(graphic) {};
+  Game(Graphic& graphic);
   ~Game() = default;
 
   void OnUpdate([[maybe_unused]] float dt);
@@ -12,4 +13,5 @@ class Game {
 
  private:
   Graphic& graphic_;
+  Scene scene_;
 };
