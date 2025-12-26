@@ -9,15 +9,10 @@
 struct UiDrawPacket {
   float2 pos;
   float2 size;
-  TextureHandle tex;
+  TextureHandle texture;
   float4 color;
 };
 
-template <typename T>
-class ConstantBuffer;
-
-struct FrameCB;
-struct ObjectCB;
 class Mesh;
 
 class UiRenderer {
@@ -25,12 +20,7 @@ class UiRenderer {
   UiRenderer(ID3D12RootSignature* root_sig, ID3D12PipelineState* pso, Mesh* quad_mesh);
 
   void Build(const RenderWorld& world, std::vector<UiDrawPacket>& out);
-  void Record(const RenderFrameContext& frame,
-    const std::vector<UiDrawPacket>& packets,
-    ConstantBuffer<FrameCB>* frame_cb,
-    ConstantBuffer<ObjectCB>* obj_cb,
-    uint32_t screen_width,
-    uint32_t screen_height);
+  void Record(const RenderFrameContext& frame, const std::vector<UiDrawPacket>& packets, uint32_t screen_width, uint32_t screen_height);
 
  private:
   ID3D12RootSignature* root_signature_;

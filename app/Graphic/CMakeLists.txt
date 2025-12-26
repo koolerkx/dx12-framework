@@ -40,6 +40,9 @@ add_library(graphic STATIC
     render_pass_manager.cpp
     ui_pass.h
     ui_pass.cpp
+
+    per_frame_constant_buffer.h
+    dynamic_upload_buffer.h
 )
 
 target_link_libraries(app PRIVATE framework)

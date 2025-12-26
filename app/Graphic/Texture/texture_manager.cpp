@@ -118,7 +118,7 @@ bool TextureManager::PrepareUpload(const DirectX::ScratchImage& mipChain, ComPtr
 }
 
 uint32_t TextureManager::CreateSrv(ComPtr<ID3D12Resource> texture_buffer) {
-  auto allocation = heap_manager_->GetSrvAllocator().Allocate(1);
+  auto allocation = heap_manager_->GetSrvStaticAllocator().Allocate(1);
   D3D12_RESOURCE_DESC texDesc = texture_buffer->GetDesc();
   D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
   srvDesc.Format = texDesc.Format;                                             // DXGI_FORMAT_R8G8B8A8_UNORM; //RGBA(0.0f～1.0fに正規化)
@@ -179,7 +179,8 @@ std::shared_ptr<Texture> TextureManager::LoadTexture(const std::wstring& path) {
 
   D3D12_RESOURCE_DESC texDesc = texture_buffer->GetDesc();
   std::cout << "[Texture] Loaded \"" << utils::wstring_to_utf8(path) << "\" | " << texDesc.Width << "x" << texDesc.Height << " | "
-            << texDesc.MipLevels << " mips | " << "Format: " << utils::GetDxgiFormatName(texDesc.Format) << " | " << "SRV Index: " << texture->srv_index << std::endl;
+            << texDesc.MipLevels << " mips | " << "Format: " << utils::GetDxgiFormatName(texDesc.Format) << " | "
+            << "SRV Index: " << texture->srv_index << std::endl;
 
   return texture;
 }
@@ -242,8 +243,8 @@ std::vector<std::shared_ptr<Texture>> TextureManager::LoadTextures(const std::ve
 
     D3D12_RESOURCE_DESC texDesc = task.texture_buffer->GetDesc();
     std::cout << "[Texture] Loaded \"" << utils::wstring_to_utf8(task.path) << "\" | " << texDesc.Width << "x" << texDesc.Height << " | "
-              << texDesc.MipLevels << " mips | " << "Format: " << utils::GetDxgiFormatName(texDesc.Format) << " | " << "SRV Index: " << texture->srv_index
-              << std::endl;
+              << texDesc.MipLevels << " mips | " << "Format: " << utils::GetDxgiFormatName(texDesc.Format) << " | "
+              << "SRV Index: " << texture->srv_index << std::endl;
 
     std::lock_guard<std::mutex> lock(upload_mutex_);
     upload_buffers_.push_back(task.uploadInfo.upload_buffer);

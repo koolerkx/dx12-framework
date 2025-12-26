@@ -12,8 +12,10 @@
 #include "constant_buffers.h"
 #include "depth_buffer.h"
 #include "descriptor_heap_manager.h"
+#include "dynamic_upload_buffer.h"
 #include "fence_manager.h"
 #include "mesh.h"
+#include "per_frame_constant_buffer.h"
 #include "render_frame_context.h"
 #include "render_pass_manager.h"
 #include "swapchain_manager.h"
@@ -25,8 +27,8 @@ class Graphic {
   Graphic() = default;
   ~Graphic() = default;
 
-  bool Initalize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_height);
-  void Shutdown() {};
+  bool Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_height);
+  void Shutdown();
 
   // helper
   /**
@@ -34,16 +36,6 @@ class Graphic {
    * @param cb
    */
   void ExecuteSync(std::function<void(ID3D12GraphicsCommandList*)> cb);
-
-  /**
-   * @deprecated should not use async at this moment
-   * @brief This function will execute a command list, the command list will record by caller in cb.
-   * This function run asynchronously, it won't wait for GPU to finish. So be remind that cleanup should not do immediately and wait for gpu
-   * before next step.
-   * @param cb
-   * @return uint64_t
-   */
-  uint64_t ExecuteAsync(std::function<void(ID3D12GraphicsCommandList*)> cb);
 
   RenderFrameContext BeginFrame();
   void EndFrame(const RenderFrameContext& frame);
@@ -55,13 +47,12 @@ class Graphic {
   static constexpr int FRAME_BUFFER_COUNT = 2;
 
  private:
-  std::mutex command_list_mutex_;
-
   // Core
   ComPtr<ID3D12Device5> device_ = nullptr;  /// @note D3D Device, RTX graphic card required
   ComPtr<IDXGIFactory6> dxgi_factory_ = nullptr;
 
-  ComPtr<ID3D12CommandAllocator> command_allocator_ = nullptr;
+  ComPtr<ID3D12CommandAllocator> utility_command_allocator_ = nullptr;                 // for ExecuteSync
+  std::array<ComPtr<ID3D12CommandAllocator>, FRAME_BUFFER_COUNT> command_allocators_;  // for frame in flight
   ComPtr<ID3D12GraphicsCommandList> command_list_ = nullptr;
   ComPtr<ID3D12CommandQueue> command_queue_ = nullptr;
 
@@ -87,6 +78,11 @@ class Graphic {
   ConstantBuffer<FrameCB> frameCB_;
   ConstantBuffer<ObjectCB> objectCB_;
 
+  std::array<uint64_t, FRAME_BUFFER_COUNT> frame_fence_values_ = {};
+
+  PerFrameConstantBuffer<FrameCB> frame_cb_storage_;
+  std::vector<std::unique_ptr<DynamicUploadBuffer>> object_cb_allocators_;
+
   // texture
   TextureManager texture_manager_;
 
@@ -101,5 +97,5 @@ class Graphic {
   bool CreateCommandQueue();
 
   bool CreateCommandList();
-  bool CreateCommandAllocator();
+  bool CreateCommandAllocators();
 };

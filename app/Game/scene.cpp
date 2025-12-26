@@ -10,12 +10,7 @@ RenderWorld Scene::BuildRenderWorld() const {
   world.ui_sprites.reserve(sprites_.size());
 
   for (const auto& sprite : sprites_) {
-    UiSpriteItem item;
-    item.pos = sprite.pos;
-    item.size = sprite.size;
-    item.tex = sprite.tex;
-    item.color = sprite.color;
-    world.ui_sprites.push_back(item);
+    world.ui_sprites.emplace_back(UiSpriteItem{.pos = sprite.pos, .size = sprite.size, .tex = sprite.tex, .color = sprite.color});
   }
 
   return world;

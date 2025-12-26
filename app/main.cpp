@@ -39,7 +39,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
 
   Application app(hInstance, window_width, window_height);
   Graphic graphic;
-  graphic.Initalize(app.GetHwnd(), window_width, window_height);
+  graphic.Initialize(app.GetHwnd(), window_width, window_height);
 
   Game game(graphic);
 
@@ -49,6 +49,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
 
   app.Run(OnUpdate, OnFixedUpdate);
 
+  graphic.Shutdown();
   return 0;
 } catch (const std::exception& e) {
   std::cerr << "Exception: " << e.what() << std::endl;

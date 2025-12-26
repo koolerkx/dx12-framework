@@ -27,7 +27,7 @@ struct TexRGBA {
   unsigned char R, G, B, A;
 };
 
-bool Graphic::Initalize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_height) {
+bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_height) {
   frame_buffer_width_ = frame_buffer_width;
   frame_buffer_height_ = frame_buffer_height;
 
@@ -41,7 +41,9 @@ bool Graphic::Initalize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_he
     MessageBoxW(nullptr, L"Graphic: Failed to create device", init_error_caption.c_str(), MB_OK | MB_ICONERROR);
     return false;
   }
-  if (!descriptor_heap_manager_.Initalize(device_.Get())) {
+
+  DescriptorHeapConfig heapConfig;
+  if (!descriptor_heap_manager_.Initialize(device_.Get(), FRAME_BUFFER_COUNT, heapConfig)) {
     MessageBoxW(nullptr, L"Graphic: Failed to initialize descriptor heap manager", init_error_caption.c_str(), MB_OK | MB_ICONERROR);
     return false;
   }
@@ -50,8 +52,8 @@ bool Graphic::Initalize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_he
     MessageBoxW(nullptr, L"Graphic: Failed to create command queue", init_error_caption.c_str(), MB_OK | MB_ICONERROR);
     return false;
   }
-  if (!CreateCommandAllocator()) {
-    MessageBoxW(nullptr, L"Graphic: Failed to create command allocator", init_error_caption.c_str(), MB_OK | MB_ICONERROR);
+  if (!CreateCommandAllocators()) {
+    MessageBoxW(nullptr, L"Graphic: Failed to create command allocators", init_error_caption.c_str(), MB_OK | MB_ICONERROR);
     return false;
   }
   if (!CreateCommandList()) {
@@ -77,6 +79,19 @@ bool Graphic::Initalize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_he
 
   if (!texture_manager_.Initialize(this, device_.Get(), &descriptor_heap_manager_)) {
     return false;
+  }
+
+  if (!frame_cb_storage_.Initialize(device_.Get(), FRAME_BUFFER_COUNT)) return false;
+
+  size_t object_buffer_page_size = 1024 * 1024;  // 1mb per page
+
+  object_cb_allocators_.resize(FRAME_BUFFER_COUNT);
+  for (int i = 0; i < FRAME_BUFFER_COUNT; ++i) {
+    object_cb_allocators_[i] = std::make_unique<DynamicUploadBuffer>();
+    std::wstring bufferName = L"ObjectCB_Frame" + std::to_wstring(i);
+    if (!object_cb_allocators_[i]->Initialize(device_.Get(), object_buffer_page_size, bufferName)) {
+      return false;
+    }
   }
 
   // Draw Triangle
@@ -137,6 +152,7 @@ bool Graphic::Initalize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_he
                         .SetCullMode(D3D12_CULL_MODE_NONE)
                         .SetBlendMode(BlendMode::AlphaBlend)
                         .Build(device_.Get());
+
   } catch (const std::exception& e) {
     std::cerr << "Initialization failed: " << e.what() << std::endl;
     return false;
@@ -158,33 +174,38 @@ bool Graphic::Initalize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_he
     std::vector<std::wstring>{L"Content/textures/metal_plate_diff_1k.png", L"Content/textures/metal_plate_disp_1k.png"});
   myTexture2 = texture_manager_.LoadTexture(L"Content/textures/metal_plate_nor_dx_1k.png");
 
-  // Constant Buffer
-  if (!frameCB_.Create(device_.Get())) {
-    MessageBoxW(nullptr, L"Failed to create frame constant buffer", init_error_caption.c_str(), MB_OK | MB_ICONERROR);
-    return false;
-  }
-
-  if (!objectCB_.Create(device_.Get())) {
-    MessageBoxW(nullptr, L"Failed to create object constant buffer", init_error_caption.c_str(), MB_OK | MB_ICONERROR);
-    return false;
-  }
-
   ui_renderer_ = std::make_unique<UiRenderer>(root_signature_.Get(), pipeline_state_.Get(), &quadMesh_);
 
-  ui_pass_ = std::make_unique<UiPass>(ui_renderer_.get(), this);
+  ui_pass_ = std::make_unique<UiPass>(ui_renderer_.get());
   render_pass_manager_ = std::make_unique<RenderPassManager>();
   render_pass_manager_->SetUiPass(ui_pass_.get());
 
   return true;
 }
 
+void Graphic::Shutdown() {
+  if (command_queue_ && fence_manager_.IsValid()) {
+    fence_manager_.WaitForGpu(command_queue_.Get());
+  }
+}
+
 RenderFrameContext Graphic::BeginFrame() {
-  command_allocator_->Reset();
-  command_list_->Reset(command_allocator_.Get(), nullptr);
+  uint32_t frame_index = swap_chain_manager_.GetCurrentBackBufferIndex();
 
-  descriptor_heap_manager_.BeginFrame();
-  descriptor_heap_manager_.SetDescriptorHeaps(command_list_.Get());
+  // Wait for resource
+  uint64_t fence_value = frame_fence_values_[frame_index];
+  if (fence_value != 0) {
+    fence_manager_.WaitForFenceValue(fence_value);
+  }
 
+  object_cb_allocators_[frame_index]->Reset();  // manually reset for dynamic allocation
+
+  auto* current_allocator = command_allocators_[frame_index].Get();
+  (void)current_allocator->Reset();
+  (void)command_list_->Reset(current_allocator, nullptr);
+
+  descriptor_heap_manager_.BeginFrame(frame_index);
+  descriptor_heap_manager_.SetDescriptorHeaps(command_list_.Get());  // Bind Global Heap
   swap_chain_manager_.TransitionToRenderTarget(command_list_.Get());
 
   D3D12_CPU_DESCRIPTOR_HANDLE rtv = swap_chain_manager_.GetCurrentRTV();
@@ -197,14 +218,16 @@ RenderFrameContext Graphic::BeginFrame() {
   command_list_->RSSetViewports(1, &viewport_);
   command_list_->RSSetScissorRects(1, &scissor_rect_);
 
-  return RenderFrameContext{.frame_index = 0,  // TODO: change to swap_chain_manager_.GetCurrentBackBufferIndex()
+  return RenderFrameContext{.frame_index = frame_index,
     .command_list = command_list_.Get(),
-    .device = device_.Get(),
-    .descriptor_manager = &descriptor_heap_manager_,
 
-    // HACK: consider refactor the location of the constant buffer
-    .frame_cb = &frameCB_,
-    .object_cb = &objectCB_,
+    // Pass the pointer to the specific ConstantBuffer instance
+    .frame_cb = &frame_cb_storage_.GetBuffer(frame_index),
+    .object_cb_allocator = object_cb_allocators_[frame_index].get(),
+
+    .dynamic_allocator = &descriptor_heap_manager_.GetSrvDynamicAllocator(frame_index),
+    .global_heap_manager = &descriptor_heap_manager_,
+
     .screen_width = frame_buffer_width_,
     .screen_height = frame_buffer_height_};
 }
@@ -212,11 +235,14 @@ RenderFrameContext Graphic::BeginFrame() {
 void Graphic::EndFrame(const RenderFrameContext& frame) {
   swap_chain_manager_.TransitionToPresent(frame.command_list);
 
-  frame.command_list->Close();
+  (void)frame.command_list->Close();
   ID3D12CommandList* command_lists[] = {frame.command_list};
   command_queue_->ExecuteCommandLists(1, command_lists);
 
-  fence_manager_.WaitForGpu(command_queue_.Get());
+  uint64_t fence_value = fence_manager_.SignalFence(command_queue_.Get());
+  frame_fence_values_[frame.frame_index] = fence_value;
+  frame_cb_storage_.MarkFrameSubmitted(frame.frame_index, fence_value);
+
   swap_chain_manager_.Present(1, 0);
 }
 
@@ -304,7 +330,9 @@ bool Graphic::CreateCommandQueue() {
 }
 
 bool Graphic::CreateCommandList() {
-  auto hr = device_->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, command_allocator_.Get(), nullptr, IID_PPV_ARGS(&command_list_));
+  auto hr =
+    device_->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, utility_command_allocator_.Get(), nullptr, IID_PPV_ARGS(&command_list_));
+  command_list_->SetName(L"Main_Graphics_CommandList");
 
   if (FAILED(hr) || command_list_ == nullptr) {
     std::cerr << "Failed to create command list." << std::endl;
@@ -315,20 +343,33 @@ bool Graphic::CreateCommandList() {
   return true;
 }
 
-bool Graphic::CreateCommandAllocator() {
-  auto hr = device_->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&command_allocator_));
+bool Graphic::CreateCommandAllocators() {
+  auto hr = device_->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&utility_command_allocator_));
 
-  if (FAILED(hr) || command_allocator_ == nullptr) {
-    std::cerr << "Failed to create command allocator." << std::endl;
+  if (FAILED(hr) || utility_command_allocator_ == nullptr) {
+    std::cerr << "Failed to create utility command allocator" << std::endl;
     return false;
+  }
+  utility_command_allocator_->SetName(L"UtilityCommandAllocator");
+
+  for (int i = 0; i < FRAME_BUFFER_COUNT; ++i) {
+    hr = device_->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&command_allocators_[i]));
+
+    if (FAILED(hr) || command_allocators_[i] == nullptr) {
+      std::cerr << "Failed to create command allocator " << i << std::endl;
+      return false;
+    }
+
+    std::wstring name = L"CommandAllocator_Frame" + std::to_wstring(i);
+    command_allocators_[i]->SetName(name.c_str());
   }
 
   return true;
 }
 
 void Graphic::ExecuteSync(std::function<void(ID3D12GraphicsCommandList*)> cb) {
-  command_allocator_->Reset();
-  command_list_->Reset(command_allocator_.Get(), nullptr);
+  utility_command_allocator_->Reset();
+  command_list_->Reset(utility_command_allocator_.Get(), nullptr);
 
   cb(command_list_.Get());
 
@@ -337,20 +378,4 @@ void Graphic::ExecuteSync(std::function<void(ID3D12GraphicsCommandList*)> cb) {
   command_queue_->ExecuteCommandLists(1, lists);
 
   fence_manager_.WaitForGpu(command_queue_.Get());
-}
-
-// Deprecated
-uint64_t Graphic::ExecuteAsync(std::function<void(ID3D12GraphicsCommandList*)> cb) {
-  std::lock_guard<std::mutex> lock(command_list_mutex_);  // TODO: remove this mutex and assign command allocator for each thread
-
-  command_allocator_->Reset();
-  command_list_->Reset(command_allocator_.Get(), nullptr);
-
-  cb(command_list_.Get());
-
-  command_list_->Close();
-  ID3D12CommandList* lists[] = {command_list_.Get()};
-  command_queue_->ExecuteCommandLists(1, lists);
-
-  return static_cast<uint64_t>(fence_manager_.SignalFence(command_queue_.Get()));
 }

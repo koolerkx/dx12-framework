@@ -1,51 +1,48 @@
 #include "descriptor_heap_manager.h"
 
-#include <cassert>
-#include <iostream>
-#include <mutex>
+bool DescriptorHeapManager::Initialize(ID3D12Device* device, uint32_t frame_count, const DescriptorHeapConfig& config) {
+  config_ = config;
 
-bool DescriptorHeapManager::Initalize(ID3D12Device* device) {
-  assert(device != nullptr);
+  // Independent Heaps
+  if (!rtv_heap_.Initialize(device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, config_.rtv_capacity, false)) return false;
+  if (!dsv_heap_.Initialize(device, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, config_.dsv_capacity, false)) return false;
 
-  if (!rtv_heap_.Initialize(device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, config_.rtv_capacity, false)) {
-    std::cerr << "Failed to initialize RTV heap" << std::endl;
-    return false;
-  }
-  if (!dsv_heap_.Initialize(device, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, config_.dsv_capacity, false)) {
-    std::cerr << "Failed to initialize DSV heap" << std::endl;
-    return false;
-  }
-  if (!srv_heap_.Initialize(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, config_.srv_capacity, true)) {
-    std::cerr << "Failed to initialize SRV heap" << std::endl;
-    return false;
-  }
-  if (!sampler_heap_.Initialize(device, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, config_.sampler_capacity, true)) {
-    std::cerr << "Failed to initialize sampler heap" << std::endl;
-    return false;
+  // Global SRV Heap (The Big One)
+  const uint32_t static_size = config_.srv_static_size;
+  const uint32_t frame_dynamic_size = config_.srv_frame_dynamic_size;
+  const uint32_t total_srv_size = static_size + (frame_dynamic_size * frame_count);
+
+  D3D12_DESCRIPTOR_HEAP_DESC desc = {};
+  desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+  desc.NumDescriptors = total_srv_size;
+  desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+
+  if (FAILED(device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&global_srv_heap_)))) return false;
+  global_srv_heap_->SetName(L"Global_SRV_Heap");
+  rtv_heap_.GetHeap()->SetName(L"RTV_Heap");
+  dsv_heap_.GetHeap()->SetName(L"DSV_Heap");
+
+  uint32_t increment = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+  // Initialize Allocators
+  srv_static_.InitializeSubAllocation(global_srv_heap_.Get(), 0, static_size, increment);
+
+  srv_dynamic_.resize(frame_count);
+  for (uint32_t i = 0; i < frame_count; ++i) {
+    srv_dynamic_[i] = std::make_unique<DescriptorHeapAllocator>();
+    uint32_t offset = static_size + (i * frame_dynamic_size);
+    srv_dynamic_[i]->InitializeSubAllocation(global_srv_heap_.Get(), offset, frame_dynamic_size, increment);
   }
 
   return true;
 }
 
-void DescriptorHeapManager::BeginFrame() {
-  std::lock_guard<std::mutex> lock(begin_frame_mutex_);
-  srv_heap_.Reset();
-  sampler_heap_.Reset();
+void DescriptorHeapManager::BeginFrame(uint32_t frame_index) {
+  // Only reset the dynamic region for this frame
+  srv_dynamic_[frame_index]->Reset();
 }
 
-void DescriptorHeapManager::SetDescriptorHeaps(ID3D12GraphicsCommandList* command_list) {
-  assert(command_list != nullptr);
-
-  ID3D12DescriptorHeap* heaps[] = {srv_heap_.GetHeap(), sampler_heap_.GetHeap()};
-
-  command_list->SetDescriptorHeaps(2, heaps);
-}
-
-void DescriptorHeapManager::PrintStats() const {
-  std::cout << "\n=== Descriptor Heap Statistics ===" << std::endl;
-  std::cout << "RTV Heap: " << rtv_heap_.GetAllocated() << "/" << rtv_heap_.GetCapacity() << std::endl;
-  std::cout << "DSV Heap: " << dsv_heap_.GetAllocated() << "/" << dsv_heap_.GetCapacity() << std::endl;
-  std::cout << "SRV Heap (per-frame): " << srv_heap_.GetAllocated() << "/" << srv_heap_.GetCapacity() << std::endl;
-  std::cout << "Sampler Heap (per-frame): " << sampler_heap_.GetAllocated() << "/" << sampler_heap_.GetCapacity() << std::endl;
-  std::cout << "==================================\n" << std::endl;
+void DescriptorHeapManager::SetDescriptorHeaps(ID3D12GraphicsCommandList* cmdList) {
+  ID3D12DescriptorHeap* heaps[] = {global_srv_heap_.Get()};
+  cmdList->SetDescriptorHeaps(1, heaps);
 }
