@@ -7,13 +7,15 @@
 #include <memory>
 #include <vector>
 
+#include "Core/types.h"
 #include "Texture/texture_manager.h"
+#include "constant_buffers.h"
 #include "depth_buffer.h"
 #include "descriptor_heap_manager.h"
 #include "fence_manager.h"
 #include "mesh.h"
 #include "swapchain_manager.h"
-#include "Core/types.h"
+
 
 class Graphic {
  public:
@@ -73,6 +75,9 @@ class Graphic {
   D3D12_RECT scissor_rect_ = {};
 
   Mesh quadMesh_;
+
+  ConstantBuffer<FrameCB> frameCB_;
+  ConstantBuffer<ObjectCB> objectCB_;
 
   // texture
   TextureManager texture_manager_;

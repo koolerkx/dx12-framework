@@ -44,6 +44,8 @@ set_msvc_runtime(graphic)
 target_add_hlsl_auto(graphic "6.5"
     "${CMAKE_SOURCE_DIR}/shaders/basic.vs.hlsl"
     "${CMAKE_SOURCE_DIR}/shaders/basic.ps.hlsl"
+    "${CMAKE_SOURCE_DIR}/shaders/sprite.vs.hlsl"
+    "${CMAKE_SOURCE_DIR}/shaders/sprite.ps.hlsl"
 )
 
 # manually add shaders files

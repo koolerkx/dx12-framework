@@ -101,3 +101,72 @@ class IndexBuffer : Buffer {
   ComPtr<ID3D12Resource> resource_;
   D3D12_INDEX_BUFFER_VIEW view_;
 };
+
+template <typename T>
+class ConstantBuffer : Buffer {
+ public:
+  ConstantBuffer() : mappedData_(nullptr), bufferSize_(0) {
+  }
+
+  ~ConstantBuffer() {
+    if (resource_ && mappedData_) {
+      resource_->Unmap(0, nullptr);
+      mappedData_ = nullptr;
+    }
+  }
+
+  ConstantBuffer(const ConstantBuffer&) = delete;
+  ConstantBuffer& operator=(const ConstantBuffer&) = delete;
+
+  ConstantBuffer(ConstantBuffer&& other) noexcept
+      : resource_(std::move(other.resource_)), mappedData_(other.mappedData_), bufferSize_(other.bufferSize_) {
+    other.mappedData_ = nullptr;
+    other.bufferSize_ = 0;
+  }
+
+  ConstantBuffer& operator=(ConstantBuffer&& other) noexcept {
+    if (this != &other) {
+      if (resource_ && mappedData_) {
+        resource_->Unmap(0, nullptr);
+      }
+      resource_ = std::move(other.resource_);
+      mappedData_ = other.mappedData_;
+      bufferSize_ = other.bufferSize_;
+      other.mappedData_ = nullptr;
+      other.bufferSize_ = 0;
+    }
+    return *this;
+  }
+
+  bool Create(ID3D12Device* device) {
+    bufferSize_ = (sizeof(T) + 255) & ~255;  // 256 byte alignment
+
+    resource_ = CreateUploadBuffer(device, bufferSize_, nullptr);
+
+    if (!resource_) {
+      return false;
+    }
+
+    HRESULT hr = resource_->Map(0, nullptr, reinterpret_cast<void**>(&mappedData_));
+    return SUCCEEDED(hr);
+  }
+
+  void Update(const T& data) {
+    if (mappedData_) {
+      memcpy(mappedData_, &data, sizeof(T));
+    }
+  }
+
+  D3D12_GPU_VIRTUAL_ADDRESS GetGPUAddress() const {
+    return resource_ ? resource_->GetGPUVirtualAddress() : 0;
+  }
+
+  ID3D12Resource* GetResource() const {
+    return resource_.Get();
+  }
+
+ private:
+  ComPtr<ID3D12Resource> resource_;
+  T* mappedData_;
+  size_t bufferSize_;
+};

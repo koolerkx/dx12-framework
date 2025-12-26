@@ -79,10 +79,10 @@ bool Graphic::Initalize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_he
 
   // Draw Triangle
   Vertex vertices[] = {
-    {{-0.4f, -0.7f, 0.0f}, {0.0f, 1.0f}},  // 左下
-    {{-0.4f, 0.7f, 0.0f}, {0.0f, 0.0f}},   // 左上
-    {{0.4f, -0.7f, 0.0f}, {1.0f, 1.0f}},   // 右下
-    {{0.4f, 0.7f, 0.0f}, {1.0f, 0.0f}},    // 右上
+    {{-0.5f, -0.5f, 0.0f}, {0.0f, 1.0f}},  // LB
+    {{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f}},   // LT
+    {{0.5f, -0.5f, 0.0f}, {1.0f, 1.0f}},   // RB
+    {{0.5f, 0.5f, 0.0f}, {1.0f, 0.0f}},    // RT
   };
 
   uint16_t indices[] = {0, 1, 2, 2, 1, 3};
@@ -97,11 +97,11 @@ bool Graphic::Initalize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_he
   ComPtr<ID3DBlob> vsBlob;
   ComPtr<ID3DBlob> psBlob;
 
-  if (FAILED(D3DReadFileToBlob(L"Content/shaders/basic.vs.cso", &vsBlob))) {
+  if (FAILED(D3DReadFileToBlob(L"Content/shaders/sprite.vs.cso", &vsBlob))) {
     throw std::runtime_error("Failed to read vertex shader");
   }
 
-  if (FAILED(D3DReadFileToBlob(L"Content/shaders/basic.ps.cso", &psBlob))) {
+  if (FAILED(D3DReadFileToBlob(L"Content/shaders/sprite.ps.cso", &psBlob))) {
     throw std::runtime_error("Failed to read pixel shader");
   }
 
@@ -115,12 +115,14 @@ bool Graphic::Initalize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_he
     uint32_t srv_capacity = 4096;
     root_signature_ = RootSignatureBuilder()
                         .AllowInputLayout()
+                        .AddRootCBV(0, 0)         // FrameCB
+                        .AddRootCBV(1, 0)         // ObjectCB
+                        .Add32BitConstants(1, 2)  // texture bindless id
                         .AddDescriptorTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
                           srv_capacity,
                           0,  // register(t0)
                           1,
                           D3D12_SHADER_VISIBILITY_ALL)
-                        .Add32BitConstants(1, 0)
                         .AddStaticSampler(SamplerPresets::CreatePointSampler(0))
                         .Build(device_.Get());
 
@@ -153,6 +155,18 @@ bool Graphic::Initalize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_he
   myTexture = texture_manager_.LoadTextures(
     std::vector<std::wstring>{L"Content/textures/metal_plate_diff_1k.png", L"Content/textures/metal_plate_disp_1k.png"});
   myTexture2 = texture_manager_.LoadTexture(L"Content/textures/metal_plate_nor_dx_1k.png");
+
+  // Constant Buffer
+  if (!frameCB_.Create(device_.Get())) {
+    MessageBoxW(nullptr, L"Failed to create frame constant buffer", init_error_caption.c_str(), MB_OK | MB_ICONERROR);
+    return false;
+  }
+
+  if (!objectCB_.Create(device_.Get())) {
+    MessageBoxW(nullptr, L"Failed to create object constant buffer", init_error_caption.c_str(), MB_OK | MB_ICONERROR);
+    return false;
+  }
+
   return true;
 }
 
@@ -178,25 +192,54 @@ void Graphic::BeginRender() {
   command_list_->OMSetRenderTargets(1, &rtv, FALSE, &dsv);
 
   // Drawing Logic
-  command_list_->SetPipelineState(pipeline_state_.Get());
-  command_list_->RSSetViewports(1, &viewport_);
-  command_list_->RSSetScissorRects(1, &scissor_rect_);
+
   command_list_->SetGraphicsRootSignature(root_signature_.Get());
+  command_list_->SetPipelineState(pipeline_state_.Get());
 
   command_list_->SetGraphicsRootDescriptorTable(
-    0, descriptor_heap_manager_.GetSrvAllocator().GetHeap()->GetGPUDescriptorHandleForHeapStart());
+    3, descriptor_heap_manager_.GetSrvAllocator().GetHeap()->GetGPUDescriptorHandleForHeapStart());
   command_list_->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
+  // --------------------------------------------
+
+  FrameCB frameCBData = {};
+  XMMATRIX view = XMMatrixIdentity();
+  XMMATRIX proj = XMMatrixOrthographicOffCenterLH(0.0f,  // Left
+    static_cast<float>(frame_buffer_width_),             // Right
+    static_cast<float>(frame_buffer_height_),            // Bottom
+    0.0f,                                                // Top
+    0.0f,                                                // Near plane
+    1.0f                                                 // Far plane
+  );
+
+  XMMATRIX viewProj = view * proj;
+
+  XMStoreFloat4x4(&frameCBData.view, XMMatrixTranspose(view));
+  XMStoreFloat4x4(&frameCBData.proj, XMMatrixTranspose(proj));
+  XMStoreFloat4x4(&frameCBData.viewProj, XMMatrixTranspose(viewProj));
+
+  frameCBData.cameraPos = XMFLOAT3(0.0f, 0.0f, 0.0f);
+  frameCBData.time = 0.0f;
+  frameCBData.screenSize = XMFLOAT2(static_cast<float>(frame_buffer_width_), static_cast<float>(frame_buffer_height_));
+  frameCB_.Update(frameCBData);
+
+  ObjectCB objData = {};
+
+  XMMATRIX scale = XMMatrixScaling(200.0f, 200.0f, 1.0f);
+  XMMATRIX translation = XMMatrixTranslation(300.0f, 300.0f, 0.0f);
+  XMMATRIX world = scale * translation;
+  XMMATRIX wvp = world * viewProj;
+
+  XMStoreFloat4x4(&objData.world, XMMatrixTranspose(world));
+  XMStoreFloat4x4(&objData.worldViewProj, XMMatrixTranspose(wvp));
+  objData.color = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+
+  objectCB_.Update(objData);
+  command_list_->SetGraphicsRootConstantBufferView(1, objectCB_.GetGPUAddress());
+
   uint32_t indexA = myTexture[0]->GetBindlessIndex();
-  command_list_->SetGraphicsRoot32BitConstants(1, 1, &indexA, 0);
-  quadMesh_.Draw(command_list_.Get());
+  command_list_->SetGraphicsRoot32BitConstants(2, 1, &indexA, 0);
 
-  uint32_t indexB = myTexture[1]->GetBindlessIndex();
-  command_list_->SetGraphicsRoot32BitConstants(1, 1, &indexB, 0);
-  quadMesh_.Draw(command_list_.Get());
-
-  uint32_t indexC = myTexture2->GetBindlessIndex();
-  command_list_->SetGraphicsRoot32BitConstants(1, 1, &indexC, 0);
   quadMesh_.Draw(command_list_.Get());
 }
 
