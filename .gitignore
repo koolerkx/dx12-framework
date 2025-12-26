@@ -2,6 +2,7 @@
 ## build file
 [Oo]ut/
 [Bb]uild/
+[Ss]cripts/
 
 # shader
 *.cso
