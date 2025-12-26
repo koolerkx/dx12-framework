@@ -1,5 +1,6 @@
 #pragma once
 
+#include <dxgiformat.h>
 #include <windows.h>
 
 #include <stdexcept>
@@ -43,5 +44,22 @@ inline std::string wstring_to_utf8(const std::wstring& wstr) {
   std::string utf8_str(size_needed, 0);
   WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), (int)wstr.size(), &utf8_str[0], size_needed, NULL, NULL);
   return utf8_str;
+}
+
+inline const std::string GetDxgiFormatName(DXGI_FORMAT format) {
+  switch (format) {
+    case DXGI_FORMAT_R8G8B8A8_UNORM:
+      return "R8G8B8A8_UNORM";  // 28
+    case DXGI_FORMAT_R16G16B16A16_UNORM:
+      return "R16G16B16A16_UNORM";  // 11
+    case DXGI_FORMAT_R16_UNORM:
+      return "R16_UNORM";  // 56
+    case DXGI_FORMAT_R8_UNORM:
+      return "R8_UNORM";  // 61
+    case DXGI_FORMAT_B8G8R8A8_UNORM:
+      return "B8G8R8A8_UNORM";  // 87
+    default:
+      return "UNKNOWN";
+  }
 }
 }  // namespace utils

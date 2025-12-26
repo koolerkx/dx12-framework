@@ -9,9 +9,9 @@
 #include <iostream>
 
 #include "Application/Application.h"
+#include "Core/utils.h"
 #include "Game/game.h"
 #include "Graphic/graphic.h"
-#include "Core/utils.h"
 
 template <typename T>
 using ComPtr = Microsoft::WRL::ComPtr<T>;
@@ -34,7 +34,8 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
   [[maybe_unused]] HINSTANCE hPrevInstance,
   [[maybe_unused]] PWSTR lpCmdLine,
   [[maybe_unused]] int nCmdShow) try {
-  SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+  (void)CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+  (void)SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
   Application app(hInstance, window_width, window_height);
   Graphic graphic;

@@ -33,6 +33,7 @@ class Graphic {
   void ExecuteSync(std::function<void(ID3D12GraphicsCommandList*)> cb);
 
   /**
+   * @deprecated should not use async at this moment
    * @brief This function will execute a command list, the command list will record by caller in cb.
    * This function run asynchronously, it won't wait for GPU to finish. So be remind that cleanup should not do immediately and wait for gpu
    * before next step.
@@ -76,6 +77,7 @@ class Graphic {
   // texture
   TextureManager texture_manager_;
   std::vector<std::shared_ptr<Texture>> myTexture;
+  std::shared_ptr<Texture> myTexture2;
 
   // Initialization
   bool EnableDebugLayer();

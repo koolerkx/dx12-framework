@@ -1,8 +1,6 @@
 include(shader)
 
 add_library(graphic STATIC
-    WICTextureLoader12.h
-    WICTextureLoader12.cpp
     graphic.cpp
     graphic.h
     d3dx12.h
@@ -56,3 +54,15 @@ target_add_hlsl_auto(graphic "6.5"
 #     "${CMAKE_SOURCE_DIR}/shaders/basic_ps.hlsl"
 # )
 
+# Require CMake 3.11
+include(FetchContent)
+
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "MSVC Runtime Library")
+
+FetchContent_Declare(
+    DirectXTex
+    GIT_REPOSITORY https://github.com/microsoft/DirectXTex.git
+    GIT_TAG oct2025
+)
+FetchContent_MakeAvailable(DirectXTex)
+target_link_libraries(graphic PUBLIC DirectXTex)

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <DirectXTex.h>
 #include <d3d12.h>
 
 #include <cstdint>
@@ -8,9 +9,9 @@
 #include <unordered_map>
 #include <vector>
 
-#include "descriptor_heap_manager.h"
 #include "Core/types.h"
 #include "Core/utils.h"
+#include "descriptor_heap_manager.h"
 
 class Graphic;
 
@@ -60,9 +61,16 @@ class TextureManager {
   std::mutex upload_mutex_;
   std::vector<ComPtr<ID3D12Resource>> upload_buffers_;
 
-  bool TextureUpload(const std::wstring& path,
-    ComPtr<ID3D12Resource>& textureUpload,
-    D3D12_PLACED_SUBRESOURCE_FOOTPRINT& footprint,
-    ComPtr<ID3D12Resource>& texture_buffer_);
+  struct UploadInfo {
+    ComPtr<ID3D12Resource> upload_buffer;
+    std::vector<D3D12_SUBRESOURCE_DATA> subresources;
+  };
+
+  bool LoadAndGenerateMipmaps(const std::wstring& path, DirectX::ScratchImage& mipChain);
+
+  bool CreateTextureResource(const DirectX::TexMetadata& metadata, ComPtr<ID3D12Resource>& texture);
+
+  bool PrepareUpload(const DirectX::ScratchImage& mipChain, ComPtr<ID3D12Resource> texture, UploadInfo& uploadInfo);
+
   uint32_t CreateSrv(ComPtr<ID3D12Resource> texture_buffer);
 };

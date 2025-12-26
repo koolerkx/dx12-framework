@@ -14,7 +14,6 @@
 #include "pipeline_state_builder.h"
 #include "root_signature_builder.h"
 
-
 using namespace DirectX;
 
 struct Vertex {
@@ -151,17 +150,9 @@ bool Graphic::Initalize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_he
   scissor_rect_.right = scissor_rect_.left + frame_buffer_width_;   // 切り抜き右座標
   scissor_rect_.bottom = scissor_rect_.top + frame_buffer_height_;  // 切り抜き下座標
 
-  command_allocator_->Reset();
-  command_list_->Reset(command_allocator_.Get(), nullptr);
-
   myTexture = texture_manager_.LoadTextures(
     std::vector<std::wstring>{L"Content/textures/metal_plate_diff_1k.png", L"Content/textures/metal_plate_disp_1k.png"});
-
-  command_list_->Close();
-  ID3D12CommandList* cmds[] = {command_list_.Get()};
-  command_queue_->ExecuteCommandLists(1, cmds);
-  fence_manager_.WaitForGpu(command_queue_.Get());
-
+  myTexture2 = texture_manager_.LoadTexture(L"Content/textures/metal_plate_nor_dx_1k.png");
   return true;
 }
 
@@ -202,6 +193,10 @@ void Graphic::BeginRender() {
 
   uint32_t indexB = myTexture[1]->GetBindlessIndex();
   command_list_->SetGraphicsRoot32BitConstants(1, 1, &indexB, 0);
+  quadMesh_.Draw(command_list_.Get());
+
+  uint32_t indexC = myTexture2->GetBindlessIndex();
+  command_list_->SetGraphicsRoot32BitConstants(1, 1, &indexC, 0);
   quadMesh_.Draw(command_list_.Get());
 }
 
@@ -333,6 +328,7 @@ void Graphic::ExecuteSync(std::function<void(ID3D12GraphicsCommandList*)> cb) {
   fence_manager_.WaitForGpu(command_queue_.Get());
 }
 
+// Deprecated
 uint64_t Graphic::ExecuteAsync(std::function<void(ID3D12GraphicsCommandList*)> cb) {
   std::lock_guard<std::mutex> lock(command_list_mutex_);  // TODO: remove this mutex and assign command allocator for each thread
 
