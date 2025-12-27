@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "Core/types.h"
+#include "frame_packet.h"
 #include "pipeline_state_builder.h"
 #include "root_signature_builder.h"
 
@@ -182,6 +183,11 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
 void Graphic::Shutdown() {
   if (command_queue_ && fence_manager_.IsValid()) {
     fence_manager_.WaitForGpu(command_queue_.Get());
+
+    uint64_t completed = fence_manager_.GetCompletedFenceValue();
+    texture_manager_.ProcessDeferredFrees(completed);
+
+    texture_manager_.CleanUploadBuffers();
   }
 }
 
@@ -193,6 +199,9 @@ RenderFrameContext Graphic::BeginFrame() {
   if (fence_value != 0) {
     fence_manager_.WaitForFenceValue(fence_value);
   }
+
+  uint64_t completed_fence = fence_manager_.GetCompletedFenceValue();
+  texture_manager_.ProcessDeferredFrees(completed_fence);
 
   object_cb_allocators_[frame_index]->Reset();  // manually reset for dynamic allocation
 
@@ -239,10 +248,12 @@ void Graphic::EndFrame(const RenderFrameContext& frame) {
   frame_fence_values_[frame.frame_index] = fence_value;
   frame_cb_storage_.MarkFrameSubmitted(frame.frame_index, fence_value);
 
+  texture_manager_.CleanUploadBuffers();
+
   swap_chain_manager_.Present(1, 0);
 }
 
-void Graphic::RenderScene(const RenderFrameContext& frame, const RenderWorld& world) {
+void Graphic::RenderScene(const RenderFrameContext& frame, const FramePacket& world) {
   render_pass_manager_->Execute(frame, world);
 }
 

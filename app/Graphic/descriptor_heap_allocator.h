@@ -2,10 +2,11 @@
 #include <d3d12.h>
 
 #include <cstdint>
+#include <deque>
 #include <mutex>
+#include <vector>
 
 #include "Core/types.h"
-
 
 class DescriptorHeapAllocator {
  public:
@@ -19,6 +20,20 @@ class DescriptorHeapAllocator {
     }
   };
 
+  struct FreeBlock {
+    uint32_t offset;
+    uint32_t size;
+    bool operator<(const FreeBlock& other) const {
+      return offset < other.offset;
+    }
+  };
+
+  struct DeferredFree {
+    uint32_t offset;
+    uint32_t count;
+    uint64_t fence_value;
+  };
+
   DescriptorHeapAllocator() = default;
 
   // Mode 1: Create its own heap (Used for RTV/DSV)
@@ -28,6 +43,13 @@ class DescriptorHeapAllocator {
   void InitializeSubAllocation(ID3D12DescriptorHeap* heap, uint32_t offset, uint32_t capacity, uint32_t descriptor_size);
 
   Allocation Allocate(uint32_t count = 1);
+
+  // Immediate free - caller guarantees GPU is done with these descriptors
+  void FreeImmediate(uint32_t offset, uint32_t count);
+
+  // Periodic cleanup to reduce fragmentation
+  void CoalesceFreeBlocks();
+
   void Reset();  // Only resets the allocation pointer, does not free memory
 
   ID3D12DescriptorHeap* GetHeap() const {
@@ -49,4 +71,7 @@ class DescriptorHeapAllocator {
   // For calculating absolute handles
   D3D12_CPU_DESCRIPTOR_HANDLE GetCpuHandle(uint32_t offset_index) const;
   D3D12_GPU_DESCRIPTOR_HANDLE GetGpuHandle(uint32_t offset_index) const;
+
+  std::vector<FreeBlock> free_list_;
+  void AddToFreeList(uint32_t offset, uint32_t count);
 };

@@ -1,17 +1,8 @@
 #pragma once
 #include <d3d12.h>
 
-#include <vector>
-
+#include "frame_packet.h"
 #include "render_frame_context.h"
-#include "render_world.h"
-
-struct UiDrawPacket {
-  float2 pos;
-  float2 size;
-  TextureHandle texture;
-  float4 color;
-};
 
 class Mesh;
 
@@ -19,8 +10,11 @@ class UiRenderer {
  public:
   UiRenderer(ID3D12RootSignature* root_sig, ID3D12PipelineState* pso, Mesh* quad_mesh);
 
-  void Build(const RenderWorld& world, std::vector<UiDrawPacket>& out);
-  void Record(const RenderFrameContext& frame, const std::vector<UiDrawPacket>& packets, uint32_t screen_width, uint32_t screen_height);
+  // Build: Handles sorting (z-order/layer)
+  void Build(const FramePacket& packet, std::vector<UiDrawCommand>& out_cache);
+
+  // Record: Issues draw calls to the CommandList
+  void Record(const RenderFrameContext& frame, const std::vector<UiDrawCommand>& commands, uint32_t screen_width, uint32_t screen_height);
 
  private:
   ID3D12RootSignature* root_signature_;

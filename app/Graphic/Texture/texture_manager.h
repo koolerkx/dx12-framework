@@ -41,6 +41,15 @@ class TextureManager {
     upload_buffers_.clear();
   }
 
+  void UnloadTexture(const std::wstring& path);
+  void UnloadTexture(const std::shared_ptr<Texture>& texture) {
+    if (!texture || texture->source_path.empty()) return;
+    UnloadTexture(texture->source_path);
+  }
+
+  // Called every frame to free resources that GPU is done with
+  void ProcessDeferredFrees(uint64_t completed_fence_value);
+
  private:
   Graphic* graphic_ = nullptr;
   ComPtr<ID3D12Device> device_ = nullptr;
@@ -65,4 +74,13 @@ class TextureManager {
   bool PrepareUpload(const DirectX::ScratchImage& mipChain, ComPtr<ID3D12Resource> texture, UploadInfo& uploadInfo);
 
   uint32_t CreateSrv(ComPtr<ID3D12Resource> texture_buffer);
+
+  struct PendingDelete {
+    std::shared_ptr<Texture> texture;  // Keep texture alive
+    uint32_t descriptor_index;         // Which descriptor to free
+    uint64_t fence_value;              // When GPU will be done with it
+  };
+
+  std::mutex texture_mutex_;  // Protects cache and pending deletes
+  std::vector<PendingDelete> pending_deletes_;
 };

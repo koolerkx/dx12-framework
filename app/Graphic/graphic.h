@@ -14,6 +14,7 @@
 #include "descriptor_heap_manager.h"
 #include "dynamic_upload_buffer.h"
 #include "fence_manager.h"
+#include "frame_packet.h"
 #include "mesh.h"
 #include "per_frame_constant_buffer.h"
 #include "render_frame_context.h"
@@ -21,6 +22,7 @@
 #include "swapchain_manager.h"
 #include "ui_pass.h"
 #include "ui_renderer.h"
+
 
 class Graphic {
  public:
@@ -39,12 +41,16 @@ class Graphic {
 
   RenderFrameContext BeginFrame();
   void EndFrame(const RenderFrameContext& frame);
-  void RenderScene(const RenderFrameContext& frame, const RenderWorld& world);
+  void RenderScene(const RenderFrameContext& frame, const FramePacket& world);
 
   static constexpr int FRAME_BUFFER_COUNT = 2;
 
   TextureManager& GetTextureManager() {
     return texture_manager_;
+  }
+
+  FenceManager& GetFenceManager() {
+    return fence_manager_;
   }
 
  private:

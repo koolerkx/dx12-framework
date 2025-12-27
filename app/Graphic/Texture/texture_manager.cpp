@@ -119,6 +119,7 @@ bool TextureManager::PrepareUpload(const DirectX::ScratchImage& mipChain, ComPtr
 
 uint32_t TextureManager::CreateSrv(ComPtr<ID3D12Resource> texture_buffer) {
   auto allocation = heap_manager_->GetSrvStaticAllocator().Allocate(1);
+
   D3D12_RESOURCE_DESC texDesc = texture_buffer->GetDesc();
   D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
   srvDesc.Format = texDesc.Format;                                             // DXGI_FORMAT_R8G8B8A8_UNORM; //RGBA(0.0f～1.0fに正規化)
@@ -175,6 +176,7 @@ std::shared_ptr<Texture> TextureManager::LoadTexture(const std::wstring& path) {
   auto texture = std::make_shared<Texture>();
   texture->resource = texture_buffer;
   texture->srv_index = CreateSrv(texture_buffer);  // important: this is the bindless index
+  texture->source_path = path;
   texture_cache_[path] = texture;
 
   D3D12_RESOURCE_DESC texDesc = texture_buffer->GetDesc();
@@ -238,6 +240,7 @@ std::vector<std::shared_ptr<Texture>> TextureManager::LoadTextures(const std::ve
     auto texture = std::make_shared<Texture>();
     texture->resource = task.texture_buffer;
     texture->srv_index = CreateSrv(task.texture_buffer);
+    texture->source_path = task.path;
     texture_cache_[task.path] = texture;
     results.push_back(texture);
 
@@ -251,4 +254,54 @@ std::vector<std::shared_ptr<Texture>> TextureManager::LoadTextures(const std::ve
   }
 
   return results;
+}
+
+void TextureManager::UnloadTexture(const std::wstring& path) {
+  std::lock_guard<std::mutex> lock(texture_mutex_);
+
+  auto it = texture_cache_.find(path);
+  if (it == texture_cache_.end()) {
+    return;
+  }
+
+  // Safety check: Only unload if this is the last reference
+  // ref_count > 1: other GameObjects/ Handler are still using this texture
+  if (long ref_count = it->second.use_count(); ref_count > 1) {
+    std::cerr << "[TextureManager] WARNING: Cannot unload \"" << utils::wstring_to_utf8(path) << "\" - still has " << (ref_count - 1)
+              << " external references (must be exactly 1 to unload)" << std::endl;
+    return;
+  }
+
+  // Get safe fence value: current + buffer frames
+  // This ensures all frames that might be using this texture will complete
+  uint64_t current_fence = graphic_->GetFenceManager().GetCurrentFenceValue();
+  uint64_t safe_fence = current_fence + Graphic::FRAME_BUFFER_COUNT;
+
+  pending_deletes_.push_back({it->second, it->second->srv_index, safe_fence});
+
+  texture_cache_.erase(it);
+}
+
+void TextureManager::ProcessDeferredFrees(uint64_t completed_fence_value) {
+  std::lock_guard<std::mutex> lock(texture_mutex_);
+
+  auto& allocator = heap_manager_->GetSrvStaticAllocator();
+
+  auto it = pending_deletes_.begin();
+  while (it != pending_deletes_.end()) {
+    if (it->fence_value <= completed_fence_value) {
+      allocator.FreeImmediate(it->descriptor_index, 1);
+
+      it = pending_deletes_.erase(it);
+    } else {
+      ++it;
+    }
+  }
+
+  // Periodic defragmentation
+  static uint32_t free_counter = 0;
+  if (++free_counter >= 16) {
+    allocator.CoalesceFreeBlocks();
+    free_counter = 0;
+  }
 }

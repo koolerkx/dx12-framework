@@ -33,7 +33,7 @@ add_library(graphic STATIC
     Texture/texture_manager.h
     Texture/texture_manager.cpp
 
-    render_world.h
+    frame_packet.h
     ui_renderer.h
     ui_renderer.cpp
     render_pass_manager.h

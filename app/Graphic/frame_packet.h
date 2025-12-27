@@ -1,0 +1,43 @@
+#pragma once
+#include <DirectXMath.h>
+
+#include <vector>
+
+struct Texture;
+
+enum class RenderPassTag {
+  Ui,                // Used for HUD, Menus (Overlay)
+  WorldOpaque,       // Used for solid sprites in the world
+  WorldTransparent,  // Used for alpha-blended sprites with depth
+  Debug              // Used for engine tools/gizmos
+};
+
+struct RenderCommandBase {
+  DirectX::XMFLOAT4X4 world_matrix;
+};
+
+// Data specifically for UI rendering
+struct UiDrawCommand : public RenderCommandBase {
+  DirectX::XMFLOAT2 size;
+  DirectX::XMFLOAT4 color;
+  Texture* texture = nullptr;
+  int layer_id = 0;
+};
+
+// Data specifically for 3D Opaque rendering
+struct MeshDrawCommand : public RenderCommandBase {
+  // TODO: Mesh* mesh;
+  // TODO: Material* material;
+};
+
+// The packet sent from Scene to Renderer
+struct FramePacket {
+  std::vector<MeshDrawCommand> opaque_pass;
+  std::vector<UiDrawCommand> ui_pass;
+  // TODO: std::vector<MeshDrawCommand> transparent_pass;
+
+  void Clear() {
+    opaque_pass.clear();
+    ui_pass.clear();
+  }
+};

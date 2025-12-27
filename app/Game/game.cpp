@@ -1,41 +1,50 @@
 #include "game.h"
 
+#include "Scenes/test_scene/test_scene.h"
+
 Game::Game(Graphic& graphic) : graphic_(graphic) {
 }
 
 Game::~Game() {
-  if (current_scene_) {
-    current_scene_->OnExit();
-  }
+  Shutdown();
 }
 
 void Game::Initialize() {
   current_scene_ = std::make_unique<TestScene>();
 
   if (current_scene_) {
-    current_scene_->OnEnter(graphic_);
+    current_scene_->Enter(graphic_);
+  }
+}
+
+void Game::Shutdown() {
+  if (current_scene_) {
+    current_scene_->Exit();
+    current_scene_.reset();
   }
 }
 
 void Game::OnUpdate(float dt) {
   if (current_scene_) {
-    current_scene_->OnUpdate(dt);
+    current_scene_->Update(dt);
   }
 }
 
-void Game::OnFixedUpdate(float) {
+void Game::OnFixedUpdate(float dt) {
+  if (current_scene_) {
+    current_scene_->FixedUpdate(dt);
+  }
 }
 
 void Game::OnRender() {
-  render_world_.ui_sprites.clear();
+  frame_packet_.Clear();
 
   RenderFrameContext frame_context = graphic_.BeginFrame();
 
   if (current_scene_) {
-    current_scene_->OnRender(render_world_);
+    current_scene_->Render(frame_packet_);
   }
 
-  graphic_.RenderScene(frame_context, render_world_);
-
+  graphic_.RenderScene(frame_context, frame_packet_);
   graphic_.EndFrame(frame_context);
 }

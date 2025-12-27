@@ -5,9 +5,13 @@
 UiPass::UiPass(UiRenderer* renderer) : ui_renderer_(renderer) {
 }
 
-void UiPass::Execute(const RenderFrameContext& frame, const RenderWorld& world) {
+void UiPass::Execute(const RenderFrameContext& frame, const FramePacket& packet) {
+  // Clear cache for safety, though Build usually clears it
   packet_cache_.clear();
 
-  ui_renderer_->Build(world, packet_cache_);
+  // Extract and Sort UI commands from the FramePacket
+  ui_renderer_->Build(packet, packet_cache_);
+
+  // Execute Draw Calls
   ui_renderer_->Record(frame, packet_cache_, frame.screen_width, frame.screen_height);
 }

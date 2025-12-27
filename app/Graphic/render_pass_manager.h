@@ -1,12 +1,12 @@
 #pragma once
+#include "frame_packet.h"
 #include "render_frame_context.h"
-#include "render_world.h"
 
 class UiPass;
 
 class RenderPassManager {
  public:
-  void Execute(const RenderFrameContext& frame, const RenderWorld& world);
+  void Execute(const RenderFrameContext& frame, const FramePacket& packet);
 
   void SetUiPass(UiPass* pass) {
     ui_pass_ = pass;

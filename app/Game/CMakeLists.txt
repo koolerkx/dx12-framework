@@ -4,6 +4,21 @@ add_library(game STATIC
 
     scene.h
     scene.cpp
+
+    game_object.h
+    game_object.cpp
+
+    Component/component.h
+    Component/transform_component.h
+    Component/transform_component.cpp
+
+    Event/event.h
+
+    Scenes/test_scene/test_scene.h
+    Scenes/test_scene/test_scene.cpp
+    Scenes/test_scene/character_mover_component.h
+    Scenes/test_scene/character_mover_component.cpp
+
 )
 
 set_msvc_runtime(game)

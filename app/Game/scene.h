@@ -1,49 +1,46 @@
 #pragma once
-#include <DirectXMath.h>
-
 #include <memory>
+#include <vector>
 
-#include "render_world.h"
+#include "Graphic/frame_packet.h"
+#include "game_object.h"
+#include "graphic.h"
 
-class Graphic;
-struct Texture;
+class World;
 
 class IScene {
  public:
   virtual ~IScene() = default;
 
-  // Load textures/assets
   virtual void OnEnter(Graphic& graphic) = 0;
-
-  // Called every frame
-  virtual void OnUpdate(float dt) = 0;
-
-  // Called every tick
-  virtual void OnFixedUpdate(float dt) = 0;
-
-  // Push the data to render
-  virtual void OnRender(RenderWorld& world) = 0;
-
-  // Release unique resources
   virtual void OnExit() = 0;
-};
 
-class TestScene : public IScene {
- public:
-  TestScene() = default;
-  virtual ~TestScene() = default;
+  // Scene Global Update Functions
+  virtual void OnPreUpdate(float dt) {
+  }
+  virtual void OnPostUpdate(float dt) {
+  }
+  virtual void OnPreFixedUpdate(float dt) {
+  }
+  virtual void OnPostFixedUpdate(float dt) {
+  }
 
-  void OnEnter(Graphic& graphic) override;
-  void OnUpdate(float dt) override;
-  void OnFixedUpdate(float) override {};
-  void OnRender(RenderWorld& world) override;
-  void OnExit() override;
+  // System Update Functions, this update game objects and components
+  void Enter(Graphic& graphic);
+  void Exit();
+  void Update(float dt);
+  void FixedUpdate(float dt);
+  void Render(FramePacket& packet);
+
+ protected:
+  GameObject* CreateGameObject(const std::string& name = "GameObject");
 
  private:
-  // Scene-specific resources
-  std::shared_ptr<Texture> texture_background_;
-  std::shared_ptr<Texture> texture_character_;
+  std::vector<std::unique_ptr<GameObject>> game_objects_;
+  bool is_started_ = false;
 
-  // Simple game state
-  DirectX::XMFLOAT2 character_pos_ = {0.0f, 0.0f};
+  void UpdateRootObjects(float dt);
+  void FixedUpdateRootObjects(float dt);
+  void RenderRootObjects(FramePacket& packet);
+  void StartAllObjects();
 };
