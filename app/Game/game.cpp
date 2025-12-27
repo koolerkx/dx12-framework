@@ -10,10 +10,11 @@ Game::~Game() {
 }
 
 void Game::Initialize() {
-  current_scene_ = std::make_unique<TestScene>();
+  asset_manager_.Initialize(&graphic_);
 
+  current_scene_ = std::make_unique<TestScene>();
   if (current_scene_) {
-    current_scene_->Enter(graphic_);
+    current_scene_->Enter(asset_manager_);
   }
 }
 

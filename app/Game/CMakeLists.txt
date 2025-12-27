@@ -5,6 +5,10 @@ add_library(game STATIC
     scene.h
     scene.cpp
 
+    Asset/asset_handle.h
+    Asset/asset_manager.h
+    Asset/asset_manager.cpp
+
     game_object.h
     game_object.cpp
 
@@ -18,7 +22,6 @@ add_library(game STATIC
     Scenes/test_scene/test_scene.cpp
     Scenes/test_scene/character_mover_component.h
     Scenes/test_scene/character_mover_component.cpp
-
 )
 
 set_msvc_runtime(game)

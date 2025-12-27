@@ -4,29 +4,28 @@
 
 #include "Graphic/frame_packet.h"
 #include "game_object.h"
-#include "graphic.h"
 
-class World;
+class AssetManager;
 
 class IScene {
  public:
   virtual ~IScene() = default;
 
-  virtual void OnEnter(Graphic& graphic) = 0;
+  virtual void OnEnter(AssetManager& asset_manager) = 0;
   virtual void OnExit() = 0;
 
   // Scene Global Update Functions
-  virtual void OnPreUpdate(float dt) {
+  virtual void OnPreUpdate(float /*dt*/) {
   }
-  virtual void OnPostUpdate(float dt) {
+  virtual void OnPostUpdate(float /*dt*/) {
   }
-  virtual void OnPreFixedUpdate(float dt) {
+  virtual void OnPreFixedUpdate(float /*dt*/) {
   }
-  virtual void OnPostFixedUpdate(float dt) {
+  virtual void OnPostFixedUpdate(float /*dt*/) {
   }
 
   // System Update Functions, this update game objects and components
-  void Enter(Graphic& graphic);
+  void Enter(AssetManager& asset_manager);
   void Exit();
   void Update(float dt);
   void FixedUpdate(float dt);

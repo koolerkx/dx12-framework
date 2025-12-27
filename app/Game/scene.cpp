@@ -22,8 +22,8 @@ void IScene::StartAllObjects() {
   is_started_ = true;
 }
 
-void IScene::Enter(Graphic& graphic) {
-  OnEnter(graphic);
+void IScene::Enter(AssetManager& asset_manager) {
+  OnEnter(asset_manager);
   StartAllObjects();
 }
 

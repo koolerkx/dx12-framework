@@ -2,6 +2,7 @@
 #pragma once
 #include <memory>
 
+#include "Asset/asset_manager.h"
 #include "Graphic/frame_packet.h"
 #include "Graphic/graphic.h"
 #include "scene.h"
@@ -20,6 +21,7 @@ class Game {
 
  private:
   Graphic& graphic_;
+  AssetManager asset_manager_;
   std::unique_ptr<IScene> current_scene_;
   FramePacket frame_packet_;
 };
