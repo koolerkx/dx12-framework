@@ -6,6 +6,7 @@ add_library(framework INTERFACE
   Input/input.h
   Input/keyboard.h
   Input/mouse.h
+  Input/gamepad.h
 )
 
 target_link_libraries(framework INTERFACE

@@ -44,6 +44,32 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
   const std::function<void(float dt)> OnUpdate = [&]([[maybe_unused]] float dt) {
     inputSystem.Update();
 
+    if (inputSystem.IsGamepadConnected(0)) {
+      // A 鈕跳躍
+      if (inputSystem.GetGamepadButtonDown(Gamepad::Button::A, 0)) {
+        std::cout << "Button A" << std::endl;
+      }
+
+      // // 左搖桿移動
+      // auto [lx, ly] = inputSystem.GetGamepadStick(Gamepad::Stick::Left, 0);
+      // std::cout << "Left Stick: " << lx << ", " << ly << std::endl;
+
+      // // 右搖桿控制相機
+      // auto [rx, ry] = inputSystem.GetGamepadStick(Gamepad::Stick::Right, 0);
+      // std::cout << "Right Stick: " << rx << ", " << ry << std::endl;
+
+      // L2/R2 扳機
+      float leftTrigger = inputSystem.GetGamepadTrigger(Gamepad::Trigger::Left, 0);
+      float rightTrigger = inputSystem.GetGamepadTrigger(Gamepad::Trigger::Right, 0);
+
+      if (leftTrigger > 0.5f) {
+        std::cout << "Left Trigger: " << leftTrigger << std::endl;
+      }
+      if (rightTrigger > 0.5f) {
+        std::cout << "Right Trigger: " << rightTrigger << std::endl;
+      }
+    }
+
     game.OnUpdate(dt);
     game.OnRender();
   };

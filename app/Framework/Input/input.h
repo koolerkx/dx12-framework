@@ -1,11 +1,21 @@
+/**
+ * @file input.h
+ * @author Kooler Fan
+ * @brief Read input from keyboard, mouse and gamepad using Microsoft GameInput
+ * @ref https://learn.microsoft.com/en-us/gaming/gdk/docs/features/common/input/gc-input-toc
+ */
+
 #pragma once
 
 #include <GameInput.h>
 #include <memory.h>
 
+#include <iostream>
+#include <mutex>
 #include <vector>
 
 #include "Core/types.h"
+#include "gamepad.h"
 #include "keyboard.h"
 #include "mouse.h"
 
@@ -17,25 +27,84 @@ class InputSystem {
   }
 
   bool Initialize(HWND hwnd) {
-    m_hwnd = hwnd;
-
-    HRESULT hr = GameInputCreate(&m_gameInput);
+    hwnd_ = hwnd;
+    HRESULT hr = GameInputCreate(&game_input_);
     if (FAILED(hr)) return false;
+
+    hr = game_input_->RegisterDeviceCallback(
+      nullptr, GameInputKindGamepad, GameInputDeviceConnected, GameInputBlockingEnumeration, this, DeviceCallback, &device_callback_token_);
+
+    if (FAILED(hr)) {
+      return false;
+    }
+
     return true;
   }
 
   void Shutdown() {
+    if (game_input_ && device_callback_token_) {
+      game_input_->UnregisterCallback(device_callback_token_, UINT64_MAX);
+      device_callback_token_ = 0;
+    }
+
+    std::lock_guard<std::mutex> lock(gamepad_mutex_);
+    for (int i = 0; i < MAX_GAMEPADS; ++i) {
+      gamepads_[i].device.Reset();
+      gamepads_[i].connected = false;
+    }
+  }
+
+  static void CALLBACK DeviceCallback(GameInputCallbackToken callbackToken,
+    void* context,
+    IGameInputDevice* device,
+    uint64_t timestamp,
+    GameInputDeviceStatus currentStatus,
+    GameInputDeviceStatus previousStatus) {
+    (void)callbackToken;
+    (void)timestamp;
+    InputSystem* inputSystem = static_cast<InputSystem*>(context);
+    inputSystem->OnDeviceCallback(device, currentStatus, previousStatus);
+  }
+
+  void OnDeviceCallback(IGameInputDevice* device, GameInputDeviceStatus currentStatus, GameInputDeviceStatus previousStatus) {
+    (void)previousStatus;
+    std::lock_guard<std::mutex> lock(gamepad_mutex_);
+
+    bool isConnected = (currentStatus & GameInputDeviceConnected) != 0;
+
+    if (isConnected) {
+      for (int i = 0; i < MAX_GAMEPADS; ++i) {
+        if (!gamepads_[i].connected) {
+          gamepads_[i].device = device;
+          gamepads_[i].connected = true;
+          std::cout << "Gamepad connected" << std::endl;
+          break;
+        }
+      }
+    } else {
+      for (int i = 0; i < MAX_GAMEPADS; ++i) {
+        if (gamepads_[i].device.Get() == device) {
+          gamepads_[i].device.Reset();
+          gamepads_[i].connected = false;
+          break;
+        }
+      }
+    }
   }
 
   void Update() {
-    HRESULT hr = S_OK;
     ComPtr<IGameInputReading> reading;
 
-    // Keyboard
-    // Update previous keys
-    memcpy(m_prevKeys, m_currKeys, sizeof(m_currKeys));
-    memset(m_currKeys, 0, sizeof(m_currKeys));
-    hr = m_gameInput->GetCurrentReading(GameInputKindKeyboard, nullptr, &reading);
+    UpdateKeyboardState(reading);
+    UpdateMouseState(reading);
+  }
+
+  void UpdateKeyboardState(ComPtr<IGameInputReading> reading) {
+    memcpy(keyboard_state_.prev_keys_, keyboard_state_.curr_keys_, sizeof(keyboard_state_.curr_keys_));
+    memset(keyboard_state_.curr_keys_, 0, sizeof(keyboard_state_.curr_keys_));
+
+    reading.Reset();
+    HRESULT hr = game_input_->GetCurrentReading(GameInputKindKeyboard, nullptr, &reading);
 
     if (SUCCEEDED(hr)) {
       uint32_t keyCount = reading->GetKeyCount();
@@ -47,62 +116,14 @@ class InputSystem {
 
         for (uint32_t i = 0; i < keyCount; ++i) {
           uint8_t vk = keyStates[i].virtualKey;
-          m_currKeys[vk] = true;
+          keyboard_state_.curr_keys_[vk] = true;
         }
 
-        // Mapping logic for left and right keys
-        if (m_currKeys[VK_LSHIFT] || m_currKeys[VK_RSHIFT]) {
-          m_currKeys[VK_SHIFT] = true;
-        }
-        if (m_currKeys[VK_LCONTROL] || m_currKeys[VK_RCONTROL]) {
-          m_currKeys[VK_CONTROL] = true;
-        }
-        if (m_currKeys[VK_LMENU] || m_currKeys[VK_RMENU]) {
-          m_currKeys[VK_MENU] = true;  // Alt
-        }
+        Keyboard::MergeModifierKeys(keyboard_state_.curr_keys_);
       }
-    }
-
-    // Mouse
-    m_prevMouseButtons = m_currMouseButtons;
-    m_currMouseButtons = GameInputMouseNone;
-
-    reading.Reset();
-    hr = m_gameInput->GetCurrentReading(GameInputKindMouse, nullptr, &reading);
-    if (SUCCEEDED(hr) && reading) {
-      GameInputMouseState mouseState;
-      if (reading->GetMouseState(&mouseState)) {
-        m_currMouseButtons = mouseState.buttons;
-
-        m_mouseDeltaX = mouseState.positionX - m_prevMouseDeltaX;
-        m_mouseDeltaY = mouseState.positionY - m_prevMouseDeltaY;
-        m_prevMouseDeltaX = mouseState.positionX;
-        m_prevMouseDeltaY = mouseState.positionY;
-
-        m_scrollDeltaX = mouseState.wheelX - m_prevWheelX;
-        m_scrollDeltaY = mouseState.wheelY - m_prevWheelY;
-        m_prevWheelX = mouseState.wheelX;
-        m_prevWheelY = mouseState.wheelY;
-      }
-    }
-
-    POINT pt;
-    if (GetCursorPos(&pt) && m_hwnd) {
-      ScreenToClient(m_hwnd, &pt);
-      m_mouseX = pt.x;
-      m_mouseY = pt.y;
-    }
-
-    if (m_cursorMode == Mouse::CursorMode::Locked && m_hwnd) {
-      RECT rect;
-      GetClientRect(m_hwnd, &rect);
-      POINT center = {(rect.right - rect.left) / 2, (rect.bottom - rect.top) / 2};
-      ClientToScreen(m_hwnd, &center);
-      SetCursorPos(center.x, center.y);
     }
   }
 
-  // Keyboard
   bool GetKey(Keyboard::KeyCode key) const {
     return GetKey(Keyboard::KeyCodeToVirtualKey(key));
   }
@@ -117,159 +138,249 @@ class InputSystem {
 
   bool GetKey(int virtualKeyCode) const {
     if (virtualKeyCode < 0 || virtualKeyCode > 255) return false;
-    return m_currKeys[virtualKeyCode];
+    return keyboard_state_.curr_keys_[virtualKeyCode];
   }
 
   bool GetKeyDown(int virtualKeyCode) const {
     if (virtualKeyCode < 0 || virtualKeyCode > 255) return false;
-    return m_currKeys[virtualKeyCode] && !m_prevKeys[virtualKeyCode];
+    return keyboard_state_.curr_keys_[virtualKeyCode] && !keyboard_state_.prev_keys_[virtualKeyCode];
   }
 
   bool GetKeyUp(int virtualKeyCode) const {
     if (virtualKeyCode < 0 || virtualKeyCode > 255) return false;
-    return !m_currKeys[virtualKeyCode] && m_prevKeys[virtualKeyCode];
+    return !keyboard_state_.curr_keys_[virtualKeyCode] && keyboard_state_.prev_keys_[virtualKeyCode];
   }
 
   // Mouse
-  bool GetMouseButton(Mouse::Button button) const {
-    GameInputMouseButtons flag = GameInputMouseNone;
-    switch (button) {
-      case Mouse::Button::Left:
-        flag = GameInputMouseLeftButton;
-        break;
-      case Mouse::Button::Right:
-        flag = GameInputMouseRightButton;
-        break;
-      case Mouse::Button::Middle:
-        flag = GameInputMouseMiddleButton;
-        break;
-      case Mouse::Button::Button4:
-        flag = GameInputMouseButton4;
-        break;
-      case Mouse::Button::Button5:
-        flag = GameInputMouseButton5;
-        break;
+  void UpdateMouseState(ComPtr<IGameInputReading> reading) {
+    mouse_state_.prev_mouse_buttons_ = mouse_state_.curr_mouse_buttons_;
+    mouse_state_.curr_mouse_buttons_ = GameInputMouseNone;
+
+    reading.Reset();
+    HRESULT hr = game_input_->GetCurrentReading(GameInputKindMouse, nullptr, &reading);
+    if (SUCCEEDED(hr) && reading) {
+      GameInputMouseState mouseState;
+      if (reading->GetMouseState(&mouseState)) {
+        mouse_state_.curr_mouse_buttons_ = mouseState.buttons;
+
+        mouse_state_.mouse_dx_ = mouseState.positionX - mouse_state_.prev_mouse_dx_;
+        mouse_state_.mouse_dy_ = mouseState.positionY - mouse_state_.prev_mouse_dy_;
+        mouse_state_.prev_mouse_dx_ = mouseState.positionX;
+        mouse_state_.prev_mouse_dy_ = mouseState.positionY;
+
+        mouse_state_.wheel_dx_ = mouseState.wheelX - mouse_state_.prev_wheel_x_;
+        mouse_state_.wheel_dy_ = mouseState.wheelY - mouse_state_.prev_wheel_y_;
+        mouse_state_.prev_wheel_x_ = mouseState.wheelX;
+        mouse_state_.prev_wheel_y_ = mouseState.wheelY;
+      }
     }
-    return (m_currMouseButtons & flag) != 0;
-  };
+
+    POINT pt;
+    if (GetCursorPos(&pt) && hwnd_) {
+      ScreenToClient(hwnd_, &pt);
+      mouse_state_.mouse_x_ = pt.x;
+      mouse_state_.mouse_y_ = pt.y;
+    }
+
+    if (mouse_state_.cursor_mode_ == Mouse::CursorMode::Locked && hwnd_) {
+      RECT rect;
+      GetClientRect(hwnd_, &rect);
+      POINT center = {(rect.right - rect.left) / 2, (rect.bottom - rect.top) / 2};
+      ClientToScreen(hwnd_, &center);
+      SetCursorPos(center.x, center.y);
+    }
+  }
+
+  bool GetMouseButton(Mouse::Button button) const {
+    return (mouse_state_.curr_mouse_buttons_ & Mouse::ButtonToGameInputMouseButton(button)) != 0;
+  }
 
   bool GetMouseButtonDown(Mouse::Button button) const {
-    GameInputMouseButtons flag = GameInputMouseNone;
-    switch (button) {
-      case Mouse::Button::Left:
-        flag = GameInputMouseLeftButton;
-        break;
-      case Mouse::Button::Right:
-        flag = GameInputMouseRightButton;
-        break;
-      case Mouse::Button::Middle:
-        flag = GameInputMouseMiddleButton;
-        break;
-      case Mouse::Button::Button4:
-        flag = GameInputMouseButton4;
-        break;
-      case Mouse::Button::Button5:
-        flag = GameInputMouseButton5;
-        break;
-    }
-    return (m_currMouseButtons & flag) != 0 && (m_prevMouseButtons & flag) == 0;
+    auto flag = Mouse::ButtonToGameInputMouseButton(button);
+    return (mouse_state_.curr_mouse_buttons_ & flag) != 0 && (mouse_state_.prev_mouse_buttons_ & flag) == 0;
   }
 
   bool GetMouseButtonUp(Mouse::Button button) const {
-    GameInputMouseButtons flag = GameInputMouseNone;
-    switch (button) {
-      case Mouse::Button::Left:
-        flag = GameInputMouseLeftButton;
-        break;
-      case Mouse::Button::Right:
-        flag = GameInputMouseRightButton;
-        break;
-      case Mouse::Button::Middle:
-        flag = GameInputMouseMiddleButton;
-        break;
-      case Mouse::Button::Button4:
-        flag = GameInputMouseButton4;
-        break;
-      case Mouse::Button::Button5:
-        flag = GameInputMouseButton5;
-        break;
-    }
-    return (m_currMouseButtons & flag) == 0 && (m_prevMouseButtons & flag) != 0;
+    auto flag = Mouse::ButtonToGameInputMouseButton(button);
+    return (mouse_state_.curr_mouse_buttons_ & flag) == 0 && (mouse_state_.prev_mouse_buttons_ & flag) != 0;
   }
 
   std::pair<float, float> GetMousePosition() const {
-    return {static_cast<float>(m_mouseX), static_cast<float>(m_mouseY)};
+    return {static_cast<float>(mouse_state_.mouse_x_), static_cast<float>(mouse_state_.mouse_y_)};
   }
 
   std::pair<int64_t, int64_t> GetMouseDelta() const {
-    return {m_mouseDeltaX, m_mouseDeltaY};
+    return {mouse_state_.mouse_dx_, mouse_state_.mouse_dy_};
+  }
+
+  float GetMouseScrollDelta() const {
+    return static_cast<float>(mouse_state_.wheel_dy_) / 120.0f;
+  }
+
+  std::pair<float, float> GetMouseScrollDelta2D() const {
+    return {static_cast<float>(mouse_state_.wheel_dx_) / 120.0f, static_cast<float>(mouse_state_.wheel_dy_) / 120.0f};
   }
 
   void SetCursorMode(Mouse::CursorMode mode) {
-    m_cursorMode = mode;
+    mouse_state_.cursor_mode_ = mode;
 
     switch (mode) {
       case Mouse::CursorMode::Normal:
         ShowCursor(TRUE);
-        if (m_hwnd) {
-          ClipCursor(nullptr);  // 解除游標限制
+        if (hwnd_) {
+          ClipCursor(nullptr);
         }
         break;
 
       case Mouse::CursorMode::Hidden:
         ShowCursor(FALSE);
-        if (m_hwnd) {
+        if (hwnd_) {
           ClipCursor(nullptr);
         }
         break;
 
       case Mouse::CursorMode::Locked:
         ShowCursor(FALSE);
-        if (m_hwnd) {
+        if (hwnd_) {
           RECT rect;
-          GetClientRect(m_hwnd, &rect);
+          GetClientRect(hwnd_, &rect);
           POINT topLeft = {rect.left, rect.top};
           POINT bottomRight = {rect.right, rect.bottom};
-          ClientToScreen(m_hwnd, &topLeft);
-          ClientToScreen(m_hwnd, &bottomRight);
+          ClientToScreen(hwnd_, &topLeft);
+          ClientToScreen(hwnd_, &bottomRight);
           RECT screenRect = {topLeft.x, topLeft.y, bottomRight.x, bottomRight.y};
-          ClipCursor(&screenRect);  // 限制游標在視窗內
+          ClipCursor(&screenRect);
         }
         break;
     }
   }
 
-  float GetMouseScrollDelta() const {
-    return static_cast<float>(m_scrollDeltaY) / 120.0f;
+  // GamePad
+  void UpdateGamepadState() {
+    for (int i = 0; i < MAX_GAMEPADS; ++i) {
+      if (!gamepads_[i].connected || !gamepads_[i].device) {
+        continue;
+      }
+
+      gamepads_[i].prev_buttons = gamepads_[i].curr_buttons;
+
+      ComPtr<IGameInputReading> gamepadReading;
+      HRESULT gamepadHr = game_input_->GetCurrentReading(GameInputKindGamepad, gamepads_[i].device.Get(), &gamepadReading);
+
+      if (SUCCEEDED(gamepadHr) && gamepadReading) {
+        GameInputGamepadState gamepadState;
+        if (gamepadReading->GetGamepadState(&gamepadState)) {
+          gamepads_[i].curr_buttons = gamepadState.buttons;
+          gamepads_[i].left_trigger = gamepadState.leftTrigger;
+          gamepads_[i].right_trigger = gamepadState.rightTrigger;
+          gamepads_[i].left_stick_x = gamepadState.leftThumbstickX;
+          gamepads_[i].left_stick_y = gamepadState.leftThumbstickY;
+          gamepads_[i].right_stick_x = gamepadState.rightThumbstickX;
+          gamepads_[i].right_stick_y = gamepadState.rightThumbstickY;
+        }
+      }
+    }
   }
 
-  std::pair<float, float> GetMouseScrollDelta2D() const {
-    return {static_cast<float>(m_scrollDeltaX) / 120.0f, static_cast<float>(m_scrollDeltaY) / 120.0f};
+  bool GetGamepadButton(Gamepad::Button button, int playerIndex) const {
+    if (!IsGamepadValid(playerIndex)) return false;
+    return (gamepads_[playerIndex].curr_buttons & Gamepad::ToFlag(button)) != 0;
+  }
+
+  bool GetGamepadButtonDown(Gamepad::Button button, int playerIndex) const {
+    if (!IsGamepadValid(playerIndex)) return false;
+    auto flag = Gamepad::ToFlag(button);
+    bool currPressed = (gamepads_[playerIndex].curr_buttons & flag) != 0;
+    bool prevPressed = (gamepads_[playerIndex].prev_buttons & flag) != 0;
+    return currPressed && !prevPressed;
+  }
+
+  bool GetGamepadButtonUp(Gamepad::Button button, int playerIndex) const {
+    if (!IsGamepadValid(playerIndex)) return false;
+    auto flag = Gamepad::ToFlag(button);
+    bool currPressed = (gamepads_[playerIndex].curr_buttons & flag) != 0;
+    bool prevPressed = (gamepads_[playerIndex].prev_buttons & flag) != 0;
+    return !currPressed && prevPressed;
+  }
+
+  std::pair<float, float> GetGamepadStick(Gamepad::Stick stick, int playerIndex) const {
+    if (!IsGamepadValid(playerIndex)) return {0.0f, 0.0f};
+    if (stick == Gamepad::Stick::Left) {
+      return {gamepads_[playerIndex].left_stick_x, gamepads_[playerIndex].left_stick_y};
+    } else {
+      return {gamepads_[playerIndex].right_stick_x, gamepads_[playerIndex].right_stick_y};
+    }
+  }
+
+  float GetGamepadTrigger(Gamepad::Trigger trigger, int playerIndex) const {
+    if (!IsGamepadValid(playerIndex)) return 0.0f;
+    return (trigger == Gamepad::Trigger::Left) ? gamepads_[playerIndex].left_trigger : gamepads_[playerIndex].right_trigger;
+  }
+
+  bool IsGamepadConnected(int playerIndex) const {
+    if (!Gamepad::IsValidIndex(playerIndex, MAX_GAMEPADS)) return false;
+    return gamepads_[playerIndex].connected;
+  }
+
+  int GetConnectedGamepadCount() const {
+    int count = 0;
+    for (int i = 0; i < MAX_GAMEPADS; ++i) {
+      if (gamepads_[i].connected) count++;
+    }
+    return count;
   }
 
  private:
-  ComPtr<IGameInput> m_gameInput;
+  bool IsGamepadValid(int index) const {
+    return Gamepad::IsValidIndex(index, MAX_GAMEPADS) && gamepads_[index].connected;
+  }
+
+  ComPtr<IGameInput> game_input_;
 
   // Keyboard
-  bool m_currKeys[256] = {false};
-  bool m_prevKeys[256] = {false};
+  struct KeyboardState {
+    bool curr_keys_[256] = {false};
+    bool prev_keys_[256] = {false};
+  } keyboard_state_;
 
-  GameInputMouseButtons m_currMouseButtons = GameInputMouseNone;
-  GameInputMouseButtons m_prevMouseButtons = GameInputMouseNone;
+  // Mouse
+  struct MouseState {
+    GameInputMouseButtons curr_mouse_buttons_ = GameInputMouseNone;
+    GameInputMouseButtons prev_mouse_buttons_ = GameInputMouseNone;
 
-  int64_t m_mouseX = 0;
-  int64_t m_mouseY = 0;
+    int64_t mouse_x_ = 0;
+    int64_t mouse_y_ = 0;
 
-  int64_t m_mouseDeltaX = 0;
-  int64_t m_mouseDeltaY = 0;
-  int64_t m_prevMouseDeltaX = 0;
-  int64_t m_prevMouseDeltaY = 0;
+    int64_t mouse_dx_ = 0;
+    int64_t mouse_dy_ = 0;
+    int64_t prev_mouse_dx_ = 0;
+    int64_t prev_mouse_dy_ = 0;
 
-  int64_t m_prevWheelX = 0;
-  int64_t m_prevWheelY = 0;
-  int64_t m_scrollDeltaX = 0;
-  int64_t m_scrollDeltaY = 0;
+    int64_t prev_wheel_x_ = 0;
+    int64_t prev_wheel_y_ = 0;
+    int64_t wheel_dx_ = 0;
+    int64_t wheel_dy_ = 0;
 
-  Mouse::CursorMode m_cursorMode = Mouse::CursorMode::Normal;
-  HWND m_hwnd = nullptr;
+    Mouse::CursorMode cursor_mode_ = Mouse::CursorMode::Normal;
+  } mouse_state_;
+  HWND hwnd_ = nullptr;
+
+  // GamePad
+  static constexpr int MAX_GAMEPADS = 4;
+
+  struct GamepadState {
+    ComPtr<IGameInputDevice> device;
+    GameInputGamepadButtons curr_buttons = GameInputGamepadNone;
+    GameInputGamepadButtons prev_buttons = GameInputGamepadNone;
+    float left_trigger = 0.0f;
+    float right_trigger = 0.0f;
+    float left_stick_x = 0.0f;
+    float left_stick_y = 0.0f;
+    float right_stick_x = 0.0f;
+    float right_stick_y = 0.0f;
+    bool connected = false;
+  } gamepads_[MAX_GAMEPADS];
+
+  GameInputCallbackToken device_callback_token_ = 0;
+  std::mutex gamepad_mutex_;
 };

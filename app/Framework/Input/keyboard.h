@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <Windows.h>
 #include <cstdint>
 
 namespace Keyboard {
@@ -233,14 +234,20 @@ inline constexpr const char* KeyCodeToString(KeyCode key) {
       return "F12";
 
     // Control
+    case KeyCode::Shift:
+      return "Shift";
     case KeyCode::LeftShift:
       return "LeftShift";
     case KeyCode::RightShift:
       return "RightShift";
+    case KeyCode::Control:
+      return "Control";
     case KeyCode::LeftCtrl:
       return "LeftCtrl";
     case KeyCode::RightCtrl:
       return "RightCtrl";
+    case KeyCode::Alt:
+      return "Alt";
     case KeyCode::LeftAlt:
       return "LeftAlt";
     case KeyCode::RightAlt:
@@ -316,6 +323,18 @@ inline constexpr const char* KeyCodeToString(KeyCode key) {
 
     default:
       return "Unknown";
+  }
+}
+
+inline void MergeModifierKeys(bool* keys) noexcept {
+  if (keys[VK_LSHIFT] || keys[VK_RSHIFT]) {
+    keys[VK_SHIFT] = true;
+  }
+  if (keys[VK_LCONTROL] || keys[VK_RCONTROL]) {
+    keys[VK_CONTROL] = true;
+  }
+  if (keys[VK_LMENU] || keys[VK_RMENU]) {
+    keys[VK_MENU] = true;  // Alt
   }
 }
 }  // namespace Keyboard
