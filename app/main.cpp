@@ -1,4 +1,5 @@
-﻿#define WIN32_LEAN_AND_MEAN
+﻿#include "Framework/Input/Keyboard.h"
+#define WIN32_LEAN_AND_MEAN
 #include <DirectXMath.h>
 #include <Windows.h>
 #include <d3d12.h>
@@ -10,6 +11,7 @@
 
 #include "Application/Application.h"
 #include "Core/utils.h"
+#include "Framework/Input/input.h"
 #include "Game/game.h"
 #include "Graphic/graphic.h"
 
@@ -17,15 +19,6 @@ template <typename T>
 using ComPtr = Microsoft::WRL::ComPtr<T>;
 
 using namespace DirectX;
-
-ComPtr<ID3D12Device> device = nullptr;
-ComPtr<IDXGIFactory6> dxgiFactory = nullptr;
-ComPtr<IDXGISwapChain4> swap_chain = nullptr;
-
-ComPtr<ID3D12CommandAllocator> command_allocator = nullptr;
-ComPtr<ID3D12GraphicsCommandList> command_list = nullptr;
-
-ComPtr<ID3D12CommandQueue> command_queue = nullptr;
 
 constexpr int window_width = 1920;
 constexpr int window_height = 1080;
@@ -44,7 +37,16 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
   Game game(graphic);
   game.Initialize();
 
+  InputSystem inputSystem;
+  (void)inputSystem.Initialize();
+
   const std::function<void(float dt)> OnUpdate = [&]([[maybe_unused]] float dt) {
+    inputSystem.Update();
+
+    if (inputSystem.GetKeyDown(Keyboard::KeyCode::W)) {
+      std::cout << Keyboard::KeyCodeToString(Keyboard::KeyCode::W) << std::endl;
+    }
+
     game.OnUpdate(dt);
     game.OnRender();
   };
@@ -53,6 +55,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
 
   app.Run(OnUpdate, OnFixedUpdate);
 
+  inputSystem.Shutdown();
   game.Shutdown();
   graphic.Shutdown();
 
