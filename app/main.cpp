@@ -1,4 +1,5 @@
 ﻿#include "Framework/Input/Keyboard.h"
+#include "Framework/Input/Mouse.h"
 #define WIN32_LEAN_AND_MEAN
 #include <DirectXMath.h>
 #include <Windows.h>
@@ -38,14 +39,10 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
   game.Initialize();
 
   InputSystem inputSystem;
-  (void)inputSystem.Initialize();
+  (void)inputSystem.Initialize(app.GetHwnd());
 
   const std::function<void(float dt)> OnUpdate = [&]([[maybe_unused]] float dt) {
     inputSystem.Update();
-
-    if (inputSystem.GetKeyDown(Keyboard::KeyCode::W)) {
-      std::cout << Keyboard::KeyCodeToString(Keyboard::KeyCode::W) << std::endl;
-    }
 
     game.OnUpdate(dt);
     game.OnRender();

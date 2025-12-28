@@ -5,6 +5,7 @@ add_library(framework INTERFACE
   # DirectXTK Input
   Input/input.h
   Input/keyboard.h
+  Input/mouse.h
 )
 
 target_link_libraries(framework INTERFACE

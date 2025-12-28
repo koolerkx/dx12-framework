@@ -126,7 +126,7 @@ inline constexpr KeyCode VirtualKeyToKeyCode(int vk) noexcept {
 }
 
 // Map keycode to string
-inline const char* KeyCodeToString(KeyCode key) {
+inline constexpr const char* KeyCodeToString(KeyCode key) {
   switch (key) {
     // Character
     case KeyCode::A:
