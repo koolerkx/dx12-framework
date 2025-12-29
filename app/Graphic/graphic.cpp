@@ -29,6 +29,10 @@ struct TexRGBA {
 };
 
 bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_height) {
+  // Cleanup
+  Shutdown();
+  is_shutting_down_ = false;
+
   frame_buffer_width_ = frame_buffer_width;
   frame_buffer_height_ = frame_buffer_height;
 
@@ -177,18 +181,44 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
   render_pass_manager_ = std::make_unique<RenderPassManager>();
   render_pass_manager_->SetUiPass(ui_pass_.get());
 
+  is_initialized_ = true;
+  return true;
+
   return true;
 }
 
 void Graphic::Shutdown() {
-  if (command_queue_ && fence_manager_.IsValid()) {
-    fence_manager_.WaitForGpu(command_queue_.Get());
-
-    uint64_t completed = fence_manager_.GetCompletedFenceValue();
-    texture_manager_.ProcessDeferredFrees(completed);
-
-    texture_manager_.CleanUploadBuffers();
+  bool expected = false;
+  if (!is_shutting_down_.compare_exchange_strong(expected, true)) {
+    return;
   }
+
+  bool gpu_synced = false;
+
+  try {
+    if (command_queue_ && fence_manager_.IsValid()) {
+      fence_manager_.WaitForGpu(command_queue_.Get());
+      gpu_synced = true;
+
+      uint64_t completed = fence_manager_.GetCompletedFenceValue();
+      texture_manager_.ProcessDeferredFrees(completed);
+      texture_manager_.CleanUploadBuffers();
+    }
+  } catch (const std::system_error& e) {
+    std::cerr << "[Graphic::Shutdown] System error: " << e.what() << " (code: " << e.code() << ")" << std::endl;
+  } catch (const std::exception& e) {
+    std::cerr << "[Graphic::Shutdown] Exception: " << e.what() << std::endl;
+  } catch (...) {
+    std::cerr << "[Graphic::Shutdown] Unknown exception" << std::endl;
+  }
+
+  if (!gpu_synced) {
+    std::cerr << "[Graphic::Shutdown] WARNING: GPU sync failed, potential resource leak" << std::endl;
+  }
+
+  // Resources released by ComPtr destructors
+  is_initialized_ = false;
+  is_shutting_down_.store(false, std::memory_order_release);
 }
 
 RenderFrameContext Graphic::BeginFrame() {

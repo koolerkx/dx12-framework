@@ -62,6 +62,21 @@ bool SwapChainManager::Initialize(ID3D12Device* device,
   return true;
 }
 
+void SwapChainManager::SafeRelease() {
+  bool expected = false;
+  if (!is_released_.compare_exchange_strong(expected, true)) {
+    return;
+  }
+
+  ReleaseBackBuffers();
+
+  if (swap_chain_) {
+    swap_chain_.Reset();
+  }
+
+  device_ = nullptr;
+}
+
 bool SwapChainManager::CreateBackBufferViews(DescriptorHeapManager& descriptor_manager) {
   for (UINT i = 0; i < BUFFER_COUNT; ++i) {
     HRESULT hr = swap_chain_->GetBuffer(static_cast<UINT>(i), IID_PPV_ARGS(back_buffers_[i].GetAddressOf()));

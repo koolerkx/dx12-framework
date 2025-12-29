@@ -24,4 +24,6 @@ class Game {
   AssetManager asset_manager_;
   std::unique_ptr<IScene> current_scene_;
   FramePacket frame_packet_;
+
+  std::atomic<bool> is_shutting_down_{false};
 };

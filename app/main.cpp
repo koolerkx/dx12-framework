@@ -36,20 +36,25 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
 
   Application app(hInstance, window_width, window_height);
   Graphic graphic;
-  graphic.Initialize(app.GetHwnd(), window_width, window_height);
+
+  if (!graphic.Initialize(app.GetHwnd(), window_width, window_height)) {
+    throw std::runtime_error("Failed to initialize graphics system");
+  }
 
   Game game(graphic);
   game.Initialize();
 
   InputSystem inputSystem;
-  (void)inputSystem.Initialize(app.GetHwnd());
+  if (!inputSystem.Initialize(app.GetHwnd())) {
+    throw std::runtime_error("Failed to initialize input system");
+  }
+
   InputEventGenerator event_generator(inputSystem);
 
   Event::Subscription sub = Event::EventBus::Subscribe<Event::KeyDownEvent>([&](const Event::KeyDownEvent& e) {
     if (e.key == Keyboard::KeyCode::Space) {
       std::cout << "Space pressed" << std::endl;
     }
-
     return Event::DispatchResult::Continue;
   });
 
@@ -66,15 +71,27 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
 
   app.Run(OnUpdate, OnFixedUpdate);
 
+  // Cleanup should be call explicitly
   Event::EventBus::Clear();
   inputSystem.Shutdown();
   game.Shutdown();
   graphic.Shutdown();
 
   return 0;
-} catch (const std::exception& e) {
-  std::cerr << "Exception: " << e.what() << std::endl;
-  MessageBoxW(nullptr, utils::utf8_to_wstring(e.what()).c_str(), L"Error", MB_OK | MB_ICONERROR);
+} catch (const std::system_error& e) {
+  std::string error_msg = std::string("System error: ") + e.what() + " (code: " + std::to_string(e.code().value()) + ")";
+  std::cerr << error_msg << std::endl;
 
+  // Showing message box in deadlog exception casue freeze
+  if (e.code().value() == static_cast<int>(std::errc::resource_deadlock_would_occur)) {
+    return -1;
+  }
+
+  MessageBoxA(nullptr, error_msg.c_str(), "System Error", MB_OK | MB_ICONERROR);
+
+  return -1;
+} catch (const std::exception& e) {
+  std::cerr << "Fatal exception: " << e.what() << std::endl;
+  MessageBoxW(nullptr, utils::utf8_to_wstring(e.what()).c_str(), L"Fatal Error", MB_OK | MB_ICONERROR);
   return -1;
 }

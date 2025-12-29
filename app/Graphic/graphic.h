@@ -23,11 +23,12 @@
 #include "ui_pass.h"
 #include "ui_renderer.h"
 
-
 class Graphic {
  public:
   Graphic() = default;
-  ~Graphic() = default;
+  ~Graphic() {
+    Shutdown();
+  };
 
   bool Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_height);
   void Shutdown();
@@ -105,4 +106,7 @@ class Graphic {
 
   bool CreateCommandList();
   bool CreateCommandAllocators();
+
+  bool is_initialized_ = false;
+  std::atomic<bool> is_shutting_down_{false};
 };

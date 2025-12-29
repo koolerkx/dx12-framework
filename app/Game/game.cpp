@@ -19,6 +19,11 @@ void Game::Initialize() {
 }
 
 void Game::Shutdown() {
+  bool expected = false;
+  if (!is_shutting_down_.compare_exchange_strong(expected, true)) {
+    return;  // Already shutting down
+  }
+
   if (current_scene_) {
     current_scene_->Exit();
     current_scene_.reset();

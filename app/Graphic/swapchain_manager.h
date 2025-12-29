@@ -6,16 +6,18 @@
 
 #include <vector>
 
+#include "Core/types.h"
 #include "descriptor_heap_allocator.h"
 #include "descriptor_heap_manager.h"
-#include "Core/types.h"
 
 class SwapChainManager {
  public:
   static constexpr UINT BUFFER_COUNT = 2;
 
   SwapChainManager() = default;
-  ~SwapChainManager() = default;
+  ~SwapChainManager() {
+    SafeRelease();
+  };
   SwapChainManager(const SwapChainManager&) = delete;
   SwapChainManager& operator=(const SwapChainManager&) = delete;
 
@@ -26,6 +28,11 @@ class SwapChainManager {
     UINT width,
     UINT height,
     DescriptorHeapManager& descriptor_manager);
+
+  void SafeRelease();
+  bool IsInitialized() const {
+    return swap_chain_ != nullptr;
+  }
 
   UINT GetCurrentBackBufferIndex() const {
     return swap_chain_ ? swap_chain_->GetCurrentBackBufferIndex() : 0;
@@ -46,10 +53,16 @@ class SwapChainManager {
 
   void Present(UINT syncInterval = 1, UINT flags = 0);
 
-  IDXGISwapChain4* GetSwapChain() const { return swap_chain_.Get(); }
+  IDXGISwapChain4* GetSwapChain() const {
+    return swap_chain_.Get();
+  }
 
-  UINT GetWdith() const { return width_; }
-  UINT GetHeight() const { return height_; }
+  UINT GetWdith() const {
+    return width_;
+  }
+  UINT GetHeight() const {
+    return height_;
+  }
 
   bool Resize(UINT width, UINT height, DescriptorHeapManager& descriptor_manager);
 
@@ -69,4 +82,6 @@ class SwapChainManager {
    * @note used for resize
    */
   void ReleaseBackBuffers();
+
+  std::atomic<bool> is_released_{false};
 };

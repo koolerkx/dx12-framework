@@ -4,9 +4,8 @@
 
 #include <mutex>
 
-#include "d3d12.h"
 #include "Core/types.h"
-
+#include "d3d12.h"
 
 class FenceManager {
  public:
@@ -38,10 +37,10 @@ class FenceManager {
   }
 
  private:
-  std::mutex fence_mutex_;
+  std::mutex fence_mutex_;  // only for signal fence
   ComPtr<ID3D12Fence> fence_ = nullptr;
   HANDLE fence_event_ = nullptr;
-  UINT64 fence_value_ = 0;
+  std::atomic<UINT64> fence_value_{0};
 
   void ShutDown();
 };
