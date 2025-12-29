@@ -41,32 +41,46 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
   InputSystem inputSystem;
   (void)inputSystem.Initialize(app.GetHwnd());
 
+  static bool is_vibrate = false;
+
   const std::function<void(float dt)> OnUpdate = [&]([[maybe_unused]] float dt) {
     inputSystem.Update();
 
     if (inputSystem.IsGamepadConnected(0)) {
-      // A 鈕跳躍
       if (inputSystem.GetGamepadButtonDown(Gamepad::Button::A, 0)) {
-        std::cout << "Button A" << std::endl;
+        std::cout << "GetGamepadButtonDown" << std::endl;
+        inputSystem.SetGamepadVibration(0, 0.5f, 0.5f);
+      }
+      if (inputSystem.GetGamepadButton(Gamepad::Button::A, 0)) {
+        std::cout << "GetGamepadButton" << std::endl;
+      }
+      if (inputSystem.GetGamepadButtonUp(Gamepad::Button::A, 0)) {
+        inputSystem.StopGamepadVibration(0);
+        std::cout << "GetGamepadButtonUp" << std::endl;
       }
 
-      // // 左搖桿移動
-      // auto [lx, ly] = inputSystem.GetGamepadStick(Gamepad::Stick::Left, 0);
-      // std::cout << "Left Stick: " << lx << ", " << ly << std::endl;
-
-      // // 右搖桿控制相機
-      // auto [rx, ry] = inputSystem.GetGamepadStick(Gamepad::Stick::Right, 0);
-      // std::cout << "Right Stick: " << rx << ", " << ry << std::endl;
-
-      // L2/R2 扳機
-      float leftTrigger = inputSystem.GetGamepadTrigger(Gamepad::Trigger::Left, 0);
-      float rightTrigger = inputSystem.GetGamepadTrigger(Gamepad::Trigger::Right, 0);
-
-      if (leftTrigger > 0.5f) {
-        std::cout << "Left Trigger: " << leftTrigger << std::endl;
+      if (inputSystem.GetKeyDown(VK_SPACE)) {
+        std::cout << "Space Down" << std::endl;
       }
-      if (rightTrigger > 0.5f) {
-        std::cout << "Right Trigger: " << rightTrigger << std::endl;
+
+      if (inputSystem.GetKey(VK_SPACE)) {
+        std::cout << "Space" << std::endl;
+      }
+
+      if (inputSystem.GetKeyUp(VK_SPACE)) {
+        std::cout << "Space Up" << std::endl;
+      }
+
+      if (inputSystem.GetMouseButtonDown(Mouse::Button::Button4)) {
+        std::cout << "Mouse Button Down" << std::endl;
+      }
+
+      if (inputSystem.GetMouseButton(Mouse::Button::Button4)) {
+        std::cout << "Mouse Button" << std::endl;
+      }
+
+      if (inputSystem.GetMouseButtonUp(Mouse::Button::Button4)) {
+        std::cout << "Mouse Button Up" << std::endl;
       }
     }
 

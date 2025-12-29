@@ -31,7 +31,7 @@ enum class Trigger {
   Right  // R2
 };
 
-inline constexpr GameInputGamepadButtons ToFlag(Button button) noexcept {
+inline constexpr GameInputGamepadButtons ButtonToGameInputGamepadButton(Button button) noexcept {
   switch (button) {
     case Button::A:
       return GameInputGamepadA;

@@ -10,6 +10,7 @@
 #include <GameInput.h>
 #include <memory.h>
 
+#include <algorithm>
 #include <iostream>
 #include <mutex>
 #include <vector>
@@ -47,10 +48,12 @@ class InputSystem {
       device_callback_token_ = 0;
     }
 
-    std::lock_guard<std::mutex> lock(gamepad_mutex_);
-    for (int i = 0; i < MAX_GAMEPADS; ++i) {
-      gamepads_[i].device.Reset();
-      gamepads_[i].connected = false;
+    {
+      std::lock_guard<std::mutex> lock(gamepad_mutex_);
+      for (int i = 0; i < MAX_GAMEPADS; ++i) {
+        gamepads_[i].device.Reset();
+        gamepads_[i].connected = false;
+      }
     }
   }
 
@@ -75,9 +78,10 @@ class InputSystem {
     if (isConnected) {
       for (int i = 0; i < MAX_GAMEPADS; ++i) {
         if (!gamepads_[i].connected) {
+          gamepads_[i] = GamepadState{};
           gamepads_[i].device = device;
           gamepads_[i].connected = true;
-          std::cout << "Gamepad connected" << std::endl;
+          std::cout << "Gamepad " << i << " connected" << std::endl;
           break;
         }
       }
@@ -86,6 +90,7 @@ class InputSystem {
         if (gamepads_[i].device.Get() == device) {
           gamepads_[i].device.Reset();
           gamepads_[i].connected = false;
+          std::cout << "Gamepad " << i << " disconnected" << std::endl;
           break;
         }
       }
@@ -97,6 +102,7 @@ class InputSystem {
 
     UpdateKeyboardState(reading);
     UpdateMouseState(reading);
+    UpdateGamepadState();
   }
 
   void UpdateKeyboardState(ComPtr<IGameInputReading> reading) {
@@ -284,12 +290,12 @@ class InputSystem {
 
   bool GetGamepadButton(Gamepad::Button button, int playerIndex) const {
     if (!IsGamepadValid(playerIndex)) return false;
-    return (gamepads_[playerIndex].curr_buttons & Gamepad::ToFlag(button)) != 0;
+    return (gamepads_[playerIndex].curr_buttons & Gamepad::ButtonToGameInputGamepadButton(button)) != 0;
   }
 
   bool GetGamepadButtonDown(Gamepad::Button button, int playerIndex) const {
     if (!IsGamepadValid(playerIndex)) return false;
-    auto flag = Gamepad::ToFlag(button);
+    auto flag = Gamepad::ButtonToGameInputGamepadButton(button);
     bool currPressed = (gamepads_[playerIndex].curr_buttons & flag) != 0;
     bool prevPressed = (gamepads_[playerIndex].prev_buttons & flag) != 0;
     return currPressed && !prevPressed;
@@ -297,7 +303,7 @@ class InputSystem {
 
   bool GetGamepadButtonUp(Gamepad::Button button, int playerIndex) const {
     if (!IsGamepadValid(playerIndex)) return false;
-    auto flag = Gamepad::ToFlag(button);
+    auto flag = Gamepad::ButtonToGameInputGamepadButton(button);
     bool currPressed = (gamepads_[playerIndex].curr_buttons & flag) != 0;
     bool prevPressed = (gamepads_[playerIndex].prev_buttons & flag) != 0;
     return !currPressed && prevPressed;
@@ -328,6 +334,29 @@ class InputSystem {
       if (gamepads_[i].connected) count++;
     }
     return count;
+  }
+
+  void SetGamepadVibration(int playerIndex, float lowFrequency, float highFrequency) {
+    SetGamepadVibrationAdvanced(playerIndex, lowFrequency, highFrequency, 0.0f, 0.0f);
+  }
+
+  void SetGamepadVibrationAdvanced(int playerIndex, float lowFrequency, float highFrequency, float leftTrigger, float rightTrigger) {
+    if (playerIndex < 0 || playerIndex >= MAX_GAMEPADS) return;
+
+    auto& pad = gamepads_[playerIndex];
+    if (!pad.connected || !pad.device) return;
+
+    GameInputRumbleParams rumble = {};
+    rumble.lowFrequency = std::clamp(lowFrequency, 0.0f, 1.0f);
+    rumble.highFrequency = std::clamp(highFrequency, 0.0f, 1.0f);
+    rumble.leftTrigger = std::clamp(leftTrigger, 0.0f, 1.0f);
+    rumble.rightTrigger = std::clamp(rightTrigger, 0.0f, 1.0f);
+
+    pad.device->SetRumbleState(&rumble);
+  }
+
+  void StopGamepadVibration(int playerIndex) {
+    SetGamepadVibration(playerIndex, 0.0f, 0.0f);
   }
 
  private:
