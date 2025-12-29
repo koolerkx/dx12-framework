@@ -65,6 +65,18 @@ class InputSystem {
     return keyboard_handler_.GetKeyUp(virtualKeyCode);
   }
 
+  std::vector<Keyboard::KeyCode> GetKeys() const {
+    return keyboard_handler_.GetKeys();
+  }
+
+  std::vector<Keyboard::KeyCode> GetKeysDown() const {
+    return keyboard_handler_.GetKeysDown();
+  }
+
+  std::vector<Keyboard::KeyCode> GetKeysUp() const {
+    return keyboard_handler_.GetKeysUp();
+  }
+
   // Mouse methods - delegate to mouse handler
   bool GetMouseButton(Mouse::Button button) const {
     return mouse_handler_.GetButton(button);
@@ -109,6 +121,18 @@ class InputSystem {
 
   bool GetGamepadButtonUp(Gamepad::Button button, int playerIndex) const {
     return gamepad_handler_.GetButtonUp(button, playerIndex);
+  }
+
+  std::vector<Gamepad::Button> GetGamepadButtons(int playerIndex) const {
+    return gamepad_handler_.GetButtons(playerIndex);
+  }
+
+  std::vector<Gamepad::Button> GetGamepadButtonsDown(int playerIndex) const {
+    return gamepad_handler_.GetButtonsDown(playerIndex);
+  }
+
+  std::vector<Gamepad::Button> GetGamepadButtonsUp(int playerIndex) const {
+    return gamepad_handler_.GetButtonsUp(playerIndex);
   }
 
   std::pair<float, float> GetGamepadStick(Gamepad::Stick stick, int playerIndex) const {

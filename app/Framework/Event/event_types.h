@@ -11,19 +11,13 @@
 
 namespace Event {
 
-// ============================================================================
 // Base Event Structures (Optional - for common fields)
-// ============================================================================
-
 struct EventBase {
   uint64_t timestamp_us = 0;
   uint64_t frame_index = 0;
 };
 
-// ============================================================================
 // Application Events
-// ============================================================================
-
 struct ApplicationStartEvent {
   int argc;
   char** argv;
@@ -49,10 +43,7 @@ struct WindowCloseEvent {
   bool* cancelled = nullptr;  // Set to true to prevent close
 };
 
-// ============================================================================
 // Scene/Gameplay Events
-// ============================================================================
-
 struct SceneLoadEvent {
   std::string scene_name;
   int scene_id;
@@ -72,10 +63,7 @@ struct GameOverEvent {
   bool victory;
 };
 
-// ============================================================================
 // Entity/Actor Events
-// ============================================================================
-
 struct EntitySpawnEvent {
   uint64_t entity_id;
   std::string entity_type;
@@ -106,10 +94,7 @@ struct EntityDeathEvent {
   uint64_t killer_id;
 };
 
-// ============================================================================
 // Audio Events
-// ============================================================================
-
 struct PlaySoundEvent {
   std::string sound_name;
   float volume = 1.0f;
@@ -126,10 +111,7 @@ struct MusicChangeEvent {
   float fade_duration = 0.0f;
 };
 
-// ============================================================================
 // UI Events
-// ============================================================================
-
 struct ButtonClickEvent {
   std::string button_id;
   int mouse_button;
@@ -152,10 +134,7 @@ struct DialogueEndEvent {
   std::string dialogue_id;
 };
 
-// ============================================================================
 // Network Events
-// ============================================================================
-
 struct NetworkConnectEvent {
   std::string server_address;
   uint16_t port;
@@ -172,10 +151,7 @@ struct NetworkMessageEvent {
   size_t size;
 };
 
-// ============================================================================
 // Save/Load Events
-// ============================================================================
-
 struct SaveGameEvent {
   std::string save_slot;
   bool auto_save;
@@ -195,10 +171,7 @@ struct LoadCompleteEvent {
   bool success;
 };
 
-// ============================================================================
 // Debug/Editor Events
-// ============================================================================
-
 struct DebugCommandEvent {
   std::string command;
   std::string args;
@@ -214,10 +187,7 @@ struct DebugDrawEvent {
   float duration = 0.0f;
 };
 
-// ============================================================================
 // Custom Event Example (User-defined)
-// ============================================================================
-
 struct PlayerLevelUpEvent {
   int player_id;
   int old_level;

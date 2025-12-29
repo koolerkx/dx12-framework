@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <iostream>
 #include <mutex>
+#include <vector>
 
 #include "Core/types.h"
 #include "gamepad.h"
@@ -83,6 +84,23 @@ class GamepadHandler {
     return !currPressed && prevPressed;
   }
 
+  std::vector<Gamepad::Button> GetButtons(int playerIndex = 0) const {
+    if (!IsValidGamepad(playerIndex)) return {};
+    return GetButtonsFromMask(gamepads_[playerIndex].curr_buttons);
+  }
+
+  std::vector<Gamepad::Button> GetButtonsDown(int playerIndex = 0) const {
+    if (!IsValidGamepad(playerIndex)) return {};
+    const auto& pad = gamepads_[playerIndex];
+    return GetButtonsFromMask(pad.curr_buttons & ~pad.prev_buttons);
+  }
+
+  std::vector<Gamepad::Button> GetButtonsUp(int playerIndex = 0) const {
+    if (!IsValidGamepad(playerIndex)) return {};
+    const auto& pad = gamepads_[playerIndex];
+    return GetButtonsFromMask(~pad.curr_buttons & pad.prev_buttons);
+  }
+
   std::pair<float, float> GetStick(Gamepad::Stick stick, int playerIndex) const {
     if (!IsValidGamepad(playerIndex)) return {0.0f, 0.0f};
     if (stick == Gamepad::Stick::Left) {
@@ -134,6 +152,19 @@ class GamepadHandler {
   }
 
  private:
+  std::vector<Gamepad::Button> GetButtonsFromMask(GameInputGamepadButtons mask) const {
+    std::vector<Gamepad::Button> result;
+    result.reserve(4);
+
+    for (auto flag : Gamepad::BUTTON_FLAGS) {
+      if (mask & flag) {
+        result.push_back(Gamepad::GameInputGamepadButtonsToButton(flag));
+      }
+    }
+
+    return result;
+  }
+
   static void CALLBACK DeviceCallback(GameInputCallbackToken callbackToken,
     void* context,
     IGameInputDevice* device,

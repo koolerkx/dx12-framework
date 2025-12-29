@@ -66,6 +66,91 @@ inline constexpr GameInputGamepadButtons ButtonToGameInputGamepadButton(Button b
   }
 }
 
+inline constexpr Button GameInputGamepadButtonsToButton(GameInputGamepadButtons flag) noexcept {
+  switch (flag) {
+    case GameInputGamepadA:
+      return Button::A;
+    case GameInputGamepadB:
+      return Button::B;
+    case GameInputGamepadX:
+      return Button::X;
+    case GameInputGamepadY:
+      return Button::Y;
+    case GameInputGamepadLeftShoulder:
+      return Button::LeftShoulder;
+    case GameInputGamepadRightShoulder:
+      return Button::RightShoulder;
+    case GameInputGamepadView:
+      return Button::View;
+    case GameInputGamepadMenu:
+      return Button::Menu;
+    case GameInputGamepadLeftThumbstick:
+      return Button::LeftThumbstick;
+    case GameInputGamepadRightThumbstick:
+      return Button::RightThumbstick;
+    case GameInputGamepadDPadUp:
+      return Button::DPadUp;
+    case GameInputGamepadDPadDown:
+      return Button::DPadDown;
+    case GameInputGamepadDPadLeft:
+      return Button::DPadLeft;
+    case GameInputGamepadDPadRight:
+      return Button::DPadRight;
+    default:
+      return Button::A;
+  }
+}
+
+inline constexpr const char* ButtonToString(Button key) {
+  switch (key) {
+    case Button::A:
+      return "A";
+    case Button::B:
+      return "B";
+    case Button::X:
+      return "X";
+    case Button::Y:
+      return "Y";
+    case Button::LeftShoulder:
+      return "LeftShoulder";
+    case Button::RightShoulder:
+      return "RightShoulder";
+    case Button::View:
+      return "View";
+    case Button::Menu:
+      return "Menu";
+    case Button::LeftThumbstick:
+      return "LeftThumbstick";
+    case Button::RightThumbstick:
+      return "RightThumbstick";
+    case Button::DPadUp:
+      return "DPadUp";
+    case Button::DPadDown:
+      return "DPadDown";
+    case Button::DPadLeft:
+      return "DPadLeft";
+    case Button::DPadRight:
+      return "DPadRight";
+    default:
+      return "Unknown";
+  }
+}
+
+[[maybe_unused]] inline static constexpr GameInputGamepadButtons BUTTON_FLAGS[] = {GameInputGamepadA,
+  GameInputGamepadB,
+  GameInputGamepadX,
+  GameInputGamepadY,
+  GameInputGamepadLeftShoulder,
+  GameInputGamepadRightShoulder,
+  GameInputGamepadView,
+  GameInputGamepadMenu,
+  GameInputGamepadLeftThumbstick,
+  GameInputGamepadRightThumbstick,
+  GameInputGamepadDPadUp,
+  GameInputGamepadDPadDown,
+  GameInputGamepadDPadLeft,
+  GameInputGamepadDPadRight};
+
 inline constexpr bool IsValidIndex(int index, int maxCount = 4) noexcept {
   return index >= 0 && index < maxCount;
 }

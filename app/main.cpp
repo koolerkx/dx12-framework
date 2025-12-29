@@ -1,8 +1,10 @@
 ﻿#include "Framework/Event/event_system.h"
 #include "Framework/Event/input_event_generator.h"
 #include "Framework/Event/input_events.h"
+#include "Framework/Input/GamePad.h"
 #include "Framework/Input/Keyboard.h"
 #include "Framework/Input/Mouse.h"
+#include "Framework/Input/gamepad.h"
 #define WIN32_LEAN_AND_MEAN
 #include <DirectXMath.h>
 #include <Windows.h>
@@ -51,16 +53,10 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
 
   InputEventGenerator event_generator(inputSystem);
 
-  Event::Subscription sub = Event::EventBus::Subscribe<Event::KeyDownEvent>([&](const Event::KeyDownEvent& e) {
-    if (e.key == Keyboard::KeyCode::Space) {
-      std::cout << "Space pressed" << std::endl;
-    }
-    return Event::DispatchResult::Continue;
-  });
-
   const std::function<void(float dt)> OnUpdate = [&]([[maybe_unused]] float dt) {
     inputSystem.Update();
     event_generator.Update();
+
     Event::EventBus::Flush();
 
     game.OnUpdate(dt);
