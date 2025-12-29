@@ -2,7 +2,7 @@ add_library(framework INTERFACE
   Core/types.h
   Core/utils.h
 
-  # DirectXTK Input
+  # GameInput
   Input/input.h
   Input/keyboard.h
   Input/keyboard_handler.h
@@ -10,6 +10,14 @@ add_library(framework INTERFACE
   Input/mouse_handler.h
   Input/gamepad.h
   Input/gamepad_handler.h
+
+  # Event
+  Event/event_system.h
+  Event/event_types.h
+
+  # Custom Event
+  Event/input_events.h
+  Event/input_event_generator.h
 )
 
 target_link_libraries(framework INTERFACE

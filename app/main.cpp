@@ -1,4 +1,7 @@
-﻿#include "Framework/Input/Keyboard.h"
+﻿#include "Framework/Event/event_system.h"
+#include "Framework/Event/input_event_generator.h"
+#include "Framework/Event/input_events.h"
+#include "Framework/Input/Keyboard.h"
 #include "Framework/Input/Mouse.h"
 #define WIN32_LEAN_AND_MEAN
 #include <DirectXMath.h>
@@ -40,47 +43,20 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
 
   InputSystem inputSystem;
   (void)inputSystem.Initialize(app.GetHwnd());
+  InputEventGenerator event_generator(inputSystem);
+
+  Event::Subscription sub = Event::EventBus::Subscribe<Event::KeyDownEvent>([&](const Event::KeyDownEvent& e) {
+    if (e.key == Keyboard::KeyCode::Space) {
+      std::cout << "Space pressed" << std::endl;
+    }
+
+    return Event::DispatchResult::Continue;
+  });
 
   const std::function<void(float dt)> OnUpdate = [&]([[maybe_unused]] float dt) {
     inputSystem.Update();
-
-    if (inputSystem.IsGamepadConnected(0)) {
-      if (inputSystem.GetGamepadButtonDown(Gamepad::Button::A, 0)) {
-        std::cout << "GetGamepadButtonDown" << std::endl;
-        inputSystem.SetGamepadVibration(0, 0.5f, 0.5f);
-      }
-      if (inputSystem.GetGamepadButton(Gamepad::Button::A, 0)) {
-        std::cout << "GetGamepadButton" << std::endl;
-      }
-      if (inputSystem.GetGamepadButtonUp(Gamepad::Button::A, 0)) {
-        inputSystem.StopGamepadVibration(0);
-        std::cout << "GetGamepadButtonUp" << std::endl;
-      }
-
-      if (inputSystem.GetKeyDown(VK_SPACE)) {
-        std::cout << "Space Down" << std::endl;
-      }
-
-      if (inputSystem.GetKey(VK_SPACE)) {
-        std::cout << "Space" << std::endl;
-      }
-
-      if (inputSystem.GetKeyUp(VK_SPACE)) {
-        std::cout << "Space Up" << std::endl;
-      }
-
-      if (inputSystem.GetMouseButtonDown(Mouse::Button::Button4)) {
-        std::cout << "Mouse Button Down" << std::endl;
-      }
-
-      if (inputSystem.GetMouseButton(Mouse::Button::Button4)) {
-        std::cout << "Mouse Button" << std::endl;
-      }
-
-      if (inputSystem.GetMouseButtonUp(Mouse::Button::Button4)) {
-        std::cout << "Mouse Button Up" << std::endl;
-      }
-    }
+    event_generator.Update();
+    Event::EventBus::Flush();
 
     game.OnUpdate(dt);
     game.OnRender();
@@ -90,6 +66,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
 
   app.Run(OnUpdate, OnFixedUpdate);
 
+  Event::EventBus::Clear();
   inputSystem.Shutdown();
   game.Shutdown();
   graphic.Shutdown();
