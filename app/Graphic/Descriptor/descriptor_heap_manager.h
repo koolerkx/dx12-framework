@@ -2,7 +2,7 @@
 #include <memory>
 #include <vector>
 
-#include "descriptor_heap_allocator.h"
+#include "Descriptor/descriptor_heap_allocator.h"
 
 struct DescriptorHeapConfig {
   uint32_t rtv_capacity = 512;

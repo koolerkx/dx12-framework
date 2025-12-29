@@ -1,6 +1,6 @@
 #pragma once
 #include "Component/component.h"
-#include "Graphic/frame_packet.h"
+#include "Graphic/Frame/frame_packet.h"
 #include "game_object.h"
 #include "transform_component.h"
 

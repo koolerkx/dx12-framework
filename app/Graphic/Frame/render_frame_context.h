@@ -3,11 +3,11 @@
 
 #include <cstdint>
 
-#include "buffer.h"
-#include "constant_buffers.h"
-#include "descriptor_heap_allocator.h"
-#include "descriptor_heap_manager.h"
-#include "dynamic_upload_buffer.h"
+#include "Command/buffer.h"
+#include "Descriptor/descriptor_heap_allocator.h"
+#include "Descriptor/descriptor_heap_manager.h"
+#include "Frame/constant_buffers.h"
+#include "Frame/dynamic_upload_buffer.h"
 
 struct RenderFrameContext {
   uint32_t frame_index;

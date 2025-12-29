@@ -1,6 +1,6 @@
 #include "asset_manager.h"
 
-#include "Graphic/Texture/texture_manager.h"
+#include "Graphic/Resource/Texture/texture_manager.h"
 #include "Graphic/graphic.h"
 
 class AssetManager::Impl {

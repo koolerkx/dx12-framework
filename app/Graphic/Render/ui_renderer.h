@@ -1,8 +1,8 @@
 #pragma once
 #include <d3d12.h>
 
-#include "frame_packet.h"
-#include "render_frame_context.h"
+#include "Frame/frame_packet.h"
+#include "Frame/render_frame_context.h"
 
 class Mesh;
 

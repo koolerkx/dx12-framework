@@ -3,8 +3,9 @@
 #include <cassert>
 #include <vector>
 
-#include "buffer.h"
-#include "fence_manager.h"
+#include "Device/fence_manager.h"
+#include "Command/buffer.h"
+
 
 template <typename T>
 class PerFrameConstantBuffer {

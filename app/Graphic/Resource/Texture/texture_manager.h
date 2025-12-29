@@ -11,7 +11,7 @@
 
 #include "Core/types.h"
 #include "Core/utils.h"
-#include "descriptor_heap_manager.h"
+#include "Descriptor/descriptor_heap_manager.h"
 #include "texture.h"
 
 class Graphic;

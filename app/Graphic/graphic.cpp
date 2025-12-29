@@ -11,9 +11,10 @@
 #include <vector>
 
 #include "Core/types.h"
-#include "frame_packet.h"
-#include "pipeline_state_builder.h"
-#include "root_signature_builder.h"
+#include "Pipeline/pipeline_state_builder.h"
+#include "Pipeline/root_signature_builder.h"
+#include "Frame/frame_packet.h"
+
 
 using namespace DirectX;
 

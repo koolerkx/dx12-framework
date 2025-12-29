@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Graphic/frame_packet.h"
+#include "Graphic/Frame/frame_packet.h"
 
 // Define a unique ID type for components
 using ComponentTypeID = uint32_t;

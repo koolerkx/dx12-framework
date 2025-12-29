@@ -1,6 +1,6 @@
 #pragma once
-#include "frame_packet.h"
-#include "render_frame_context.h"
+#include "Frame/frame_packet.h"
+#include "Frame/render_frame_context.h"
 
 class UiPass;
 

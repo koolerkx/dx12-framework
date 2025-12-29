@@ -2,7 +2,7 @@
 #include <memory>
 #include <vector>
 
-#include "Graphic/frame_packet.h"
+#include "Graphic/Frame/frame_packet.h"
 #include "game_object.h"
 
 class AssetManager;

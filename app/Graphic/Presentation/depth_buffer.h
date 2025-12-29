@@ -2,9 +2,9 @@
 
 #include <dxgiformat.h>
 
-#include "descriptor_heap_allocator.h"
-#include "descriptor_heap_manager.h"
-#include "gpu_resource.h"
+#include "Descriptor/descriptor_heap_allocator.h"
+#include "Descriptor/descriptor_heap_manager.h"
+#include "Device/gpu_resource.h"
 
 class DepthBuffer : public GpuResource {
  public:

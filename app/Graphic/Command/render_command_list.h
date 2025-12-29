@@ -2,11 +2,12 @@
 #include <DirectXMath.h>
 #include <d3d12.h>
 
-#include "buffer.h"
-#include "constant_buffers.h"
-#include "descriptor_heap_manager.h"
-#include "dynamic_upload_buffer.h"
-#include "mesh.h"
+#include "Command/buffer.h"
+#include "Descriptor/descriptor_heap_manager.h"
+#include "Frame/constant_buffers.h"
+#include "Frame/dynamic_upload_buffer.h"
+#include "Resource/mesh.h"
+
 
 // Forward decls
 struct Texture;

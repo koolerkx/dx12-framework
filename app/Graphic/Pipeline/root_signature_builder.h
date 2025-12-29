@@ -3,7 +3,7 @@
 #include <deque>
 #include <vector>
 
-#include "sampler_builder.h"
+#include "Pipeline/sampler_builder.h"
 #include "Core/types.h"
 
 class RootSignatureBuilder {

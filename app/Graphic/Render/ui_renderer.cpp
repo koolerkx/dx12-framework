@@ -4,10 +4,11 @@
 
 #include <algorithm>  // for std::sort
 
-#include "Texture/texture.h"
-#include "constant_buffers.h"
-#include "mesh.h"
-#include "render_command_list.h"
+#include "Command/render_command_list.h"
+#include "Frame/constant_buffers.h"
+#include "Resource/Texture/texture.h"
+#include "Resource/mesh.h"
+
 
 UiRenderer::UiRenderer(ID3D12RootSignature* root_sig, ID3D12PipelineState* pso, Mesh* quad_mesh)
     : root_signature_(root_sig), pipeline_state_(pso), quad_mesh_(quad_mesh) {

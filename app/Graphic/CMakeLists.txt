@@ -5,44 +5,50 @@ add_library(graphic STATIC
     graphic.h
     d3dx12.h
 
-    gpu_resource.h
-    gpu_resource.cpp
-    descriptor_heap_allocator.h
-    descriptor_heap_allocator.cpp
-    descriptor_heap_manager.h
-    descriptor_heap_manager.cpp
+    Device/gpu_resource.h
+    Device/gpu_resource.cpp
+    Device/fence_manager.h
+    Device/fence_manager.cpp
 
-    swapchain_manager.h
-    swapchain_manager.cpp
-    depth_buffer.h
-    depth_buffer.cpp
-    fence_manager.h
-    fence_manager.cpp
+    Descriptor/descriptor_heap_allocator.h
+    Descriptor/descriptor_heap_allocator.cpp
+    Descriptor/descriptor_heap_manager.h
+    Descriptor/descriptor_heap_manager.cpp
 
-    pipeline_state_builder.h
-    pipeline_state_builder.cpp
-    root_signature_builder.h
-    root_signature_builder.cpp
-    sampler_builder.h
-    sampler_builder.cpp
+    Presentation/swapchain_manager.h
+    Presentation/swapchain_manager.cpp
+    Presentation/depth_buffer.h
+    Presentation/depth_buffer.cpp
 
-    mesh.h
-    mesh.cpp
+    Pipeline/pipeline_state_builder.h
+    Pipeline/pipeline_state_builder.cpp
+    Pipeline/root_signature_builder.h
+    Pipeline/root_signature_builder.cpp
+    Pipeline/sampler_builder.h
+    Pipeline/sampler_builder.cpp
 
-    Texture/texture.h
-    Texture/texture_manager.h
-    Texture/texture_manager.cpp
+    Resource/mesh.h
+    Resource/mesh.cpp
+    Resource/Texture/texture.h
+    Resource/Texture/texture_manager.h
+    Resource/Texture/texture_manager.cpp
 
-    frame_packet.h
-    ui_renderer.h
-    ui_renderer.cpp
-    render_pass_manager.h
-    render_pass_manager.cpp
-    ui_pass.h
-    ui_pass.cpp
+    Frame/frame_packet.h
+    Frame/per_frame_constant_buffer.h
+    Frame/dynamic_upload_buffer.h
+    Frame/render_frame_context.h
+    Frame/constant_buffers.h
 
-    per_frame_constant_buffer.h
-    dynamic_upload_buffer.h
+    Command/buffer.h
+    Command/render_command_list.h
+
+    Render/render_pass_manager.h
+    Render/render_pass_manager.cpp
+
+    Render/ui_pass.h
+    Render/ui_pass.cpp
+    Render/ui_renderer.h
+    Render/ui_renderer.cpp
 )
 
 target_link_libraries(app PRIVATE framework)
