@@ -28,13 +28,14 @@ struct TexRGBA {
   unsigned char R, G, B, A;
 };
 
-bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_height) {
+bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_height, GraphicInitProps props) {
   // Cleanup
   Shutdown();
   is_shutting_down_ = false;
 
   frame_buffer_width_ = frame_buffer_width;
   frame_buffer_height_ = frame_buffer_height;
+  enable_vsync_ = props.enable_vsync;
 
   std::wstring init_error_caption = L"Graphic Initialization Error";
 
@@ -280,7 +281,8 @@ void Graphic::EndFrame(const RenderFrameContext& frame) {
 
   texture_manager_.CleanUploadBuffers();
 
-  swap_chain_manager_.Present(1, 0);
+  UINT sync_interval = enable_vsync_ ? 1 : 0;
+  swap_chain_manager_.Present(sync_interval, 0);
 }
 
 void Graphic::RenderScene(const RenderFrameContext& frame, const FramePacket& world) {

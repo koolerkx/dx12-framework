@@ -23,6 +23,10 @@
 #include "ui_pass.h"
 #include "ui_renderer.h"
 
+struct GraphicInitProps {
+  bool enable_vsync = true;
+};
+
 class Graphic {
  public:
   Graphic() = default;
@@ -30,7 +34,7 @@ class Graphic {
     Shutdown();
   };
 
-  bool Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_height);
+  bool Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_height, GraphicInitProps props = {});
   void Shutdown();
 
   // helper
@@ -52,6 +56,10 @@ class Graphic {
 
   FenceManager& GetFenceManager() {
     return fence_manager_;
+  }
+
+  void SetVSync(bool enable) {
+    enable_vsync_ = enable;
   }
 
  private:
@@ -106,6 +114,8 @@ class Graphic {
 
   bool CreateCommandList();
   bool CreateCommandAllocators();
+
+  bool enable_vsync_ = true;
 
   bool is_initialized_ = false;
   std::atomic<bool> is_shutting_down_{false};
