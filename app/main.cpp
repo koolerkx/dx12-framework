@@ -41,8 +41,6 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
   InputSystem inputSystem;
   (void)inputSystem.Initialize(app.GetHwnd());
 
-  static bool is_vibrate = false;
-
   const std::function<void(float dt)> OnUpdate = [&]([[maybe_unused]] float dt) {
     inputSystem.Update();
 
