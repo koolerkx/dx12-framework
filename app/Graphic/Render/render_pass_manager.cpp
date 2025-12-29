@@ -1,14 +1,20 @@
 #include "render_pass_manager.h"
 
 #include "Core/utils.h"
-#include "ui_pass.h"
 
 void RenderPassManager::Execute(const RenderFrameContext& frame, const FramePacket& packet) {
-  // Pass 1: Opaque (Future)
-  // TODO: implement opaque pass
-
-  // Pass 2: UI
-  if (ui_pass_) {
-    utils::CommandListEventGroup(frame.command_list, L"UI Pass", [&]() { ui_pass_->Execute(frame, packet); });
+  for (auto& pass : passes_) {
+    if (pass) {
+      utils::CommandListEventGroup(
+        frame.command_list, utils::utf8_to_wstring(pass->GetName()).c_str(), [&]() { pass->Execute(frame, packet); });
+    }
   }
+}
+
+void RenderPassManager::AddPass(std::unique_ptr<IRenderPass> pass) {
+  passes_.push_back(std::move(pass));
+}
+
+void RenderPassManager::ClearPasses() {
+  passes_.clear();
 }

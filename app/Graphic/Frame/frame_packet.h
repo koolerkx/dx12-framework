@@ -4,6 +4,7 @@
 #include <vector>
 
 struct Texture;
+class Mesh;
 
 enum class RenderPassTag {
   Ui,                // Used for HUD, Menus (Overlay)
@@ -16,6 +17,14 @@ struct RenderCommandBase {
   DirectX::XMFLOAT4X4 world_matrix;
 };
 
+struct OpaqueDrawCommand {
+  DirectX::XMFLOAT4X4 world_matrix;
+  DirectX::XMFLOAT4 color;
+  Texture* texture;
+  Mesh* mesh;
+  float depth;
+};
+
 // Data specifically for UI rendering
 struct UiDrawCommand : public RenderCommandBase {
   DirectX::XMFLOAT2 size;
@@ -24,15 +33,9 @@ struct UiDrawCommand : public RenderCommandBase {
   int layer_id = 0;
 };
 
-// Data specifically for 3D Opaque rendering
-struct MeshDrawCommand : public RenderCommandBase {
-  // TODO: Mesh* mesh;
-  // TODO: Material* material;
-};
-
 // The packet sent from Scene to Renderer
 struct FramePacket {
-  std::vector<MeshDrawCommand> opaque_pass;
+  std::vector<OpaqueDrawCommand> opaque_pass;
   std::vector<UiDrawCommand> ui_pass;
   // TODO: std::vector<MeshDrawCommand> transparent_pass;
 

@@ -1,20 +1,22 @@
 #pragma once
+#include <vector>
+
 #include "Frame/frame_packet.h"
 #include "Frame/render_frame_context.h"
+#include "opaque_renderer.h"
 #include "render_pass.h"
-#include "ui_renderer.h"
 
-class UiPass : public IRenderPass {
+class OpaquePass : public IRenderPass {
  public:
-  explicit UiPass(UiRenderer* renderer);
+  explicit OpaquePass(OpaqueRenderer* renderer);
 
   void Execute(const RenderFrameContext& frame, const FramePacket& packet) override;
 
   const char* GetName() const override {
-    return "UI Pass";
+    return "Opaque Pass";
   }
 
  private:
-  UiRenderer* ui_renderer_;
-  std::vector<UiDrawCommand> packet_cache_;
+  OpaqueRenderer* opaque_renderer_;
+  std::vector<OpaqueDrawCommand> packet_cache_;
 };

@@ -1,17 +1,20 @@
 #pragma once
 #include "Frame/frame_packet.h"
 #include "Frame/render_frame_context.h"
+#include "render_pass.h"
 
 class UiPass;
 
 class RenderPassManager {
  public:
+  RenderPassManager() = default;
+
   void Execute(const RenderFrameContext& frame, const FramePacket& packet);
 
-  void SetUiPass(UiPass* pass) {
-    ui_pass_ = pass;
-  }
+  void AddPass(std::unique_ptr<IRenderPass> pass);
+
+  void ClearPasses();
 
  private:
-  UiPass* ui_pass_ = nullptr;
+  std::vector<std::unique_ptr<IRenderPass>> passes_;
 };

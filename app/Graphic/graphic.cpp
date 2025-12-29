@@ -11,10 +11,10 @@
 #include <vector>
 
 #include "Core/types.h"
+#include "Frame/frame_packet.h"
 #include "Pipeline/pipeline_state_builder.h"
 #include "Pipeline/root_signature_builder.h"
-#include "Frame/frame_packet.h"
-
+#include "Render/opaque_pass.h"
 
 using namespace DirectX;
 
@@ -179,10 +179,12 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
   scissor_rect_.bottom = scissor_rect_.top + frame_buffer_height_;  // 切り抜き下座標
 
   ui_renderer_ = std::make_unique<UiRenderer>(root_signature_.Get(), pipeline_state_.Get(), &quadMesh_);
+  opaque_renderer_ = std::make_unique<OpaqueRenderer>(root_signature_.Get(), pipeline_state_.Get());
 
-  ui_pass_ = std::make_unique<UiPass>(ui_renderer_.get());
   render_pass_manager_ = std::make_unique<RenderPassManager>();
-  render_pass_manager_->SetUiPass(ui_pass_.get());
+
+  render_pass_manager_->AddPass(std::make_unique<OpaquePass>(opaque_renderer_.get()));
+  render_pass_manager_->AddPass(std::make_unique<UiPass>(ui_renderer_.get()));
 
   is_initialized_ = true;
   return true;

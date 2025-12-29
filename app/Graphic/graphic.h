@@ -17,6 +17,7 @@
 #include "Frame/render_frame_context.h"
 #include "Presentation/depth_buffer.h"
 #include "Presentation/swapchain_manager.h"
+#include "Render/opaque_renderer.h"
 #include "Render/render_pass_manager.h"
 #include "Render/ui_pass.h"
 #include "Render/ui_renderer.h"
@@ -107,7 +108,7 @@ class Graphic {
   TextureManager texture_manager_;
 
   std::unique_ptr<UiRenderer> ui_renderer_;
-  std::unique_ptr<UiPass> ui_pass_;
+  std::unique_ptr<OpaqueRenderer> opaque_renderer_;
   std::unique_ptr<RenderPassManager> render_pass_manager_;
 
   // Initialization
