@@ -39,10 +39,14 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
   Application app(hInstance, window_width, window_height);
   Graphic graphic;
 
-  GraphicInitProps graphic_props{.enable_vsync = true};
+  Graphic::GraphicInitProps graphic_props{.enable_vsync = true};
   if (!graphic.Initialize(app.GetHwnd(), window_width, window_height, graphic_props)) {
     throw std::runtime_error("Failed to initialize graphics system");
   }
+
+  app.SetResizeCallback([&graphic](UINT width, UINT height) -> bool {
+    return graphic.ResizeBuffers(width, height);
+  });
 
   Game game(graphic);
   game.Initialize();

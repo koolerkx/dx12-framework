@@ -5,6 +5,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
+#include <functional>
 #include <memory>
 #include <string>
 
@@ -37,18 +38,42 @@ class Application {
     return hwnd_;
   }
 
+  // Fullscreen management
+  bool SetBorderlessFullscreen(bool enable);
+  bool IsBorderlessFullscreen() const {
+    return is_borderless_fullscreen_;
+  }
+  bool ToggleBorderlessFullscreen();
+
+  // Get current client area size
+  void GetClientSize(UINT& width, UINT& height) const;
+
+  // Callback for resize notification
+  using ResizeCallback = std::function<bool(UINT width, UINT height)>;
+  void SetResizeCallback(ResizeCallback callback) {
+    resize_callback_ = callback;
+  }
+
  private:
   static LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
   bool InitWindow();
+  bool HandleResize(UINT new_width, UINT new_height);
 
   HINSTANCE hInstance_;
   HWND hwnd_;
   int width_;
   int height_;
   bool running_;
-
   float frequency_;
+
+  // Fullscreen state
+  bool is_borderless_fullscreen_ = false;
+  DWORD window_style_cache_ = 0;
+  RECT window_rect_cache_ = {};
+
+  // Resize callback
+  ResizeCallback resize_callback_;
 
   std::unique_ptr<TimerUpdater> timer_updater_ = nullptr;
 };

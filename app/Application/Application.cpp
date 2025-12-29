@@ -1,5 +1,6 @@
 #include "Application.h"
 
+#include <iostream>
 #include <memory>
 #include <stdexcept>
 
@@ -72,6 +73,116 @@ bool Application::InitWindow() {
   return true;
 }
 
+void Application::GetClientSize(UINT& width, UINT& height) const {
+  RECT client_rect;
+  GetClientRect(hwnd_, &client_rect);
+  width = client_rect.right - client_rect.left;
+  height = client_rect.bottom - client_rect.top;
+}
+
+bool Application::HandleResize(UINT new_width, UINT new_height) {
+  if (resize_callback_) {
+    return resize_callback_(new_width, new_height);
+  }
+  return true;
+}
+
+bool Application::SetBorderlessFullscreen(bool enable) {
+  if (!hwnd_) {
+    return false;
+  }
+
+  if (enable == is_borderless_fullscreen_) {
+    return true;
+  }
+
+  if (enable) {
+    // Save current window style and position
+    window_style_cache_ = GetWindowLong(hwnd_, GWL_STYLE);
+    GetWindowRect(hwnd_, &window_rect_cache_);
+
+    // Get monitor info
+    HMONITOR monitor = MonitorFromWindow(hwnd_, MONITOR_DEFAULTTONEAREST);
+    MONITORINFO monitor_info = {};
+    monitor_info.cbSize = sizeof(MONITORINFO);
+
+    if (!GetMonitorInfo(monitor, &monitor_info)) {
+      std::cerr << "Failed to get monitor info" << std::endl;
+      return false;
+    }
+
+    // Remove window decorations
+    DWORD new_style = window_style_cache_ & ~(WS_CAPTION | WS_THICKFRAME | WS_MINIMIZE | WS_MAXIMIZE | WS_SYSMENU);
+    SetWindowLong(hwnd_, GWL_STYLE, new_style);
+
+    // Set window to cover entire monitor
+    RECT& monitor_rect = monitor_info.rcMonitor;
+    SetWindowPos(hwnd_,
+      HWND_TOP,
+      monitor_rect.left,
+      monitor_rect.top,
+      monitor_rect.right - monitor_rect.left,
+      monitor_rect.bottom - monitor_rect.top,
+      SWP_FRAMECHANGED | SWP_NOACTIVATE);
+
+    ShowWindow(hwnd_, SW_MAXIMIZE);
+
+    // Notify graphics system to resize
+    UINT monitor_width = monitor_rect.right - monitor_rect.left;
+    UINT monitor_height = monitor_rect.bottom - monitor_rect.top;
+
+    if (!HandleResize(monitor_width, monitor_height)) {
+      std::cerr << "Failed to resize graphics for fullscreen" << std::endl;
+      // Try to restore window
+      SetWindowLong(hwnd_, GWL_STYLE, window_style_cache_);
+      SetWindowPos(hwnd_,
+        HWND_NOTOPMOST,
+        window_rect_cache_.left,
+        window_rect_cache_.top,
+        window_rect_cache_.right - window_rect_cache_.left,
+        window_rect_cache_.bottom - window_rect_cache_.top,
+        SWP_FRAMECHANGED | SWP_NOACTIVATE);
+      return false;
+    }
+
+    is_borderless_fullscreen_ = true;
+
+  } else {
+    // Restore window style
+    SetWindowLong(hwnd_, GWL_STYLE, window_style_cache_);
+
+    // Restore window position and size
+    SetWindowPos(hwnd_,
+      HWND_NOTOPMOST,
+      window_rect_cache_.left,
+      window_rect_cache_.top,
+      window_rect_cache_.right - window_rect_cache_.left,
+      window_rect_cache_.bottom - window_rect_cache_.top,
+      SWP_FRAMECHANGED | SWP_NOACTIVATE);
+
+    ShowWindow(hwnd_, SW_NORMAL);
+
+    // Notify graphics system to resize back
+    RECT client_rect;
+    GetClientRect(hwnd_, &client_rect);
+    UINT windowed_width = client_rect.right - client_rect.left;
+    UINT windowed_height = client_rect.bottom - client_rect.top;
+
+    if (!HandleResize(windowed_width, windowed_height)) {
+      std::cerr << "Failed to resize graphics for windowed mode" << std::endl;
+      return false;
+    }
+
+    is_borderless_fullscreen_ = false;
+  }
+
+  return true;
+}
+
+bool Application::ToggleBorderlessFullscreen() {
+  return SetBorderlessFullscreen(!is_borderless_fullscreen_);
+}
+
 LRESULT CALLBACK Application::WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
   Application* app = nullptr;
 
@@ -88,7 +199,6 @@ LRESULT CALLBACK Application::WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPA
       if (app) {
         app->running_ = false;
       }
-      // PostQuitMessage(0);
       return 0;
 
     case WM_KEYDOWN:
@@ -98,7 +208,24 @@ LRESULT CALLBACK Application::WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPA
         }
         DestroyWindow(hwnd);
       }
+      // Toggle fullscreen with F11
+      if (wParam == VK_F11) {
+        if (app) {
+          app->ToggleBorderlessFullscreen();
+        }
+      }
       return 0;
+
+    case WM_SIZE:
+      if (app && wParam != SIZE_MINIMIZED) {
+        UINT new_width = LOWORD(lParam);
+        UINT new_height = HIWORD(lParam);
+        if (new_width > 0 && new_height > 0) {
+          app->HandleResize(new_width, new_height);
+        }
+      }
+      return 0;
+
     default:
       break;
   }
@@ -114,7 +241,6 @@ int Application::Run(const std::function<void(float dt)>& OnUpdate, const std::f
   }
 
   while (running_) {
-    // Process all pending messages
     while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
       TranslateMessage(&msg);
       DispatchMessage(&msg);

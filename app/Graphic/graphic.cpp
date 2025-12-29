@@ -28,11 +28,12 @@ struct TexRGBA {
   unsigned char R, G, B, A;
 };
 
-bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_height, GraphicInitProps props) {
+bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_height, const Graphic::GraphicInitProps& props) {
   // Cleanup
   Shutdown();
   is_shutting_down_ = false;
 
+  hwnd_ = hwnd;
   frame_buffer_width_ = frame_buffer_width;
   frame_buffer_height_ = frame_buffer_height;
   enable_vsync_ = props.enable_vsync;
@@ -184,6 +185,38 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
 
   is_initialized_ = true;
   return true;
+}
+
+bool Graphic::ResizeBuffers(UINT width, UINT height) {
+  if (!is_initialized_ || width == 0 || height == 0) {
+    return false;
+  }
+
+  if (width == frame_buffer_width_ && height == frame_buffer_height_) {
+    return true;  // Already at target size
+  }
+
+  fence_manager_.WaitForGpu(command_queue_.Get());
+  depth_buffer_.SafeRelease();
+
+  // Resize swap chain
+  if (!swap_chain_manager_.Resize(width, height, descriptor_heap_manager_)) {
+    std::cerr << "Failed to resize swap chain" << std::endl;
+    return false;
+  }
+
+  // Recreate depth buffer
+  if (!depth_buffer_.Initialize(device_.Get(), width, height, descriptor_heap_manager_)) {
+    std::cerr << "Failed to recreate depth buffer" << std::endl;
+    return false;
+  }
+
+  frame_buffer_width_ = width;
+  frame_buffer_height_ = height;
+  viewport_.Width = static_cast<FLOAT>(width);
+  viewport_.Height = static_cast<FLOAT>(height);
+  scissor_rect_.right = width;
+  scissor_rect_.bottom = height;
 
   return true;
 }

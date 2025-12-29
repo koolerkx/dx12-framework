@@ -23,19 +23,23 @@
 #include "ui_pass.h"
 #include "ui_renderer.h"
 
-struct GraphicInitProps {
-  bool enable_vsync = true;
-};
-
 class Graphic {
  public:
+  // Simplified initialization
+  struct GraphicInitProps {
+    bool enable_vsync = true;
+  };
+
   Graphic() = default;
   ~Graphic() {
     Shutdown();
   };
 
-  bool Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_height, GraphicInitProps props = {});
+  bool Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_height, const GraphicInitProps& props);
   void Shutdown();
+
+  // Resize graphics resources
+  bool ResizeBuffers(UINT width, UINT height);
 
   // helper
   /**
@@ -115,6 +119,7 @@ class Graphic {
   bool CreateCommandList();
   bool CreateCommandAllocators();
 
+  HWND hwnd_ = nullptr;
   bool enable_vsync_ = true;
 
   bool is_initialized_ = false;

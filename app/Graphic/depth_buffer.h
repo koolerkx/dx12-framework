@@ -23,6 +23,8 @@ class DepthBuffer : public GpuResource {
 
   void Clear(ID3D12GraphicsCommandList* command_list, float depth = 1.0f, UINT8 stencil = 0);
 
+  void SafeRelease();
+
   UINT GetWidth() const {
     return width_;
   }
