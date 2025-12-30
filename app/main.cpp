@@ -1,10 +1,5 @@
 ﻿#include "Framework/Event/event_system.h"
 #include "Framework/Event/input_event_generator.h"
-#include "Framework/Event/input_events.h"
-#include "Framework/Input/GamePad.h"
-#include "Framework/Input/Keyboard.h"
-#include "Framework/Input/Mouse.h"
-#include "Framework/Input/gamepad.h"
 #define WIN32_LEAN_AND_MEAN
 #include <DirectXMath.h>
 #include <Windows.h>
@@ -19,6 +14,7 @@
 #include "Core/utils.h"
 #include "Framework/Input/input.h"
 #include "Game/game.h"
+#include "Game/game_context.h"
 #include "Graphic/graphic.h"
 
 template <typename T>
@@ -44,17 +40,23 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
     throw std::runtime_error("Failed to initialize graphics system");
   }
 
-  app.SetResizeCallback([&graphic](UINT width, UINT height) -> bool {
-    return graphic.ResizeBuffers(width, height);
-  });
-
-  Game game(graphic);
-  game.Initialize();
+  app.SetResizeCallback([&graphic](UINT width, UINT height) -> bool { return graphic.ResizeBuffers(width, height); });
 
   InputSystem inputSystem;
   if (!inputSystem.Initialize(app.GetHwnd())) {
     throw std::runtime_error("Failed to initialize input system");
   }
+
+  EventSystem event_system;
+
+  GameContext context;
+  context.SetGraphic(&graphic);
+  context.SetInputSystem(&inputSystem);
+  context.SetEventSystem(&event_system);
+
+  Game game;
+  game.SetContext(&context);
+  game.Initialize();
 
   InputEventGenerator event_generator(inputSystem);
 

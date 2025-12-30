@@ -4,13 +4,18 @@
 #include <iostream>
 
 #include "Component/transform_component.h"
+#include "scene.h"
 
-GameObject::GameObject(const std::string& name) : name_(name) {
+GameObject::GameObject(IScene* scene, const std::string& name) : name_(name), scene_(scene) {
   // CONSTRAINT: Every GameObject MUST have a TransformComponent.
   AddUniqueComponent<TransformComponent>();
 }
 
 GameObject::~GameObject() {
+}
+
+GameContext* GameObject::GetContext() const {
+  return scene_ ? scene_->GetContext() : nullptr;
 }
 
 void GameObject::Start() {

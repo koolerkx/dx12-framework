@@ -2,6 +2,8 @@ add_library(game STATIC
     game.h
     game.cpp
 
+    game_context.h
+
     scene.h
     scene.cpp
 
@@ -13,12 +15,13 @@ add_library(game STATIC
     game_object.cpp
 
     Component/component.h
+    Component/component.cpp
     Component/transform_component.h
     Component/transform_component.cpp
     Component/camera_component.h
     Component/camera_component.cpp
-
-    Event/event.h
+    Component/free_camera_controller.h
+    Component/free_camera_controller.cpp
 
     Scenes/test_scene/test_scene.h
     Scenes/test_scene/test_scene.cpp

@@ -4,6 +4,7 @@
 
 #include "Component/camera_component.h"
 #include "Graphic/Frame/frame_packet.h"
+#include "game_context.h"
 #include "game_object.h"
 
 class AssetManager;
@@ -32,6 +33,13 @@ class IScene {
   void FixedUpdate(float dt);
   void Render(FramePacket& packet);
 
+  void SetContext(GameContext* context) {
+    context_ = context;
+  }
+  GameContext* GetContext() const {
+    return context_;
+  }
+
   void SetActiveCamera(CameraComponent* camera) {
     active_camera_ = camera;
   }
@@ -47,6 +55,8 @@ class IScene {
   std::vector<std::unique_ptr<GameObject>> game_objects_;
   CameraComponent* active_camera_ = nullptr;
   bool is_started_ = false;
+
+  GameContext* context_ = nullptr;
 
   void UpdateRootObjects(float dt);
   void FixedUpdateRootObjects(float dt);

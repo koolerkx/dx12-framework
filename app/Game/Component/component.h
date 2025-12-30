@@ -19,6 +19,7 @@ struct ComponentType {
 };
 
 class GameObject;
+class GameContext;
 
 class IComponentBase {
  public:
@@ -42,6 +43,8 @@ class IComponentBase {
   GameObject* GetOwner() const {
     return owner_;
   }
+
+  GameContext* GetContext() const;
 
  protected:
   GameObject* owner_;

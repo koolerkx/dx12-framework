@@ -94,3 +94,27 @@ XMMATRIX TransformComponent::GetWorldMatrix() {
   XMStoreFloat4x4(&world_matrix_, local);
   return local;
 }
+
+XMFLOAT3 TransformComponent::GetForward() {
+  XMMATRIX world = GetWorldMatrix();
+  XMVECTOR forward = XMVector3Normalize(world.r[2]);
+  XMFLOAT3 result;
+  XMStoreFloat3(&result, forward);
+  return result;
+}
+
+XMFLOAT3 TransformComponent::GetRight() {
+  XMMATRIX world = GetWorldMatrix();
+  XMVECTOR right = XMVector3Normalize(world.r[0]);
+  XMFLOAT3 result;
+  XMStoreFloat3(&result, right);
+  return result;
+}
+
+XMFLOAT3 TransformComponent::GetUp() {
+  XMMATRIX world = GetWorldMatrix();
+  XMVECTOR up = XMVector3Normalize(world.r[1]);
+  XMFLOAT3 result;
+  XMStoreFloat3(&result, up);
+  return result;
+}

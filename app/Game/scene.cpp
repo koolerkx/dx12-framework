@@ -7,7 +7,7 @@
 
 
 GameObject* IScene::CreateGameObject(const std::string& name) {
-  auto obj = std::make_unique<GameObject>(name);
+  auto obj = std::make_unique<GameObject>(this, name);
   GameObject* ptr = obj.get();
   game_objects_.push_back(std::move(obj));
 

@@ -2,9 +2,8 @@
 
 #include <DirectXMath.h>
 
-#include <iostream>
-
 #include "Asset/asset_manager.h"
+#include "Component/free_camera_controller.h"
 #include "Component/mesh_renderer.h"
 #include "Component/sprite_renderer.h"
 #include "Component/transform_component.h"
@@ -63,6 +62,11 @@ void TestScene::SetupCamera() {
 
   auto* camera = camera_object_->AddComponent<CameraComponent>();
   camera->SetPerspective(DirectX::XM_PIDIV4, 16.0f / 9.0f, 0.1f, 1000.0f);
+
+  auto* controller = camera_object_->AddComponent<FreeCameraController>();
+  controller->SetMovementSpeed(15.0f);
+  controller->SetRotationSpeed(1.5f);
+  controller->SetSmoothness(8.0f);
 
   SetActiveCamera(camera);
 }

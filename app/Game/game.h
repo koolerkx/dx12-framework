@@ -4,13 +4,18 @@
 
 #include "Asset/asset_manager.h"
 #include "Graphic/Frame/frame_packet.h"
-#include "Graphic/graphic.h"
 #include "scene.h"
+
+class GameContext;
 
 class Game {
  public:
-  explicit Game(Graphic& graphic);
+  Game();
   ~Game();
+
+  void SetContext(GameContext* context) {
+    context_ = context;
+  }
 
   void Initialize();
   void Shutdown();
@@ -20,7 +25,7 @@ class Game {
   void OnRender();
 
  private:
-  Graphic& graphic_;
+  GameContext* context_ = nullptr;
   AssetManager asset_manager_;
   std::unique_ptr<IScene> current_scene_;
   FramePacket frame_packet_;

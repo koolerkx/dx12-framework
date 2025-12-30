@@ -29,6 +29,10 @@ class TransformComponent : public Component<TransformComponent> {
   // Calculates World Matrix (Cached & Recursive)
   DirectX::XMMATRIX GetWorldMatrix();
 
+  DirectX::XMFLOAT3 GetForward();
+  DirectX::XMFLOAT3 GetRight();
+  DirectX::XMFLOAT3 GetUp();
+
  private:
   void UpdateLocalMatrix();
 

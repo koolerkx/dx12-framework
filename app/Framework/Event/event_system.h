@@ -181,7 +181,7 @@ class EventBus {
 
     auto& buffer = GetEventBuffer();
     size_t seq = buffer.size();
-    assert(seq <= std::numeric_limits<uint32_t>::max() && "Event buffer size exceeds uint32_t max");
+    assert(seq <= (std::numeric_limits<uint32_t>::max)() && "Event buffer size exceeds uint32_t max");
 
     EventEntry entry{
       .type = std::type_index(typeid(E)),
@@ -316,3 +316,5 @@ inline void Subscription::Unsubscribe() {
 }
 
 }  // namespace Event
+
+using EventSystem = Event::EventBus;

@@ -1,8 +1,9 @@
 #include "game.h"
 
 #include "Scenes/test_scene/test_scene.h"
+#include "game_context.h"
 
-Game::Game(Graphic& graphic) : graphic_(graphic) {
+Game::Game() {
 }
 
 Game::~Game() {
@@ -10,10 +11,13 @@ Game::~Game() {
 }
 
 void Game::Initialize() {
-  asset_manager_.Initialize(&graphic_);
+  if (context_ && context_->GetGraphic()) {
+    asset_manager_.Initialize(context_->GetGraphic());
+  }
 
   current_scene_ = std::make_unique<TestScene>();
   if (current_scene_) {
+    current_scene_->SetContext(context_);
     current_scene_->Enter(asset_manager_);
   }
 }
@@ -43,14 +47,17 @@ void Game::OnFixedUpdate(float dt) {
 }
 
 void Game::OnRender() {
+  if (!context_ || !context_->GetGraphic()) return;
+
+  Graphic* graphic = context_->GetGraphic();
   frame_packet_.Clear();
 
-  RenderFrameContext frame_context = graphic_.BeginFrame();
+  RenderFrameContext frame_context = graphic->BeginFrame();
 
   if (current_scene_) {
     current_scene_->Render(frame_packet_);
   }
 
-  graphic_.RenderScene(frame_context, frame_packet_);
-  graphic_.EndFrame(frame_context);
+  graphic->RenderScene(frame_context, frame_packet_);
+  graphic->EndFrame(frame_context);
 }

@@ -7,9 +7,12 @@
 #include "Component/component.h"
 #include "Component/transform_component.h"
 
+class IScene;
+class GameContext;
+
 class GameObject {
  public:
-  explicit GameObject(const std::string& name = "GameObject");
+  explicit GameObject(IScene* scene, const std::string& name = "GameObject");
   ~GameObject();
 
   // Lifecycle
@@ -19,6 +22,11 @@ class GameObject {
   void Render(FramePacket& packet);
 
   TransformComponent* GetTransform();
+
+  IScene* GetScene() const {
+    return scene_;
+  }
+  GameContext* GetContext() const;
 
   // --- Hierarchy System ---
   /// @note Pass nullptr to detach.
@@ -85,6 +93,7 @@ class GameObject {
   std::string name_;
   bool is_started_ = false;
 
+  IScene* scene_ = nullptr;
   GameObject* parent_ = nullptr;
   std::vector<GameObject*> children_;
   std::vector<std::unique_ptr<IComponentBase>> components_;
