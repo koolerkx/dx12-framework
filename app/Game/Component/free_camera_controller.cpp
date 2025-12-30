@@ -41,10 +41,10 @@ FreeCameraController::InputState FreeCameraController::GatherInput(InputSystem* 
   float pitch = 0.0f;
   float yaw = 0.0f;
 
-  if (input->GetKey(Keyboard::KeyCode::Up)) pitch += 1.0f;
-  if (input->GetKey(Keyboard::KeyCode::Down)) pitch -= 1.0f;
-  if (input->GetKey(Keyboard::KeyCode::Left)) yaw += 1.0f;
-  if (input->GetKey(Keyboard::KeyCode::Right)) yaw -= 1.0f;
+  if (input->GetKey(Keyboard::KeyCode::Up)) pitch -= 1.0f;
+  if (input->GetKey(Keyboard::KeyCode::Down)) pitch += 1.0f;
+  if (input->GetKey(Keyboard::KeyCode::Left)) yaw -= 1.0f;
+  if (input->GetKey(Keyboard::KeyCode::Right)) yaw += 1.0f;
 
   state.look_input = {pitch, yaw};
 
