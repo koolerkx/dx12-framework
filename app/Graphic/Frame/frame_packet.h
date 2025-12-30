@@ -19,7 +19,7 @@ struct OpaqueDrawCommand {
   DirectX::XMFLOAT4X4 world_matrix;
   DirectX::XMFLOAT4 color;
   Texture* texture;
-  Mesh* mesh;
+  const Mesh* mesh;
   float depth;  // For sorting
 };
 

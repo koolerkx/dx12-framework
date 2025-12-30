@@ -15,6 +15,7 @@
 #include "Pipeline/pipeline_state_builder.h"
 #include "Pipeline/root_signature_builder.h"
 #include "Render/opaque_pass.h"
+#include "Resource/mesh_factory.h"
 
 using namespace DirectX;
 
@@ -102,19 +103,15 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
     }
   }
 
-  // Draw Triangle
-  Vertex vertices[] = {
-    {{-0.5f, -0.5f, 0.0f}, {0.0f, 1.0f}},  // LB
-    {{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f}},   // LT
-    {{0.5f, -0.5f, 0.0f}, {1.0f, 1.0f}},   // RB
-    {{0.5f, 0.5f, 0.0f}, {1.0f, 0.0f}},    // RT
-  };
-
-  uint16_t indices[] = {0, 1, 2, 2, 1, 3};
-
   // Create vertex buffer
-  if (!quadMesh_.Create(device_.Get(), vertices, 4, indices, 6)) {
-    std::cerr << "Failed to create mesh." << std::endl;
+  if (!MeshFactory::CreateQuad(device_.Get(), quadMesh_)) {
+    std::cerr << "Failed to create quad mesh." << std::endl;
+    return false;
+  }
+
+  // Create cube mesh
+  if (!MeshFactory::CreateCube(device_.Get(), cubeMesh_)) {
+    std::cerr << "Failed to create cube mesh." << std::endl;
     return false;
   }
 

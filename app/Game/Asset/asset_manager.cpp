@@ -1,5 +1,7 @@
 #include "asset_manager.h"
 
+#include <iostream>
+
 #include "Graphic/Resource/Texture/texture_manager.h"
 #include "Graphic/graphic.h"
 
@@ -21,6 +23,7 @@ bool AssetManager::Initialize(Graphic* graphic) {
   impl_ = std::make_unique<Impl>();
   impl_->graphic = graphic;
   impl_->texture_manager = &graphic->GetTextureManager();
+  CreateDefaultMeshes();
   return true;
 }
 
@@ -50,4 +53,26 @@ void AssetManager::ProcessDeferredCleanup(uint64_t completed_fence_value) {
 
 void AssetManager::ClearUploadBuffers() {
   impl_->texture_manager->CleanUploadBuffers();
+}
+
+Graphic* AssetManager::GetGraphicForDebugUseOnly() const {
+  return impl_.get()->graphic;
+}
+
+void AssetManager::CreateDefaultMeshes() {
+  if (!impl_->graphic) return;
+
+  // Get meshes from Graphic (it owns them)
+  default_meshes_[DefaultMesh::Quad] = impl_->graphic->GetQuadMesh();
+  default_meshes_[DefaultMesh::Cube] = impl_->graphic->GetCubeMesh();
+}
+
+const Mesh* AssetManager::GetDefaultMesh(DefaultMesh type) const {
+  auto it = default_meshes_.find(type);
+  if (it != default_meshes_.end()) {
+    return it->second;
+  }
+
+  std::cerr << "[AssetManager] Default mesh not found: " << static_cast<int>(type) << std::endl;
+  return nullptr;
 }

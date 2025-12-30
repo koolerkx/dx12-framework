@@ -1,10 +1,17 @@
 #include "test_scene.h"
 
+#include <iostream>
+
 #include "Asset/asset_manager.h"
+#include "Component/mesh_renderer.h"
 #include "Component/sprite_renderer.h"
 #include "Component/transform_component.h"
 #include "character_mover_component.h"
+#include "graphic.h"
 #include "test_scene.h"
+
+static float rotation_angle_ = 0.0f;
+static float rotation_speed_ = 1.0f;
 
 void TestScene::OnEnter(AssetManager& asset_manager) {
   texture_background_ = asset_manager.LoadTexture("Content/textures/result_bg_1.png");
@@ -12,20 +19,41 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
 
   SetupCamera();
 
-  auto* background = CreateGameObject("Background");
-  background->GetComponent<TransformComponent>()->SetPosition({500, 500, 0});
-  auto* bg_sprite = background->AddComponent<SpriteRenderer>();
-  bg_sprite->SetTexture(texture_background_.Get());
-  bg_sprite->SetSize({1920, 1080});
+  cube_object_ = CreateGameObject("Cube");
+  auto* cube_transform = cube_object_->GetComponent<TransformComponent>();
+  cube_transform->SetPosition({0.0f, 0.0f, 0.0f});  // At origin
+  cube_transform->SetScale({2.0f, 2.0f, 2.0f});     // Scale to 2x2x2
+
+  auto* mesh_renderer = cube_object_->AddComponent<MeshRenderer>();
+  mesh_renderer->SetMesh(asset_manager.GetDefaultMesh(DefaultMesh::Cube));
+  mesh_renderer->SetTexture(texture_background_.Get());  // Use ship texture for testing
+  mesh_renderer->SetColor({1.0f, 1.0f, 1.0f, 1.0f});
+
+  // auto* background = CreateGameObject("Background");
+  // background->GetComponent<TransformComponent>()->SetPosition({500, 500, 0});
+  // auto* bg_sprite = background->AddComponent<SpriteRenderer>();
+  // bg_sprite->SetTexture(texture_background_.Get());
+  // bg_sprite->SetSize({1920, 1080});
 
   character_object_ = CreateGameObject("Character");
-  character_object_->SetParent(background);
-  character_object_->GetComponent<TransformComponent>()->SetPosition({100, 50, 0});
+  // character_object_->SetParent(background);
+  character_object_->GetComponent<TransformComponent>()->SetPosition({500, 500, 0});
   auto* char_sprite = character_object_->AddComponent<SpriteRenderer>();
   char_sprite->SetTexture(texture_character_.Get());
   char_sprite->SetSize({150, 150});
 
   character_object_->AddComponent<CharacterMover>();
+}
+
+void TestScene::OnPostUpdate(float dt) {
+  // use sin to control angle
+  rotation_angle_ += rotation_speed_ * dt;
+  DirectX::XMVECTOR axis = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);  // Rotate around Y-axis
+  DirectX::XMVECTOR quat = DirectX::XMQuaternionRotationAxis(axis, rotation_angle_);
+
+  DirectX::XMFLOAT4 rotation;
+  XMStoreFloat4(&rotation, quat);
+  cube_object_->GetComponent<TransformComponent>()->SetRotation(rotation);
 }
 
 void TestScene::OnExit() {

@@ -9,11 +9,14 @@ class TestScene : public IScene {
   void OnEnter(AssetManager& asset_manager) override;
   void OnExit() override;
 
+  void OnPostUpdate(float dt) override;
+
  private:
   AssetHandle<Texture> texture_background_;
   AssetHandle<Texture> texture_character_;
   GameObject* character_object_ = nullptr;
   GameObject* camera_object_ = nullptr;
+  GameObject* cube_object_ = nullptr;
 
   void SetupCamera();
 };

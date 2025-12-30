@@ -63,6 +63,14 @@ class Graphic {
     return fence_manager_;
   }
 
+  const Mesh* GetCubeMesh() const {
+    return &cubeMesh_;
+  }
+
+  const Mesh* GetQuadMesh() const {
+    return &quadMesh_;
+  }
+
   void SetVSync(bool enable) {
     enable_vsync_ = enable;
   }
@@ -95,6 +103,7 @@ class Graphic {
   D3D12_RECT scissor_rect_ = {};
 
   Mesh quadMesh_;
+  Mesh cubeMesh_;
 
   ConstantBuffer<FrameCB> frameCB_;
   ConstantBuffer<ObjectCB> objectCB_;

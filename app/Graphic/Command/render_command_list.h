@@ -71,7 +71,7 @@ class RenderCommandList {
     cmd_->SetGraphicsRoot32BitConstants(rootParamIndex, 1, &srvIndex, 0);
   }
 
-  void DrawMesh(Mesh* mesh) {
+  void DrawMesh(const Mesh* mesh) {
     mesh->Draw(cmd_);
   }
 
