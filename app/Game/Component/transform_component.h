@@ -13,7 +13,13 @@ class TransformComponent : public Component<TransformComponent> {
   // Setters (Mark dirty)
   void SetPosition(const DirectX::XMFLOAT3& pos);
   void SetScale(const DirectX::XMFLOAT3& scale);
+
   void SetRotation(const DirectX::XMFLOAT4& quat);
+  void SetRotationEuler(float pitch, float yaw, float roll);
+  void SetRotationEuler(const DirectX::XMFLOAT3& euler);
+
+  void SetRotationEulerDegree(float pitch, float yaw, float roll);
+  void SetRotationEulerDegree(const DirectX::XMFLOAT3& euler);
 
   // Getters
   DirectX::XMFLOAT3 GetPosition() const {

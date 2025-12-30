@@ -1,5 +1,7 @@
 #include "transform_component.h"
 
+#include <DirectXMath.h>
+
 #include "game_object.h"
 
 using namespace DirectX;
@@ -34,6 +36,29 @@ void TransformComponent::SetScale(const XMFLOAT3& scale) {
 void TransformComponent::SetRotation(const XMFLOAT4& quat) {
   local_rot_ = quat;
   is_dirty_ = true;
+}
+
+void TransformComponent::SetRotationEuler(float pitch, float yaw, float roll) {
+  XMVECTOR quat = XMQuaternionRotationRollPitchYaw(pitch, yaw, roll);
+  XMStoreFloat4(&local_rot_, quat);
+  is_dirty_ = true;
+}
+
+void TransformComponent::SetRotationEuler(const XMFLOAT3& euler) {
+  SetRotationEuler(euler.x, euler.y, euler.z);
+}
+
+void TransformComponent::SetRotationEulerDegree(float pitch, float yaw, float roll) {
+  XMVECTOR angles = XMVectorSet(XMConvertToRadians(pitch), XMConvertToRadians(yaw), XMConvertToRadians(roll), 0.0f);
+
+  XMVECTOR quat = XMQuaternionRotationRollPitchYawFromVector(angles);
+
+  XMStoreFloat4(&local_rot_, quat);
+  is_dirty_ = true;
+}
+
+void TransformComponent::SetRotationEulerDegree(const XMFLOAT3& euler) {
+  SetRotationEulerDegree(euler.x, euler.y, euler.z);
 }
 
 void TransformComponent::UpdateLocalMatrix() {

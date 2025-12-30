@@ -1,5 +1,7 @@
 #include "test_scene.h"
 
+#include <DirectXMath.h>
+
 #include <iostream>
 
 #include "Asset/asset_manager.h"
@@ -7,11 +9,10 @@
 #include "Component/sprite_renderer.h"
 #include "Component/transform_component.h"
 #include "character_mover_component.h"
-#include "graphic.h"
 #include "test_scene.h"
 
 static float rotation_angle_ = 0.0f;
-static float rotation_speed_ = 1.0f;
+static float rotation_speed_ = 15.0f;
 
 void TestScene::OnEnter(AssetManager& asset_manager) {
   texture_background_ = asset_manager.LoadTexture("Content/textures/result_bg_1.png");
@@ -46,14 +47,9 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
 }
 
 void TestScene::OnPostUpdate(float dt) {
-  // use sin to control angle
   rotation_angle_ += rotation_speed_ * dt;
-  DirectX::XMVECTOR axis = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);  // Rotate around Y-axis
-  DirectX::XMVECTOR quat = DirectX::XMQuaternionRotationAxis(axis, rotation_angle_);
 
-  DirectX::XMFLOAT4 rotation;
-  XMStoreFloat4(&rotation, quat);
-  cube_object_->GetComponent<TransformComponent>()->SetRotation(rotation);
+  cube_object_->GetComponent<TransformComponent>()->SetRotationEulerDegree({0.0f, rotation_angle_, 0.0f});
 }
 
 void TestScene::OnExit() {
