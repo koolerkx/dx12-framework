@@ -4,6 +4,9 @@
 [Bb]uild/
 [Ss]cripts/
 
+[Dd]ump/
+[Tt]emp/
+
 # shader
 *.cso
 

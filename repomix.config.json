@@ -1,0 +1,29 @@
+{
+  "output": {
+    "style": "xml",
+    "filePath": "temp/repomix-output.xml",
+    "compress": false,
+    "removeComments": false,
+    "removeEmptyLines": true,
+    "showLineNumbers": true,
+    "topFilesLength": 10,
+    "git": {
+      "includeDiffs": true
+    }
+  },
+  "ignore": {
+    "useGitignore": true,
+    "useDefaultPatterns": true,
+    "customPatterns": [
+      "**/d3dx12.h"
+    ]
+  },
+  "include": [
+    "**/*.cpp",
+    "**/*.h",
+    "**/CMakeLists.txt",
+    "shaders/**/*",
+    "**/*.hlsl",
+    "**/*.hlsli"
+  ]
+}
