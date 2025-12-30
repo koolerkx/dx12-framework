@@ -11,7 +11,12 @@
 class Material {
  public:
   Material() = default;
-  Material(const std::string& name, ID3D12RootSignature* root_signature, ID3D12PipelineState* pipeline_state, uint32_t sort_key = 0)
+
+  // Constructor with 64-bit sort key for RS + PSO sorting
+  Material(const std::string& name,
+    ID3D12RootSignature* root_signature,
+    ID3D12PipelineState* pipeline_state,
+    uint64_t sort_key = 0)  // Default parameter for backward compatibility
       : name_(name), root_signature_(root_signature), pipeline_state_(pipeline_state), sort_key_(sort_key) {
   }
 
@@ -27,14 +32,24 @@ class Material {
     return pipeline_state_.Get();
   }
 
-  // Sort key for optimizing PSO switches
-  // Lower values render first
-  // Group materials with same PSO together for better performance
-  uint32_t GetSortKey() const {
+  // Sort key for optimizing RS + PSO switches
+  // High 32 bits: Root Signature hash (groups by RS)
+  // Low 32 bits: Pipeline State hash (groups by PSO within same RS)
+  uint64_t GetSortKey() const {
     return sort_key_;
   }
 
-  void SetSortKey(uint32_t key) {
+  // Extract RS hash from sort key
+  uint32_t GetRootSignatureKey() const {
+    return static_cast<uint32_t>(sort_key_ >> 32);
+  }
+
+  // Extract PSO hash from sort key
+  uint32_t GetPSOKey() const {
+    return static_cast<uint32_t>(sort_key_ & 0xFFFFFFFF);
+  }
+
+  void SetSortKey(uint64_t key) {
     sort_key_ = key;
   }
 
@@ -46,7 +61,7 @@ class Material {
   std::string name_;
   ComPtr<ID3D12RootSignature> root_signature_;
   ComPtr<ID3D12PipelineState> pipeline_state_;
-  uint32_t sort_key_ = 0;  // For sorting to minimize PSO switches
+  uint64_t sort_key_ = 0;  // 64-bit: [32-bit RS hash | 32-bit PSO hash]
 };
 
 // Material instance with per-instance data
@@ -67,7 +82,7 @@ struct MaterialInstance {
     return material != nullptr && material->IsValid();
   }
 
-  uint32_t GetSortKey() const {
-    return material ? material->GetSortKey() : UINT32_MAX;
+  uint64_t GetSortKey() const {
+    return material ? material->GetSortKey() : UINT64_MAX;
   }
 };

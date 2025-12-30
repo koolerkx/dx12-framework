@@ -35,7 +35,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
   Application app(hInstance, window_width, window_height);
   Graphic graphic;
 
-  Graphic::GraphicInitProps graphic_props{.enable_vsync = true};
+  Graphic::GraphicInitProps graphic_props{.enable_vsync = false};
   if (!graphic.Initialize(app.GetHwnd(), window_width, window_height, graphic_props)) {
     throw std::runtime_error("Failed to initialize graphics system");
   }

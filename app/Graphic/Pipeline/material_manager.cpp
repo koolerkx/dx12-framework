@@ -1,5 +1,9 @@
 #include "material_manager.h"
+
 #include <iostream>
+
+#include "Pipeline/root_signature_builder.h"
+#include "Pipeline/sampler_builder.h"
 
 bool MaterialManager::Initialize(ID3D12Device* device) {
   if (!device) {
@@ -33,14 +37,13 @@ bool MaterialManager::CreateSharedRootSignature() {
                                // Global bindless texture array
                                .AddDescriptorTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
                                  SRV_CAPACITY,
-                                 0,  // register(t0)
-                                 1,  // space1
+                                 0,                            // register(t0)
+                                 1,                            // space1
                                  D3D12_SHADER_VISIBILITY_ALL)  // RootSlot::DescriptorTable::GlobalSRVs
                                // Static samplers
                                .AddStaticSampler(SamplerPresets::CreatePointSampler(0, D3D12_TEXTURE_ADDRESS_MODE_WRAP))
                                .AddStaticSampler(SamplerPresets::CreateLinearSampler(1, D3D12_TEXTURE_ADDRESS_MODE_WRAP))
-                               .AddStaticSampler(
-                                 SamplerPresets::CreateAnisotropicSampler(2, 16, D3D12_TEXTURE_ADDRESS_MODE_WRAP))
+                               .AddStaticSampler(SamplerPresets::CreateAnisotropicSampler(2, 16, D3D12_TEXTURE_ADDRESS_MODE_WRAP))
                                .AddStaticSampler(SamplerPresets::CreatePointSampler(3, D3D12_TEXTURE_ADDRESS_MODE_CLAMP))
                                .AddStaticSampler(SamplerPresets::CreateLinearSampler(4, D3D12_TEXTURE_ADDRESS_MODE_CLAMP))
                                .Build(device_);
@@ -79,14 +82,32 @@ void MaterialManager::CreateDefaultMaterials() {
   }
 }
 
+// ========================================
+// Method 1: Create material with shared RS
+// ========================================
+Material* MaterialManager::CreateMaterial(
+  const std::string& name, const ShaderConfig& shader_config, const RenderStateConfig& render_state) {
+  // Delegate to the custom RS version, using shared RS
+  return CreateMaterial(name, shared_root_signature_.Get(), shader_config, render_state);
+}
+
+// ========================================
+// Method 2: Create material with custom RS
+// ========================================
 Material* MaterialManager::CreateMaterial(const std::string& name,
+  ID3D12RootSignature* custom_root_signature,
   const ShaderConfig& shader_config,
   const RenderStateConfig& render_state) {
-  
   // Check if material already exists
   if (materials_.find(name) != materials_.end()) {
     std::cerr << "[MaterialManager] Material '" << name << "' already exists" << std::endl;
     return materials_[name].get();
+  }
+
+  // Validate root signature
+  if (!custom_root_signature) {
+    std::cerr << "[MaterialManager] Invalid root signature for material '" << name << "'" << std::endl;
+    return nullptr;
   }
 
   // Load shaders
@@ -101,7 +122,7 @@ Material* MaterialManager::CreateMaterial(const std::string& name,
   // Create PSO
   try {
     ComPtr<ID3D12PipelineState> pso = PipelineStateBuilder()
-                                        .SetRootSignature(shared_root_signature_.Get())
+                                        .SetRootSignature(custom_root_signature)
                                         .SetVertexShader(vs_blob)
                                         .SetPixelShader(ps_blob)
                                         .SetInputLayout(shader_config.input_layout)
@@ -118,14 +139,17 @@ Material* MaterialManager::CreateMaterial(const std::string& name,
       return nullptr;
     }
 
-    // Create material with auto-incremented sort key
-    auto material = std::make_unique<Material>(name, shared_root_signature_.Get(), pso.Get(), next_sort_key_++);
+    // Generate 64-bit sort key: [RS hash | PSO hash]
+    uint64_t sort_key = GenerateSortKey(custom_root_signature, pso.Get());
+
+    // Create material
+    auto material = std::make_unique<Material>(name, custom_root_signature, pso.Get(), sort_key);
 
     Material* material_ptr = material.get();
     materials_[name] = std::move(material);
 
-    std::cout << "[MaterialManager] Created material '" << name << "' with sort key " << material_ptr->GetSortKey()
-              << std::endl;
+    std::cout << "[MaterialManager] Created material '" << name << "' RS key: 0x" << std::hex << material_ptr->GetRootSignatureKey()
+              << " PSO key: 0x" << material_ptr->GetPSOKey() << std::dec << std::endl;
 
     return material_ptr;
   } catch (const std::exception& e) {
@@ -160,4 +184,83 @@ ID3DBlob* MaterialManager::LoadShader(const std::wstring& path) {
   // Cache it
   shader_cache_[path] = blob;
   return blob.Get();
+}
+
+// Root Signature Creation Helpers
+ComPtr<ID3D12RootSignature> MaterialManager::CreateStandardRootSignature() {
+  // Returns a reference to the shared root signature (not a new instance)
+  // All standard materials share the same root signature for optimal batching
+  return shared_root_signature_;
+}
+
+ComPtr<ID3D12RootSignature> MaterialManager::CreateTerrainRootSignature() {
+  try {
+    constexpr uint32_t SRV_CAPACITY = 4096;
+
+    // Terrain RS: Standard layout with extra CBV after descriptor table
+    // This keeps the SRV table at the same slot (4) for consistency
+    auto terrain_rs = RootSignatureBuilder()
+                        .AllowInputLayout()
+                        // Fixed CBV slots (same as standard)
+                        .AddRootCBV(0, 0)            // Slot 0: Frame (b0)
+                        .AddRootCBV(1, 0)            // Slot 1: Object (b1)
+                        .AddRootCBV(2, 0)            // Slot 2: Light (b2)
+                        .Add32BitConstants(4, 3, 0)  // Slot 3: Material data (b3)
+                        // Global bindless texture array (same slot as standard)
+                        .AddDescriptorTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+                          SRV_CAPACITY,
+                          0,                            // register(t0)
+                          1,                            // space1
+                          D3D12_SHADER_VISIBILITY_ALL)  // Slot 4: SRV Table
+                        .AddRootCBV(4, 0)               // Slot 5: Terrain-specific data (b4)
+                        // Static samplers (same as standard)
+                        .AddStaticSampler(SamplerPresets::CreatePointSampler(0, D3D12_TEXTURE_ADDRESS_MODE_WRAP))
+                        .AddStaticSampler(SamplerPresets::CreateLinearSampler(1, D3D12_TEXTURE_ADDRESS_MODE_WRAP))
+                        .AddStaticSampler(SamplerPresets::CreateAnisotropicSampler(2, 16, D3D12_TEXTURE_ADDRESS_MODE_WRAP))
+                        .AddStaticSampler(SamplerPresets::CreatePointSampler(3, D3D12_TEXTURE_ADDRESS_MODE_CLAMP))
+                        .AddStaticSampler(SamplerPresets::CreateLinearSampler(4, D3D12_TEXTURE_ADDRESS_MODE_CLAMP))
+                        .Build(device_);
+
+    return terrain_rs;
+  } catch (const std::exception& e) {
+    std::cerr << "[MaterialManager] Exception creating terrain root signature: " << e.what() << std::endl;
+    return nullptr;
+  }
+}
+
+ComPtr<ID3D12RootSignature> MaterialManager::CreateWaterRootSignature() {
+  try {
+    constexpr uint32_t SRV_CAPACITY = 4096;
+
+    // Water RS: Standard layout with extra CBV after descriptor table
+    // This keeps the SRV table at the same slot (4) for consistency
+    auto water_rs = RootSignatureBuilder()
+                      .AllowInputLayout()
+                      // Fixed CBV slots (same as standard)
+                      .AddRootCBV(0, 0)            // Slot 0: Frame (b0)
+                      .AddRootCBV(1, 0)            // Slot 1: Object (b1)
+                      .AddRootCBV(2, 0)            // Slot 2: Light (b2)
+                      .Add32BitConstants(4, 3, 0)  // Slot 3: Material data (b3)
+                      // Global bindless texture array (same slot as standard)
+                      .AddDescriptorTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+                        SRV_CAPACITY,
+                        0,                            // register(t0)
+                        1,                            // space1
+                        D3D12_SHADER_VISIBILITY_ALL)  // Slot 4: SRV Table
+                      .AddRootCBV(4, 0)               // Slot 5: Water-specific data (b4: wave params, etc)
+                      // Static samplers (standard + water-specific)
+                      .AddStaticSampler(SamplerPresets::CreatePointSampler(0, D3D12_TEXTURE_ADDRESS_MODE_WRAP))
+                      .AddStaticSampler(SamplerPresets::CreateLinearSampler(1, D3D12_TEXTURE_ADDRESS_MODE_WRAP))
+                      .AddStaticSampler(SamplerPresets::CreateAnisotropicSampler(2, 16, D3D12_TEXTURE_ADDRESS_MODE_WRAP))
+                      .AddStaticSampler(SamplerPresets::CreatePointSampler(3, D3D12_TEXTURE_ADDRESS_MODE_CLAMP))
+                      .AddStaticSampler(SamplerPresets::CreateLinearSampler(4, D3D12_TEXTURE_ADDRESS_MODE_CLAMP))
+                      // Extra sampler for flow map
+                      .AddStaticSampler(SamplerPresets::CreateLinearSampler(5, D3D12_TEXTURE_ADDRESS_MODE_WRAP))
+                      .Build(device_);
+
+    return water_rs;
+  } catch (const std::exception& e) {
+    std::cerr << "[MaterialManager] Exception creating water root signature: " << e.what() << std::endl;
+    return nullptr;
+  }
 }

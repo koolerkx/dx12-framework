@@ -16,16 +16,42 @@ struct DrawCommand {
   DirectX::XMFLOAT4X4 world_matrix;
   DirectX::XMFLOAT4 color;
   MaterialInstance material_instance;
-  float depth = 0.0f;  // For depth sorting
+  float depth = 0.0f;  // For depth sorting within same material
 
-  // Combined sort key for optimizing PSO/material switches
+  // Combined sort key for optimizing RS/PSO switches
+  // Material's sort key already contains [RS hash | PSO hash]
+  // We use the full 64-bit key for primary sorting
   uint64_t GetSortKey() const {
-    // High 32 bits: material sort key (groups by PSO)
-    // Low 32 bits: depth for front-to-back sorting within same material
-    uint64_t material_key = material ? material->GetSortKey() : UINT32_MAX;
-    // uint32_t depth_key = *reinterpret_cast<const uint32_t*>(&depth);  // Reinterpret float as uint for sorting
+    if (!material) {
+      return UINT64_MAX;
+    }
+    // Return material's 64-bit sort key directly
+    // High 32 bits: RS hash (primary sort)
+    // Low 32 bits: PSO hash (secondary sort)
+    return material->GetSortKey();
+  }
+
+  // Get sort key with depth incorporated (for depth-based sorting within same material)
+  uint64_t GetSortKeyWithDepth(bool front_to_back = true) const {
+    if (!material) {
+      return UINT64_MAX;
+    }
+
+    // Convert depth to uint32 for bitwise sorting
     uint32_t depth_key = std::bit_cast<uint32_t>(depth);
-    return (material_key << 32) | depth_key;
+
+    // For back-to-front, invert depth bits
+    if (!front_to_back) {
+      depth_key = ~depth_key;
+    }
+
+    // Combine: [RS hash 16-bit | PSO hash 16-bit | Depth 32-bit]
+    // To fit depth, we compress RS and PSO keys to 16-bit each
+    uint32_t rs_key = material->GetRootSignatureKey() & 0xFFFF;
+    uint32_t pso_key = material->GetPSOKey() & 0xFFFF;
+    uint64_t compressed_material = (static_cast<uint64_t>(rs_key) << 48) | (static_cast<uint64_t>(pso_key) << 32);
+
+    return compressed_material | depth_key;
   }
 };
 
@@ -46,24 +72,38 @@ class MaterialRenderer {
     uint32_t screen_height);
 
  protected:
-  // Sort commands to minimize PSO switches (sort by material first, then depth)
+  // Sort commands to minimize RS/PSO switches
+  // Strategy: Sort by [RS hash | PSO hash | depth]
   void SortCommands(std::vector<DrawCommand>& commands, bool front_to_back = true) {
     if (front_to_back) {
       // For opaque geometry: front-to-back (early depth test optimization)
-      std::sort(
-        commands.begin(), commands.end(), [](const DrawCommand& a, const DrawCommand& b) { return a.GetSortKey() < b.GetSortKey(); });
+      // Sort by material key first (RS+PSO), then by depth within same material
+      std::sort(commands.begin(), commands.end(), [](const DrawCommand& a, const DrawCommand& b) {
+        uint64_t a_mat = a.GetSortKey();
+        uint64_t b_mat = b.GetSortKey();
+
+        // Primary sort: by material (RS + PSO)
+        if (a_mat != b_mat) {
+          return a_mat < b_mat;
+        }
+
+        // Secondary sort: by depth (front-to-back)
+        return a.depth < b.depth;
+      });
     } else {
       // For transparent geometry: back-to-front (correct alpha blending)
+      // Still group by material, but reverse depth order
       std::sort(commands.begin(), commands.end(), [](const DrawCommand& a, const DrawCommand& b) {
-        uint64_t a_key = a.GetSortKey();
-        uint64_t b_key = b.GetSortKey();
-        // Same material group, but reverse depth order
-        uint32_t a_mat = static_cast<uint32_t>(a_key >> 32);
-        uint32_t b_mat = static_cast<uint32_t>(b_key >> 32);
+        uint64_t a_mat = a.GetSortKey();
+        uint64_t b_mat = b.GetSortKey();
+
+        // Primary sort: by material (RS + PSO)
         if (a_mat != b_mat) {
-          return a_mat < b_mat;  // Sort by material first
+          return a_mat < b_mat;
         }
-        return a.depth > b.depth;  // Then back-to-front
+
+        // Secondary sort: by depth (back-to-front)
+        return a.depth > b.depth;
       });
     }
   }
@@ -145,7 +185,20 @@ class UiRenderer : public MaterialRenderer {
       out_commands.push_back(cmd);
     }
 
-    // UI typically renders back-to-front (painter's algorithm)
-    SortCommands(out_commands, false);
+    // Sort by material first (minimize PSO switches), then by depth (back-to-front)
+    // This ensures proper UI layering (tooltips, dialogs, etc)
+    std::sort(out_commands.begin(), out_commands.end(), [](const DrawCommand& a, const DrawCommand& b) {
+      uint64_t a_mat = a.GetSortKey();
+      uint64_t b_mat = b.GetSortKey();
+
+      // Primary: group by material for PSO batching
+      if (a_mat != b_mat) {
+        return a_mat < b_mat;
+      }
+
+      // Secondary: back-to-front for correct UI layering
+      // Higher depth values render last (on top)
+      return a.depth > b.depth;
+    });
   }
 };
