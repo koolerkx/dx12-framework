@@ -15,12 +15,12 @@
 #include "Frame/frame_packet.h"
 #include "Frame/per_frame_constant_buffer.h"
 #include "Frame/render_frame_context.h"
+#include "Pipeline/material_manager.h"
 #include "Presentation/depth_buffer.h"
 #include "Presentation/swapchain_manager.h"
-#include "Render/opaque_renderer.h"
+#include "Render/material_renderer.h"
 #include "Render/render_pass_manager.h"
 #include "Render/ui_pass.h"
-#include "Render/ui_renderer.h"
 #include "Resource/Texture/texture_manager.h"
 #include "Resource/mesh.h"
 
@@ -59,6 +59,10 @@ class Graphic {
     return texture_manager_;
   }
 
+  MaterialManager& GetMaterialManager() {
+    return material_manager_;
+  }
+
   FenceManager& GetFenceManager() {
     return fence_manager_;
   }
@@ -94,10 +98,6 @@ class Graphic {
   UINT frame_buffer_width_ = 0;
   UINT frame_buffer_height_ = 0;
 
-  // Pipeline State
-  ComPtr<ID3D12RootSignature> root_signature_ = nullptr;
-  ComPtr<ID3D12PipelineState> pipeline_state_ = nullptr;
-
   // Viewport
   D3D12_VIEWPORT viewport_ = {};
   D3D12_RECT scissor_rect_ = {};
@@ -115,6 +115,7 @@ class Graphic {
 
   // texture
   TextureManager texture_manager_;
+  MaterialManager material_manager_;
 
   std::unique_ptr<UiRenderer> ui_renderer_;
   std::unique_ptr<OpaqueRenderer> opaque_renderer_;

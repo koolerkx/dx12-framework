@@ -26,6 +26,11 @@ add_library(graphic STATIC
     Pipeline/root_signature_builder.cpp
     Pipeline/sampler_builder.h
     Pipeline/sampler_builder.cpp
+    Pipeline/root_parameter_slots.h
+    Pipeline/material.h
+    Pipeline/material_manager.h
+    Pipeline/material_manager.cpp
+    Pipeline/shader_config.h
 
     Resource/mesh.h
     Resource/mesh.cpp
@@ -46,16 +51,14 @@ add_library(graphic STATIC
     Render/render_pass_manager.h
     Render/render_pass_manager.cpp
     Render/render_pass.h
+    Render/material_renderer.h
+    Render/material_renderer.cpp
 
     Render/ui_pass.h
     Render/ui_pass.cpp
-    Render/ui_renderer.h
-    Render/ui_renderer.cpp
 
     Render/opaque_pass.h
     Render/opaque_pass.cpp
-    Render/opaque_renderer.h
-    Render/opaque_renderer.cpp
 )
 
 target_link_libraries(app PRIVATE framework)

@@ -1,12 +1,39 @@
 struct VSIN {
-  float4 pos : POSITION;
+  float3 pos : POSITION;
   float2 uv : TEXCOORD;
 };
 
 struct BasicType {
-  float4 svpos : SV_POSITION;
+  float4 position : SV_POSITION;
   float2 uv : TEXCOORD;
 };
 
-Texture2D textures[] : register(t0, space1);
-SamplerState sampler0 : register(s0);
+// === Constant Buffers ===
+cbuffer FrameCB : register(b0) {
+  float4x4 g_View;
+  float4x4 g_Proj;
+  float4x4 g_ViewProj;
+  float3 g_CameraPos;
+  float g_Time;
+  float2 g_ScreenSize;
+  float2 _padding0;
+};
+
+cbuffer ObjectCB : register(b1) {
+  float4x4 g_World;
+  float4x4 g_WorldViewProj;
+  float4 g_ObjectColor;
+};
+
+// Material data from root constants
+struct MaterialData {
+  uint albedoTextureIndex;
+  uint normalTextureIndex;
+  uint metallicRoughnessIndex;
+  uint flags;
+};
+ConstantBuffer<MaterialData> g_MaterialData : register(b3);
+
+// === Bindless Resources ===
+Texture2D g_Textures[] : register(t0, space1);
+SamplerState g_Sampler : register(s0);

@@ -29,6 +29,18 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   mesh_renderer->SetTexture(texture_background_.Get());  // Use ship texture for testing
   mesh_renderer->SetColor({1.0f, 1.0f, 1.0f, 1.0f});
 
+  cube_object2_ = CreateGameObject("Cube");
+  cube_object2_->SetParent(cube_object_);
+
+  auto* cube_transform2 = cube_object2_->GetComponent<TransformComponent>();
+  cube_transform2->SetPosition({1.0f, 1.0f, 1.0f});  // At origin
+  cube_transform2->SetScale({1.0f, 1.0f, 1.0f});     // Scale to 2x2x2
+
+  auto* mesh_renderer2 = cube_object2_->AddComponent<MeshRenderer>();
+  mesh_renderer2->SetMesh(asset_manager.GetDefaultMesh(DefaultMesh::Cube));
+  mesh_renderer2->SetTexture(texture_background_.Get());  // Use ship texture for testing
+  mesh_renderer2->SetColor({1.0f, 1.0f, 1.0f, 1.0f});
+
   // auto* background = CreateGameObject("Background");
   // background->GetComponent<TransformComponent>()->SetPosition({500, 500, 0});
   // auto* bg_sprite = background->AddComponent<SpriteRenderer>();
@@ -43,12 +55,21 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   char_sprite->SetSize({150, 150});
 
   character_object_->AddComponent<CharacterMover>();
+
+  character_object2_ = CreateGameObject("Character");
+  character_object2_->SetParent(character_object_);
+  character_object2_->GetComponent<TransformComponent>()->SetPosition({150, 150, 0});
+  auto* char_sprite2 = character_object2_->AddComponent<SpriteRenderer>();
+  char_sprite2->SetTexture(texture_character_.Get());
+  char_sprite2->SetSize({150, 150});
+  character_object2_->AddComponent<CharacterMover>();
 }
 
 void TestScene::OnPostUpdate(float dt) {
   rotation_angle_ += rotation_speed_ * dt;
 
-  cube_object_->GetComponent<TransformComponent>()->SetRotationEulerDegree({rotation_angle_, rotation_angle_, 0.0f});
+  cube_object_->GetComponent<TransformComponent>()->SetRotationEulerDegree({0.0f, rotation_angle_, 0.0f});
+  cube_object2_->GetComponent<TransformComponent>()->SetRotationEulerDegree({0.0f, rotation_angle_, 0.0f});
 }
 
 void TestScene::OnExit() {

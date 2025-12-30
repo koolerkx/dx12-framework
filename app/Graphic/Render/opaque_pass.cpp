@@ -1,6 +1,6 @@
 #include "opaque_pass.h"
 
-#include "opaque_renderer.h"
+#include "material_renderer.h"
 
 OpaquePass::OpaquePass(OpaqueRenderer* renderer) : opaque_renderer_(renderer) {
 }

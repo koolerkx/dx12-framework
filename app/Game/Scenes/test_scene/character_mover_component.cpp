@@ -8,8 +8,8 @@
 void CharacterMover::OnUpdate(float dt) {
   time_ += dt;
 
-  float x = 400.0f + std::cos(time_) * 100.0f;
-  float y = 300.0f + std::sin(time_) * 100.0f;
+  float x = 500.0f + std::cos(time_) * 75.0f;
+  float y = 500.0f + std::sin(time_) * 75.0f;
 
   auto* transform = GetOwner()->GetComponent<TransformComponent>();
   if (transform) {

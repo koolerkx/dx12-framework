@@ -15,7 +15,14 @@ cbuffer ObjectCB : register(b1) {
   float4 g_ObjectColor;
 };
 
-cbuffer DrawConstants : register(b2) { uint g_TextureIndex; };
+// Material data from root constants
+struct MaterialData {
+  uint albedoTextureIndex;
+  uint normalTextureIndex;
+  uint metallicRoughnessIndex;
+  uint flags;
+};
+ConstantBuffer<MaterialData> g_MaterialData : register(b3);
 
 // === Bindless Resources ===
 Texture2D g_Textures[] : register(t0, space1);

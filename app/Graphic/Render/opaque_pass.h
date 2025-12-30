@@ -3,7 +3,7 @@
 
 #include "Frame/frame_packet.h"
 #include "Frame/render_frame_context.h"
-#include "opaque_renderer.h"
+#include "material_renderer.h"
 #include "render_pass.h"
 
 class OpaquePass : public IRenderPass {
@@ -18,5 +18,5 @@ class OpaquePass : public IRenderPass {
 
  private:
   OpaqueRenderer* opaque_renderer_;
-  std::vector<OpaqueDrawCommand> packet_cache_;
+  std::vector<DrawCommand> packet_cache_;
 };

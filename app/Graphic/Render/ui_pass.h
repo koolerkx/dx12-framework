@@ -1,8 +1,8 @@
 #pragma once
 #include "Frame/frame_packet.h"
 #include "Frame/render_frame_context.h"
+#include "material_renderer.h"
 #include "render_pass.h"
-#include "ui_renderer.h"
 
 class UiPass : public IRenderPass {
  public:
@@ -16,5 +16,5 @@ class UiPass : public IRenderPass {
 
  private:
   UiRenderer* ui_renderer_;
-  std::vector<UiDrawCommand> packet_cache_;
+  std::vector<DrawCommand> packet_cache_;
 };

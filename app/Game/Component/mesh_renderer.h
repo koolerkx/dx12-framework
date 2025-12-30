@@ -4,10 +4,10 @@
 #include "Component/component.h"
 #include "Graphic/Frame/frame_packet.h"
 #include "Graphic/Resource/mesh.h"
+#include "Graphic/Resource/Texture/texture.h"
 #include "game_object.h"
+#include "game_context.h"
 #include "transform_component.h"
-
-struct Texture;
 
 class MeshRenderer : public Component<MeshRenderer> {
  public:
@@ -19,6 +19,10 @@ class MeshRenderer : public Component<MeshRenderer> {
 
   void SetTexture(Texture* texture) {
     texture_ = texture;
+  }
+
+  void SetMaterial(const std::string& name) {
+    material_name_ = name;
   }
 
   void SetColor(const DirectX::XMFLOAT4& color) {
@@ -35,11 +39,25 @@ class MeshRenderer : public Component<MeshRenderer> {
     auto* transform = GetOwner()->GetTransform();
     if (!transform) return;
 
+    auto* context = GetOwner()->GetContext();
+    auto& material_mgr = context->GetGraphic()->GetMaterialManager();
+
     OpaqueDrawCommand cmd;
     DirectX::XMStoreFloat4x4(&cmd.world_matrix, transform->GetWorldMatrix());
     cmd.color = color_;
-    cmd.texture = texture_;
     cmd.mesh = mesh_;
+
+    // Get material
+    cmd.material = material_mgr.GetMaterial(material_name_);
+    if (!cmd.material) {
+      cmd.material = material_mgr.GetDefaultOpaque();
+    }
+
+    // Setup material instance
+    cmd.material_instance.material = cmd.material;
+    if (texture_) {
+      cmd.material_instance.albedo_texture_index = texture_->GetBindlessIndex();
+    }
 
     // Calculate depth from camera for sorting
     // TODO: Use actual camera position from FramePacket
@@ -52,5 +70,6 @@ class MeshRenderer : public Component<MeshRenderer> {
  private:
   const Mesh* mesh_ = nullptr;
   Texture* texture_ = nullptr;
+  std::string material_name_ = "Default_Opaque";
   DirectX::XMFLOAT4 color_ = {1.0f, 1.0f, 1.0f, 1.0f};
 };

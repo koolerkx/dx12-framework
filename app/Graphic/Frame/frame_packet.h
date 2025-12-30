@@ -3,6 +3,7 @@
 
 #include <vector>
 
+#include "Pipeline/material.h"
 #include "camera_data.h"
 
 struct Texture;
@@ -16,19 +17,32 @@ enum class RenderPassTag {
 };
 
 struct OpaqueDrawCommand {
+  const Material* material = nullptr;
+  const Mesh* mesh = nullptr;
   DirectX::XMFLOAT4X4 world_matrix;
   DirectX::XMFLOAT4 color;
-  Texture* texture;
-  const Mesh* mesh;
-  float depth;  // For sorting
+  MaterialInstance material_instance;
+  float depth = 0.0f;
+};
+
+struct TransparentDrawCommand {
+  const Material* material = nullptr;
+  const Mesh* mesh = nullptr;
+  DirectX::XMFLOAT4X4 world_matrix;
+  DirectX::XMFLOAT4 color;
+  MaterialInstance material_instance;
+  float depth = 0.0f;
 };
 
 // Data specifically for UI rendering
 struct UiDrawCommand {
+  const Material* material = nullptr;
+  const Mesh* mesh = nullptr;
   DirectX::XMFLOAT4X4 world_matrix;
   DirectX::XMFLOAT2 size;
   DirectX::XMFLOAT4 color;
-  Texture* texture = nullptr;
+  MaterialInstance material_instance;
+  float depth = 0.0f;
   int layer_id = 0;
 };
 
@@ -37,11 +51,12 @@ struct FramePacket {
   CameraData main_camera;
 
   std::vector<OpaqueDrawCommand> opaque_pass;
+  std::vector<TransparentDrawCommand> transparent_pass;
   std::vector<UiDrawCommand> ui_pass;
-  // TODO: std::vector<MeshDrawCommand> transparent_pass;
 
   void Clear() {
     opaque_pass.clear();
+    transparent_pass.clear();
     ui_pass.clear();
   }
 };

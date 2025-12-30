@@ -89,6 +89,9 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
   if (!texture_manager_.Initialize(this, device_.Get(), &descriptor_heap_manager_)) {
     return false;
   }
+  if (!material_manager_.Initialize(device_.Get())) {
+    return false;
+  }
 
   if (!frame_cb_storage_.Initialize(device_.Get(), FRAME_BUFFER_COUNT)) return false;
 
@@ -115,56 +118,6 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
     return false;
   }
 
-  // Read Shader
-  ComPtr<ID3DBlob> vsBlob;
-  ComPtr<ID3DBlob> psBlob;
-
-  if (FAILED(D3DReadFileToBlob(L"Content/shaders/sprite.vs.cso", &vsBlob))) {
-    throw std::runtime_error("Failed to read vertex shader");
-  }
-
-  if (FAILED(D3DReadFileToBlob(L"Content/shaders/sprite.ps.cso", &psBlob))) {
-    throw std::runtime_error("Failed to read pixel shader");
-  }
-
-  // Input layout
-  std::vector<D3D12_INPUT_ELEMENT_DESC> inputLayout = {
-    {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-    {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}};
-
-  // Graphics pipeline
-  try {
-    uint32_t srv_capacity = 4096;
-    root_signature_ = RootSignatureBuilder()
-                        .AllowInputLayout()
-                        .AddRootCBV(0, 0)         // FrameCB
-                        .AddRootCBV(1, 0)         // ObjectCB
-                        .Add32BitConstants(1, 2)  // texture bindless id
-                        .AddDescriptorTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
-                          srv_capacity,
-                          0,  // register(t0)
-                          1,
-                          D3D12_SHADER_VISIBILITY_ALL)
-                        .AddStaticSampler(SamplerPresets::CreatePointSampler(0))
-                        .Build(device_.Get());
-
-    pipeline_state_ = PipelineStateBuilder()
-                        .SetRootSignature(root_signature_.Get())
-                        .SetVertexShader(vsBlob.Get())
-                        .SetPixelShader(psBlob.Get())
-                        .SetInputLayout(inputLayout)
-                        .SetRenderTargetFormat(DXGI_FORMAT_R8G8B8A8_UNORM)
-                        .SetDepthStencilFormat(DXGI_FORMAT_D32_FLOAT)  // Add this!
-                        .SetCullMode(D3D12_CULL_MODE_BACK)
-                        .EnableDepthTest(true)
-                        .SetBlendMode(BlendMode::AlphaBlend)
-                        .Build(device_.Get());
-
-  } catch (const std::exception& e) {
-    std::cerr << "Initialization failed: " << e.what() << std::endl;
-    return false;
-  }
-
   viewport_.Width = static_cast<FLOAT>(frame_buffer_width_);    // 出力先の幅(ピクセル数)
   viewport_.Height = static_cast<FLOAT>(frame_buffer_height_);  // 出力先の高さ(ピクセル数)
   viewport_.TopLeftX = 0;                                       // 出力先の左上座標X
@@ -177,8 +130,8 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
   scissor_rect_.right = scissor_rect_.left + frame_buffer_width_;   // 切り抜き右座標
   scissor_rect_.bottom = scissor_rect_.top + frame_buffer_height_;  // 切り抜き下座標
 
-  ui_renderer_ = std::make_unique<UiRenderer>(root_signature_.Get(), pipeline_state_.Get(), &quadMesh_);
-  opaque_renderer_ = std::make_unique<OpaqueRenderer>(root_signature_.Get(), pipeline_state_.Get());
+  ui_renderer_ = std::make_unique<UiRenderer>();
+  opaque_renderer_ = std::make_unique<OpaqueRenderer>();
 
   render_pass_manager_ = std::make_unique<RenderPassManager>();
 

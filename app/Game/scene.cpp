@@ -5,7 +5,6 @@
 
 #include "game_object.h"
 
-
 GameObject* IScene::CreateGameObject(const std::string& name) {
   auto obj = std::make_unique<GameObject>(this, name);
   GameObject* ptr = obj.get();

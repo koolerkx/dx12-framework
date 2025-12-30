@@ -1,0 +1,51 @@
+#pragma once
+#include <cstdint>
+
+// Root parameter slot indices for type-safe binding
+// These are the fixed slots in your root signature that all shaders share
+namespace RootSlot {
+
+// Root constants and CBVs
+enum class ConstantBuffer : uint32_t {
+  Frame = 0,   // FrameCB - per-frame constants (view, proj, camera, time, etc)
+  Object = 1,  // ObjectCB - per-object constants (world matrix, color, etc)
+  Light = 2,   // LightingCB - lighting data
+};
+
+// Root constants (32-bit values)
+enum class Constants : uint32_t {
+  MaterialData = 3,  // Material constants (texture indices, flags, etc)
+};
+
+// Descriptor tables
+enum class DescriptorTable : uint32_t {
+  GlobalSRVs = 4,  // Global bindless texture array (t0, space1)
+};
+
+// Static samplers (not root parameters, but defined in root signature)
+enum class StaticSampler : uint32_t {
+  PointWrap = 0,        // s0
+  LinearWrap = 1,       // s1
+  AnisotropicWrap = 2,  // s2
+  PointClamp = 3,       // s3
+  LinearClamp = 4,      // s4
+};
+
+// Helper functions to convert enum to uint32_t for API calls
+inline constexpr uint32_t ToIndex(ConstantBuffer slot) {
+  return static_cast<uint32_t>(slot);
+}
+
+inline constexpr uint32_t ToIndex(Constants slot) {
+  return static_cast<uint32_t>(slot);
+}
+
+inline constexpr uint32_t ToIndex(DescriptorTable slot) {
+  return static_cast<uint32_t>(slot);
+}
+
+inline constexpr uint32_t ToIndex(StaticSampler slot) {
+  return static_cast<uint32_t>(slot);
+}
+
+}  // namespace RootSlot

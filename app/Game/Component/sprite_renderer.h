@@ -1,8 +1,11 @@
 #pragma once
 #include "Component/component.h"
 #include "Graphic/Frame/frame_packet.h"
+#include "Graphic/Resource/Texture/texture.h"
+#include "game_context.h"
 #include "game_object.h"
 #include "transform_component.h"
+
 
 class SpriteRenderer : public Component<SpriteRenderer> {
  public:
@@ -29,12 +32,37 @@ class SpriteRenderer : public Component<SpriteRenderer> {
   void OnRender(FramePacket& packet) override {
     if (!texture_) return;
 
+    auto* context = GetOwner()->GetContext();
+    auto& material_mgr = context->GetGraphic()->GetMaterialManager();
+
     switch (pass_tag_) {
       case RenderPassTag::Ui: {
         // Push to the UI Pass queue
+        UiDrawCommand cmd;
+        cmd.mesh = context->GetGraphic()->GetQuadMesh();
+        cmd.material = material_mgr.GetDefaultUI();
+        cmd.color = color_;
+        cmd.size = size_;
+        cmd.layer_id = layer_id_;
+        cmd.depth = static_cast<float>(layer_id_);
 
-        UiDrawCommand cmd{.world_matrix = {}, .size = size_, .color = color_, .texture = texture_, .layer_id = layer_id_};
-        DirectX::XMStoreFloat4x4(&cmd.world_matrix, GetOwner()->GetTransform()->GetWorldMatrix());
+        // For UI rendering with orthographic projection:
+        // The world matrix should transform from local space to screen space
+        // Local quad vertices are [-0.5, 0.5] range
+        // We apply the sprite's size as a base scale, then apply the transform's world matrix
+        auto* transform = GetOwner()->GetTransform();
+
+        // Build world matrix: Scale(size) * TransformWorld
+        // This allows the sprite to have a base size in pixels, while still being
+        // affected by the transform hierarchy (position, rotation, and additional scaling)
+        DirectX::XMMATRIX size_scale = DirectX::XMMatrixScaling(size_.x, size_.y, 1.0f);
+        DirectX::XMMATRIX world = size_scale * transform->GetWorldMatrix();
+
+        DirectX::XMStoreFloat4x4(&cmd.world_matrix, world);
+
+        // Setup material instance
+        cmd.material_instance.material = cmd.material;
+        cmd.material_instance.albedo_texture_index = texture_->GetBindlessIndex();
 
         packet.ui_pass.push_back(cmd);
       } break;
