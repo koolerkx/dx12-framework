@@ -1,7 +1,10 @@
 // scene.cpp
 #include "scene.h"
 
+#include <iostream>
+
 #include "game_object.h"
+
 
 GameObject* IScene::CreateGameObject(const std::string& name) {
   auto obj = std::make_unique<GameObject>(name);
@@ -46,6 +49,22 @@ void IScene::FixedUpdate(float dt) {
 }
 
 void IScene::Render(FramePacket& packet) {
+  if (active_camera_) {
+    packet.main_camera = active_camera_->GetCameraData();
+  } else {
+    std::cerr << "[IScene::Render] No active camera, using default setting" << std::endl;
+
+    // Fallback: default camera
+    using namespace DirectX;
+    CameraData default_camera;
+    XMStoreFloat4x4(&default_camera.view, XMMatrixIdentity());
+    XMStoreFloat4x4(&default_camera.proj, XMMatrixPerspectiveFovLH(XM_PIDIV4, 16.0f / 9.0f, 0.1f, 1000.0f));
+    default_camera.position = XMFLOAT3(0, 0, -5);
+    default_camera.forward = XMFLOAT3(0, 0, 1);
+    default_camera.up = XMFLOAT3(0, 1, 0);
+    packet.main_camera = default_camera;
+  }
+
   RenderRootObjects(packet);
 }
 

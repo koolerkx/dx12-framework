@@ -2,6 +2,7 @@
 #include <memory>
 #include <vector>
 
+#include "Component/camera_component.h"
 #include "Graphic/Frame/frame_packet.h"
 #include "game_object.h"
 
@@ -31,11 +32,20 @@ class IScene {
   void FixedUpdate(float dt);
   void Render(FramePacket& packet);
 
+  void SetActiveCamera(CameraComponent* camera) {
+    active_camera_ = camera;
+  }
+
+  CameraComponent* GetActiveCamera() const {
+    return active_camera_;
+  }
+
  protected:
   GameObject* CreateGameObject(const std::string& name = "GameObject");
 
  private:
   std::vector<std::unique_ptr<GameObject>> game_objects_;
+  CameraComponent* active_camera_ = nullptr;
   bool is_started_ = false;
 
   void UpdateRootObjects(float dt);

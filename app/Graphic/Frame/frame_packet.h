@@ -3,6 +3,8 @@
 
 #include <vector>
 
+#include "camera_data.h"
+
 struct Texture;
 class Mesh;
 
@@ -13,20 +15,17 @@ enum class RenderPassTag {
   Debug              // Used for engine tools/gizmos
 };
 
-struct RenderCommandBase {
-  DirectX::XMFLOAT4X4 world_matrix;
-};
-
 struct OpaqueDrawCommand {
   DirectX::XMFLOAT4X4 world_matrix;
   DirectX::XMFLOAT4 color;
   Texture* texture;
   Mesh* mesh;
-  float depth;
+  float depth;  // For sorting
 };
 
 // Data specifically for UI rendering
-struct UiDrawCommand : public RenderCommandBase {
+struct UiDrawCommand {
+  DirectX::XMFLOAT4X4 world_matrix;
   DirectX::XMFLOAT2 size;
   DirectX::XMFLOAT4 color;
   Texture* texture = nullptr;
@@ -35,6 +34,8 @@ struct UiDrawCommand : public RenderCommandBase {
 
 // The packet sent from Scene to Renderer
 struct FramePacket {
+  CameraData main_camera;
+
   std::vector<OpaqueDrawCommand> opaque_pass;
   std::vector<UiDrawCommand> ui_pass;
   // TODO: std::vector<MeshDrawCommand> transparent_pass;

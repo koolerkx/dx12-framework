@@ -12,8 +12,11 @@ class OpaqueRenderer {
 
   void Build(const FramePacket& packet, std::vector<OpaqueDrawCommand>& out_cache);
 
-  void Record(
-    const RenderFrameContext& frame, const std::vector<OpaqueDrawCommand>& commands, uint32_t screen_width, uint32_t screen_height);
+  void Record(const RenderFrameContext& frame,
+    const std::vector<OpaqueDrawCommand>& commands,
+    const CameraData& camera,
+    uint32_t screen_width,
+    uint32_t screen_height);
 
  private:
   ID3D12RootSignature* root_signature_;

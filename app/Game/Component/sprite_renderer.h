@@ -29,20 +29,15 @@ class SpriteRenderer : public Component<SpriteRenderer> {
   void OnRender(FramePacket& packet) override {
     if (!texture_) return;
 
-    UiDrawCommand cmd;
-
-    DirectX::XMStoreFloat4x4(&cmd.world_matrix, GetOwner()->GetTransform()->GetWorldMatrix());
-
-    cmd.texture = texture_;
-    cmd.color = color_;
-    cmd.size = size_;
-    cmd.layer_id = layer_id_;
-
     switch (pass_tag_) {
-      case RenderPassTag::Ui:
+      case RenderPassTag::Ui: {
         // Push to the UI Pass queue
+
+        UiDrawCommand cmd{.world_matrix = {}, .size = size_, .color = color_, .texture = texture_, .layer_id = layer_id_};
+        DirectX::XMStoreFloat4x4(&cmd.world_matrix, GetOwner()->GetTransform()->GetWorldMatrix());
+
         packet.ui_pass.push_back(cmd);
-        break;
+      } break;
       default:
         // TODO: Add support for other render passes, e.g. billboard
         // Handle other cases or log warning

@@ -13,4 +13,7 @@ class TestScene : public IScene {
   AssetHandle<Texture> texture_background_;
   AssetHandle<Texture> texture_character_;
   GameObject* character_object_ = nullptr;
+  GameObject* camera_object_ = nullptr;
+
+  void SetupCamera();
 };

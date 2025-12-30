@@ -18,8 +18,11 @@ void OpaqueRenderer::Build(const FramePacket& packet, std::vector<OpaqueDrawComm
   std::sort(out_cache.begin(), out_cache.end(), [](const OpaqueDrawCommand& a, const OpaqueDrawCommand& b) { return a.depth < b.depth; });
 }
 
-void OpaqueRenderer::Record(
-  const RenderFrameContext& frame, const std::vector<OpaqueDrawCommand>& commands, uint32_t screen_width, uint32_t screen_height) {
+void OpaqueRenderer::Record(const RenderFrameContext& frame,
+  const std::vector<OpaqueDrawCommand>& commands,
+  const CameraData& camera,
+  uint32_t screen_width,
+  uint32_t screen_height) {
   using namespace DirectX;
 
   if (commands.empty()) {
@@ -32,16 +35,15 @@ void OpaqueRenderer::Record(
   cmd.BindHeap(frame.global_heap_manager);
   cmd.GetNative()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-  // Setup 3D Projection
-  XMMATRIX view = XMMatrixIdentity();
-  float aspect_ratio = static_cast<float>(screen_width) / static_cast<float>(screen_height);
-  XMMATRIX proj = XMMatrixPerspectiveFovLH(XM_PIDIV4, aspect_ratio, 0.1f, 1000.0f);
-  XMMATRIX viewProj = view * proj;
+  XMMATRIX view = XMLoadFloat4x4(&camera.view);
+  XMMATRIX proj = XMLoadFloat4x4(&camera.proj);
+  XMMATRIX viewProj = camera.GetViewProjMatrix();
 
   FrameCB frameCBData = {};
   XMStoreFloat4x4(&frameCBData.view, XMMatrixTranspose(view));
   XMStoreFloat4x4(&frameCBData.proj, XMMatrixTranspose(proj));
   XMStoreFloat4x4(&frameCBData.viewProj, XMMatrixTranspose(viewProj));
+  frameCBData.cameraPos = camera.position;
   frameCBData.screenSize = XMFLOAT2(static_cast<float>(screen_width), static_cast<float>(screen_height));
 
   cmd.SetFrameConstants(frameCBData);

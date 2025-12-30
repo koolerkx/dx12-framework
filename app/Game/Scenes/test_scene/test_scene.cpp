@@ -10,6 +10,8 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   texture_background_ = asset_manager.LoadTexture("Content/textures/result_bg_1.png");
   texture_character_ = asset_manager.LoadTexture("Content/textures/ship_J.png");
 
+  SetupCamera();
+
   auto* background = CreateGameObject("Background");
   background->GetComponent<TransformComponent>()->SetPosition({500, 500, 0});
   auto* bg_sprite = background->AddComponent<SpriteRenderer>();
@@ -28,4 +30,15 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
 
 void TestScene::OnExit() {
   character_object_ = nullptr;
+}
+
+void TestScene::SetupCamera() {
+  camera_object_ = CreateGameObject("MainCamera");
+  auto* camera_transform = camera_object_->GetComponent<TransformComponent>();
+  camera_transform->SetPosition({0.0f, 0.0f, -10.0f});  // Move camera back
+
+  auto* camera = camera_object_->AddComponent<CameraComponent>();
+  camera->SetPerspective(DirectX::XM_PIDIV4, 16.0f / 9.0f, 0.1f, 1000.0f);
+
+  SetActiveCamera(camera);
 }

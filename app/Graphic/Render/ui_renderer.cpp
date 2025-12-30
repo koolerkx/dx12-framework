@@ -9,7 +9,6 @@
 #include "Resource/Texture/texture.h"
 #include "Resource/mesh.h"
 
-
 UiRenderer::UiRenderer(ID3D12RootSignature* root_sig, ID3D12PipelineState* pso, Mesh* quad_mesh)
     : root_signature_(root_sig), pipeline_state_(pso), quad_mesh_(quad_mesh) {
 }
@@ -41,6 +40,7 @@ void UiRenderer::Record(
   XMStoreFloat4x4(&frameCBData.view, XMMatrixTranspose(view));
   XMStoreFloat4x4(&frameCBData.proj, XMMatrixTranspose(proj));
   XMStoreFloat4x4(&frameCBData.viewProj, XMMatrixTranspose(viewProj));
+  frameCBData.cameraPos = XMFLOAT3(0.0f, 0.0f, 0.0f);
   frameCBData.screenSize = XMFLOAT2(static_cast<float>(screen_width), static_cast<float>(screen_height));
 
   cmd.SetFrameConstants(frameCBData);

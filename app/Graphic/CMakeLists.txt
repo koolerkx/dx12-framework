@@ -38,6 +38,7 @@ add_library(graphic STATIC
     Frame/dynamic_upload_buffer.h
     Frame/render_frame_context.h
     Frame/constant_buffers.h
+    Frame/camera_data.h
 
     Command/buffer.h
     Command/render_command_list.h
