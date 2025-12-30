@@ -154,7 +154,9 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
                         .SetPixelShader(psBlob.Get())
                         .SetInputLayout(inputLayout)
                         .SetRenderTargetFormat(DXGI_FORMAT_R8G8B8A8_UNORM)
-                        .SetCullMode(D3D12_CULL_MODE_NONE)
+                        .SetDepthStencilFormat(DXGI_FORMAT_D32_FLOAT)  // Add this!
+                        .SetCullMode(D3D12_CULL_MODE_BACK)
+                        .EnableDepthTest(true)
                         .SetBlendMode(BlendMode::AlphaBlend)
                         .Build(device_.Get());
 

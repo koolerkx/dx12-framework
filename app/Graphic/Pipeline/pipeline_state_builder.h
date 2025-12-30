@@ -88,11 +88,19 @@ class PipelineStateBuilder {
     return *this;
   }
 
-  PipelineStateBuilder& EnableDepthTest(bool enable = true) {
+  PipelineStateBuilder& SetDepthTest(bool enable) {
     desc_.DepthStencilState.DepthEnable = enable;
-    desc_.DepthStencilState.DepthWriteMask = enable ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
     desc_.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
     return *this;
+  }
+
+  PipelineStateBuilder& SetDepthWrite(bool enable) {
+    desc_.DepthStencilState.DepthWriteMask = enable ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
+    return *this;
+  }
+
+  PipelineStateBuilder& EnableDepthTest(bool enable = true) {
+    return this->SetDepthTest(enable).SetDepthWrite(enable);
   }
 
   PipelineStateBuilder& SetCullMode(D3D12_CULL_MODE cullMode) {

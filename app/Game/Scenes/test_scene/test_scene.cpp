@@ -49,7 +49,7 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
 void TestScene::OnPostUpdate(float dt) {
   rotation_angle_ += rotation_speed_ * dt;
 
-  cube_object_->GetComponent<TransformComponent>()->SetRotationEulerDegree({0.0f, rotation_angle_, 0.0f});
+  cube_object_->GetComponent<TransformComponent>()->SetRotationEulerDegree({rotation_angle_, rotation_angle_, 0.0f});
 }
 
 void TestScene::OnExit() {
