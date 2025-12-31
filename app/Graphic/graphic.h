@@ -127,6 +127,7 @@ class Graphic {
 
   std::unique_ptr<UiRenderer> ui_renderer_;
   std::unique_ptr<OpaqueRenderer> opaque_renderer_;
+  std::unique_ptr<TransparentRenderer> transparent_renderer_;
   std::unique_ptr<RenderPassManager> render_pass_manager_;
   std::unique_ptr<DebugLineRenderer> debug_line_renderer_;
 

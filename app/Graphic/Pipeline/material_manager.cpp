@@ -104,6 +104,14 @@ void MaterialManager::CreateDefaultMaterials() {
     CreateMaterial("Instanced_World_Text", config, render_state);
   }
 
+  // Instanced World Text Transparent Material (for transparent world text with alpha blending)
+  {
+    ShaderConfig config = ShaderPresets::CreateSpriteInstancedWorldTransparent();
+    RenderStateConfig render_state = RenderStateConfig::Transparent();
+    render_state.cull_mode = D3D12_CULL_MODE_NONE;  // No culling for single-sided quads
+    CreateMaterial("Instanced_World_Text_Transparent", config, render_state);
+  }
+
   // Debug Line Material
   {
     ShaderConfig config;

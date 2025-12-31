@@ -14,6 +14,7 @@
 #include "Frame/frame_packet.h"
 #include "Render/debug_pass.h"
 #include "Render/opaque_pass.h"
+#include "Render/transparent_pass.h"
 #include "Render/ui_pass.h"
 
 using namespace DirectX;
@@ -125,6 +126,7 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
 
   ui_renderer_ = std::make_unique<UiRenderer>();
   opaque_renderer_ = std::make_unique<OpaqueRenderer>();
+  transparent_renderer_ = std::make_unique<TransparentRenderer>();
 
   debug_line_renderer_ = std::make_unique<DebugLineRenderer>();
   if (!debug_line_renderer_->Initialize(device_.Get())) {
@@ -135,6 +137,7 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
   render_pass_manager_ = std::make_unique<RenderPassManager>();
 
   render_pass_manager_->AddPass(std::make_unique<OpaquePass>(opaque_renderer_.get()));
+  render_pass_manager_->AddPass(std::make_unique<TransparentPass>(transparent_renderer_.get()));
   render_pass_manager_->AddPass(std::make_unique<DebugPass>(debug_line_renderer_.get(), &material_manager_));
   render_pass_manager_->AddPass(std::make_unique<UiPass>(ui_renderer_.get()));
 

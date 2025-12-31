@@ -116,7 +116,7 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   text2->SetFont(Font::FontFamily::ZenOldMincho);
   text2->SetPixelSize(10.0f);
   text2->SetColor({1.0f, 1.0f, 1.0f, 1.0f});
-  text2->SetRenderPassTag(RenderPassTag::WorldOpaque);  // Use transparent for alpha blending
+  text2->SetRenderPassTag(RenderPassTag::WorldTransparent);  // Use transparent for alpha blending
 }
 
 void TestScene::OnPostUpdate(float dt) {

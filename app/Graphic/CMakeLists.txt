@@ -63,6 +63,9 @@ add_library(graphic STATIC
     Render/opaque_pass.h
     Render/opaque_pass.cpp
 
+    Render/transparent_pass.h
+    Render/transparent_pass.cpp
+
     Debug/debug_line_renderer.h
     Debug/debug_line_renderer.cpp
 
@@ -87,6 +90,8 @@ target_add_hlsl_auto(graphic "6.5"
     "${CMAKE_SOURCE_DIR}/shaders/sprite_instanced_ui.ps.hlsl"
     "${CMAKE_SOURCE_DIR}/shaders/sprite_instanced_world.vs.hlsl"
     "${CMAKE_SOURCE_DIR}/shaders/sprite_instanced_world.ps.hlsl"
+    "${CMAKE_SOURCE_DIR}/shaders/sprite_instanced_world_transparent.vs.hlsl"
+    "${CMAKE_SOURCE_DIR}/shaders/sprite_instanced_world_transparent.ps.hlsl"
     "${CMAKE_SOURCE_DIR}/shaders/debug_line.vs.hlsl"
     "${CMAKE_SOURCE_DIR}/shaders/debug_line.ps.hlsl"
 )
