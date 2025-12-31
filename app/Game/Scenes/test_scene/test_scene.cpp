@@ -6,8 +6,10 @@
 #include "Component/free_camera_controller.h"
 #include "Component/mesh_renderer.h"
 #include "Component/sprite_renderer.h"
+#include "Component/text_renderer.h"
 #include "Component/transform_component.h"
 #include "Debug/debug_drawer.h"
+#include "Frame/frame_packet.h"
 #include "character_mover_component.h"
 #include "test_scene.h"
 
@@ -75,6 +77,46 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   char_sprite2->SetTexture(texture_character_.Get());
   char_sprite2->SetSize({150, 150});
   character_object2_->AddComponent<CharacterMover>();
+
+  // Text
+  {
+    auto text_obj = CreateGameObject("Basic UI Text");
+
+    // Position in screen space
+    text_obj->GetTransform()->SetPosition(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f));
+
+    // Add TextRenderer Component
+    auto* text = text_obj->AddComponent<TextRenderer>();
+
+    // Configure text
+    text->SetText(L"Hello, World!\nこんにちは！ようこそ、世界へ。");
+    text->SetFont(Font::FontFamily::ZenOldMincho);
+    text->SetPixelSize(48.0f);
+    text->SetColor({0.0f, 1.0f, 0.0f, 1.0f});
+    text->SetHorizontalAlign(Text::HorizontalAlign::Right);
+    text->SetVerticalAlign(Text::VerticalAlign::Center);
+
+    // Set as UI element
+    text->SetRenderPassTag(RenderPassTag::Ui);
+    text->SetLayerId(100);  // Higher layer = rendered later
+    std::cout << text->GetSize().x << " " << text->GetSize().y << std::endl;
+  }
+
+  // Text
+  text_obj2_ = CreateGameObject("Basic Text 2");
+  // text_obj2_->SetParent(cube_object_);
+  // Position in screen space
+  text_obj2_->GetTransform()->SetPosition(DirectX::XMFLOAT3(10.0f, 1.0f, 0.0f));
+
+  // Add TextRenderer Component
+  auto* text2 = text_obj2_->AddComponent<TextRenderer>();
+
+  // Configure text
+  text2->SetText(L"Hello, World!");
+  text2->SetFont(Font::FontFamily::ZenOldMincho);
+  text2->SetPixelSize(10.0f);
+  text2->SetColor({1.0f, 1.0f, 1.0f, 1.0f});
+  text2->SetRenderPassTag(RenderPassTag::WorldOpaque);  // Use transparent for alpha blending
 }
 
 void TestScene::OnPostUpdate(float dt) {

@@ -23,6 +23,8 @@ cbuffer ObjectCB : register(b1) {
   float4x4 g_World;
   float4x4 g_WorldViewProj;
   float4 g_ObjectColor;
+  float2 g_UVOffset;  // UV offset for atlas/sprite sheet
+  float2 g_UVScale;   // UV scale (1,1 = full texture)
 };
 
 // Material data from root constants

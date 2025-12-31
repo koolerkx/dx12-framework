@@ -10,6 +10,7 @@ add_library(game STATIC
     Asset/asset_handle.h
     Asset/asset_manager.h
     Asset/asset_manager.cpp
+    Asset/text_mesh_handle.h
 
     game_object.h
     game_object.cpp
@@ -22,6 +23,8 @@ add_library(game STATIC
     Component/camera_component.cpp
     Component/free_camera_controller.h
     Component/free_camera_controller.cpp
+    Component/text_renderer.h
+    Component/text_renderer.cpp
 
     Debug/debug_drawer.h
     Debug/debug_drawer.cpp

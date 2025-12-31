@@ -39,6 +39,46 @@ inline ShaderConfig CreateSprite() {
   return ShaderConfig(L"Content/shaders/sprite.vs.cso", L"Content/shaders/sprite.ps.cso", layout);
 }
 
+// Common input layout for sprite instanced rendering
+// Slot 0: position + UV (per-vertex), Slot 1: per-instance data (96 bytes)
+inline std::vector<D3D12_INPUT_ELEMENT_DESC> GetSpriteInstancedLayout() {
+  return {
+    // Slot 0: Mesh Data (Per-Vertex)
+    {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+    {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+
+    // Slot 1: Instance Data (Per-Instance)
+    // World Matrix: 4x float4 rows (64 bytes total, occupies 4 semantic indices)
+    {"INSTANCE_WORLD", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1},
+    {"INSTANCE_WORLD", 1, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 16, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1},
+    {"INSTANCE_WORLD", 2, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 32, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1},
+    {"INSTANCE_WORLD", 3, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 48, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1},
+    
+    // Color (16 bytes)
+    {"INSTANCE_COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 64, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1},
+    
+    // UV Offset and Scale (16 bytes)
+    {"INSTANCE_UV_OFFSET", 0, DXGI_FORMAT_R32G32_FLOAT, 1, 80, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1},
+    {"INSTANCE_UV_SCALE", 0, DXGI_FORMAT_R32G32_FLOAT, 1, 88, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1},
+  };
+}
+
+// Sprite instanced rendering for UI pass (orthographic projection, Y-down)
+inline ShaderConfig CreateSpriteInstancedUI() {
+  return ShaderConfig(
+    L"Content/shaders/sprite_instanced_ui.vs.cso",
+    L"Content/shaders/sprite_instanced_ui.ps.cso",
+    GetSpriteInstancedLayout());
+}
+
+// Sprite instanced rendering for World pass (perspective projection, Y-up)
+inline ShaderConfig CreateSpriteInstancedWorld() {
+  return ShaderConfig(
+    L"Content/shaders/sprite_instanced_world.vs.cso",
+    L"Content/shaders/sprite_instanced_world.ps.cso",
+    GetSpriteInstancedLayout());
+}
+
 // Skeletal mesh rendering (position + UV + normal + bone weights/indices)
 // inline ShaderConfig CreateSkeletalMesh() {
 //   std::vector<D3D12_INPUT_ELEMENT_DESC> layout = {

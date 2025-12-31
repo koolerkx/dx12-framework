@@ -75,6 +75,9 @@ class Mesh {
   size_t GetSubMeshCount() const {
     return subMeshes_.size();
   }
+  const SubMesh& GetSubMesh(size_t index = 0) const {
+    return subMeshes_[index];
+  }
 
  private:
   VertexBuffer vertexBuffer_;

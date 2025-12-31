@@ -81,6 +81,29 @@ void MaterialManager::CreateDefaultMaterials() {
     CreateMaterial("Default_UI", config, render_state);
   }
 
+  // Instanced UI Material (for batched text/sprite rendering with hardware instancing)
+  {
+    ShaderConfig config = ShaderPresets::CreateSpriteInstancedUI();
+    RenderStateConfig render_state = RenderStateConfig::UI();
+    CreateMaterial("Instanced_UI", config, render_state);
+  }
+
+  // World Text Material (no culling for single-sided quads)
+  {
+    ShaderConfig config = ShaderPresets::CreateBasic3D();
+    RenderStateConfig render_state = RenderStateConfig::Default();
+    render_state.cull_mode = D3D12_CULL_MODE_NONE;
+    CreateMaterial("World_Text", config, render_state);
+  }
+
+  // Instanced World Text Material (for batched world text rendering with hardware instancing)
+  {
+    ShaderConfig config = ShaderPresets::CreateSpriteInstancedWorld();
+    RenderStateConfig render_state = RenderStateConfig::Default();
+    render_state.cull_mode = D3D12_CULL_MODE_NONE;  // No culling for single-sided quads
+    CreateMaterial("Instanced_World_Text", config, render_state);
+  }
+
   // Debug Line Material
   {
     ShaderConfig config;

@@ -15,6 +15,8 @@ struct alignas(256) ObjectCB {
     DirectX::XMFLOAT4X4 world;
     DirectX::XMFLOAT4X4 worldViewProj;
     DirectX::XMFLOAT4 color;
+    DirectX::XMFLOAT2 uvOffset;   // UV offset for atlas/sprite sheet support
+    DirectX::XMFLOAT2 uvScale;    // UV scale (1,1 = full texture)
 };
 
 struct alignas(256) LightingCB {

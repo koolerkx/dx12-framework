@@ -2,14 +2,17 @@
 
 #include <iostream>
 
+#include "Graphic/Resource/Font/sprite_font_manager.h"
 #include "Graphic/Resource/Texture/texture_manager.h"
 #include "Graphic/Resource/mesh_factory.h"
 #include "Graphic/graphic.h"
+#include "text_mesh_handle.h"
 
 class AssetManager::Impl {
  public:
   Graphic* graphic = nullptr;
   TextureManager* texture_manager = nullptr;
+  Font::SpriteFontManager* font_manager = nullptr;
   // Todo: ModelManager* model_manager = nullptr;
   // Todo: AudioManager* audio_manager = nullptr;
 };
@@ -24,6 +27,7 @@ bool AssetManager::Initialize(Graphic* graphic) {
   impl_ = std::make_unique<Impl>();
   impl_->graphic = graphic;
   impl_->texture_manager = &graphic->GetTextureManager();
+  impl_->font_manager = &graphic->GetSpriteFontManager();
   CreateDefaultMeshes();
   return true;
 }
@@ -95,4 +99,51 @@ const Mesh* AssetManager::GetDefaultMesh(DefaultMesh type) const {
 
   std::cerr << "[AssetManager] Default mesh not found: " << static_cast<int>(type) << std::endl;
   return nullptr;
+}
+
+bool AssetManager::LoadFont(Font::FontFamily family, const std::string& fnt_path, const std::string& texture_path) {
+  if (!impl_->font_manager) {
+    std::cerr << "[AssetManager] Font manager not initialized" << std::endl;
+    return false;
+  }
+
+  return impl_->font_manager->LoadFontVariant(family, fnt_path, texture_path);
+}
+
+TextMeshHandle AssetManager::CreateTextMesh(
+  const std::wstring& text, Font::FontFamily family, float pixel_size, const Text::TextLayoutProps& layout_props) {
+  if (!impl_->font_manager) {
+    std::cerr << "[AssetManager] Font manager not initialized" << std::endl;
+    return TextMeshHandle();
+  }
+
+  // Create text layout - pure CPU data
+  Font::TextLayoutData layout_data;
+  if (!impl_->font_manager->CreateTextLayout(text, family, pixel_size, layout_props, layout_data)) {
+    std::cerr << "[AssetManager] Failed to create text layout" << std::endl;
+    return TextMeshHandle();
+  }
+
+  // Convert to GlyphLayoutData with UV transform data
+  std::vector<GlyphLayoutData> glyphs;
+  glyphs.reserve(layout_data.glyphs.size());
+
+  for (const auto& glyph : layout_data.glyphs) {
+    GlyphLayoutData glyph_data;
+    glyph_data.x = glyph.x;
+    glyph_data.y = glyph.y;
+    glyph_data.width = glyph.width;
+    glyph_data.height = glyph.height;
+
+    glyph_data.uv_offset = {glyph.u0, glyph.v1};
+    glyph_data.uv_scale = {glyph.u1 - glyph.u0, glyph.v0 - glyph.v1};
+    glyphs.push_back(glyph_data);
+  }
+
+  // Get texture from layout (non-owning pointer)
+  Texture* texture = layout_data.variant ? layout_data.variant->texture.get() : nullptr;
+
+  // Return handle with pure CPU data - no mesh ownership
+  // TextRenderer will use shared Quad mesh from AssetManager
+  return TextMeshHandle(std::move(glyphs), layout_data.width, layout_data.height, texture);
 }

@@ -12,6 +12,8 @@ cbuffer ObjectCB : register(b1) {
   float4x4 g_World;
   float4x4 g_WorldViewProj;
   float4 g_ObjectColor;
+  float2 g_UVOffset;  // UV offset (unused in debug lines)
+  float2 g_UVScale;   // UV scale (unused in debug lines)
 };
 
 struct VSInput {

@@ -1,6 +1,4 @@
-﻿#include "Framework/Event/event_system.h"
-#include "Framework/Event/input_event_generator.h"
-#define WIN32_LEAN_AND_MEAN
+﻿#define WIN32_LEAN_AND_MEAN
 #include <DirectXMath.h>
 #include <Windows.h>
 #include <d3d12.h>
@@ -12,6 +10,8 @@
 
 #include "Application/Application.h"
 #include "Core/utils.h"
+#include "Framework/Event/event_system.h"
+#include "Framework/Event/input_event_generator.h"
 #include "Framework/Input/input.h"
 #include "Game/game.h"
 #include "Game/game_context.h"

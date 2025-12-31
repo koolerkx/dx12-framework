@@ -6,11 +6,21 @@
 
 #include "Resource/mesh.h"
 #include "asset_handle.h"
+#include "text_mesh_handle.h"
 
 class Graphic;
 struct Texture;
 struct Model;
 struct AudioClip;
+
+namespace Font {
+enum class FontFamily : uint16_t;
+struct TextLayoutData;
+}  // namespace Font
+
+namespace Text {
+struct TextLayoutProps;
+}
 
 enum class DefaultMesh { Quad, Cube, Plane };
 
@@ -37,6 +47,11 @@ class AssetManager {
   // AssetHandle<AudioClip> LoadAudio(const std::string& path);
 
   const Mesh* GetDefaultMesh(DefaultMesh type) const;
+
+  bool LoadFont(Font::FontFamily family, const std::string& fnt_path, const std::string& texture_path);
+
+  TextMeshHandle CreateTextMesh(
+    const std::wstring& text, Font::FontFamily family, float pixel_size, const Text::TextLayoutProps& layout_props);
 
   Graphic* GetGraphicForDebugUseOnly() const;
 

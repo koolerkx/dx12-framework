@@ -37,6 +37,8 @@ add_library(graphic STATIC
     Resource/Texture/texture.h
     Resource/Texture/texture_manager.h
     Resource/Texture/texture_manager.cpp
+    Resource/Font/sprite_font_manager.h
+    Resource/Font/sprite_font_manager.cpp
 
     Frame/frame_packet.h
     Frame/per_frame_constant_buffer.h
@@ -47,6 +49,7 @@ add_library(graphic STATIC
 
     Command/buffer.h
     Command/render_command_list.h
+    Command/render_command_list.cpp
 
     Render/render_pass_manager.h
     Render/render_pass_manager.cpp
@@ -80,6 +83,10 @@ target_add_hlsl_auto(graphic "6.5"
     "${CMAKE_SOURCE_DIR}/shaders/basic.ps.hlsl"
     "${CMAKE_SOURCE_DIR}/shaders/sprite.vs.hlsl"
     "${CMAKE_SOURCE_DIR}/shaders/sprite.ps.hlsl"
+    "${CMAKE_SOURCE_DIR}/shaders/sprite_instanced_ui.vs.hlsl"
+    "${CMAKE_SOURCE_DIR}/shaders/sprite_instanced_ui.ps.hlsl"
+    "${CMAKE_SOURCE_DIR}/shaders/sprite_instanced_world.vs.hlsl"
+    "${CMAKE_SOURCE_DIR}/shaders/sprite_instanced_world.ps.hlsl"
     "${CMAKE_SOURCE_DIR}/shaders/debug_line.vs.hlsl"
     "${CMAKE_SOURCE_DIR}/shaders/debug_line.ps.hlsl"
 )

@@ -70,19 +70,30 @@ void MaterialRenderer::Record(const RenderFrameContext& frame,
       current_material = draw_cmd.material;
     }
 
-    // Set per-object constants
-    ObjectCB obj_data = {};
-    XMMATRIX world = XMLoadFloat4x4(&draw_cmd.world_matrix);
-    XMMATRIX wvp = world * view_proj;
-    XMStoreFloat4x4(&obj_data.world, XMMatrixTranspose(world));
-    XMStoreFloat4x4(&obj_data.worldViewProj, XMMatrixTranspose(wvp));
-    obj_data.color = draw_cmd.color;
-    cmd.SetObjectConstants(obj_data);
-
-    // Set material instance data (texture indices, etc)
+    // Set material instance data (texture indices, etc) - shared for both paths
     cmd.SetMaterialData(draw_cmd.material_instance);
 
-    // Draw mesh
-    cmd.DrawMesh(draw_cmd.mesh);
+    // === INSTANCED RENDERING PATH ===
+    // Check if this command uses hardware instancing (for batched text/sprite rendering)
+    if (!draw_cmd.instances.empty()) {
+      // Draw all instances in a single draw call
+      cmd.DrawMeshInstanced(draw_cmd.mesh, draw_cmd.instances);
+    } 
+    // === LEGACY SINGLE-OBJECT RENDERING PATH ===
+    else {
+      // Set per-object constants (for backward compatibility with non-instanced rendering)
+      ObjectCB obj_data = {};
+      XMMATRIX world = XMLoadFloat4x4(&draw_cmd.world_matrix);
+      XMMATRIX wvp = world * view_proj;
+      XMStoreFloat4x4(&obj_data.world, XMMatrixTranspose(world));
+      XMStoreFloat4x4(&obj_data.worldViewProj, XMMatrixTranspose(wvp));
+      obj_data.color = draw_cmd.color;
+      obj_data.uvOffset = draw_cmd.uv_offset;
+      obj_data.uvScale = draw_cmd.uv_scale;
+      cmd.SetObjectConstants(obj_data);
+
+      // Draw mesh (single instance)
+      cmd.DrawMesh(draw_cmd.mesh);
+    }
   }
 }

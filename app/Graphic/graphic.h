@@ -21,9 +21,8 @@
 #include "Presentation/swapchain_manager.h"
 #include "Render/material_renderer.h"
 #include "Render/render_pass_manager.h"
-#include "Render/ui_pass.h"
+#include "Resource/Font/sprite_font_manager.h"
 #include "Resource/Texture/texture_manager.h"
-#include "Resource/mesh.h"
 
 class Graphic {
  public:
@@ -40,6 +39,8 @@ class Graphic {
   bool Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_height, const GraphicInitProps& props);
   void Shutdown();
 
+  void WaitForGpuIdle();
+
   // Resize graphics resources
   bool ResizeBuffers(UINT width, UINT height);
 
@@ -55,12 +56,12 @@ class Graphic {
   void RenderScene(const RenderFrameContext& frame, const FramePacket& world);
 
   // Debug rendering API - LOW LEVEL ONLY
-  void AddDebugLine(const DirectX::XMFLOAT3& start, 
-                    const DirectX::XMFLOAT3& end, 
-                    const DirectX::XMFLOAT4& color = {1, 1, 1, 1});
-  
+  void AddDebugLine(const DirectX::XMFLOAT3& start, const DirectX::XMFLOAT3& end, const DirectX::XMFLOAT4& color = {1, 1, 1, 1});
+
   // Get debug line renderer for advanced use
-  DebugLineRenderer* GetDebugLineRenderer() { return debug_line_renderer_.get(); }
+  DebugLineRenderer* GetDebugLineRenderer() {
+    return debug_line_renderer_.get();
+  }
 
   static constexpr int FRAME_BUFFER_COUNT = 2;
 
@@ -74,6 +75,10 @@ class Graphic {
 
   FenceManager& GetFenceManager() {
     return fence_manager_;
+  }
+
+  Font::SpriteFontManager& GetSpriteFontManager() {
+    return sprite_font_manager_;
   }
 
   ID3D12Device* GetDevice() const {
@@ -117,6 +122,7 @@ class Graphic {
 
   // texture
   TextureManager texture_manager_;
+  Font::SpriteFontManager sprite_font_manager_;
   MaterialManager material_manager_;
 
   std::unique_ptr<UiRenderer> ui_renderer_;

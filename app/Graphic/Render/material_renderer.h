@@ -17,6 +17,12 @@ struct DrawCommand {
   DirectX::XMFLOAT4 color;
   MaterialInstance material_instance;
   float depth = 0.0f;  // For depth sorting within same material
+  DirectX::XMFLOAT2 uv_offset = {0.0f, 0.0f};  // UV offset for atlas
+  DirectX::XMFLOAT2 uv_scale = {1.0f, 1.0f};   // UV scale (1,1 = full texture)
+
+  // Instanced rendering support (if non-empty, use DrawIndexedInstanced)
+  // When populated, the above single-object fields (world_matrix, color, uv_offset, uv_scale) are ignored
+  std::vector<SpriteInstanceData> instances;
 
   // Combined sort key for optimizing RS/PSO switches
   // Material's sort key already contains [RS hash | PSO hash]
@@ -126,6 +132,13 @@ class OpaqueRenderer : public MaterialRenderer {
       cmd.color = opaque_cmd.color;
       cmd.material_instance = opaque_cmd.material_instance;
       cmd.depth = opaque_cmd.depth;
+      cmd.uv_offset = opaque_cmd.uv_offset;
+      cmd.uv_scale = opaque_cmd.uv_scale;
+
+      if (!opaque_cmd.instances.empty()) {
+        cmd.instances = opaque_cmd.instances;
+      }
+
       out_commands.push_back(cmd);
     }
 
@@ -151,6 +164,13 @@ class TransparentRenderer : public MaterialRenderer {
       cmd.color = transparent_cmd.color;
       cmd.material_instance = transparent_cmd.material_instance;
       cmd.depth = transparent_cmd.depth;
+      cmd.uv_offset = transparent_cmd.uv_offset;
+      cmd.uv_scale = transparent_cmd.uv_scale;
+
+      if (!transparent_cmd.instances.empty()) {
+        cmd.instances = transparent_cmd.instances;
+      }
+
       out_commands.push_back(cmd);
     }
 
@@ -182,6 +202,14 @@ class UiRenderer : public MaterialRenderer {
       cmd.color = ui_cmd.color;
       cmd.material_instance = ui_cmd.material_instance;
       cmd.depth = ui_cmd.depth;
+      cmd.uv_offset = ui_cmd.uv_offset;
+      cmd.uv_scale = ui_cmd.uv_scale;
+
+      // Copy instanced data if present (for batched text/sprite rendering)
+      if (!ui_cmd.instances.empty()) {
+        cmd.instances = ui_cmd.instances;
+      }
+
       out_commands.push_back(cmd);
     }
 

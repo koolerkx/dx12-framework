@@ -1,4 +1,4 @@
-add_library(framework INTERFACE
+add_library(framework STATIC
   Core/types.h
   Core/utils.h
 
@@ -18,12 +18,18 @@ add_library(framework INTERFACE
   # Custom Event
   Event/input_events.h
   Event/input_event_generator.h
+
+  # Font
+  Font/bmfont_parser.h
+  Font/bmfont_parser.cpp
+  Font/text_layout.h
+  Font/text_layout.cpp
 )
 
-target_link_libraries(framework INTERFACE
+target_link_libraries(framework PUBLIC
   GameInput.lib
 )
 
-# set_msvc_runtime(framework)
+set_msvc_runtime(framework)
 
-target_include_directories(framework INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(framework PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

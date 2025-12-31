@@ -14,6 +14,7 @@
 #include "Frame/frame_packet.h"
 #include "Render/debug_pass.h"
 #include "Render/opaque_pass.h"
+#include "Render/ui_pass.h"
 
 using namespace DirectX;
 
@@ -91,6 +92,12 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
     return false;
   }
 
+  if (!sprite_font_manager_.Initialize(&texture_manager_, device_.Get())) {
+    std::cerr << "Failed to initialize SpriteFontManager" << std::endl;
+    return false;
+  }
+  Font::LoadDefaultFonts(sprite_font_manager_);
+
   if (!frame_cb_storage_.Initialize(device_.Get(), FRAME_BUFFER_COUNT)) return false;
 
   size_t object_buffer_page_size = 1024 * 1024;  // 1mb per page
@@ -167,6 +174,12 @@ bool Graphic::ResizeBuffers(UINT width, UINT height) {
   scissor_rect_.bottom = height;
 
   return true;
+}
+
+void Graphic::WaitForGpuIdle() {
+  if (command_queue_ && fence_manager_.IsValid()) {
+    fence_manager_.WaitForGpu(command_queue_.Get());
+  }
 }
 
 void Graphic::Shutdown() {

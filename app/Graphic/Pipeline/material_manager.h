@@ -101,6 +101,10 @@ class MaterialManager {
     return GetMaterial("Default_UI");
   }
 
+  Material* GetWorldText() {
+    return GetMaterial("World_Text");
+  }
+
  private:
   ID3D12Device* device_ = nullptr;
   ComPtr<ID3D12RootSignature> shared_root_signature_;

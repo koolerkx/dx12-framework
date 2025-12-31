@@ -21,6 +21,8 @@ class TestScene : public IScene {
   GameObject* cube_object_ = nullptr;
   GameObject* cube_object2_ = nullptr;
   GameObject* terrain_plane_ = nullptr;
+  GameObject* text_obj_ = nullptr;
+  GameObject* text_obj2_ = nullptr;
 
   void SetupCamera();
 };
