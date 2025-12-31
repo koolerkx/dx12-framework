@@ -135,20 +135,20 @@ http-client.private.env.json
 mono_crash.*
 
 # Build results
-[Dd]ebug/
+# [Dd]ebug/
 [Dd]ebugPublic/
 [Rr]elease/
 [Rr]eleases/
 
-[Dd]ebug/x64/
+# [Dd]ebug/x64/
 [Dd]ebugPublic/x64/
 [Rr]elease/x64/
 [Rr]eleases/x64/
 bin/x64/
 obj/x64/
 
-[Dd]ebug/x86/
-[Dd]ebugPublic/x86/
+# [Dd]ebug/x86/
+# [Dd]ebugPublic/x86/
 [Rr]elease/x86/
 [Rr]eleases/x86/
 bin/x86/
@@ -192,7 +192,7 @@ nunit-*.xml
 *.received.*
 
 # Build Results of an ATL Project
-[Dd]ebugPS/
+# [Dd]ebugPS/
 [Rr]eleasePS/
 dlldata.c
 
