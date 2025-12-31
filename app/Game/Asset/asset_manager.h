@@ -12,7 +12,7 @@ struct Texture;
 struct Model;
 struct AudioClip;
 
-enum class DefaultMesh { Quad, Cube };
+enum class DefaultMesh { Quad, Cube, Plane };
 
 class AssetManager {
  public:
@@ -46,6 +46,7 @@ class AssetManager {
 
  private:
   void CreateDefaultMeshes();
+  std::unordered_map<DefaultMesh, std::unique_ptr<Mesh>> owned_default_meshes_;
   std::unordered_map<DefaultMesh, const Mesh*> default_meshes_;
 
   class Impl;

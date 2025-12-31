@@ -59,6 +59,12 @@ add_library(graphic STATIC
 
     Render/opaque_pass.h
     Render/opaque_pass.cpp
+
+    Debug/debug_line_renderer.h
+    Debug/debug_line_renderer.cpp
+
+    Render/debug_pass.h
+    Render/debug_pass.cpp
 )
 
 target_link_libraries(app PRIVATE framework)
@@ -74,6 +80,8 @@ target_add_hlsl_auto(graphic "6.5"
     "${CMAKE_SOURCE_DIR}/shaders/basic.ps.hlsl"
     "${CMAKE_SOURCE_DIR}/shaders/sprite.vs.hlsl"
     "${CMAKE_SOURCE_DIR}/shaders/sprite.ps.hlsl"
+    "${CMAKE_SOURCE_DIR}/shaders/debug_line.vs.hlsl"
+    "${CMAKE_SOURCE_DIR}/shaders/debug_line.ps.hlsl"
 )
 
 # manually add shaders files

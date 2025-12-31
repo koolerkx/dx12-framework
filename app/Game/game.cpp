@@ -13,6 +13,12 @@ Game::~Game() {
 void Game::Initialize() {
   if (context_ && context_->GetGraphic()) {
     asset_manager_.Initialize(context_->GetGraphic());
+    context_->SetAssetManager(&asset_manager_);
+
+    if (debug_drawer_.get() == nullptr) {
+      debug_drawer_ = std::make_unique<DebugDrawer>(context_->GetGraphic());
+    }
+    context_->SetDebugDrawer(debug_drawer_.get());
   }
 
   current_scene_ = std::make_unique<TestScene>();
@@ -56,6 +62,7 @@ void Game::OnRender() {
 
   if (current_scene_) {
     current_scene_->Render(frame_packet_);
+    current_scene_->OnRender(frame_packet_);
   }
 
   graphic->RenderScene(frame_context, frame_packet_);

@@ -44,7 +44,7 @@ void MaterialRenderer::Record(const RenderFrameContext& frame,
   // Setup camera matrices
   XMMATRIX view = XMLoadFloat4x4(&camera.view);
   XMMATRIX proj = XMLoadFloat4x4(&camera.proj);
-  XMMATRIX view_proj = camera.GetViewProjMatrix();
+  XMMATRIX view_proj = XMLoadFloat4x4(&camera.view_proj);
 
   // 4. Set frame constants (requires root signature)
   FrameCB frame_cb_data = {};

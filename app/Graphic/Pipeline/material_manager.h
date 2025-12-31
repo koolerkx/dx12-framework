@@ -21,6 +21,7 @@ struct RenderStateConfig {
   D3D12_COMPARISON_FUNC depth_func = D3D12_COMPARISON_FUNC_LESS;
   DXGI_FORMAT rtv_format = DXGI_FORMAT_R8G8B8A8_UNORM;
   DXGI_FORMAT dsv_format = DXGI_FORMAT_D32_FLOAT;
+  D3D12_PRIMITIVE_TOPOLOGY_TYPE primitive_topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 
   static RenderStateConfig Default() {
     return RenderStateConfig{};
@@ -86,10 +87,7 @@ class MaterialManager {
   // Example: Add extra samplers for flow maps, caustics, etc
   ComPtr<ID3D12RootSignature> CreateWaterRootSignature();
 
-  // ========================================
   // Default Materials
-  // ========================================
-
   // Get default materials
   Material* GetDefaultOpaque() {
     return GetMaterial("Default_Opaque");
@@ -118,10 +116,7 @@ class MaterialManager {
   // Create default materials (Opaque, Transparent, UI)
   void CreateDefaultMaterials();
 
-  // ========================================
   // Sort Key Generation
-  // ========================================
-
   // Generate a 64-bit sort key from RS and PSO pointers
   // High 32 bits: RS hash, Low 32 bits: PSO hash
   uint64_t GenerateSortKey(ID3D12RootSignature* rs, ID3D12PipelineState* pso) const {

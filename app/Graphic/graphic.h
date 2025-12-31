@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "Core/types.h"
+#include "Debug/debug_line_renderer.h"
 #include "Descriptor/descriptor_heap_manager.h"
 #include "Device/fence_manager.h"
 #include "Frame/constant_buffers.h"
@@ -53,6 +54,14 @@ class Graphic {
   void EndFrame(const RenderFrameContext& frame);
   void RenderScene(const RenderFrameContext& frame, const FramePacket& world);
 
+  // Debug rendering API - LOW LEVEL ONLY
+  void AddDebugLine(const DirectX::XMFLOAT3& start, 
+                    const DirectX::XMFLOAT3& end, 
+                    const DirectX::XMFLOAT4& color = {1, 1, 1, 1});
+  
+  // Get debug line renderer for advanced use
+  DebugLineRenderer* GetDebugLineRenderer() { return debug_line_renderer_.get(); }
+
   static constexpr int FRAME_BUFFER_COUNT = 2;
 
   TextureManager& GetTextureManager() {
@@ -67,12 +76,8 @@ class Graphic {
     return fence_manager_;
   }
 
-  const Mesh* GetCubeMesh() const {
-    return &cubeMesh_;
-  }
-
-  const Mesh* GetQuadMesh() const {
-    return &quadMesh_;
+  ID3D12Device* GetDevice() const {
+    return device_.Get();
   }
 
   void SetVSync(bool enable) {
@@ -102,9 +107,6 @@ class Graphic {
   D3D12_VIEWPORT viewport_ = {};
   D3D12_RECT scissor_rect_ = {};
 
-  Mesh quadMesh_;
-  Mesh cubeMesh_;
-
   ConstantBuffer<FrameCB> frameCB_;
   ConstantBuffer<ObjectCB> objectCB_;
 
@@ -120,6 +122,7 @@ class Graphic {
   std::unique_ptr<UiRenderer> ui_renderer_;
   std::unique_ptr<OpaqueRenderer> opaque_renderer_;
   std::unique_ptr<RenderPassManager> render_pass_manager_;
+  std::unique_ptr<DebugLineRenderer> debug_line_renderer_;
 
   // Initialization
   bool EnableDebugLayer();

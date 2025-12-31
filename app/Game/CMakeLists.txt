@@ -23,6 +23,9 @@ add_library(game STATIC
     Component/free_camera_controller.h
     Component/free_camera_controller.cpp
 
+    Debug/debug_drawer.h
+    Debug/debug_drawer.cpp
+
     Scenes/test_scene/test_scene.h
     Scenes/test_scene/test_scene.cpp
     Scenes/test_scene/character_mover_component.h

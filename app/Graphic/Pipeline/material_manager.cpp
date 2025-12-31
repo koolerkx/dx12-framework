@@ -80,20 +80,35 @@ void MaterialManager::CreateDefaultMaterials() {
     RenderStateConfig render_state = RenderStateConfig::UI();
     CreateMaterial("Default_UI", config, render_state);
   }
+
+  // Debug Line Material
+  {
+    ShaderConfig config;
+    config.vs_path = L"Content/shaders/debug_line.vs.cso";
+    config.ps_path = L"Content/shaders/debug_line.ps.cso";
+
+    // Line vertex input layout
+    config.input_layout = {{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+      {"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}};
+
+    RenderStateConfig render_state = RenderStateConfig::Default();
+    render_state.primitive_topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
+    render_state.depth_test_enabled = true;
+    render_state.depth_write_enabled = false;       // Lines don't write depth
+    render_state.cull_mode = D3D12_CULL_MODE_NONE;  // Don't cull lines
+
+    CreateMaterial("Debug_Line", config, render_state);
+  }
 }
 
-// ========================================
-// Method 1: Create material with shared RS
-// ========================================
+// Create material with shared RS
 Material* MaterialManager::CreateMaterial(
   const std::string& name, const ShaderConfig& shader_config, const RenderStateConfig& render_state) {
   // Delegate to the custom RS version, using shared RS
   return CreateMaterial(name, shared_root_signature_.Get(), shader_config, render_state);
 }
 
-// ========================================
-// Method 2: Create material with custom RS
-// ========================================
+// Create material with custom RS
 Material* MaterialManager::CreateMaterial(const std::string& name,
   ID3D12RootSignature* custom_root_signature,
   const ShaderConfig& shader_config,
@@ -131,6 +146,7 @@ Material* MaterialManager::CreateMaterial(const std::string& name,
                                         .SetCullMode(render_state.cull_mode)
                                         .SetDepthTest(render_state.depth_test_enabled)
                                         .SetDepthWrite(render_state.depth_write_enabled)
+                                        .SetPrimitiveTopology(render_state.primitive_topology)
                                         .SetBlendMode(render_state.blend_mode)
                                         .Build(device_);
 

@@ -5,6 +5,9 @@
 
 #include "game_object.h"
 
+IScene::IScene() = default;
+IScene::~IScene() = default;
+
 GameObject* IScene::CreateGameObject(const std::string& name) {
   auto obj = std::make_unique<GameObject>(this, name);
   GameObject* ptr = obj.get();
@@ -56,8 +59,8 @@ void IScene::Render(FramePacket& packet) {
     // Fallback: default camera
     using namespace DirectX;
     CameraData default_camera;
-    XMStoreFloat4x4(&default_camera.view, XMMatrixIdentity());
-    XMStoreFloat4x4(&default_camera.proj, XMMatrixPerspectiveFovLH(XM_PIDIV4, 16.0f / 9.0f, 0.1f, 1000.0f));
+    StoreMatrixToCameraData(default_camera, XMMatrixIdentity(), XMMatrixPerspectiveFovLH(XM_PIDIV4, 16.0f / 9.0f, 0.1f, 1000.0f));
+
     default_camera.position = XMFLOAT3(0, 0, -5);
     default_camera.forward = XMFLOAT3(0, 0, 1);
     default_camera.up = XMFLOAT3(0, 1, 0);
@@ -65,6 +68,9 @@ void IScene::Render(FramePacket& packet) {
   }
 
   RenderRootObjects(packet);
+
+  // Call derived class custom rendering (e.g., debug visualization)
+  OnRender(packet);
 }
 
 void IScene::UpdateRootObjects(float dt) {

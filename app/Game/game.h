@@ -27,6 +27,7 @@ class Game {
  private:
   GameContext* context_ = nullptr;
   AssetManager asset_manager_;
+  std::unique_ptr<DebugDrawer> debug_drawer_;
   std::unique_ptr<IScene> current_scene_;
   FramePacket frame_packet_;
 

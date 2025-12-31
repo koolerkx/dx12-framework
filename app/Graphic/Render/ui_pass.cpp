@@ -22,12 +22,12 @@ void UiPass::Execute(const RenderFrameContext& frame, const FramePacket& packet)
     static_cast<float>(frame.screen_width),              // right
     static_cast<float>(frame.screen_height),             // bottom
     0.0f,                                                // top
-    -10.0f,                                                // near
+    -10.0f,                                              // near
     100.0f                                               // far
   );
 
-  XMStoreFloat4x4(&ui_camera.view, view);
-  XMStoreFloat4x4(&ui_camera.proj, proj);
+  StoreMatrixToCameraData(ui_camera, view, proj);
+
   ui_camera.position = XMFLOAT3(0, 0, 0);
   ui_camera.forward = XMFLOAT3(0, 0, 1);
   ui_camera.up = XMFLOAT3(0, 1, 0);

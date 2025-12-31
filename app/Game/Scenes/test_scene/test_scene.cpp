@@ -7,6 +7,7 @@
 #include "Component/mesh_renderer.h"
 #include "Component/sprite_renderer.h"
 #include "Component/transform_component.h"
+#include "Debug/debug_drawer.h"
 #include "character_mover_component.h"
 #include "test_scene.h"
 
@@ -18,6 +19,17 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   texture_character_ = asset_manager.LoadTexture("Content/textures/ship_J.png");
 
   SetupCamera();
+
+  // Create terrain plane
+  terrain_plane_ = CreateGameObject("TerrainPlane");
+  auto* plane_transform = terrain_plane_->GetComponent<TransformComponent>();
+  plane_transform->SetPosition({0.0f, 0.0f, 0.0f});
+  plane_transform->SetScale({20.0f, 1.0f, 20.0f});  // 20x20 size
+
+  auto* plane_renderer = terrain_plane_->AddComponent<MeshRenderer>();
+  plane_renderer->SetMesh(asset_manager.GetDefaultMesh(DefaultMesh::Plane));
+  plane_renderer->SetTexture(texture_background_.Get());
+  plane_renderer->SetColor({1.0f, 1.0f, 1.0f, 1.0f});
 
   cube_object_ = CreateGameObject("Cube");
   auto* cube_transform = cube_object_->GetComponent<TransformComponent>();
@@ -70,6 +82,30 @@ void TestScene::OnPostUpdate(float dt) {
 
   cube_object_->GetComponent<TransformComponent>()->SetRotationEulerDegree({0.0f, rotation_angle_, 0.0f});
   cube_object2_->GetComponent<TransformComponent>()->SetRotationEulerDegree({0.0f, rotation_angle_, 0.0f});
+}
+
+void TestScene::OnRender(FramePacket& /*packet*/) {
+  auto* debug_drawer = GetContext()->GetDebugDrawer();
+  if (!debug_drawer) return;
+
+  // Draw grid
+  DebugDrawer::GridConfig grid_config;
+  grid_config.size = 20.0f;
+  grid_config.cell_size = 1.0f;
+  grid_config.y_level = 0.0f;
+  grid_config.color = {0.5f, 0.5f, 0.5f, 1.0f};
+  debug_drawer->DrawGrid(grid_config);
+
+  // Draw axis gizmo at world origin
+  DebugDrawer::AxisGizmoConfig axis_config;
+  axis_config.position = {0.0f, 0.0f, 0.0f};
+  axis_config.length = 2.0f;
+  debug_drawer->DrawAxisGizmo(axis_config);
+
+  // Optional: Draw bounding box around cube
+  debug_drawer->DrawBox({-5, 2, -5}, {1, 1, 1}, {1, 0, 0, 1});
+
+  debug_drawer->DrawSphere({-5, 2, -5}, 3, {1, 0, 0, 1}, 32);
 }
 
 void TestScene::OnExit() {

@@ -10,6 +10,7 @@ class TestScene : public IScene {
   void OnExit() override;
 
   void OnPostUpdate(float dt) override;
+  void OnRender(FramePacket& packet) override;
 
  private:
   AssetHandle<Texture> texture_background_;
@@ -19,6 +20,7 @@ class TestScene : public IScene {
   GameObject* camera_object_ = nullptr;
   GameObject* cube_object_ = nullptr;
   GameObject* cube_object2_ = nullptr;
+  GameObject* terrain_plane_ = nullptr;
 
   void SetupCamera();
 };

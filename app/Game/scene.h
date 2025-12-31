@@ -8,10 +8,12 @@
 #include "game_object.h"
 
 class AssetManager;
+class DebugDrawer;
 
 class IScene {
  public:
-  virtual ~IScene() = default;
+  IScene();
+  virtual ~IScene();
 
   virtual void OnEnter(AssetManager& asset_manager) = 0;
   virtual void OnExit() = 0;
@@ -24,6 +26,10 @@ class IScene {
   virtual void OnPreFixedUpdate(float /*dt*/) {
   }
   virtual void OnPostFixedUpdate(float /*dt*/) {
+  }
+
+  // Override this to add custom rendering (e.g., debug visualizations)
+  virtual void OnRender(FramePacket& /*packet*/) {
   }
 
   // System Update Functions, this update game objects and components

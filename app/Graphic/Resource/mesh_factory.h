@@ -117,4 +117,60 @@ class MeshFactory {
 
     return out_mesh.Create(device, vertices, 4, indices, 6);
   }
+
+  // Create a subdivided plane on XZ plane (Y=0)
+  static bool CreatePlane(ID3D12Device* device, Mesh& out_mesh, uint32_t subdivisions_x = 1, uint32_t subdivisions_z = 1) {
+    struct Vertex {
+      float pos[3];
+      float uv[2];
+    };
+
+    // Calculate vertex count
+    uint32_t vertex_count_x = subdivisions_x + 1;
+    uint32_t vertex_count_z = subdivisions_z + 1;
+    uint32_t total_vertices = vertex_count_x * vertex_count_z;
+
+    std::vector<Vertex> vertices;
+    vertices.reserve(total_vertices);
+
+    // Generate vertices on XZ plane (Y=0)
+    for (uint32_t z = 0; z < vertex_count_z; ++z) {
+      for (uint32_t x = 0; x < vertex_count_x; ++x) {
+        float u = static_cast<float>(x) / subdivisions_x;
+        float v = static_cast<float>(z) / subdivisions_z;
+
+        // Position: -0.5 to 0.5 in both X and Z
+        float pos_x = u - 0.5f;
+        float pos_z = v - 0.5f;
+
+        vertices.push_back({{pos_x, 0.0f, pos_z}, {u, v}});
+      }
+    }
+
+    // Generate indices
+    uint32_t index_count = subdivisions_x * subdivisions_z * 6;
+    std::vector<uint16_t> indices;
+    indices.reserve(index_count);
+
+    for (uint32_t z = 0; z < subdivisions_z; ++z) {
+      for (uint32_t x = 0; x < subdivisions_x; ++x) {
+        uint16_t top_left = z * vertex_count_x + x;
+        uint16_t top_right = top_left + 1;
+        uint16_t bottom_left = (z + 1) * vertex_count_x + x;
+        uint16_t bottom_right = bottom_left + 1;
+
+        // First triangle
+        indices.push_back(top_left);
+        indices.push_back(bottom_left);
+        indices.push_back(top_right);
+
+        // Second triangle
+        indices.push_back(top_right);
+        indices.push_back(bottom_left);
+        indices.push_back(bottom_right);
+      }
+    }
+
+    return out_mesh.Create(device, vertices.data(), vertices.size(), indices.data(), indices.size());
+  }
 };

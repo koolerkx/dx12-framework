@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "Graphic/Resource/Texture/texture_manager.h"
+#include "Graphic/Resource/mesh_factory.h"
 #include "Graphic/graphic.h"
 
 class AssetManager::Impl {
@@ -62,9 +63,28 @@ Graphic* AssetManager::GetGraphicForDebugUseOnly() const {
 void AssetManager::CreateDefaultMeshes() {
   if (!impl_->graphic) return;
 
-  // Get meshes from Graphic (it owns them)
-  default_meshes_[DefaultMesh::Quad] = impl_->graphic->GetQuadMesh();
-  default_meshes_[DefaultMesh::Cube] = impl_->graphic->GetCubeMesh();
+  ID3D12Device* device = impl_->graphic->GetDevice();
+
+  // Create and own Quad mesh
+  auto quad_mesh = std::make_unique<Mesh>();
+  if (MeshFactory::CreateQuad(device, *quad_mesh)) {
+    default_meshes_[DefaultMesh::Quad] = quad_mesh.get();
+    owned_default_meshes_[DefaultMesh::Quad] = std::move(quad_mesh);
+  }
+
+  // Create and own Cube mesh
+  auto cube_mesh = std::make_unique<Mesh>();
+  if (MeshFactory::CreateCube(device, *cube_mesh)) {
+    default_meshes_[DefaultMesh::Cube] = cube_mesh.get();
+    owned_default_meshes_[DefaultMesh::Cube] = std::move(cube_mesh);
+  }
+
+  // Create and own Plane mesh (10x10 subdivisions for terrain)
+  auto plane_mesh = std::make_unique<Mesh>();
+  if (MeshFactory::CreatePlane(device, *plane_mesh, 10, 10)) {
+    default_meshes_[DefaultMesh::Plane] = plane_mesh.get();
+    owned_default_meshes_[DefaultMesh::Plane] = std::move(plane_mesh);
+  }
 }
 
 const Mesh* AssetManager::GetDefaultMesh(DefaultMesh type) const {

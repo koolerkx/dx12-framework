@@ -12,10 +12,8 @@
 
 #include "Core/types.h"
 #include "Frame/frame_packet.h"
-#include "Pipeline/pipeline_state_builder.h"
-#include "Pipeline/root_signature_builder.h"
+#include "Render/debug_pass.h"
 #include "Render/opaque_pass.h"
-#include "Resource/mesh_factory.h"
 
 using namespace DirectX;
 
@@ -106,18 +104,6 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
     }
   }
 
-  // Create vertex buffer
-  if (!MeshFactory::CreateQuad(device_.Get(), quadMesh_)) {
-    std::cerr << "Failed to create quad mesh." << std::endl;
-    return false;
-  }
-
-  // Create cube mesh
-  if (!MeshFactory::CreateCube(device_.Get(), cubeMesh_)) {
-    std::cerr << "Failed to create cube mesh." << std::endl;
-    return false;
-  }
-
   viewport_.Width = static_cast<FLOAT>(frame_buffer_width_);    // 出力先の幅(ピクセル数)
   viewport_.Height = static_cast<FLOAT>(frame_buffer_height_);  // 出力先の高さ(ピクセル数)
   viewport_.TopLeftX = 0;                                       // 出力先の左上座標X
@@ -133,9 +119,16 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
   ui_renderer_ = std::make_unique<UiRenderer>();
   opaque_renderer_ = std::make_unique<OpaqueRenderer>();
 
+  debug_line_renderer_ = std::make_unique<DebugLineRenderer>();
+  if (!debug_line_renderer_->Initialize(device_.Get())) {
+    std::cerr << "Failed to initialize debug line renderer" << std::endl;
+    return false;
+  }
+
   render_pass_manager_ = std::make_unique<RenderPassManager>();
 
   render_pass_manager_->AddPass(std::make_unique<OpaquePass>(opaque_renderer_.get()));
+  render_pass_manager_->AddPass(std::make_unique<DebugPass>(debug_line_renderer_.get(), &material_manager_));
   render_pass_manager_->AddPass(std::make_unique<UiPass>(ui_renderer_.get()));
 
   is_initialized_ = true;
@@ -213,6 +206,11 @@ void Graphic::Shutdown() {
 RenderFrameContext Graphic::BeginFrame() {
   uint32_t frame_index = swap_chain_manager_.GetCurrentBackBufferIndex();
 
+  // Clear debug lines at start of frame
+  if (debug_line_renderer_) {
+    debug_line_renderer_->Clear();
+  }
+
   // Wait for resource
   uint64_t fence_value = frame_fence_values_[frame_index];
   if (fence_value != 0) {
@@ -275,6 +273,12 @@ void Graphic::EndFrame(const RenderFrameContext& frame) {
 
 void Graphic::RenderScene(const RenderFrameContext& frame, const FramePacket& world) {
   render_pass_manager_->Execute(frame, world);
+}
+
+void Graphic::AddDebugLine(const DirectX::XMFLOAT3& start, const DirectX::XMFLOAT3& end, const DirectX::XMFLOAT4& color) {
+  if (debug_line_renderer_) {
+    debug_line_renderer_->AddLine(start, end, color);
+  }
 }
 
 bool Graphic::EnableDebugLayer() {

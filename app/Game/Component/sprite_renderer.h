@@ -1,5 +1,6 @@
 #pragma once
 #include "Component/component.h"
+#include "Game/Asset/asset_manager.h"
 #include "Graphic/Frame/frame_packet.h"
 #include "Graphic/Resource/Texture/texture.h"
 #include "game_context.h"
@@ -39,7 +40,7 @@ class SpriteRenderer : public Component<SpriteRenderer> {
       case RenderPassTag::Ui: {
         // Push to the UI Pass queue
         UiDrawCommand cmd;
-        cmd.mesh = context->GetGraphic()->GetQuadMesh();
+        cmd.mesh = context->GetAssetManager().GetDefaultMesh(DefaultMesh::Quad);
         cmd.material = material_mgr.GetDefaultUI();
         cmd.color = color_;
         cmd.size = size_;

@@ -3,7 +3,6 @@
 #include "game_object.h"
 #include "transform_component.h"
 
-
 using namespace DirectX;
 
 void CameraComponent::OnStart() {
@@ -52,8 +51,8 @@ CameraData CameraComponent::GetCameraData() const {
   auto* transform = owner_->GetComponent<TransformComponent>();
   if (!transform) {
     // Fallback to identity
-    XMStoreFloat4x4(&data.view, XMMatrixIdentity());
-    XMStoreFloat4x4(&data.proj, XMLoadFloat4x4(&projection_matrix_));
+    StoreMatrixToCameraData(data, XMMatrixIdentity(), XMLoadFloat4x4(&projection_matrix_));
+
     data.position = XMFLOAT3(0, 0, 0);
     data.forward = XMFLOAT3(0, 0, 1);
     data.up = XMFLOAT3(0, 1, 0);
@@ -78,10 +77,7 @@ CameraData CameraComponent::GetCameraData() const {
 
   // Build view matrix (inverse of world transform)
   XMMATRIX view = XMMatrixLookAtLH(pos, target, up);
-  XMStoreFloat4x4(&data.view, view);
-
-  // Copy projection matrix
-  data.proj = projection_matrix_;
+  StoreMatrixToCameraData(data, view, XMLoadFloat4x4(&projection_matrix_));
 
   return data;
 }
