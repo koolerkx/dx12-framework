@@ -85,6 +85,10 @@ class GameObject {
   // check if node is a descendant of possible_ancestor in order to prevent cyclic dependencies
   static bool IsDescendantOf(const GameObject* node, const GameObject* possible_ancestor);
 
+  // Mark this GameObject for destruction, remove from the scene at the end of the current frame
+  void Destroy();
+  bool IsPendingDestroy() const;
+
  private:
   void AddChild(GameObject* child);
   void RemoveChild(GameObject* child);
@@ -92,6 +96,7 @@ class GameObject {
  private:
   std::string name_;
   bool is_started_ = false;
+  bool is_pending_destroy_ = false;
 
   IScene* scene_ = nullptr;
   GameObject* parent_ = nullptr;

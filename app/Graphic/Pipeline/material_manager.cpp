@@ -371,8 +371,12 @@ Material MaterialManager::CreateMaterialInternal(const Rendering::RenderSettings
   ShaderConfig shader_config;
   if (blend_mode == BlendMode::Opaque) {
     shader_config = ShaderPresets::CreateSpriteInstancedWorld();
-  } else {
+  } else if (settings.depth_test) {
+    // Transparent with depth test = WorldTransparent (3D sprites with depth)
     shader_config = ShaderPresets::CreateSpriteInstancedWorldTransparent();
+  } else {
+    // Transparent without depth test = UI (2D sprites without depth)
+    shader_config = ShaderPresets::CreateSpriteInstancedUI();
   }
 
   // Load shaders

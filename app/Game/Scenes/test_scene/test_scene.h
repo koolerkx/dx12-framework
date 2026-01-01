@@ -23,6 +23,7 @@ class TestScene : public IScene {
   GameObject* terrain_plane_ = nullptr;
   GameObject* text_obj_ = nullptr;
   GameObject* text_obj2_ = nullptr;
+  GameObject* animated_bg_object_ = nullptr;
 
   void SetupCamera();
 };

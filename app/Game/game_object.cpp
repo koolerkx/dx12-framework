@@ -106,3 +106,18 @@ bool GameObject::IsDescendantOf(const GameObject* node, const GameObject* possib
   }
   return false;
 }
+
+void GameObject::Destroy() {
+  is_pending_destroy_ = true;
+
+  // Recursively mark all children for destruction
+  for (auto* child : children_) {
+    if (child) {
+      child->Destroy();
+    }
+  }
+}
+
+bool GameObject::IsPendingDestroy() const {
+  return is_pending_destroy_;
+}

@@ -16,6 +16,20 @@ class SpriteRenderer : public Component<SpriteRenderer> {
 
   void SetRenderPassTag(RenderPassTag tag) {
     pass_tag_ = tag;
+
+    switch (tag) {
+      case RenderPassTag::Ui:
+        render_settings_ = Rendering::RenderSettings::UI();
+        break;
+      case RenderPassTag::WorldOpaque:
+        render_settings_ = Rendering::RenderSettings::Opaque();
+        break;
+      case RenderPassTag::WorldTransparent:
+        render_settings_ = Rendering::RenderSettings::Transparent();
+        break;
+      default:
+        break;
+    }
   }
 
   void SetTexture(Texture* tex) {
@@ -60,10 +74,25 @@ class SpriteRenderer : public Component<SpriteRenderer> {
   }
 
   // Pivot API
+  // UI Must start from top-left, this not support UI Pass
   void SetPivot(Pivot::Preset preset);
   void SetPivot(const Pivot::Config& config);
   const Pivot::Config& GetPivot() const {
     return pivot_;
+  }
+
+  // UV API
+  void SetUVOffset(const DirectX::XMFLOAT2& offset) {
+    uv_offset_ = offset;
+  }
+  void SetUVScale(const DirectX::XMFLOAT2& scale) {
+    uv_scale_ = scale;
+  }
+  const DirectX::XMFLOAT2& GetUVOffset() const {
+    return uv_offset_;
+  }
+  const DirectX::XMFLOAT2& GetUVScale() const {
+    return uv_scale_;
   }
 
   void OnRender(FramePacket& packet) override;
@@ -75,6 +104,8 @@ class SpriteRenderer : public Component<SpriteRenderer> {
   Texture* texture_ = nullptr;
   DirectX::XMFLOAT4 color_ = {1, 1, 1, 1};
   DirectX::XMFLOAT2 size_ = {100, 100};
+  DirectX::XMFLOAT2 uv_offset_ = {0.0f, 0.0f};
+  DirectX::XMFLOAT2 uv_scale_ = {1.0f, 1.0f};
   int layer_id_ = 0;
 
   RenderPassTag pass_tag_ = RenderPassTag::Ui;

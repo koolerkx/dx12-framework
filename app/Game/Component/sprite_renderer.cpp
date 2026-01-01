@@ -1,14 +1,21 @@
 #include "sprite_renderer.h"
 
+#include <cassert>
+
 #include "Component/billboard_helper.h"
 #include "Component/pivot_type.h"
 #include "Game/Asset/asset_manager.h"
 #include "game_context.h"
 #include "transform_component.h"
 
+
 using namespace DirectX;
 
 void SpriteRenderer::SetPivot(Pivot::Preset preset) {
+  if (pass_tag_ == RenderPassTag::Ui) {
+    assert(true && "ui pass does not support set pivot");
+    return;
+  }
   pivot_.preset = preset;
 }
 
@@ -58,11 +65,6 @@ void SpriteRenderer::OnRender(FramePacket& packet) {
   auto& material_mgr = context->GetGraphic()->GetMaterialManager();
   auto* transform = GetOwner()->GetTransform();
 
-  // Calculate pivot position (Transform Position = Pivot)
-  // pivot_offset is the pivot position in content coordinates
-  XMFLOAT2 pivot_pos = pivot_.CalculateOffset(size_);
-  XMMATRIX pivot_mat = XMMatrixTranslation(-pivot_pos.x, -pivot_pos.y, 0.0f);
-
   switch (pass_tag_) {
     case RenderPassTag::Ui: {
       UiDrawCommand cmd;
@@ -73,68 +75,98 @@ void SpriteRenderer::OnRender(FramePacket& packet) {
       cmd.layer_id = layer_id_;
       cmd.depth = static_cast<float>(layer_id_);
 
-      // Transform Position = Pivot
+      XMMATRIX offset_mat = XMMatrixTranslation(0.5f, 0.5f, 0.0f);  // Move quad origin to top-left
       XMMATRIX size_scale = XMMatrixScaling(size_.x, size_.y, 1.0f);
-      XMMATRIX world = size_scale * pivot_mat * transform->GetWorldMatrix();
+      XMMATRIX world = offset_mat * size_scale * transform->GetWorldMatrix();
       XMStoreFloat4x4(&cmd.world_matrix, world);
 
       cmd.material_instance.material = cmd.material;
       cmd.material_instance.albedo_texture_index = texture_->GetBindlessIndex();
       cmd.material_instance.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
+      cmd.uv_offset = uv_offset_;
+      cmd.uv_scale = uv_scale_;
+
+      // Create single instance data for instanced rendering
+      SpriteInstanceData instance;
+      XMStoreFloat4x4(&instance.world_matrix, world);
+      instance.color = color_;
+      instance.uv_offset = uv_offset_;
+      instance.uv_scale = uv_scale_;
+      cmd.instances.push_back(instance);
 
       packet.ui_pass.push_back(cmd);
     } break;
 
-    case RenderPassTag::WorldOpaque: {
-      OpaqueDrawCommand cmd;
-      cmd.mesh = context->GetAssetManager().GetDefaultMesh(DefaultMesh::Quad);
-      cmd.material = material_mgr.GetOrCreateMaterial(render_settings_);
-      cmd.color = color_;
-      cmd.uv_offset = {0.0f, 0.0f};
-      cmd.uv_scale = {1.0f, 1.0f};
-
-      // Transform Position = Pivot
-      XMMATRIX size_scale = XMMatrixScaling(size_.x, size_.y, 1.0f);
-      XMMATRIX base_world = CalculateWorldMatrix(transform, packet.main_camera);
-      XMMATRIX world = size_scale * pivot_mat * base_world;
-      XMStoreFloat4x4(&cmd.world_matrix, world);
-
-      // Calculate depth from object position for sorting
-      XMFLOAT3 worldPos = transform->GetWorldPosition();
-      XMFLOAT3 camPos = packet.main_camera.position;
-      cmd.depth = XMVectorGetX(XMVector3LengthSq(XMLoadFloat3(&worldPos) - XMLoadFloat3(&camPos)));
-
-      cmd.material_instance.material = cmd.material;
-      cmd.material_instance.albedo_texture_index = texture_->GetBindlessIndex();
-      cmd.material_instance.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
-
-      packet.opaque_pass.push_back(cmd);
-    } break;
-
+    case RenderPassTag::WorldOpaque:
     case RenderPassTag::WorldTransparent: {
-      TransparentDrawCommand cmd;
-      cmd.mesh = context->GetAssetManager().GetDefaultMesh(DefaultMesh::Quad);
-      cmd.material = material_mgr.GetOrCreateMaterial(render_settings_);
-      cmd.color = color_;
-      cmd.uv_offset = {0.0f, 0.0f};
-      cmd.uv_scale = {1.0f, 1.0f};
+      // World pass: use pivot system
+      // Calculate pivot offset based on preset
+      XMFLOAT2 normalized_pivot = pivot_.GetNormalized();  // (0.5, 0.5) for Center, (0.5, 1.0) for Bottom
+      // Convert to quad-local offset: we want to move the quad so the pivot point is at origin
+      // Quad vertex range is [-0.5, 0.5], so offset = normalized_pivot - 0.5
+      float pivot_offset_x = (normalized_pivot.x - 0.5f);
+      float pivot_offset_y = (normalized_pivot.y - 0.5f);
 
-      // Transform Position = Pivot
+      XMMATRIX pivot_mat = XMMatrixTranslation(pivot_offset_x, pivot_offset_y, 0.0f);
       XMMATRIX size_scale = XMMatrixScaling(size_.x, size_.y, 1.0f);
       XMMATRIX base_world = CalculateWorldMatrix(transform, packet.main_camera);
       XMMATRIX world = size_scale * pivot_mat * base_world;
-      XMStoreFloat4x4(&cmd.world_matrix, world);
 
-      // Calculate depth from object position for back-to-front sorting
-      XMFLOAT3 worldPos = transform->GetWorldPosition();
-      XMFLOAT3 camPos = packet.main_camera.position;
-      cmd.depth = XMVectorGetX(XMVector3LengthSq(XMLoadFloat3(&worldPos) - XMLoadFloat3(&camPos)));
+      if (pass_tag_ == RenderPassTag::WorldOpaque) {
+        OpaqueDrawCommand cmd;
+        cmd.mesh = context->GetAssetManager().GetDefaultMesh(DefaultMesh::Quad);
+        cmd.material = material_mgr.GetOrCreateMaterial(render_settings_);
+        cmd.color = color_;
+        cmd.uv_offset = uv_offset_;
+        cmd.uv_scale = uv_scale_;
+        XMStoreFloat4x4(&cmd.world_matrix, world);
 
-      cmd.material_instance.material = cmd.material;
-      cmd.material_instance.albedo_texture_index = texture_->GetBindlessIndex();
-      cmd.material_instance.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
+        // Calculate depth from object position for sorting
+        XMFLOAT3 worldPos = transform->GetWorldPosition();
+        XMFLOAT3 camPos = packet.main_camera.position;
+        cmd.depth = XMVectorGetX(XMVector3LengthSq(XMLoadFloat3(&worldPos) - XMLoadFloat3(&camPos)));
 
-      packet.transparent_pass.push_back(cmd);
+        cmd.material_instance.material = cmd.material;
+        cmd.material_instance.albedo_texture_index = texture_->GetBindlessIndex();
+        cmd.material_instance.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
+
+        // Create single instance data for instanced rendering
+        SpriteInstanceData instance;
+        XMStoreFloat4x4(&instance.world_matrix, world);
+        instance.color = color_;
+        instance.uv_offset = uv_offset_;
+        instance.uv_scale = uv_scale_;
+        cmd.instances.push_back(instance);
+
+        packet.opaque_pass.push_back(cmd);
+      } else {
+        TransparentDrawCommand cmd;
+        cmd.mesh = context->GetAssetManager().GetDefaultMesh(DefaultMesh::Quad);
+        cmd.material = material_mgr.GetOrCreateMaterial(render_settings_);
+        cmd.color = color_;
+        cmd.uv_offset = uv_offset_;
+        cmd.uv_scale = uv_scale_;
+        XMStoreFloat4x4(&cmd.world_matrix, world);
+
+        // Calculate depth from object position for back-to-front sorting
+        XMFLOAT3 worldPos = transform->GetWorldPosition();
+        XMFLOAT3 camPos = packet.main_camera.position;
+        cmd.depth = XMVectorGetX(XMVector3LengthSq(XMLoadFloat3(&worldPos) - XMLoadFloat3(&camPos)));
+
+        cmd.material_instance.material = cmd.material;
+        cmd.material_instance.albedo_texture_index = texture_->GetBindlessIndex();
+        cmd.material_instance.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
+
+        // Create single instance data for instanced rendering
+        SpriteInstanceData instance;
+        XMStoreFloat4x4(&instance.world_matrix, world);
+        instance.color = color_;
+        instance.uv_offset = uv_offset_;
+        instance.uv_scale = uv_scale_;
+        cmd.instances.push_back(instance);
+
+        packet.transparent_pass.push_back(cmd);
+      }
     } break;
 
     default:

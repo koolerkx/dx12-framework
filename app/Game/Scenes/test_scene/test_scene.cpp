@@ -3,10 +3,12 @@
 #include <DirectXMath.h>
 
 #include "Asset/asset_manager.h"
+#include "Component/animated_sprite.h"
 #include "Component/free_camera_controller.h"
 #include "Component/mesh_renderer.h"
 #include "Component/pivot_type.h"
 #include "Component/sprite_renderer.h"
+#include "Component/sprite_sheet_helper.h"
 #include "Component/text_renderer.h"
 #include "Component/transform_component.h"
 #include "Debug/debug_drawer.h"
@@ -78,6 +80,38 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   char_sprite2->SetTexture(texture_character_.Get());
   char_sprite2->SetSize({150, 150});
   character_object2_->AddComponent<CharacterMover>();
+
+  // Animated Background Sprite Example
+  // Using texture_background_ (576x324) as a sprite sheet with mock animation frames
+  // Assume 9 frames arranged in a 3x3 grid (each frame ~192x108 with padding)
+  animated_bg_object_ = CreateGameObject("AnimatedBackground");
+  // Position in screen space (UI pass uses screen coordinates)
+  animated_bg_object_->GetComponent<TransformComponent>()->SetPosition({0.0f, -3.0f, 0.0f});
+
+  auto* bg_renderer = animated_bg_object_->AddComponent<SpriteRenderer>();
+  bg_renderer->SetTexture(texture_background_.Get());
+  bg_renderer->SetSize({15.0f, 15.0f});  // Full frame size
+  bg_renderer->SetRenderPassTag(RenderPassTag::WorldTransparent);
+  bg_renderer->SetPivot(Pivot::Preset::Bottom);
+  bg_renderer->SetDoubleSided(true);
+  bg_renderer->SetBillboardMode(Billboard::Mode::Spherical);
+  bg_renderer->SetColor({1.0f, 0.0f, 0.0f, 0.5f});
+
+  auto* bg_anim = animated_bg_object_->AddComponent<AnimatedSprite>();
+
+  // Configure sprite sheet: treat the 576x324 texture as a 3x3 grid of animation frames
+  SpriteSheet::FrameConfig bg_sheet_config;
+  bg_sheet_config.sheet_size = {576, 324};
+  bg_sheet_config.frame_size = {192, 108};
+  bg_sheet_config.orientation = SpriteSheet::Orientation::Horizontal;
+  bg_sheet_config.padding = {0, 0};
+  bg_sheet_config.margin = {0, 0};
+
+  bg_anim->SetSpriteSheetConfig(bg_sheet_config);
+  bg_anim->SetFrameCount(9);           // 3x3 = 9 frames
+  bg_anim->SetFramesPerSecond(30.0f);  // 10 FPS animation
+  bg_anim->SetLoopEnabled(true);
+  bg_anim->SetPlayOnStart(true);
 
   // Text
   {

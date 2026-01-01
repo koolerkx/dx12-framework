@@ -29,6 +29,10 @@ add_library(game STATIC
     Component/sprite_renderer.cpp
     Component/pivot_type.h
     Component/pivot_type.cpp
+    Component/sprite_sheet_helper.h
+    Component/sprite_sheet_helper.cpp
+    Component/animated_sprite.h
+    Component/animated_sprite.cpp
 
     Debug/debug_drawer.h
     Debug/debug_drawer.cpp

@@ -57,6 +57,9 @@ class IScene {
  protected:
   GameObject* CreateGameObject(const std::string& name = "GameObject");
 
+ public:
+  void DestroyGameObject(GameObject* obj);
+
  private:
   std::vector<std::unique_ptr<GameObject>> game_objects_;
   CameraComponent* active_camera_ = nullptr;
@@ -64,6 +67,7 @@ class IScene {
 
   GameContext* context_ = nullptr;
 
+  void CleanupDestroyedObjects();
   void UpdateRootObjects(float dt);
   void FixedUpdateRootObjects(float dt);
   void RenderRootObjects(FramePacket& packet);

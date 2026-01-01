@@ -42,6 +42,7 @@ void IScene::Update(float dt) {
   OnPreUpdate(dt);
   UpdateRootObjects(dt);
   OnPostUpdate(dt);
+  CleanupDestroyedObjects();
 }
 
 void IScene::FixedUpdate(float dt) {
@@ -93,6 +94,30 @@ void IScene::RenderRootObjects(FramePacket& packet) {
   for (auto& obj : game_objects_) {
     if (obj->GetParent() == nullptr) {
       obj->Render(packet);
+    }
+  }
+}
+
+void IScene::DestroyGameObject(GameObject* obj) {
+  if (!obj) return;
+  obj->Destroy();
+}
+
+void IScene::CleanupDestroyedObjects() {
+  // Loop until no more objects are marked for destruction
+  // This handles cases where object destruction cascades to other objects
+  while (true) {
+    size_t count_before = game_objects_.size();
+
+    auto it = std::remove_if(game_objects_.begin(), game_objects_.end(),
+      [](const std::unique_ptr<GameObject>& obj) {
+        return obj->IsPendingDestroy();
+      });
+
+    game_objects_.erase(it, game_objects_.end());
+
+    if (game_objects_.size() == count_before) {
+      break;  // No objects removed, cleanup complete
     }
   }
 }
