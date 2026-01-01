@@ -25,6 +25,8 @@ add_library(game STATIC
     Component/free_camera_controller.cpp
     Component/text_renderer.h
     Component/text_renderer.cpp
+    Component/sprite_renderer.h
+    Component/sprite_renderer.cpp
 
     Debug/debug_drawer.h
     Debug/debug_drawer.cpp

@@ -1,5 +1,6 @@
 #include "text_renderer.h"
 
+#include "Component/billboard_helper.h"
 #include "Game/Asset/asset_manager.h"
 #include "game_context.h"
 #include "transform_component.h"
@@ -130,7 +131,8 @@ void TextRenderer::OnRender(FramePacket& packet) {
         DirectX::XMMATRIX size_scale = DirectX::XMMatrixScaling(glyph->width, glyph->height, 1.0f);
 
         // Combine: Scale -> Translate (local glyph space) -> Parent Transform (world space)
-        DirectX::XMMATRIX world = size_scale * glyph_translation * transform->GetWorldMatrix();
+        DirectX::XMMATRIX base_world = CalculateBaseWorldMatrix(transform, packet.main_camera);
+        DirectX::XMMATRIX world = size_scale * glyph_translation * base_world;
         // Transpose to align with Constant Buffer convention
         // Note: Unlike CBV (which has column-major interpretation that cancels transpose),
         // Vertex Buffer passes raw bytes. Shader will transpose back to restore original matrix.
@@ -185,7 +187,8 @@ void TextRenderer::OnRender(FramePacket& packet) {
         DirectX::XMMATRIX size_scale = DirectX::XMMatrixScaling(glyph->width, glyph->height, 1.0f);
 
         // Combine: Scale -> Translate (local glyph space) -> Parent Transform (world space)
-        DirectX::XMMATRIX world = size_scale * glyph_translation * transform->GetWorldMatrix();
+        DirectX::XMMATRIX base_world = CalculateBaseWorldMatrix(transform, packet.main_camera);
+        DirectX::XMMATRIX world = size_scale * glyph_translation * base_world;
         // Transpose to align with Constant Buffer convention
         // Note: Unlike CBV (which has column-major interpretation that cancels transpose),
         // Vertex Buffer passes raw bytes. Shader will transpose back to restore original matrix.
@@ -221,4 +224,38 @@ void TextRenderer::RebuildTextMesh(AssetManager& asset_manager) {
 
   // Create text mesh through AssetManager
   text_mesh_handle_ = asset_manager.CreateTextMesh(text_, font_family_, pixel_size_, props);
+}
+
+DirectX::XMMATRIX TextRenderer::CalculateBaseWorldMatrix(TransformComponent* transform, const CameraData& camera) const {
+  using namespace DirectX;
+  // Get the base world matrix from transform
+  XMMATRIX world = transform->GetWorldMatrix();
+
+  // If no billboard mode, return the original world matrix
+  if (billboard_mode_ == Billboard::Mode::None) {
+    return world;
+  }
+
+  // Decompose the world matrix into TRS components
+  XMVECTOR scale, rotation, translation;
+  XMMatrixDecompose(&scale, &rotation, &translation, world);
+
+  // Get object position for billboard calculation
+  XMFLOAT3 objPos;
+  XMStoreFloat3(&objPos, translation);
+
+  // Calculate billboard rotation based on mode
+  XMMATRIX billboardRot;
+  if (billboard_mode_ == Billboard::Mode::Cylindrical) {
+    billboardRot = Billboard::CreateCylindricalBillboardMatrix(objPos, camera.position);
+  } else {  // Spherical
+    billboardRot = Billboard::CreateSphericalBillboardMatrix(objPos, camera.position, camera.up);
+  }
+
+  // Recompose matrix: Scale * BillboardRotation * Translation
+  // Note: We preserve position and scale from original transform, but replace rotation with billboard
+  XMMATRIX scaleMat = XMMatrixScalingFromVector(scale);
+  XMMATRIX transMat = XMMatrixTranslationFromVector(translation);
+
+  return scaleMat * billboardRot * transMat;
 }

@@ -33,6 +33,10 @@ class TransformComponent : public Component<TransformComponent> {
   DirectX::XMFLOAT3 GetRight();
   DirectX::XMFLOAT3 GetUp();
 
+  // World space position and scale helpers (avoid full matrix decomposition)
+  DirectX::XMFLOAT3 GetWorldPosition() const;
+  DirectX::XMFLOAT3 GetWorldScale() const;
+
  private:
   void UpdateLocalMatrix();
 

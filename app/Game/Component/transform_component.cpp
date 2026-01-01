@@ -118,3 +118,29 @@ XMFLOAT3 TransformComponent::GetUp() {
   XMStoreFloat3(&result, up);
   return result;
 }
+
+XMFLOAT3 TransformComponent::GetWorldPosition() const {
+  // Use the cached world matrix to extract position
+  // Position is stored in the fourth row of the transformation matrix
+  XMMATRIX world = XMLoadFloat4x4(&world_matrix_);
+  XMVECTOR pos = world.r[3];
+  XMFLOAT3 result;
+  XMStoreFloat3(&result, pos);
+  return result;
+}
+
+XMFLOAT3 TransformComponent::GetWorldScale() const {
+  // Use the cached world matrix to extract scale
+  // Scale is the length of each basis vector in the rotation matrix
+  XMMATRIX world = XMLoadFloat4x4(&world_matrix_);
+
+  XMVECTOR scaleX = XMVector3Length(world.r[0]);
+  XMVECTOR scaleY = XMVector3Length(world.r[1]);
+  XMVECTOR scaleZ = XMVector3Length(world.r[2]);
+
+  XMFLOAT3 result;
+  result.x = XMVectorGetX(scaleX);
+  result.y = XMVectorGetY(scaleY);
+  result.z = XMVectorGetZ(scaleZ);
+  return result;
+}

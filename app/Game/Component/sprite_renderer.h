@@ -1,10 +1,10 @@
 #pragma once
+#include "Component/billboard_type.h"
 #include "Component/component.h"
 #include "Component/render_settings.h"
 #include "Game/Asset/asset_manager.h"
 #include "Graphic/Frame/frame_packet.h"
 #include "Graphic/Resource/Texture/texture.h"
-#include "game_context.h"
 #include "game_object.h"
 #include "transform_component.h"
 
@@ -50,50 +50,18 @@ class SpriteRenderer : public Component<SpriteRenderer> {
     return render_settings_;
   }
 
-  void OnRender(FramePacket& packet) override {
-    if (!texture_) return;
-
-    auto* context = GetOwner()->GetContext();
-    auto& material_mgr = context->GetGraphic()->GetMaterialManager();
-
-    switch (pass_tag_) {
-      case RenderPassTag::Ui: {
-        // Push to the UI Pass queue
-        UiDrawCommand cmd;
-        cmd.mesh = context->GetAssetManager().GetDefaultMesh(DefaultMesh::Quad);
-        cmd.material = material_mgr.GetOrCreateMaterial(render_settings_);
-        cmd.color = color_;
-        cmd.size = size_;
-        cmd.layer_id = layer_id_;
-        cmd.depth = static_cast<float>(layer_id_);
-
-        // For UI rendering with orthographic projection:
-        // The world matrix should transform from local space to screen space
-        // Local quad vertices are [-0.5, 0.5] range
-        // We apply the sprite's size as a base scale, then apply the transform's world matrix
-        auto* transform = GetOwner()->GetTransform();
-
-        // Build world matrix: Scale(size) * TransformWorld
-        // This allows the sprite to have a base size in pixels, while still being
-        // affected by the transform hierarchy (position, rotation, and additional scaling)
-        DirectX::XMMATRIX size_scale = DirectX::XMMatrixScaling(size_.x, size_.y, 1.0f);
-        DirectX::XMMATRIX world = size_scale * transform->GetWorldMatrix();
-
-        DirectX::XMStoreFloat4x4(&cmd.world_matrix, world);
-
-        // Setup material instance
-        cmd.material_instance.material = cmd.material;
-        cmd.material_instance.albedo_texture_index = texture_->GetBindlessIndex();
-        cmd.material_instance.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
-
-        packet.ui_pass.push_back(cmd);
-      } break;
-      default:
-        // TODO: Add support for other render passes, e.g. billboard
-        // Handle other cases or log warning
-        break;
-    }
+  // Billboard mode API
+  void SetBillboardMode(Billboard::Mode mode) {
+    billboard_mode_ = mode;
   }
+  Billboard::Mode GetBillboardMode() const {
+    return billboard_mode_;
+  }
+
+  void OnRender(FramePacket& packet) override;
+
+ private:
+  DirectX::XMMATRIX CalculateWorldMatrix(TransformComponent* transform, const CameraData& camera) const;
 
  private:
   Texture* texture_ = nullptr;
@@ -103,4 +71,5 @@ class SpriteRenderer : public Component<SpriteRenderer> {
 
   RenderPassTag pass_tag_ = RenderPassTag::Ui;
   Rendering::RenderSettings render_settings_ = Rendering::RenderSettings::UI();
+  Billboard::Mode billboard_mode_ = Billboard::Mode::None;
 };

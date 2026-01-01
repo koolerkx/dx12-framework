@@ -3,6 +3,7 @@
 
 #include <string>
 
+#include "Component/billboard_type.h"
 #include "Component/component.h"
 #include "Component/render_settings.h"
 #include "Framework/Font/text_layout.h"
@@ -134,6 +135,14 @@ class TextRenderer : public Component<TextRenderer> {
     return render_settings_;
   }
 
+  // Billboard mode API
+  void SetBillboardMode(Billboard::Mode mode) {
+    billboard_mode_ = mode;
+  }
+  Billboard::Mode GetBillboardMode() const {
+    return billboard_mode_;
+  }
+
   // Query
   DirectX::XMFLOAT2 GetSize() const {
     return DirectX::XMFLOAT2(text_mesh_handle_.GetWidth(), text_mesh_handle_.GetHeight());
@@ -144,6 +153,7 @@ class TextRenderer : public Component<TextRenderer> {
 
  private:
   void RebuildTextMesh(AssetManager& asset_manager);
+  DirectX::XMMATRIX CalculateBaseWorldMatrix(TransformComponent* transform, const CameraData& camera) const;
 
  private:
   // Text properties
@@ -167,4 +177,6 @@ class TextRenderer : public Component<TextRenderer> {
   // Cached text mesh (managed by AssetManager)
   bool dirty_ = true;
   TextMeshHandle text_mesh_handle_;
+
+  Billboard::Mode billboard_mode_ = Billboard::Mode::None;
 };
