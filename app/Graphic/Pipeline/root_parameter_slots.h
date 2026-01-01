@@ -20,9 +20,11 @@ enum class Constants : uint32_t {
 // Descriptor tables
 enum class DescriptorTable : uint32_t {
   GlobalSRVs = 4,  // Global bindless texture array (t0, space1)
+  Samplers = 5,    // Bindless sampler array (s0, space0)
 };
 
 // Static samplers (not root parameters, but defined in root signature)
+// Note: These are now replaced by bindless sampler descriptor table
 enum class StaticSampler : uint32_t {
   PointWrap = 0,        // s0
   LinearWrap = 1,       // s1

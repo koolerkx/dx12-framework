@@ -38,8 +38,9 @@ void MaterialRenderer::Record(const RenderFrameContext& frame,
   // 2. Set initial material to establish the root signature
   cmd.SetMaterial(first_material);
 
-  // 3. Bind global SRV table (requires root signature)
+  // 3. Bind global descriptor tables (requires root signature)
   cmd.BindGlobalSRVTable(frame.global_heap_manager);
+  cmd.BindSamplerTable(frame.global_heap_manager);
 
   // Setup camera matrices
   XMMATRIX view = XMLoadFloat4x4(&camera.view);

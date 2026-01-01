@@ -27,6 +27,7 @@ bool MaterialManager::Initialize(ID3D12Device* device) {
 bool MaterialManager::CreateSharedRootSignature() {
   try {
     constexpr uint32_t SRV_CAPACITY = 4096;
+    constexpr uint32_t SAMPLER_CAPACITY = 2048;
 
     shared_root_signature_ = RootSignatureBuilder()
                                .AllowInputLayout()
@@ -42,12 +43,12 @@ bool MaterialManager::CreateSharedRootSignature() {
                                  0,                            // register(t0)
                                  1,                            // space1
                                  D3D12_SHADER_VISIBILITY_ALL)  // RootSlot::DescriptorTable::GlobalSRVs
-                               // Static samplers
-                               .AddStaticSampler(SamplerPresets::CreatePointSampler(0, D3D12_TEXTURE_ADDRESS_MODE_WRAP))
-                               .AddStaticSampler(SamplerPresets::CreateLinearSampler(1, D3D12_TEXTURE_ADDRESS_MODE_WRAP))
-                               .AddStaticSampler(SamplerPresets::CreateAnisotropicSampler(2, 16, D3D12_TEXTURE_ADDRESS_MODE_WRAP))
-                               .AddStaticSampler(SamplerPresets::CreatePointSampler(3, D3D12_TEXTURE_ADDRESS_MODE_CLAMP))
-                               .AddStaticSampler(SamplerPresets::CreateLinearSampler(4, D3D12_TEXTURE_ADDRESS_MODE_CLAMP))
+                               // Bindless sampler array
+                               .AddDescriptorTable(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER,
+                                 SAMPLER_CAPACITY,
+                                 0,                              // register(s0)
+                                 0,                              // space0
+                                 D3D12_SHADER_VISIBILITY_PIXEL)  // RootSlot::DescriptorTable::Samplers
                                .Build(device_);
 
     if (!shared_root_signature_) {

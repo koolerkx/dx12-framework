@@ -107,11 +107,7 @@ class TextRenderer : public Component<TextRenderer> {
     }
 
     SetDoubleSided(true);
-    SetSampler(Rendering::SamplerType::AnisotropicWrap);
     SetSampler(Rendering::SamplerType::LinearWrap);
-    SetSampler(Rendering::SamplerType::LinearClamp);
-    SetSampler(Rendering::SamplerType::PointWrap);
-    SetSampler(Rendering::SamplerType::PointClamp);
   }
 
   void SetLayerId(int id) {

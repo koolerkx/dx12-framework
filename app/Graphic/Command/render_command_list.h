@@ -68,6 +68,12 @@ class RenderCommandList {
       RootSlot::ToIndex(RootSlot::DescriptorTable::GlobalSRVs), manager->GetGlobalSrvHeap()->GetGPUDescriptorHandleForHeapStart());
   }
 
+  // Bind sampler table for bindless samplers (MUST be called after root signature is set)
+  void BindSamplerTable(DescriptorHeapManager* manager) {
+    cmd_->SetGraphicsRootDescriptorTable(
+      RootSlot::ToIndex(RootSlot::DescriptorTable::Samplers), manager->GetSamplerHeap()->GetGPUDescriptorHandleForHeapStart());
+  }
+
   void SetViewport(const D3D12_VIEWPORT& vp, const D3D12_RECT& sc) {
     cmd_->RSSetViewports(1, &vp);
     cmd_->RSSetScissorRects(1, &sc);
