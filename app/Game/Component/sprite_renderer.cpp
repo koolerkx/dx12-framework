@@ -67,24 +67,19 @@ void SpriteRenderer::OnRender(FramePacket& packet) {
 
   switch (pass_tag_) {
     case RenderPassTag::Ui: {
-      UiDrawCommand cmd;
+      InstanceDrawCommand cmd;
       cmd.mesh = context->GetAssetManager().GetDefaultMesh(DefaultMesh::Quad);
       cmd.material = material_mgr.GetOrCreateMaterial(render_settings_);
-      cmd.color = color_;
-      cmd.size = size_;
       cmd.layer_id = layer_id_;
       cmd.depth = static_cast<float>(layer_id_);
-
-      XMMATRIX offset_mat = XMMatrixTranslation(0.5f, 0.5f, 0.0f);  // Move quad origin to top-left
-      XMMATRIX size_scale = XMMatrixScaling(size_.x, size_.y, 1.0f);
-      XMMATRIX world = offset_mat * size_scale * transform->GetWorldMatrix();
-      XMStoreFloat4x4(&cmd.world_matrix, world);
 
       cmd.material_instance.material = cmd.material;
       cmd.material_instance.albedo_texture_index = texture_->GetBindlessIndex();
       cmd.material_instance.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
-      cmd.uv_offset = uv_offset_;
-      cmd.uv_scale = uv_scale_;
+
+      XMMATRIX offset_mat = XMMatrixTranslation(0.5f, 0.5f, 0.0f);  // Move quad origin to top-left
+      XMMATRIX size_scale = XMMatrixScaling(size_.x, size_.y, 1.0f);
+      XMMATRIX world = offset_mat * size_scale * transform->GetWorldMatrix();
 
       // Create single instance data for instanced rendering
       SpriteInstanceData instance;
@@ -94,7 +89,7 @@ void SpriteRenderer::OnRender(FramePacket& packet) {
       instance.uv_scale = uv_scale_;
       cmd.instances.push_back(instance);
 
-      packet.ui_pass.push_back(cmd);
+      packet.ui_pass.emplace_back(cmd);
     } break;
 
     case RenderPassTag::WorldOpaque:
@@ -112,60 +107,31 @@ void SpriteRenderer::OnRender(FramePacket& packet) {
       XMMATRIX base_world = CalculateWorldMatrix(transform, packet.main_camera);
       XMMATRIX world = size_scale * pivot_mat * base_world;
 
+      InstanceDrawCommand cmd;
+      cmd.mesh = context->GetAssetManager().GetDefaultMesh(DefaultMesh::Quad);
+      cmd.material = material_mgr.GetOrCreateMaterial(render_settings_);
+
+      // Calculate depth from object position for sorting
+      XMFLOAT3 worldPos = transform->GetWorldPosition();
+      XMFLOAT3 camPos = packet.main_camera.position;
+      cmd.depth = XMVectorGetX(XMVector3LengthSq(XMLoadFloat3(&worldPos) - XMLoadFloat3(&camPos)));
+
+      cmd.material_instance.material = cmd.material;
+      cmd.material_instance.albedo_texture_index = texture_->GetBindlessIndex();
+      cmd.material_instance.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
+
+      // Create single instance data for instanced rendering
+      SpriteInstanceData instance;
+      XMStoreFloat4x4(&instance.world_matrix, world);
+      instance.color = color_;
+      instance.uv_offset = uv_offset_;
+      instance.uv_scale = uv_scale_;
+      cmd.instances.push_back(instance);
+
       if (pass_tag_ == RenderPassTag::WorldOpaque) {
-        OpaqueDrawCommand cmd;
-        cmd.mesh = context->GetAssetManager().GetDefaultMesh(DefaultMesh::Quad);
-        cmd.material = material_mgr.GetOrCreateMaterial(render_settings_);
-        cmd.color = color_;
-        cmd.uv_offset = uv_offset_;
-        cmd.uv_scale = uv_scale_;
-        XMStoreFloat4x4(&cmd.world_matrix, world);
-
-        // Calculate depth from object position for sorting
-        XMFLOAT3 worldPos = transform->GetWorldPosition();
-        XMFLOAT3 camPos = packet.main_camera.position;
-        cmd.depth = XMVectorGetX(XMVector3LengthSq(XMLoadFloat3(&worldPos) - XMLoadFloat3(&camPos)));
-
-        cmd.material_instance.material = cmd.material;
-        cmd.material_instance.albedo_texture_index = texture_->GetBindlessIndex();
-        cmd.material_instance.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
-
-        // Create single instance data for instanced rendering
-        SpriteInstanceData instance;
-        XMStoreFloat4x4(&instance.world_matrix, world);
-        instance.color = color_;
-        instance.uv_offset = uv_offset_;
-        instance.uv_scale = uv_scale_;
-        cmd.instances.push_back(instance);
-
-        packet.opaque_pass.push_back(cmd);
+        packet.opaque_pass.emplace_back(cmd);
       } else {
-        TransparentDrawCommand cmd;
-        cmd.mesh = context->GetAssetManager().GetDefaultMesh(DefaultMesh::Quad);
-        cmd.material = material_mgr.GetOrCreateMaterial(render_settings_);
-        cmd.color = color_;
-        cmd.uv_offset = uv_offset_;
-        cmd.uv_scale = uv_scale_;
-        XMStoreFloat4x4(&cmd.world_matrix, world);
-
-        // Calculate depth from object position for back-to-front sorting
-        XMFLOAT3 worldPos = transform->GetWorldPosition();
-        XMFLOAT3 camPos = packet.main_camera.position;
-        cmd.depth = XMVectorGetX(XMVector3LengthSq(XMLoadFloat3(&worldPos) - XMLoadFloat3(&camPos)));
-
-        cmd.material_instance.material = cmd.material;
-        cmd.material_instance.albedo_texture_index = texture_->GetBindlessIndex();
-        cmd.material_instance.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
-
-        // Create single instance data for instanced rendering
-        SpriteInstanceData instance;
-        XMStoreFloat4x4(&instance.world_matrix, world);
-        instance.color = color_;
-        instance.uv_offset = uv_offset_;
-        instance.uv_scale = uv_scale_;
-        cmd.instances.push_back(instance);
-
-        packet.transparent_pass.push_back(cmd);
+        packet.transparent_pass.emplace_back(cmd);
       }
     } break;
 

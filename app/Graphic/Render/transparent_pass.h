@@ -18,5 +18,5 @@ class TransparentPass : public IRenderPass {
 
  private:
   TransparentRenderer* transparent_renderer_;
-  std::vector<DrawCommand> packet_cache_;
+  std::vector<DrawCommandVariant> packet_cache_;
 };

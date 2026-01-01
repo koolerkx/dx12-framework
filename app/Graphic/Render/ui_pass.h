@@ -16,5 +16,5 @@ class UiPass : public IRenderPass {
 
  private:
   UiRenderer* ui_renderer_;
-  std::vector<DrawCommand> packet_cache_;
+  std::vector<DrawCommandVariant> packet_cache_;
 };

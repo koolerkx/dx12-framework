@@ -1,6 +1,8 @@
 #pragma once
 #include <DirectXMath.h>
 
+#include <bit>
+#include <variant>
 #include <vector>
 
 #include "Pipeline/material.h"
@@ -23,58 +25,62 @@ struct SpriteInstanceData {
   DirectX::XMFLOAT2 uv_scale;        //  8 bytes - UV scale for atlas lookup
 };
 
-struct OpaqueDrawCommand {
-  const Material* material = nullptr;
-  const Mesh* mesh = nullptr;
-  DirectX::XMFLOAT4X4 world_matrix;
-  DirectX::XMFLOAT4 color;
-  MaterialInstance material_instance;
-  float depth = 0.0f;
-  DirectX::XMFLOAT2 uv_offset = {0.0f, 0.0f};  // UV offset for atlas
-  DirectX::XMFLOAT2 uv_scale = {1.0f, 1.0f};   // UV scale (1,1 = full texture)
+// Common sort key for both single and instance draw commands
+struct DrawSortKey {
+  [[nodiscard]] uint64_t GetSortKeyWithDepth(const Material* material, float depth, bool front_to_back) const {
+    if (!material) {
+      return UINT64_MAX;
+    }
 
-  // Instanced rendering support (if non-empty, use DrawIndexedInstanced)
-  std::vector<SpriteInstanceData> instances;
+    // [RS hash 16-bit | PSO hash 16-bit | Depth 32-bit]
+    uint32_t rs_key = material->GetRootSignatureKey() & 0xFFFF;
+    uint32_t pso_key = material->GetPSOKey() & 0xFFFF;
+    uint64_t compressed_material = (static_cast<uint64_t>(rs_key) << 48) | (static_cast<uint64_t>(pso_key) << 32);
+
+    uint32_t depth_key = std::bit_cast<uint32_t>(depth);
+    if (!front_to_back) {
+      depth_key = ~depth_key;
+    }
+
+    return compressed_material | depth_key;
+  }
 };
 
-struct TransparentDrawCommand {
+// For single object rendering (SpriteRenderer, MeshRenderer)
+struct SingleDrawCommand : DrawSortKey {
   const Material* material = nullptr;
   const Mesh* mesh = nullptr;
-  DirectX::XMFLOAT4X4 world_matrix;
-  DirectX::XMFLOAT4 color;
-  MaterialInstance material_instance;
+  DirectX::XMFLOAT4X4 world_matrix{};
+  DirectX::XMFLOAT4 color{1.0f, 1.0f, 1.0f, 1.0f};
+  MaterialInstance material_instance{};
   float depth = 0.0f;
-  DirectX::XMFLOAT2 uv_offset = {0.0f, 0.0f};  // UV offset for atlas
-  DirectX::XMFLOAT2 uv_scale = {1.0f, 1.0f};   // UV scale (1,1 = full texture)
-
-  // Instanced rendering support (if non-empty, use DrawIndexedInstanced)
-  std::vector<SpriteInstanceData> instances;
-};
-
-// Data specifically for UI rendering
-struct UiDrawCommand {
-  const Material* material = nullptr;
-  const Mesh* mesh = nullptr;
-  DirectX::XMFLOAT4X4 world_matrix;
-  DirectX::XMFLOAT2 size;
-  DirectX::XMFLOAT4 color;
-  MaterialInstance material_instance;
-  float depth = 0.0f;
+  DirectX::XMFLOAT2 uv_offset{0.0f, 0.0f};
+  DirectX::XMFLOAT2 uv_scale{1.0f, 1.0f};
+  DirectX::XMFLOAT2 size{0.0f, 0.0f};
   int layer_id = 0;
-  DirectX::XMFLOAT2 uv_offset = {0.0f, 0.0f};  // UV offset for atlas/text glyphs
-  DirectX::XMFLOAT2 uv_scale = {1.0f, 1.0f};   // UV scale (1,1 = full texture)
-
-  // When populated, the above single-object fields (world_matrix, color, uv_offset, uv_scale) are ignored
-  std::vector<SpriteInstanceData> instances;
 };
+
+// For instanced rendering (TextRenderer, ParticleRenderer)
+struct InstanceDrawCommand : DrawSortKey {
+  const Material* material = nullptr;
+  const Mesh* mesh = nullptr;
+  MaterialInstance material_instance;
+  float depth = 0.0f;
+  std::vector<SpriteInstanceData> instances;
+  int layer_id = 0;
+};
+
+// Variant type for unified storage and global sorting
+using DrawCommandVariant = std::variant<SingleDrawCommand, InstanceDrawCommand>;
 
 // The packet sent from Scene to Renderer
 struct FramePacket {
   CameraData main_camera;
 
-  std::vector<OpaqueDrawCommand> opaque_pass;
-  std::vector<TransparentDrawCommand> transparent_pass;
-  std::vector<UiDrawCommand> ui_pass;
+  // New unified command vectors for global sorting
+  std::vector<DrawCommandVariant> opaque_pass;
+  std::vector<DrawCommandVariant> transparent_pass;
+  std::vector<DrawCommandVariant> ui_pass;
 
   void Clear() {
     opaque_pass.clear();

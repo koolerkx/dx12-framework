@@ -42,7 +42,7 @@ class MeshRenderer : public Component<MeshRenderer> {
     auto* context = GetOwner()->GetContext();
     auto& material_mgr = context->GetGraphic()->GetMaterialManager();
 
-    OpaqueDrawCommand cmd;
+    SingleDrawCommand cmd;
     DirectX::XMStoreFloat4x4(&cmd.world_matrix, transform->GetWorldMatrix());
     cmd.color = color_;
     cmd.mesh = mesh_;
@@ -64,7 +64,7 @@ class MeshRenderer : public Component<MeshRenderer> {
     DirectX::XMFLOAT3 position = transform->GetPosition();
     cmd.depth = position.z;  // Simple depth calculation
 
-    packet.opaque_pass.push_back(cmd);
+    packet.opaque_pass.emplace_back(cmd);
   }
 
  private:

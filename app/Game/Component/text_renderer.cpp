@@ -47,7 +47,7 @@ void TextRenderer::OnRender(FramePacket& packet) {
 
   // === UI PASS: Use Instanced Rendering (1 draw call per TextRenderer) ===
   if (pass_tag_ == RenderPassTag::Ui) {
-    UiDrawCommand cmd;
+    InstanceDrawCommand cmd;
     cmd.mesh = quad_mesh;
     cmd.material = material;
     cmd.layer_id = layer_id_;
@@ -101,131 +101,73 @@ void TextRenderer::OnRender(FramePacket& packet) {
 
     // Push single command containing all glyph instances (1 draw call!)
     if (!cmd.instances.empty()) {
-      packet.ui_pass.push_back(cmd);
+      packet.ui_pass.emplace_back(cmd);
     }
 
   }
   // === WORLD PASS: Use Instanced Rendering (1 draw call per TextRenderer) ===
   else if (pass_tag_ == RenderPassTag::WorldOpaque || pass_tag_ == RenderPassTag::WorldTransparent) {
-    // Determine which command type to use
-    bool is_transparent = (pass_tag_ == RenderPassTag::WorldTransparent);
+    InstanceDrawCommand cmd;
+    cmd.mesh = quad_mesh;
+    cmd.material = material;
+    cmd.depth = 0.0f;
+
+    // Setup material instance (shared across all glyphs)
+    cmd.material_instance.material = cmd.material;
+    cmd.material_instance.albedo_texture_index = texture->GetBindlessIndex();
+    cmd.material_instance.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
+
+    // Reserve space for instances to optimize performance
+    cmd.instances.reserve(text_mesh_handle_.GetGlyphCount());
 
     // Calculate pivot offset (Transform Position = Pivot)
     // Note: For World Space, Y is negated (Y-up coordinate system)
     DirectX::XMFLOAT2 text_size = {text_mesh_handle_.GetWidth(), text_mesh_handle_.GetHeight()};
     DirectX::XMFLOAT2 pivot_offset = pivot_.CalculateOffset(text_size);
 
-    if (is_transparent) {
-      // Use TransparentDrawCommand
-      TransparentDrawCommand cmd;
-      cmd.mesh = quad_mesh;
-      cmd.material = material;
-      cmd.depth = 0.0f;
-
-      // Setup material instance (shared across all glyphs)
-      cmd.material_instance.material = cmd.material;
-      cmd.material_instance.albedo_texture_index = texture->GetBindlessIndex();
-      cmd.material_instance.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
-
-      // Reserve space for instances to optimize performance
-      cmd.instances.reserve(text_mesh_handle_.GetGlyphCount());
-
-      // Collect all glyph instance data (CPU-side matrix calculation)
-      for (size_t i = 0; i < text_mesh_handle_.GetGlyphCount(); ++i) {
-        const GlyphLayoutData* glyph = text_mesh_handle_.GetGlyph(i);
-        if (!glyph || glyph->width <= 0.0f || glyph->height <= 0.0f) {
-          continue;  // Skip invisible glyphs
-        }
-
-        SpriteInstanceData instance{};
-
-        // 1. Calculate per-glyph world matrix
-        // Note: Y-coordinate is negated for world space text (Y-up coordinate system)
-        float glyph_x_relative = glyph->x - pivot_offset.x;
-        float glyph_y_relative = glyph->y - pivot_offset.y;
-
-        DirectX::XMVECTOR glyph_center = DirectX::XMVectorSet(glyph_x_relative + glyph->width * 0.5f,
-          -(glyph_y_relative + glyph->height * 0.5f),  // Negate Y for world space
-          0.01f,                                       // Small Z offset to avoid z-fighting
-          0.0f);
-
-        DirectX::XMMATRIX glyph_translation = DirectX::XMMatrixTranslationFromVector(glyph_center);
-        DirectX::XMMATRIX size_scale = DirectX::XMMatrixScaling(glyph->width, glyph->height, 1.0f);
-
-        // Combine: Scale -> Translate (local glyph space, relative to pivot) -> Parent Transform (world space)
-        DirectX::XMMATRIX base_world = CalculateBaseWorldMatrix(transform, packet.main_camera);
-        DirectX::XMMATRIX world = size_scale * glyph_translation * base_world;
-        DirectX::XMStoreFloat4x4(&instance.world_matrix, world);
-
-        // 2. Color (shared for all glyphs in this text)
-        instance.color = color_;
-
-        // 3. UV transform (no Y-flip for world text, uses standard texture coordinates)
-        instance.uv_offset = glyph->uv_offset;
-        instance.uv_scale = glyph->uv_scale;
-
-        cmd.instances.push_back(instance);
+    // Collect all glyph instance data (CPU-side matrix calculation)
+    for (size_t i = 0; i < text_mesh_handle_.GetGlyphCount(); ++i) {
+      const GlyphLayoutData* glyph = text_mesh_handle_.GetGlyph(i);
+      if (!glyph || glyph->width <= 0.0f || glyph->height <= 0.0f) {
+        continue;  // Skip invisible glyphs
       }
 
-      // Push single command containing all glyph instances (1 draw call!)
-      if (!cmd.instances.empty()) {
-        packet.transparent_pass.push_back(cmd);
-      }
-    } else {
-      // Use OpaqueDrawCommand
-      OpaqueDrawCommand cmd;
-      cmd.mesh = quad_mesh;
-      cmd.material = material;
-      cmd.depth = 0.0f;
+      SpriteInstanceData instance{};
 
-      // Setup material instance (shared across all glyphs)
-      cmd.material_instance.material = cmd.material;
-      cmd.material_instance.albedo_texture_index = texture->GetBindlessIndex();
-      cmd.material_instance.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
+      // 1. Calculate per-glyph world matrix
+      // Note: Y-coordinate is negated for world space text (Y-up coordinate system)
+      float glyph_x_relative = glyph->x - pivot_offset.x;
+      float glyph_y_relative = glyph->y - pivot_offset.y;
 
-      // Reserve space for instances to optimize performance
-      cmd.instances.reserve(text_mesh_handle_.GetGlyphCount());
+      DirectX::XMVECTOR glyph_center = DirectX::XMVectorSet(glyph_x_relative + glyph->width * 0.5f,
+        -(glyph_y_relative + glyph->height * 0.5f),  // Negate Y for world space
+        0.01f,                                       // Small Z offset to avoid z-fighting
+        0.0f);
 
-      // Collect all glyph instance data (CPU-side matrix calculation)
-      for (size_t i = 0; i < text_mesh_handle_.GetGlyphCount(); ++i) {
-        const GlyphLayoutData* glyph = text_mesh_handle_.GetGlyph(i);
-        if (!glyph || glyph->width <= 0.0f || glyph->height <= 0.0f) {
-          continue;  // Skip invisible glyphs
-        }
+      DirectX::XMMATRIX glyph_translation = DirectX::XMMatrixTranslationFromVector(glyph_center);
+      DirectX::XMMATRIX size_scale = DirectX::XMMatrixScaling(glyph->width, glyph->height, 1.0f);
 
-        SpriteInstanceData instance{};
+      // Combine: Scale -> Translate (local glyph space, relative to pivot) -> Parent Transform (world space)
+      DirectX::XMMATRIX base_world = CalculateBaseWorldMatrix(transform, packet.main_camera);
+      DirectX::XMMATRIX world = size_scale * glyph_translation * base_world;
+      DirectX::XMStoreFloat4x4(&instance.world_matrix, world);
 
-        // 1. Calculate per-glyph world matrix (CPU-side)
-        // Note: Y-coordinate is negated for world space text (Y-up coordinate system)
-        float glyph_x_relative = glyph->x - pivot_offset.x;
-        float glyph_y_relative = glyph->y - pivot_offset.y;
+      // 2. Color (shared for all glyphs in this text)
+      instance.color = color_;
 
-        DirectX::XMVECTOR glyph_center = DirectX::XMVectorSet(glyph_x_relative + glyph->width * 0.5f,
-          -(glyph_y_relative + glyph->height * 0.5f),  // Negate Y for world space
-          0.01f,                                       // Small Z offset to avoid z-fighting
-          0.0f);
+      // 3. UV transform (no Y-flip for world text, uses standard texture coordinates)
+      instance.uv_offset = glyph->uv_offset;
+      instance.uv_scale = glyph->uv_scale;
 
-        DirectX::XMMATRIX glyph_translation = DirectX::XMMatrixTranslationFromVector(glyph_center);
-        DirectX::XMMATRIX size_scale = DirectX::XMMatrixScaling(glyph->width, glyph->height, 1.0f);
+      cmd.instances.push_back(instance);
+    }
 
-        // Combine: Scale -> Translate (local glyph space, relative to pivot) -> Parent Transform (world space)
-        DirectX::XMMATRIX base_world = CalculateBaseWorldMatrix(transform, packet.main_camera);
-        DirectX::XMMATRIX world = size_scale * glyph_translation * base_world;
-        DirectX::XMStoreFloat4x4(&instance.world_matrix, world);
-
-        // 2. Color (shared for all glyphs in this text)
-        instance.color = color_;
-
-        // 3. UV transform (no Y-flip for world text, uses standard texture coordinates)
-        instance.uv_offset = glyph->uv_offset;
-        instance.uv_scale = glyph->uv_scale;
-
-        cmd.instances.push_back(instance);
-      }
-
-      // Push single command containing all glyph instances (1 draw call!)
-      if (!cmd.instances.empty()) {
-        packet.opaque_pass.push_back(cmd);
+    // Push single command containing all glyph instances (1 draw call!)
+    if (!cmd.instances.empty()) {
+      if (pass_tag_ == RenderPassTag::WorldTransparent) {
+        packet.transparent_pass.emplace_back(cmd);
+      } else {
+        packet.opaque_pass.emplace_back(cmd);
       }
     }
   }
