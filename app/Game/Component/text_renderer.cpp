@@ -69,10 +69,7 @@ void TextRenderer::OnRender(FramePacket& packet) {
 
       // Combine: Scale -> Translate (local glyph space) -> Parent Transform (world space)
       DirectX::XMMATRIX world = size_scale * glyph_translation * transform->GetWorldMatrix();
-      // Transpose to align with Constant Buffer convention
-      // Note: Unlike CBV (which has column-major interpretation that cancels transpose),
-      // Vertex Buffer passes raw bytes. Shader will transpose back to restore original matrix.
-      DirectX::XMStoreFloat4x4(&instance.world_matrix, DirectX::XMMatrixTranspose(world));
+      DirectX::XMStoreFloat4x4(&instance.world_matrix, world);
 
       // 2. Color (shared for all glyphs in this text)
       instance.color = color_;
@@ -133,10 +130,7 @@ void TextRenderer::OnRender(FramePacket& packet) {
         // Combine: Scale -> Translate (local glyph space) -> Parent Transform (world space)
         DirectX::XMMATRIX base_world = CalculateBaseWorldMatrix(transform, packet.main_camera);
         DirectX::XMMATRIX world = size_scale * glyph_translation * base_world;
-        // Transpose to align with Constant Buffer convention
-        // Note: Unlike CBV (which has column-major interpretation that cancels transpose),
-        // Vertex Buffer passes raw bytes. Shader will transpose back to restore original matrix.
-        DirectX::XMStoreFloat4x4(&instance.world_matrix, DirectX::XMMatrixTranspose(world));
+        DirectX::XMStoreFloat4x4(&instance.world_matrix, world);
 
         // 2. Color (shared for all glyphs in this text)
         instance.color = color_;
@@ -189,10 +183,7 @@ void TextRenderer::OnRender(FramePacket& packet) {
         // Combine: Scale -> Translate (local glyph space) -> Parent Transform (world space)
         DirectX::XMMATRIX base_world = CalculateBaseWorldMatrix(transform, packet.main_camera);
         DirectX::XMMATRIX world = size_scale * glyph_translation * base_world;
-        // Transpose to align with Constant Buffer convention
-        // Note: Unlike CBV (which has column-major interpretation that cancels transpose),
-        // Vertex Buffer passes raw bytes. Shader will transpose back to restore original matrix.
-        DirectX::XMStoreFloat4x4(&instance.world_matrix, DirectX::XMMatrixTranspose(world));
+        DirectX::XMStoreFloat4x4(&instance.world_matrix, world);
 
         // 2. Color (shared for all glyphs in this text)
         instance.color = color_;

@@ -1,14 +1,14 @@
 // ============================================================================
 // Sprite Instanced World Vertex Shader (Transparent Version)
-// Purpose: Hardware instanced rendering for world-space transparent text/sprites
-// Uses perspective projection with 3D world coordinates (Y-up)
+// Purpose: Hardware instanced rendering for world-space transparent
+// text/sprites Uses perspective projection with 3D world coordinates (Y-up)
 // ============================================================================
 
 // === Constant Buffers ===
 cbuffer FrameCB : register(b0) {
-  float4x4 g_View;
-  float4x4 g_Proj;
-  float4x4 g_ViewProj;
+  row_major float4x4 g_View;
+  row_major float4x4 g_Proj;
+  row_major float4x4 g_ViewProj;
   float3 g_CameraPos;
   float g_Time;
   float2 g_ScreenSize;
@@ -35,8 +35,6 @@ struct VSIN {
   float2 uv : TEXCOORD;
 
   // Slot 1: Instance Data (Per-Instance, Glyph/Sprite Data)
-  // Note: float4x4 requires 4 semantic indices
-  // CPU stores: XMMatrixTranspose(world) - aligned with FrameCB matrix format
   float4 instanceWorld0 : INSTANCE_WORLD0;
   float4 instanceWorld1 : INSTANCE_WORLD1;
   float4 instanceWorld2 : INSTANCE_WORLD2;
@@ -55,21 +53,10 @@ struct VSOUT {
 VSOUT main(VSIN input) {
   VSOUT output;
 
-  // Reconstruct transposed world matrix from 4 float4 rows
-  // CPU stores: XMMatrixTranspose(world) to align with CBV convention
-  // But unlike CBV (which has column-major interpretation that cancels transpose),
-  // Vertex Buffer passes raw bytes - so we need to transpose back here.
-  float4x4 instanceWorld_T = float4x4(
-    input.instanceWorld0,
-    input.instanceWorld1,
-    input.instanceWorld2,
-    input.instanceWorld3
-  );
-  float4x4 instanceWorld = transpose(instanceWorld_T);
+  float4x4 instanceWorld = float4x4(input.instanceWorld0, input.instanceWorld1,
+                                    input.instanceWorld2, input.instanceWorld3);
 
   // === Matrix Multiplication (Row-Vector Format) ===
-  // Same as legacy basic.vs.hlsl: mul(pos, matrix)
-  // Now both instanceWorld and g_ViewProj are in original (non-transposed) form
   float4 localPos = float4(input.position, 1.0f);
   float4 worldPos = mul(localPos, instanceWorld);
   output.position = mul(worldPos, g_ViewProj);

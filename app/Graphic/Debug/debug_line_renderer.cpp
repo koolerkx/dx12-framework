@@ -70,8 +70,8 @@ void DebugLineRenderer::Render(const RenderFrameContext& frame, const Material* 
 
   // Bind Object CBV (slot 1) - identity world matrix
   ObjectCB obj_cb;
-  DirectX::XMStoreFloat4x4(&obj_cb.world, DirectX::XMMatrixTranspose(DirectX::XMMatrixIdentity()));
-  DirectX::XMStoreFloat4x4(&obj_cb.worldViewProj, DirectX::XMMatrixTranspose(DirectX::XMLoadFloat4x4(&view_proj)));
+  DirectX::XMStoreFloat4x4(&obj_cb.world, DirectX::XMMatrixIdentity());
+  DirectX::XMStoreFloat4x4(&obj_cb.worldViewProj, DirectX::XMLoadFloat4x4(&view_proj));
   obj_cb.color = DirectX::XMFLOAT4(1, 1, 1, 1);
 
   auto obj_alloc = frame.object_cb_allocator->Allocate(sizeof(ObjectCB));

@@ -49,9 +49,9 @@ void MaterialRenderer::Record(const RenderFrameContext& frame,
 
   // 4. Set frame constants (requires root signature)
   FrameCB frame_cb_data = {};
-  XMStoreFloat4x4(&frame_cb_data.view, XMMatrixTranspose(view));
-  XMStoreFloat4x4(&frame_cb_data.proj, XMMatrixTranspose(proj));
-  XMStoreFloat4x4(&frame_cb_data.viewProj, XMMatrixTranspose(view_proj));
+  XMStoreFloat4x4(&frame_cb_data.view, view);
+  XMStoreFloat4x4(&frame_cb_data.proj, proj);
+  XMStoreFloat4x4(&frame_cb_data.viewProj, view_proj);
   frame_cb_data.cameraPos = camera.position;
   frame_cb_data.screenSize = XMFLOAT2(static_cast<float>(screen_width), static_cast<float>(screen_height));
   cmd.SetFrameConstants(frame_cb_data);
@@ -91,8 +91,8 @@ void MaterialRenderer::Record(const RenderFrameContext& frame,
       ObjectCB obj_data = {};
       XMMATRIX world = XMLoadFloat4x4(&draw_cmd.world_matrix);
       XMMATRIX wvp = world * view_proj;
-      XMStoreFloat4x4(&obj_data.world, XMMatrixTranspose(world));
-      XMStoreFloat4x4(&obj_data.worldViewProj, XMMatrixTranspose(wvp));
+      XMStoreFloat4x4(&obj_data.world, world);
+      XMStoreFloat4x4(&obj_data.worldViewProj, wvp);
       obj_data.color = draw_cmd.color;
       obj_data.uvOffset = draw_cmd.uv_offset;
       obj_data.uvScale = draw_cmd.uv_scale;

@@ -5,8 +5,8 @@
 // ============================================================================
 
 cbuffer ObjectCB : register(b1) {
-  float4x4 g_World;
-  float4x4 g_WorldViewProj;
+  row_major float4x4 g_World;
+  row_major float4x4 g_WorldViewProj;
   float4 g_ObjectColor;
   float2 g_UVOffset;
   float2 g_UVScale;

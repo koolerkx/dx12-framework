@@ -5,8 +5,8 @@
 // ============================================================================
 
 cbuffer ObjectCB : register(b1) {
-  float4x4 g_World;
-  float4x4 g_WorldViewProj;
+  row_major float4x4 g_World;
+  row_major float4x4 g_WorldViewProj;
   float4 g_ObjectColor;
   float2 g_UVOffset;
   float2 g_UVScale;
@@ -35,7 +35,8 @@ struct PSIN {
 
 float4 main(PSIN input) : SV_TARGET {
   // Sample albedo texture using bindless index and sampler
-  float4 texColor = g_Textures[g_MaterialData.albedoTextureIndex].Sample(g_Samplers[g_SamplerIndex], input.uv);
+  float4 texColor = g_Textures[g_MaterialData.albedoTextureIndex].Sample(
+      g_Samplers[g_SamplerIndex], input.uv);
 
   // Apply per-instance color tint
   float4 finalColor = texColor * input.color;
