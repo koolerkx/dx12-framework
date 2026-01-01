@@ -5,6 +5,7 @@
 
 #include "Component/billboard_type.h"
 #include "Component/component.h"
+#include "Component/pivot_type.h"
 #include "Component/render_settings.h"
 #include "Framework/Font/text_layout.h"
 #include "Game/Asset/asset_manager.h"
@@ -143,10 +144,22 @@ class TextRenderer : public Component<TextRenderer> {
     return billboard_mode_;
   }
 
+  // Pivot API
+  // Note: SetHorizontalAlign controls multi-line text layout alignment (per-line)
+  //       SetVerticalAlign controls text baseline position (entire block)
+  //       SetPivot controls transform origin point (where the object rotates around)
+  void SetPivot(Pivot::Preset preset);
+  void SetPivot(const Pivot::Config& config);
+  const Pivot::Config& GetPivot() const {
+    return pivot_;
+  }
+
   // Query
   DirectX::XMFLOAT2 GetSize() const {
     return DirectX::XMFLOAT2(text_mesh_handle_.GetWidth(), text_mesh_handle_.GetHeight());
   }
+
+  DirectX::XMMATRIX GetBillboardWorldMatrix(const CameraData& camera) const;
 
   // Rendering
   void OnRender(FramePacket& packet) override;
@@ -179,4 +192,5 @@ class TextRenderer : public Component<TextRenderer> {
   TextMeshHandle text_mesh_handle_;
 
   Billboard::Mode billboard_mode_ = Billboard::Mode::None;
+  Pivot::Config pivot_;
 };

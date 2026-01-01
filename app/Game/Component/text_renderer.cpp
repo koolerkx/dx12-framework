@@ -1,9 +1,18 @@
 #include "text_renderer.h"
 
 #include "Component/billboard_helper.h"
+#include "Component/pivot_type.h"
 #include "Game/Asset/asset_manager.h"
 #include "game_context.h"
 #include "transform_component.h"
+
+void TextRenderer::SetPivot(Pivot::Preset preset) {
+  pivot_.preset = preset;
+}
+
+void TextRenderer::SetPivot(const Pivot::Config& config) {
+  pivot_ = config;
+}
 
 void TextRenderer::OnRender(FramePacket& packet) {
   if (text_.empty()) return;
@@ -52,6 +61,10 @@ void TextRenderer::OnRender(FramePacket& packet) {
     // Reserve space for instances to optimize performance
     cmd.instances.reserve(text_mesh_handle_.GetGlyphCount());
 
+    // Calculate pivot offset (Transform Position = Pivot)
+    DirectX::XMFLOAT2 text_size = {text_mesh_handle_.GetWidth(), text_mesh_handle_.GetHeight()};
+    DirectX::XMFLOAT2 pivot_offset = pivot_.CalculateOffset(text_size);
+
     // Collect all glyph instance data (CPU-side matrix calculation)
     for (size_t i = 0; i < text_mesh_handle_.GetGlyphCount(); ++i) {
       const GlyphLayoutData* glyph = text_mesh_handle_.GetGlyph(i);
@@ -61,13 +74,17 @@ void TextRenderer::OnRender(FramePacket& packet) {
 
       SpriteInstanceData instance{};
 
-      // 1. Calculate per-glyph world matrix (CPU-side)
-      DirectX::XMVECTOR glyph_center = DirectX::XMVectorSet(glyph->x + glyph->width * 0.5f, glyph->y + glyph->height * 0.5f, 0.0f, 0.0f);
+      // 1. Calculate per-glyph world matrix
+      float glyph_x_relative = glyph->x - pivot_offset.x;
+      float glyph_y_relative = glyph->y - pivot_offset.y;
+
+      DirectX::XMVECTOR glyph_center =
+        DirectX::XMVectorSet(glyph_x_relative + glyph->width * 0.5f, glyph_y_relative + glyph->height * 0.5f, 0.0f, 0.0f);
 
       DirectX::XMMATRIX glyph_translation = DirectX::XMMatrixTranslationFromVector(glyph_center);
       DirectX::XMMATRIX size_scale = DirectX::XMMatrixScaling(glyph->width, glyph->height, 1.0f);
 
-      // Combine: Scale -> Translate (local glyph space) -> Parent Transform (world space)
+      // Combine: Scale -> Translate (local glyph space, relative to pivot) -> Parent Transform (world space)
       DirectX::XMMATRIX world = size_scale * glyph_translation * transform->GetWorldMatrix();
       DirectX::XMStoreFloat4x4(&instance.world_matrix, world);
 
@@ -93,6 +110,11 @@ void TextRenderer::OnRender(FramePacket& packet) {
     // Determine which command type to use
     bool is_transparent = (pass_tag_ == RenderPassTag::WorldTransparent);
 
+    // Calculate pivot offset (Transform Position = Pivot)
+    // Note: For World Space, Y is negated (Y-up coordinate system)
+    DirectX::XMFLOAT2 text_size = {text_mesh_handle_.GetWidth(), text_mesh_handle_.GetHeight()};
+    DirectX::XMFLOAT2 pivot_offset = pivot_.CalculateOffset(text_size);
+
     if (is_transparent) {
       // Use TransparentDrawCommand
       TransparentDrawCommand cmd;
@@ -117,17 +139,20 @@ void TextRenderer::OnRender(FramePacket& packet) {
 
         SpriteInstanceData instance{};
 
-        // 1. Calculate per-glyph world matrix (CPU-side)
+        // 1. Calculate per-glyph world matrix
         // Note: Y-coordinate is negated for world space text (Y-up coordinate system)
-        DirectX::XMVECTOR glyph_center = DirectX::XMVectorSet(glyph->x + glyph->width * 0.5f,
-          -(glyph->y + glyph->height * 0.5f),  // Negate Y for world space
-          0.01f,                               // Small Z offset to avoid z-fighting
+        float glyph_x_relative = glyph->x - pivot_offset.x;
+        float glyph_y_relative = glyph->y - pivot_offset.y;
+
+        DirectX::XMVECTOR glyph_center = DirectX::XMVectorSet(glyph_x_relative + glyph->width * 0.5f,
+          -(glyph_y_relative + glyph->height * 0.5f),  // Negate Y for world space
+          0.01f,                                       // Small Z offset to avoid z-fighting
           0.0f);
 
         DirectX::XMMATRIX glyph_translation = DirectX::XMMatrixTranslationFromVector(glyph_center);
         DirectX::XMMATRIX size_scale = DirectX::XMMatrixScaling(glyph->width, glyph->height, 1.0f);
 
-        // Combine: Scale -> Translate (local glyph space) -> Parent Transform (world space)
+        // Combine: Scale -> Translate (local glyph space, relative to pivot) -> Parent Transform (world space)
         DirectX::XMMATRIX base_world = CalculateBaseWorldMatrix(transform, packet.main_camera);
         DirectX::XMMATRIX world = size_scale * glyph_translation * base_world;
         DirectX::XMStoreFloat4x4(&instance.world_matrix, world);
@@ -172,15 +197,18 @@ void TextRenderer::OnRender(FramePacket& packet) {
 
         // 1. Calculate per-glyph world matrix (CPU-side)
         // Note: Y-coordinate is negated for world space text (Y-up coordinate system)
-        DirectX::XMVECTOR glyph_center = DirectX::XMVectorSet(glyph->x + glyph->width * 0.5f,
-          -(glyph->y + glyph->height * 0.5f),  // Negate Y for world space
-          0.01f,                               // Small Z offset to avoid z-fighting
+        float glyph_x_relative = glyph->x - pivot_offset.x;
+        float glyph_y_relative = glyph->y - pivot_offset.y;
+
+        DirectX::XMVECTOR glyph_center = DirectX::XMVectorSet(glyph_x_relative + glyph->width * 0.5f,
+          -(glyph_y_relative + glyph->height * 0.5f),  // Negate Y for world space
+          0.01f,                                       // Small Z offset to avoid z-fighting
           0.0f);
 
         DirectX::XMMATRIX glyph_translation = DirectX::XMMatrixTranslationFromVector(glyph_center);
         DirectX::XMMATRIX size_scale = DirectX::XMMatrixScaling(glyph->width, glyph->height, 1.0f);
 
-        // Combine: Scale -> Translate (local glyph space) -> Parent Transform (world space)
+        // Combine: Scale -> Translate (local glyph space, relative to pivot) -> Parent Transform (world space)
         DirectX::XMMATRIX base_world = CalculateBaseWorldMatrix(transform, packet.main_camera);
         DirectX::XMMATRIX world = size_scale * glyph_translation * base_world;
         DirectX::XMStoreFloat4x4(&instance.world_matrix, world);
@@ -223,6 +251,7 @@ DirectX::XMMATRIX TextRenderer::CalculateBaseWorldMatrix(TransformComponent* tra
   XMMATRIX world = transform->GetWorldMatrix();
 
   // If no billboard mode, return the original world matrix
+  // Pivot is handled in OnRender
   if (billboard_mode_ == Billboard::Mode::None) {
     return world;
   }
@@ -236,6 +265,7 @@ DirectX::XMMATRIX TextRenderer::CalculateBaseWorldMatrix(TransformComponent* tra
   XMStoreFloat3(&objPos, translation);
 
   // Calculate billboard rotation based on mode
+  // (pivot is at origin, so this works correctly)
   XMMATRIX billboardRot;
   if (billboard_mode_ == Billboard::Mode::Cylindrical) {
     billboardRot = Billboard::CreateCylindricalBillboardMatrix(objPos, camera.position);
@@ -243,10 +273,20 @@ DirectX::XMMATRIX TextRenderer::CalculateBaseWorldMatrix(TransformComponent* tra
     billboardRot = Billboard::CreateSphericalBillboardMatrix(objPos, camera.position, camera.up);
   }
 
-  // Recompose matrix: Scale * BillboardRotation * Translation
+  // Fix text mirror issue: flip X axis for text with billboard
+  // The UV system has negative Y scale which combines with billboard rotation to cause mirroring
+  XMMATRIX flipX = XMMatrixScaling(-1.0f, 1.0f, 1.0f);
+
+  // Recompose matrix: Scale * FlipX * BillboardRotation * Translation
   // Note: We preserve position and scale from original transform, but replace rotation with billboard
   XMMATRIX scaleMat = XMMatrixScalingFromVector(scale);
   XMMATRIX transMat = XMMatrixTranslationFromVector(translation);
 
-  return scaleMat * billboardRot * transMat;
+  return scaleMat * flipX * billboardRot * transMat;
+}
+
+DirectX::XMMATRIX TextRenderer::GetBillboardWorldMatrix(const CameraData& camera) const {
+  auto* transform = GetOwner()->GetTransform();
+  if (!transform) return DirectX::XMMatrixIdentity();
+  return CalculateBaseWorldMatrix(transform, camera);
 }

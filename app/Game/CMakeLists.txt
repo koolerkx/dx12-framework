@@ -27,6 +27,8 @@ add_library(game STATIC
     Component/text_renderer.cpp
     Component/sprite_renderer.h
     Component/sprite_renderer.cpp
+    Component/pivot_type.h
+    Component/pivot_type.cpp
 
     Debug/debug_drawer.h
     Debug/debug_drawer.cpp

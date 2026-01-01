@@ -1,6 +1,7 @@
 #pragma once
 #include "Component/billboard_type.h"
 #include "Component/component.h"
+#include "Component/pivot_type.h"
 #include "Component/render_settings.h"
 #include "Game/Asset/asset_manager.h"
 #include "Graphic/Frame/frame_packet.h"
@@ -58,6 +59,13 @@ class SpriteRenderer : public Component<SpriteRenderer> {
     return billboard_mode_;
   }
 
+  // Pivot API
+  void SetPivot(Pivot::Preset preset);
+  void SetPivot(const Pivot::Config& config);
+  const Pivot::Config& GetPivot() const {
+    return pivot_;
+  }
+
   void OnRender(FramePacket& packet) override;
 
  private:
@@ -72,4 +80,5 @@ class SpriteRenderer : public Component<SpriteRenderer> {
   RenderPassTag pass_tag_ = RenderPassTag::Ui;
   Rendering::RenderSettings render_settings_ = Rendering::RenderSettings::UI();
   Billboard::Mode billboard_mode_ = Billboard::Mode::None;
+  Pivot::Config pivot_;
 };

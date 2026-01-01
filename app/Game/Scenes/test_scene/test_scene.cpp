@@ -5,6 +5,7 @@
 #include "Asset/asset_manager.h"
 #include "Component/free_camera_controller.h"
 #include "Component/mesh_renderer.h"
+#include "Component/pivot_type.h"
 #include "Component/sprite_renderer.h"
 #include "Component/text_renderer.h"
 #include "Component/transform_component.h"
@@ -82,42 +83,47 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   {
     auto text_obj = CreateGameObject("Basic UI Text");
 
-    // Position in screen space
-    text_obj->GetTransform()->SetPosition(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f));
+    // Position in screen space - center of screen (1920x1080 -> 960x540)
+    text_obj->GetTransform()->SetPosition(DirectX::XMFLOAT3(960.0f, 540.0f, 0.0f));
 
     // Add TextRenderer Component
     auto* text = text_obj->AddComponent<TextRenderer>();
 
     // Configure text
-    text->SetText(L"Hello, World!\nこんにちは！ようこそ、世界へ。");
+    text->SetText(L"Hello, World!Hello, World!Hello, World!\nこんにちは！");
     text->SetFont(Font::FontFamily::ZenOldMincho);
     text->SetPixelSize(48.0f);
     text->SetColor({0.0f, 1.0f, 0.0f, 1.0f});
-    text->SetHorizontalAlign(Text::HorizontalAlign::Right);
+    text->SetHorizontalAlign(Text::HorizontalAlign::Left);
     text->SetVerticalAlign(Text::VerticalAlign::Center);
+    text->SetPivot(Pivot::Preset::Center);
 
     // Set as UI element
     text->SetRenderPassTag(RenderPassTag::Ui);
     text->SetLayerId(100);  // Higher layer = rendered later
-    std::cout << text->GetSize().x << " " << text->GetSize().y << std::endl;
+    std::cout << "UI Text size: " << text->GetSize().x << " x " << text->GetSize().y << std::endl;
   }
 
   // Text
   text_obj2_ = CreateGameObject("Basic Text 2");
   // text_obj2_->SetParent(cube_object_);
   // Position in screen space
-  text_obj2_->GetTransform()->SetPosition(DirectX::XMFLOAT3(10.0f, 1.0f, 0.0f));
+  text_obj2_->GetTransform()->SetPosition(DirectX::XMFLOAT3(10.0f, 5.0f, 0.0f));
 
   // Add TextRenderer Component
   auto* text2 = text_obj2_->AddComponent<TextRenderer>();
 
   // Configure text
-  text2->SetText(L"Hello, World!");
+  text2->SetText(L"Hello, World!\n Bye");
   text2->SetFont(Font::FontFamily::ZenOldMincho);
-  text2->SetPixelSize(10.0f);
+  text2->SetPixelSize(1.0f);
   text2->SetColor({1.0f, 1.0f, 1.0f, 1.0f});
   text2->SetRenderPassTag(RenderPassTag::WorldTransparent);  // Use transparent for alpha blending
-  text2->SetBillboardMode(Billboard::Mode::Cylindrical);
+  text2->SetBillboardMode(Billboard::Mode::Spherical);
+
+  text2->SetHorizontalAlign(Text::HorizontalAlign::Center);
+  text2->SetVerticalAlign(Text::VerticalAlign::Center);
+  text2->SetPivot(Pivot::Preset::Center);
 }
 
 void TestScene::OnPostUpdate(float dt) {
@@ -127,7 +133,7 @@ void TestScene::OnPostUpdate(float dt) {
   cube_object2_->GetComponent<TransformComponent>()->SetRotationEulerDegree({0.0f, rotation_angle_, 0.0f});
 }
 
-void TestScene::OnRender(FramePacket& /*packet*/) {
+void TestScene::OnRender(FramePacket& /* packet */) {
   auto* debug_drawer = GetContext()->GetDebugDrawer();
   if (!debug_drawer) return;
 

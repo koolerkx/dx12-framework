@@ -1,17 +1,27 @@
 #include "sprite_renderer.h"
 
 #include "Component/billboard_helper.h"
+#include "Component/pivot_type.h"
 #include "Game/Asset/asset_manager.h"
 #include "game_context.h"
 #include "transform_component.h"
 
 using namespace DirectX;
 
+void SpriteRenderer::SetPivot(Pivot::Preset preset) {
+  pivot_.preset = preset;
+}
+
+void SpriteRenderer::SetPivot(const Pivot::Config& config) {
+  pivot_ = config;
+}
+
 DirectX::XMMATRIX SpriteRenderer::CalculateWorldMatrix(TransformComponent* transform, const CameraData& camera) const {
   // Get the base world matrix from transform
   XMMATRIX world = transform->GetWorldMatrix();
 
   // If no billboard mode, return the original world matrix
+  // Pivot is handled in OnRender
   if (billboard_mode_ == Billboard::Mode::None) {
     return world;
   }
@@ -25,6 +35,7 @@ DirectX::XMMATRIX SpriteRenderer::CalculateWorldMatrix(TransformComponent* trans
   XMStoreFloat3(&objPos, translation);
 
   // Calculate billboard rotation based on mode
+  // (pivot is at origin, so this works correctly)
   XMMATRIX billboardRot;
   if (billboard_mode_ == Billboard::Mode::Cylindrical) {
     billboardRot = Billboard::CreateCylindricalBillboardMatrix(objPos, camera.position);
@@ -47,6 +58,11 @@ void SpriteRenderer::OnRender(FramePacket& packet) {
   auto& material_mgr = context->GetGraphic()->GetMaterialManager();
   auto* transform = GetOwner()->GetTransform();
 
+  // Calculate pivot position (Transform Position = Pivot)
+  // pivot_offset is the pivot position in content coordinates
+  XMFLOAT2 pivot_pos = pivot_.CalculateOffset(size_);
+  XMMATRIX pivot_mat = XMMatrixTranslation(-pivot_pos.x, -pivot_pos.y, 0.0f);
+
   switch (pass_tag_) {
     case RenderPassTag::Ui: {
       UiDrawCommand cmd;
@@ -57,9 +73,9 @@ void SpriteRenderer::OnRender(FramePacket& packet) {
       cmd.layer_id = layer_id_;
       cmd.depth = static_cast<float>(layer_id_);
 
-      // For UI rendering: apply size scale, then transform world matrix
+      // Transform Position = Pivot
       XMMATRIX size_scale = XMMatrixScaling(size_.x, size_.y, 1.0f);
-      XMMATRIX world = size_scale * transform->GetWorldMatrix();
+      XMMATRIX world = size_scale * pivot_mat * transform->GetWorldMatrix();
       XMStoreFloat4x4(&cmd.world_matrix, world);
 
       cmd.material_instance.material = cmd.material;
@@ -77,9 +93,10 @@ void SpriteRenderer::OnRender(FramePacket& packet) {
       cmd.uv_offset = {0.0f, 0.0f};
       cmd.uv_scale = {1.0f, 1.0f};
 
-      // For world rendering: apply size scale, then billboard-aware world matrix
+      // Transform Position = Pivot
       XMMATRIX size_scale = XMMatrixScaling(size_.x, size_.y, 1.0f);
-      XMMATRIX world = size_scale * CalculateWorldMatrix(transform, packet.main_camera);
+      XMMATRIX base_world = CalculateWorldMatrix(transform, packet.main_camera);
+      XMMATRIX world = size_scale * pivot_mat * base_world;
       XMStoreFloat4x4(&cmd.world_matrix, world);
 
       // Calculate depth from object position for sorting
@@ -102,9 +119,10 @@ void SpriteRenderer::OnRender(FramePacket& packet) {
       cmd.uv_offset = {0.0f, 0.0f};
       cmd.uv_scale = {1.0f, 1.0f};
 
-      // For world transparent rendering: apply size scale, then billboard-aware world matrix
+      // Transform Position = Pivot
       XMMATRIX size_scale = XMMatrixScaling(size_.x, size_.y, 1.0f);
-      XMMATRIX world = size_scale * CalculateWorldMatrix(transform, packet.main_camera);
+      XMMATRIX base_world = CalculateWorldMatrix(transform, packet.main_camera);
+      XMMATRIX world = size_scale * pivot_mat * base_world;
       XMStoreFloat4x4(&cmd.world_matrix, world);
 
       // Calculate depth from object position for back-to-front sorting
