@@ -49,9 +49,11 @@ inline DirectX::XMMATRIX CreateCylindricalBillboardMatrix(
  * @param cameraPos Camera world position
  * @param cameraUp Camera up vector
  * @return Billboard rotation matrix (rotation only, no translation/scale)
+ *
+ * @note filling camera up can let sprite follow camera's yaw
  */
 inline DirectX::XMMATRIX CreateSphericalBillboardMatrix(
-  const DirectX::XMFLOAT3& objectPos, const DirectX::XMFLOAT3& cameraPos, const DirectX::XMFLOAT3& cameraUp) {
+  const DirectX::XMFLOAT3& objectPos, const DirectX::XMFLOAT3& cameraPos, const DirectX::XMFLOAT3& cameraUp = {0.0f, 1.0f, 0.0f}) {
   using namespace DirectX;
 
   XMVECTOR objPos = XMLoadFloat3(&objectPos);

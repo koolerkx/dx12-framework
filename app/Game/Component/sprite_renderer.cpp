@@ -8,7 +8,6 @@
 #include "game_context.h"
 #include "transform_component.h"
 
-
 using namespace DirectX;
 
 void SpriteRenderer::SetPivot(Pivot::Preset preset) {
@@ -47,7 +46,7 @@ DirectX::XMMATRIX SpriteRenderer::CalculateWorldMatrix(TransformComponent* trans
   if (billboard_mode_ == Billboard::Mode::Cylindrical) {
     billboardRot = Billboard::CreateCylindricalBillboardMatrix(objPos, camera.position);
   } else {  // Spherical
-    billboardRot = Billboard::CreateSphericalBillboardMatrix(objPos, camera.position, camera.up);
+    billboardRot = Billboard::CreateSphericalBillboardMatrix(objPos, camera.position);
   }
 
   // Recompose matrix: Scale * BillboardRotation * Translation
