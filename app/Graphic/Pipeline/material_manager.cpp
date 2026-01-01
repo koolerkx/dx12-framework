@@ -468,6 +468,9 @@ void MaterialManager::OnFrameEnd() {
   if (pso_cache_.size() > MAX_CACHE_SIZE) {
     EvictLRU();
   }
+  if (non_instanced_sprite_cache_.size() > MAX_CACHE_SIZE) {
+    EvictNonInstancedLRU();
+  }
 }
 
 void MaterialManager::EvictLRU() {
@@ -479,4 +482,150 @@ void MaterialManager::EvictLRU() {
     pso_cache_.begin(), pso_cache_.end(), [](const auto& a, const auto& b) { return a.second.last_used_frame < b.second.last_used_frame; });
 
   pso_cache_.erase(oldest);
+}
+
+void MaterialManager::EvictNonInstancedLRU() {
+  if (non_instanced_sprite_cache_.empty()) {
+    return;
+  }
+
+  auto oldest = std::min_element(
+    non_instanced_sprite_cache_.begin(), non_instanced_sprite_cache_.end(),
+    [](const auto& a, const auto& b) { return a.second.last_used_frame < b.second.last_used_frame; });
+
+  non_instanced_sprite_cache_.erase(oldest);
+}
+
+Material* MaterialManager::GetOrCreateNonInstancedSpriteMaterial(const Rendering::RenderSettings& settings) {
+  settings.Validate();
+  uint32_t key = settings.GetCacheKey();
+
+  // Read lock first (fast path)
+  {
+    std::shared_lock read_lock(cache_mutex_);
+    if (auto it = non_instanced_sprite_cache_.find(key); it != non_instanced_sprite_cache_.end()) {
+      it->second.last_used_frame = current_frame_;
+      return it->second.material.get();
+    }
+  }
+
+  // Write lock for creation (slow path)
+  std::unique_lock write_lock(cache_mutex_);
+
+  // Double-check after acquiring write lock
+  if (auto it = non_instanced_sprite_cache_.find(key); it != non_instanced_sprite_cache_.end()) {
+    it->second.last_used_frame = current_frame_;
+    return it->second.material.get();
+  }
+
+  // Create new material
+  CacheEntry entry;
+  entry.material = std::make_unique<Material>(CreateNonInstancedSpriteMaterialInternal(settings));
+  entry.last_used_frame = current_frame_;
+
+  Material* ptr = entry.material.get();
+  non_instanced_sprite_cache_[key] = std::move(entry);
+
+  return ptr;
+}
+
+Material MaterialManager::CreateNonInstancedSpriteMaterialInternal(const Rendering::RenderSettings& settings) {
+  // Map Rendering::BlendMode to Graphics::BlendMode
+  BlendMode blend_mode = BlendMode::AlphaBlend;
+  switch (settings.blend_mode) {
+    case Rendering::BlendMode::Opaque:
+      blend_mode = BlendMode::Opaque;
+      break;
+    case Rendering::BlendMode::AlphaBlend:
+      blend_mode = BlendMode::AlphaBlend;
+      break;
+    case Rendering::BlendMode::Additive:
+      blend_mode = BlendMode::Additive;
+      break;
+    case Rendering::BlendMode::Premultiplied:
+      blend_mode = BlendMode::Premultiplied;
+      break;
+  }
+
+  // Use non-instanced sprite shader (sprite.vs/sprite.ps)
+  ShaderConfig shader_config = ShaderPresets::CreateSprite();
+
+  // Load shaders
+  ID3DBlob* vs_blob = LoadShader(shader_config.vs_path);
+  ID3DBlob* ps_blob = LoadShader(shader_config.ps_path);
+
+  if (!vs_blob || !ps_blob) {
+    return Material();
+  }
+
+  // Build render state
+  RenderStateConfig render_state;
+  render_state.blend_mode = blend_mode;
+  render_state.depth_test_enabled = settings.depth_test;
+  render_state.depth_write_enabled = settings.depth_write;
+  render_state.cull_mode = settings.double_sided ? D3D12_CULL_MODE_NONE : D3D12_CULL_MODE_BACK;
+
+  // Create PSO
+  auto pso = PipelineStateBuilder()
+               .SetRootSignature(shared_root_signature_.Get())
+               .SetVertexShader(vs_blob)
+               .SetPixelShader(ps_blob)
+               .SetInputLayout(shader_config.input_layout)
+               .SetBlendMode(render_state.blend_mode)
+               .SetCullMode(render_state.cull_mode)
+               .SetDepthTest(render_state.depth_test_enabled)
+               .SetDepthWrite(render_state.depth_write_enabled)
+               .SetRenderTargetFormat(render_state.rtv_format)
+               .SetDepthStencilFormat(render_state.dsv_format)
+               .SetPrimitiveTopology(render_state.primitive_topology)
+               .Build(device_);
+
+  if (!pso) {
+    return Material();
+  }
+
+  // Generate name for debugging
+  std::string name = GenerateNonInstancedSpriteMaterialName(settings);
+  std::wstring wide_name(name.begin(), name.end());
+  pso->SetName(wide_name.c_str());
+
+  // Generate sort key
+  uint64_t sort_key = GenerateSortKey(shared_root_signature_.Get(), pso.Get());
+
+  return Material(name, shared_root_signature_.Get(), pso.Get(), sort_key);
+}
+
+std::string MaterialManager::GenerateNonInstancedSpriteMaterialName(const Rendering::RenderSettings& settings) const {
+  std::ostringstream oss;
+  oss << "Sprite_Single_";
+
+  switch (settings.blend_mode) {
+    case Rendering::BlendMode::Opaque:
+      oss << "Opaque";
+      break;
+    case Rendering::BlendMode::AlphaBlend:
+      oss << "Alpha";
+      break;
+    case Rendering::BlendMode::Additive:
+      oss << "Add";
+      break;
+    case Rendering::BlendMode::Premultiplied:
+      oss << "Premult";
+      break;
+  }
+
+  if (settings.depth_test) {
+    oss << "_Depth";
+    if (settings.depth_write) {
+      oss << "W";
+    }
+  }
+
+  if (settings.double_sided) {
+    oss << "_2Side";
+  }
+
+  oss << "_S" << static_cast<int>(settings.sampler_type);
+
+  return oss.str();
 }

@@ -66,10 +66,9 @@ void SpriteRenderer::OnRender(FramePacket& packet) {
 
   switch (pass_tag_) {
     case RenderPassTag::Ui: {
-      InstanceDrawCommand cmd;
+      SingleDrawCommand cmd;
       cmd.mesh = context->GetAssetManager().GetDefaultMesh(DefaultMesh::Quad);
-      cmd.material = material_mgr.GetOrCreateMaterial(render_settings_);
-      cmd.layer_id = layer_id_;
+      cmd.material = material_mgr.GetOrCreateNonInstancedSpriteMaterial(render_settings_);
       cmd.depth = static_cast<float>(layer_id_);
 
       cmd.material_instance.material = cmd.material;
@@ -80,13 +79,10 @@ void SpriteRenderer::OnRender(FramePacket& packet) {
       XMMATRIX size_scale = XMMatrixScaling(size_.x, size_.y, 1.0f);
       XMMATRIX world = offset_mat * size_scale * transform->GetWorldMatrix();
 
-      // Create single instance data for instanced rendering
-      SpriteInstanceData instance;
-      XMStoreFloat4x4(&instance.world_matrix, world);
-      instance.color = color_;
-      instance.uv_offset = uv_offset_;
-      instance.uv_scale = uv_scale_;
-      cmd.instances.push_back(instance);
+      XMStoreFloat4x4(&cmd.world_matrix, world);
+      cmd.color = color_;
+      cmd.uv_offset = uv_offset_;
+      cmd.uv_scale = uv_scale_;
 
       packet.ui_pass.emplace_back(cmd);
     } break;
@@ -106,9 +102,9 @@ void SpriteRenderer::OnRender(FramePacket& packet) {
       XMMATRIX base_world = CalculateWorldMatrix(transform, packet.main_camera);
       XMMATRIX world = size_scale * pivot_mat * base_world;
 
-      InstanceDrawCommand cmd;
+      SingleDrawCommand cmd;
       cmd.mesh = context->GetAssetManager().GetDefaultMesh(DefaultMesh::Quad);
-      cmd.material = material_mgr.GetOrCreateMaterial(render_settings_);
+      cmd.material = material_mgr.GetOrCreateNonInstancedSpriteMaterial(render_settings_);
 
       // Calculate depth from object position for sorting
       XMFLOAT3 worldPos = transform->GetWorldPosition();
@@ -119,13 +115,10 @@ void SpriteRenderer::OnRender(FramePacket& packet) {
       cmd.material_instance.albedo_texture_index = texture_->GetBindlessIndex();
       cmd.material_instance.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
 
-      // Create single instance data for instanced rendering
-      SpriteInstanceData instance;
-      XMStoreFloat4x4(&instance.world_matrix, world);
-      instance.color = color_;
-      instance.uv_offset = uv_offset_;
-      instance.uv_scale = uv_scale_;
-      cmd.instances.push_back(instance);
+      XMStoreFloat4x4(&cmd.world_matrix, world);
+      cmd.color = color_;
+      cmd.uv_offset = uv_offset_;
+      cmd.uv_scale = uv_scale_;
 
       if (pass_tag_ == RenderPassTag::WorldOpaque) {
         packet.opaque_pass.emplace_back(cmd);

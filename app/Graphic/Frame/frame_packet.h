@@ -56,8 +56,6 @@ struct SingleDrawCommand : DrawSortKey {
   float depth = 0.0f;
   DirectX::XMFLOAT2 uv_offset{0.0f, 0.0f};
   DirectX::XMFLOAT2 uv_scale{1.0f, 1.0f};
-  DirectX::XMFLOAT2 size{0.0f, 0.0f};
-  int layer_id = 0;
 };
 
 // For instanced rendering (TextRenderer, ParticleRenderer)

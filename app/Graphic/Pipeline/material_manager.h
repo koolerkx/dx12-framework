@@ -108,8 +108,12 @@ class MaterialManager {
   }
 
   // Dynamic Material System
-  // Get or create material based on render settings
+  // Get or create material based on render settings (instanced shaders)
   Material* GetOrCreateMaterial(const Rendering::RenderSettings& settings);
+
+  // Get non-instanced sprite material for SingleDrawCommand
+  // Uses sprite.vs/sprite.ps (per-vertex data only, no instance buffer)
+  Material* GetOrCreateNonInstancedSpriteMaterial(const Rendering::RenderSettings& settings);
 
   // Frame lifecycle
   void OnFrameEnd();
@@ -129,6 +133,7 @@ class MaterialManager {
 
   static constexpr size_t MAX_CACHE_SIZE = 64;
   std::unordered_map<uint32_t, CacheEntry> pso_cache_;
+  std::unordered_map<uint32_t, CacheEntry> non_instanced_sprite_cache_;
   std::shared_mutex cache_mutex_;
   uint64_t current_frame_ = 0;
 
@@ -143,8 +148,11 @@ class MaterialManager {
 
   // Dynamic material creation
   Material CreateMaterialInternal(const Rendering::RenderSettings& settings);
+  Material CreateNonInstancedSpriteMaterialInternal(const Rendering::RenderSettings& settings);
   std::string GenerateMaterialName(const Rendering::RenderSettings& settings) const;
+  std::string GenerateNonInstancedSpriteMaterialName(const Rendering::RenderSettings& settings) const;
   void EvictLRU();
+  void EvictNonInstancedLRU();
 
   // Sort Key Generation
   // Generate a 64-bit sort key from RS and PSO pointers

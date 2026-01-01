@@ -91,7 +91,7 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   auto* bg_renderer = animated_bg_object_->AddComponent<SpriteRenderer>();
   bg_renderer->SetTexture(texture_background_.Get());
   bg_renderer->SetSize({15.0f, 15.0f});  // Full frame size
-  bg_renderer->SetRenderPassTag(RenderPassTag::WorldTransparent);
+  bg_renderer->SetRenderPassTag(RenderPassTag::Ui);
   bg_renderer->SetPivot(Pivot::Preset::Bottom);
   bg_renderer->SetDoubleSided(true);
   bg_renderer->SetBillboardMode(Billboard::Mode::Spherical);
