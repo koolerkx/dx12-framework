@@ -1,11 +1,13 @@
 struct VSIN {
   float3 pos : POSITION;
   float2 uv : TEXCOORD;
+  float4 color : COLOR;
 };
 
 struct BasicType {
   float4 position : SV_POSITION;
   float2 uv : TEXCOORD;
+  float4 color : COLOR;
 };
 
 // === Constant Buffers ===

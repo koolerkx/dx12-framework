@@ -13,8 +13,8 @@ cbuffer ObjectCB : register(b1) {
   row_major float4x4 g_World;
   row_major float4x4 g_WorldViewProj;
   float4 g_ObjectColor;
-  float2 g_UVOffset;  // UV offset for atlas/sprite sheet
-  float2 g_UVScale;   // UV scale (1,1 = full texture)
+  float2 g_UVOffset; // UV offset for atlas/sprite sheet
+  float2 g_UVScale;  // UV scale (1,1 = full texture)
 };
 
 // Material data from root constants
@@ -34,11 +34,13 @@ SamplerState g_Sampler : register(s0);
 struct VSIN {
   float3 position : POSITION;
   float2 uv : TEXCOORD;
+  float4 color : COLOR;
 };
 
 struct VSOUT {
   float4 position : SV_POSITION;
   float2 uv : TEXCOORD0;
+  float4 color : COLOR;
 };
 
 VSOUT main(VSIN input) {
@@ -46,8 +48,8 @@ VSOUT main(VSIN input) {
 
   output.position = mul(float4(input.position, 1.0f), g_WorldViewProj);
 
-  // Apply UV transform: scale first, then offset
   output.uv = input.uv * g_UVScale + g_UVOffset;
+  output.color = input.color;
 
   return output;
 }

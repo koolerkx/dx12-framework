@@ -1,5 +1,6 @@
 #pragma once
 #include <d3d12.h>
+#include <sys/stat.h>
 
 #include "mesh.h"
 
@@ -7,49 +8,50 @@ class MeshFactory {
  public:
   // Create a unit cube (1x1x1) centered at origin
   static bool CreateCube(ID3D12Device* device, Mesh& out_mesh) {
-    // Cube vertices with positions and UVs
+    // Cube vertices with positions, UVs, and colors
     struct Vertex {
       float pos[3];
       float uv[2];
+      float color[4];  // RGBA
     };
 
     // 24 vertices (4 per face for proper UVs and normals)
     Vertex vertices[] = {
       // Front face (Z+)
-      {{-0.5f, -0.5f, 0.5f}, {0.0f, 1.0f}},  // 0
-      {{0.5f, -0.5f, 0.5f}, {1.0f, 1.0f}},   // 1
-      {{0.5f, 0.5f, 0.5f}, {1.0f, 0.0f}},    // 2
-      {{-0.5f, 0.5f, 0.5f}, {0.0f, 0.0f}},   // 3
+      {{-0.5f, -0.5f, 0.5f}, {0.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},  // 0
+      {{0.5f, -0.5f, 0.5f}, {1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},   // 1
+      {{0.5f, 0.5f, 0.5f}, {1.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},    // 2
+      {{-0.5f, 0.5f, 0.5f}, {0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},   // 3
 
       // Back face (Z-)
-      {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f}},   // 4
-      {{-0.5f, -0.5f, -0.5f}, {1.0f, 1.0f}},  // 5
-      {{-0.5f, 0.5f, -0.5f}, {1.0f, 0.0f}},   // 6
-      {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f}},    // 7
+      {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},   // 4
+      {{-0.5f, -0.5f, -0.5f}, {1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},  // 5
+      {{-0.5f, 0.5f, -0.5f}, {1.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},   // 6
+      {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},    // 7
 
       // Top face (Y+)
-      {{-0.5f, 0.5f, 0.5f}, {0.0f, 1.0f}},   // 8
-      {{0.5f, 0.5f, 0.5f}, {1.0f, 1.0f}},    // 9
-      {{0.5f, 0.5f, -0.5f}, {1.0f, 0.0f}},   // 10
-      {{-0.5f, 0.5f, -0.5f}, {0.0f, 0.0f}},  // 11
+      {{-0.5f, 0.5f, 0.5f}, {0.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},   // 8
+      {{0.5f, 0.5f, 0.5f}, {1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},    // 9
+      {{0.5f, 0.5f, -0.5f}, {1.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},   // 10
+      {{-0.5f, 0.5f, -0.5f}, {0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},  // 11
 
       // Bottom face (Y-)
-      {{-0.5f, -0.5f, -0.5f}, {0.0f, 1.0f}},  // 12
-      {{0.5f, -0.5f, -0.5f}, {1.0f, 1.0f}},   // 13
-      {{0.5f, -0.5f, 0.5f}, {1.0f, 0.0f}},    // 14
-      {{-0.5f, -0.5f, 0.5f}, {0.0f, 0.0f}},   // 15
+      {{-0.5f, -0.5f, -0.5f}, {0.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},  // 12
+      {{0.5f, -0.5f, -0.5f}, {1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},   // 13
+      {{0.5f, -0.5f, 0.5f}, {1.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},    // 14
+      {{-0.5f, -0.5f, 0.5f}, {0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},   // 15
 
       // Right face (X+)
-      {{0.5f, -0.5f, 0.5f}, {0.0f, 1.0f}},   // 16
-      {{0.5f, -0.5f, -0.5f}, {1.0f, 1.0f}},  // 17
-      {{0.5f, 0.5f, -0.5f}, {1.0f, 0.0f}},   // 18
-      {{0.5f, 0.5f, 0.5f}, {0.0f, 0.0f}},    // 19
+      {{0.5f, -0.5f, 0.5f}, {0.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},   // 16
+      {{0.5f, -0.5f, -0.5f}, {1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},  // 17
+      {{0.5f, 0.5f, -0.5f}, {1.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},   // 18
+      {{0.5f, 0.5f, 0.5f}, {0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},    // 19
 
       // Left face (X-)
-      {{-0.5f, -0.5f, -0.5f}, {0.0f, 1.0f}},  // 20
-      {{-0.5f, -0.5f, 0.5f}, {1.0f, 1.0f}},   // 21
-      {{-0.5f, 0.5f, 0.5f}, {1.0f, 0.0f}},    // 22
-      {{-0.5f, 0.5f, -0.5f}, {0.0f, 0.0f}},   // 23
+      {{-0.5f, -0.5f, -0.5f}, {0.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},  // 20
+      {{-0.5f, -0.5f, 0.5f}, {1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},   // 21
+      {{-0.5f, 0.5f, 0.5f}, {1.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},    // 22
+      {{-0.5f, 0.5f, -0.5f}, {0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},   // 23
     };
 
     // 36 indices (6 faces * 2 triangles * 3 vertices)
@@ -104,13 +106,14 @@ class MeshFactory {
     struct Vertex {
       float pos[3];
       float uv[2];
+      float color[4];  // RGBA
     };
 
     Vertex vertices[] = {
-      {{-0.5f, -0.5f, 0.0f}, {0.0f, 1.0f}},  // Bottom-left
-      {{0.5f, -0.5f, 0.0f}, {1.0f, 1.0f}},   // Bottom-right
-      {{0.5f, 0.5f, 0.0f}, {1.0f, 0.0f}},    // Top-right
-      {{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f}},   // Top-left
+      {{-0.5f, -0.5f, 0.0f}, {0.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},  // Bottom-left
+      {{0.5f, -0.5f, 0.0f}, {1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},   // Bottom-right
+      {{0.5f, 0.5f, 0.0f}, {1.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},    // Top-right
+      {{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},   // Top-left
     };
 
     uint16_t indices[] = {0, 1, 2, 2, 3, 0};
@@ -123,6 +126,7 @@ class MeshFactory {
     struct Vertex {
       float pos[3];
       float uv[2];
+      float color[4];  // RGBA
     };
 
     // Calculate vertex count
@@ -143,7 +147,7 @@ class MeshFactory {
         float pos_x = u - 0.5f;
         float pos_z = v - 0.5f;
 
-        vertices.push_back({{pos_x, 0.0f, pos_z}, {u, v}});
+        vertices.push_back({{pos_x, 0.0f, pos_z}, {u, v}, {1.0f, 1.0f, 1.0f, 1.0f}});
       }
     }
 
@@ -154,10 +158,10 @@ class MeshFactory {
 
     for (uint32_t z = 0; z < subdivisions_z; ++z) {
       for (uint32_t x = 0; x < subdivisions_x; ++x) {
-        uint16_t top_left = z * vertex_count_x + x;
-        uint16_t top_right = top_left + 1;
-        uint16_t bottom_left = (z + 1) * vertex_count_x + x;
-        uint16_t bottom_right = bottom_left + 1;
+        uint16_t top_left = static_cast<uint16_t>(z * vertex_count_x + x);
+        uint16_t top_right = static_cast<uint16_t>(top_left + 1);
+        uint16_t bottom_left = static_cast<uint16_t>((z + 1) * vertex_count_x + x);
+        uint16_t bottom_right = static_cast<uint16_t>(bottom_left + 1);
 
         // First triangle
         indices.push_back(top_left);

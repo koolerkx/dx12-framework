@@ -16,7 +16,7 @@ cbuffer ObjectCB : register(b1) {
   float2 g_UVOffset;   // UV offset for atlas/sprite sheet
   float2 g_UVScale;    // UV scale (1,1 = full texture)
   uint g_SamplerIndex; // Sampler index for bindless sampler array
-  uint3 _padding1;     // Padding to maintain alignment
+  uint3 _padding1;
 };
 
 // Material data from root constants
@@ -36,10 +36,11 @@ SamplerState g_Samplers[] : register(s0, space0);
 struct PSIN {
   float4 position : SV_POSITION;
   float2 uv : TEXCOORD0;
+  float4 color : COLOR;
 };
 
 float4 main(PSIN input) : SV_TARGET {
   float4 texColor = g_Textures[g_MaterialData.albedoTextureIndex].Sample(
       g_Samplers[g_SamplerIndex], input.uv);
-  return texColor * g_ObjectColor;
+  return texColor * input.color * g_ObjectColor;
 }

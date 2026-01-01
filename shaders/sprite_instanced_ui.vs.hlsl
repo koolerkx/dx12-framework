@@ -33,6 +33,7 @@ struct VSIN {
   // Slot 0: Mesh Data (Per-Vertex, Quad Vertices)
   float3 position : POSITION;
   float2 uv : TEXCOORD;
+  float4 color : COLOR;
 
   // Slot 1: Instance Data (Per-Instance, Glyph/Sprite Data)
   float4 instanceWorld0 : INSTANCE_WORLD0;
@@ -61,11 +62,8 @@ VSOUT main(VSIN input) {
   float4 worldPos = mul(localPos, instanceWorld);
   output.position = mul(worldPos, g_ViewProj);
 
-  // Apply per-instance UV transform: scale first, then offset
   output.uv = input.uv * input.instanceUVScale + input.instanceUVOffset;
-
-  // Pass through per-instance color
-  output.color = input.instanceColor;
+  output.color = input.color * input.instanceColor;
 
   return output;
 }

@@ -27,10 +27,14 @@ add_library(graphic STATIC
     Pipeline/sampler_builder.h
     Pipeline/sampler_builder.cpp
     Pipeline/root_parameter_slots.h
+    Pipeline/shader_types.h
+    Pipeline/shader_metadata.h
+    Pipeline/shader_metadata.cpp
+    Pipeline/shader_manager.h
+    Pipeline/shader_manager.cpp
     Pipeline/material.h
     Pipeline/material_manager.h
     Pipeline/material_manager.cpp
-    Pipeline/shader_config.h
 
     Resource/mesh.h
     Resource/mesh.cpp

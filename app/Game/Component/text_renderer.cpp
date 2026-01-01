@@ -3,6 +3,7 @@
 #include "Component/billboard_helper.h"
 #include "Component/pivot_type.h"
 #include "Game/Asset/asset_manager.h"
+#include "Graphic/Pipeline/shader_types.h"
 #include "game_context.h"
 #include "transform_component.h"
 
@@ -31,9 +32,18 @@ void TextRenderer::OnRender(FramePacket& packet) {
     return;
   }
 
-  // Get material from Graphic
   auto& material_mgr = context->GetGraphic()->GetMaterialManager();
-  const Material* material = material_mgr.GetOrCreateMaterial(render_settings_);
+
+  Graphics::ShaderID shader_id;
+  if (pass_tag_ == RenderPassTag::Ui) {
+    shader_id = Graphics::ShaderID::SpriteInstancedUI;
+  } else if (pass_tag_ == RenderPassTag::WorldTransparent) {
+    shader_id = Graphics::ShaderID::SpriteInstancedWorldTransparent;
+  } else {
+    shader_id = Graphics::ShaderID::SpriteInstancedWorld;
+  }
+
+  const Material* material = material_mgr.GetOrCreateMaterial(shader_id, render_settings_);
 
   if (!material) return;
 

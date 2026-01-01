@@ -17,6 +17,7 @@
 #include "Frame/per_frame_constant_buffer.h"
 #include "Frame/render_frame_context.h"
 #include "Pipeline/material_manager.h"
+#include "Pipeline/shader_manager.h"
 #include "Presentation/depth_buffer.h"
 #include "Presentation/swapchain_manager.h"
 #include "Render/material_renderer.h"
@@ -73,6 +74,10 @@ class Graphic {
     return material_manager_;
   }
 
+  ShaderManager& GetShaderManager() {
+    return *shader_manager_;
+  }
+
   FenceManager& GetFenceManager() {
     return fence_manager_;
   }
@@ -123,6 +128,7 @@ class Graphic {
   // texture
   TextureManager texture_manager_;
   Font::SpriteFontManager sprite_font_manager_;
+  std::unique_ptr<ShaderManager> shader_manager_;
   MaterialManager material_manager_;
 
   std::unique_ptr<UiRenderer> ui_renderer_;

@@ -2,11 +2,13 @@
 #include <DirectXMath.h>
 
 #include "Component/component.h"
+#include "Component/render_settings.h"
 #include "Graphic/Frame/frame_packet.h"
-#include "Graphic/Resource/mesh.h"
+#include "Graphic/Pipeline/shader_types.h"
 #include "Graphic/Resource/Texture/texture.h"
-#include "game_object.h"
+#include "Graphic/Resource/mesh.h"
 #include "game_context.h"
+#include "game_object.h"
 #include "transform_component.h"
 
 class MeshRenderer : public Component<MeshRenderer> {
@@ -21,12 +23,16 @@ class MeshRenderer : public Component<MeshRenderer> {
     texture_ = texture;
   }
 
-  void SetMaterial(const std::string& name) {
-    material_name_ = name;
-  }
-
   void SetColor(const DirectX::XMFLOAT4& color) {
     color_ = color;
+  }
+
+  void SetRenderSettings(const Rendering::RenderSettings& settings) {
+    render_settings_ = settings;
+  }
+
+  void SetShaderID(Graphics::ShaderID shader_id) {
+    shader_id_ = shader_id;
   }
 
   const Mesh* GetMesh() const {
@@ -47,17 +53,10 @@ class MeshRenderer : public Component<MeshRenderer> {
     cmd.color = color_;
     cmd.mesh = mesh_;
 
-    // Get material
-    cmd.material = material_mgr.GetMaterial(material_name_);
-    if (!cmd.material) {
-      cmd.material = material_mgr.GetDefaultOpaque();
-    }
-
-    // Setup material instance
+    cmd.material = material_mgr.GetOrCreateMaterial(shader_id_, render_settings_);
     cmd.material_instance.material = cmd.material;
-    if (texture_) {
-      cmd.material_instance.albedo_texture_index = texture_->GetBindlessIndex();
-    }
+    cmd.material_instance.albedo_texture_index = texture_ ? texture_->GetBindlessIndex() : 0;
+    cmd.material_instance.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
 
     // Calculate depth from camera for sorting
     // TODO: Use actual camera position from FramePacket
@@ -70,6 +69,7 @@ class MeshRenderer : public Component<MeshRenderer> {
  private:
   const Mesh* mesh_ = nullptr;
   Texture* texture_ = nullptr;
-  std::string material_name_ = "Default_Opaque";
+  Graphics::ShaderID shader_id_ = Graphics::ShaderID::Basic3D;
+  Rendering::RenderSettings render_settings_ = Rendering::RenderSettings::Opaque();
   DirectX::XMFLOAT4 color_ = {1.0f, 1.0f, 1.0f, 1.0f};
 };

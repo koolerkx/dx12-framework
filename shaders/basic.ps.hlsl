@@ -9,5 +9,5 @@ float4 main(BasicType input) : SV_TARGET {
     discard;
   }
 
-  return tex * g_ObjectColor;
+  return tex * input.color * g_ObjectColor;
 }

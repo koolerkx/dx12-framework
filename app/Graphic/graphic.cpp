@@ -89,7 +89,14 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
   if (!texture_manager_.Initialize(this, device_.Get(), &descriptor_heap_manager_)) {
     return false;
   }
-  if (!material_manager_.Initialize(device_.Get())) {
+
+  shader_manager_ = std::make_unique<ShaderManager>();
+  if (!shader_manager_->Initialize(device_.Get())) {
+    std::cerr << "Failed to initialize ShaderManager" << std::endl;
+    return false;
+  }
+
+  if (!material_manager_.Initialize(device_.Get(), shader_manager_.get())) {
     return false;
   }
 
