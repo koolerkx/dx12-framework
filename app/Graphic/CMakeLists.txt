@@ -81,7 +81,7 @@ target_include_directories(graphic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 set_msvc_runtime(graphic)
 
-target_add_hlsl_auto(graphic "6.5"
+target_add_hlsl_auto(graphic "6.6"
     "${CMAKE_SOURCE_DIR}/shaders/basic.vs.hlsl"
     "${CMAKE_SOURCE_DIR}/shaders/basic.ps.hlsl"
     "${CMAKE_SOURCE_DIR}/shaders/sprite.vs.hlsl"

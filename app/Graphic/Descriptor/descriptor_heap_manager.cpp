@@ -1,5 +1,7 @@
 #include "descriptor_heap_manager.h"
 
+#include <iostream>
+
 bool DescriptorHeapManager::Initialize(ID3D12Device* device, uint32_t frame_count, const DescriptorHeapConfig& config) {
   config_ = config;
 
@@ -34,6 +36,12 @@ bool DescriptorHeapManager::Initialize(ID3D12Device* device, uint32_t frame_coun
     srv_dynamic_[i]->InitializeSubAllocation(global_srv_heap_.Get(), offset, frame_dynamic_size, increment);
   }
 
+  // Create Sampler Heap
+  if (!InitializeSamplerHeap(device)) {
+    std::cerr << "DescriptorHeapManager: Failed to initialize sampler heap" << std::endl;
+    return false;
+  }
+
   return true;
 }
 
@@ -43,6 +51,103 @@ void DescriptorHeapManager::BeginFrame(uint32_t frame_index) {
 }
 
 void DescriptorHeapManager::SetDescriptorHeaps(ID3D12GraphicsCommandList* cmdList) {
-  ID3D12DescriptorHeap* heaps[] = {global_srv_heap_.Get()};
-  cmdList->SetDescriptorHeaps(1, heaps);
+  ID3D12DescriptorHeap* heaps[] = {global_srv_heap_.Get(), sampler_heap_.Get()};
+  cmdList->SetDescriptorHeaps(2, heaps);
+}
+
+bool DescriptorHeapManager::InitializeSamplerHeap(ID3D12Device* device) {
+  // Create shader-visible sampler heap
+  D3D12_DESCRIPTOR_HEAP_DESC desc = {};
+  desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
+  desc.NumDescriptors = config_.sampler_capacity;
+  desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+
+  if (FAILED(device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&sampler_heap_)))) {
+    return false;
+  }
+  sampler_heap_->SetName(L"Bindless_Sampler_Heap");
+
+  // Create 5 default samplers
+  CreateDefaultSamplers(device);
+
+  return true;
+}
+
+void DescriptorHeapManager::CreateDefaultSamplers(ID3D12Device* device) {
+  D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = sampler_heap_->GetCPUDescriptorHandleForHeapStart();
+  uint32_t increment = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+
+  // Index 0: PointWrap
+  {
+    D3D12_SAMPLER_DESC sampler_desc = {};
+    sampler_desc.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
+    sampler_desc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+    sampler_desc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+    sampler_desc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+    sampler_desc.MaxAnisotropy = 0;
+    sampler_desc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+    sampler_desc.MinLOD = 0.0f;
+    sampler_desc.MaxLOD = D3D12_FLOAT32_MAX;
+    device->CreateSampler(&sampler_desc, cpu_handle);
+  }
+  cpu_handle.ptr += increment;
+
+  // Index 1: LinearWrap
+  {
+    D3D12_SAMPLER_DESC sampler_desc = {};
+    sampler_desc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+    sampler_desc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+    sampler_desc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+    sampler_desc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+    sampler_desc.MaxAnisotropy = 0;
+    sampler_desc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+    sampler_desc.MinLOD = 0.0f;
+    sampler_desc.MaxLOD = D3D12_FLOAT32_MAX;
+    device->CreateSampler(&sampler_desc, cpu_handle);
+  }
+  cpu_handle.ptr += increment;
+
+  // Index 2: AnisotropicWrap
+  {
+    D3D12_SAMPLER_DESC sampler_desc = {};
+    sampler_desc.Filter = D3D12_FILTER_ANISOTROPIC;
+    sampler_desc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+    sampler_desc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+    sampler_desc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+    sampler_desc.MaxAnisotropy = 16;
+    sampler_desc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+    sampler_desc.MinLOD = 0.0f;
+    sampler_desc.MaxLOD = D3D12_FLOAT32_MAX;
+    device->CreateSampler(&sampler_desc, cpu_handle);
+  }
+  cpu_handle.ptr += increment;
+
+  // Index 3: PointClamp
+  {
+    D3D12_SAMPLER_DESC sampler_desc = {};
+    sampler_desc.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
+    sampler_desc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+    sampler_desc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+    sampler_desc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+    sampler_desc.MaxAnisotropy = 0;
+    sampler_desc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+    sampler_desc.MinLOD = 0.0f;
+    sampler_desc.MaxLOD = D3D12_FLOAT32_MAX;
+    device->CreateSampler(&sampler_desc, cpu_handle);
+  }
+  cpu_handle.ptr += increment;
+
+  // Index 4: LinearClamp
+  {
+    D3D12_SAMPLER_DESC sampler_desc = {};
+    sampler_desc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+    sampler_desc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+    sampler_desc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+    sampler_desc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+    sampler_desc.MaxAnisotropy = 0;
+    sampler_desc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+    sampler_desc.MinLOD = 0.0f;
+    sampler_desc.MaxLOD = D3D12_FLOAT32_MAX;
+    device->CreateSampler(&sampler_desc, cpu_handle);
+  }
 }

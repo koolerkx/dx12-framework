@@ -142,6 +142,7 @@ class Graphic {
 
   HWND hwnd_ = nullptr;
   bool enable_vsync_ = true;
+  bool use_bindless_sampler_ = false;
 
   bool is_initialized_ = false;
   std::atomic<bool> is_shutting_down_{false};

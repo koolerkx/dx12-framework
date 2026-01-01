@@ -1,12 +1,12 @@
 #pragma once
 #include "Component/component.h"
+#include "Component/render_settings.h"
 #include "Game/Asset/asset_manager.h"
 #include "Graphic/Frame/frame_packet.h"
 #include "Graphic/Resource/Texture/texture.h"
 #include "game_context.h"
 #include "game_object.h"
 #include "transform_component.h"
-
 
 class SpriteRenderer : public Component<SpriteRenderer> {
  public:
@@ -30,6 +30,26 @@ class SpriteRenderer : public Component<SpriteRenderer> {
     layer_id_ = id;
   }
 
+  // Render settings API
+  void SetBlendMode(Rendering::BlendMode mode) {
+    render_settings_.blend_mode = mode;
+  }
+  void SetSampler(Rendering::SamplerType type) {
+    render_settings_.sampler_type = type;
+  }
+  void SetDepthTest(bool enabled) {
+    render_settings_.depth_test = enabled;
+  }
+  void SetDepthWrite(bool enabled) {
+    render_settings_.depth_write = enabled;
+  }
+  void SetDoubleSided(bool enabled) {
+    render_settings_.double_sided = enabled;
+  }
+  const Rendering::RenderSettings& GetRenderSettings() const {
+    return render_settings_;
+  }
+
   void OnRender(FramePacket& packet) override {
     if (!texture_) return;
 
@@ -41,7 +61,7 @@ class SpriteRenderer : public Component<SpriteRenderer> {
         // Push to the UI Pass queue
         UiDrawCommand cmd;
         cmd.mesh = context->GetAssetManager().GetDefaultMesh(DefaultMesh::Quad);
-        cmd.material = material_mgr.GetDefaultUI();
+        cmd.material = material_mgr.GetOrCreateMaterial(render_settings_);
         cmd.color = color_;
         cmd.size = size_;
         cmd.layer_id = layer_id_;
@@ -64,6 +84,7 @@ class SpriteRenderer : public Component<SpriteRenderer> {
         // Setup material instance
         cmd.material_instance.material = cmd.material;
         cmd.material_instance.albedo_texture_index = texture_->GetBindlessIndex();
+        cmd.material_instance.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
 
         packet.ui_pass.push_back(cmd);
       } break;
@@ -81,4 +102,5 @@ class SpriteRenderer : public Component<SpriteRenderer> {
   int layer_id_ = 0;
 
   RenderPassTag pass_tag_ = RenderPassTag::Ui;
+  Rendering::RenderSettings render_settings_ = Rendering::RenderSettings::UI();
 };

@@ -23,22 +23,7 @@ void TextRenderer::OnRender(FramePacket& packet) {
 
   // Get material from Graphic
   auto& material_mgr = context->GetGraphic()->GetMaterialManager();
-  const Material* material = nullptr;
-
-  switch (pass_tag_) {
-    case RenderPassTag::Ui:
-      // Use instanced material for UI text
-      material = material_mgr.GetMaterial("Instanced_UI");
-      break;
-    case RenderPassTag::WorldOpaque:
-      material = material_mgr.GetMaterial("Instanced_World_Text");
-      break;
-    case RenderPassTag::WorldTransparent:
-      material = material_mgr.GetMaterial("Instanced_World_Text_Transparent");
-      break;
-    default:
-      return;
-  }
+  const Material* material = material_mgr.GetOrCreateMaterial(render_settings_);
 
   if (!material) return;
 
@@ -61,6 +46,7 @@ void TextRenderer::OnRender(FramePacket& packet) {
     // Setup material instance (shared across all glyphs)
     cmd.material_instance.material = cmd.material;
     cmd.material_instance.albedo_texture_index = texture->GetBindlessIndex();
+    cmd.material_instance.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
 
     // Reserve space for instances to optimize performance
     cmd.instances.reserve(text_mesh_handle_.GetGlyphCount());
@@ -119,6 +105,7 @@ void TextRenderer::OnRender(FramePacket& packet) {
       // Setup material instance (shared across all glyphs)
       cmd.material_instance.material = cmd.material;
       cmd.material_instance.albedo_texture_index = texture->GetBindlessIndex();
+      cmd.material_instance.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
 
       // Reserve space for instances to optimize performance
       cmd.instances.reserve(text_mesh_handle_.GetGlyphCount());
@@ -173,6 +160,7 @@ void TextRenderer::OnRender(FramePacket& packet) {
       // Setup material instance (shared across all glyphs)
       cmd.material_instance.material = cmd.material;
       cmd.material_instance.albedo_texture_index = texture->GetBindlessIndex();
+      cmd.material_instance.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
 
       // Reserve space for instances to optimize performance
       cmd.instances.reserve(text_mesh_handle_.GetGlyphCount());

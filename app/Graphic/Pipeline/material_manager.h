@@ -4,10 +4,12 @@
 #include <dxgiformat.h>
 
 #include <memory>
+#include <shared_mutex>
 #include <string>
 #include <unordered_map>
 
 #include "Core/types.h"
+#include "Game/Component/render_settings.h"
 #include "Pipeline/pipeline_state_builder.h"
 #include "material.h"
 #include "shader_config.h"
@@ -105,11 +107,30 @@ class MaterialManager {
     return GetMaterial("World_Text");
   }
 
+  // Dynamic Material System
+  // Get or create material based on render settings
+  Material* GetOrCreateMaterial(const Rendering::RenderSettings& settings);
+
+  // Frame lifecycle
+  void OnFrameEnd();
+
  private:
   ID3D12Device* device_ = nullptr;
   ComPtr<ID3D12RootSignature> shared_root_signature_;
   std::unordered_map<std::string, std::unique_ptr<Material>> materials_;
   std::unordered_map<std::wstring, ComPtr<ID3DBlob>> shader_cache_;
+
+  // LRU Cache for dynamic materials
+  // https://en.wikipedia.org/wiki/Page_replacement_algorithm#Least_recently_used
+  struct CacheEntry {
+    std::unique_ptr<Material> material;
+    uint64_t last_used_frame;
+  };
+
+  static constexpr size_t MAX_CACHE_SIZE = 64;
+  std::unordered_map<uint32_t, CacheEntry> pso_cache_;
+  std::shared_mutex cache_mutex_;
+  uint64_t current_frame_ = 0;
 
   // Helper to load and cache shader
   ID3DBlob* LoadShader(const std::wstring& path);
@@ -119,6 +140,11 @@ class MaterialManager {
 
   // Create default materials (Opaque, Transparent, UI)
   void CreateDefaultMaterials();
+
+  // Dynamic material creation
+  Material CreateMaterialInternal(const Rendering::RenderSettings& settings);
+  std::string GenerateMaterialName(const Rendering::RenderSettings& settings) const;
+  void EvictLRU();
 
   // Sort Key Generation
   // Generate a 64-bit sort key from RS and PSO pointers

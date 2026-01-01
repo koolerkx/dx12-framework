@@ -9,8 +9,7 @@ struct DescriptorHeapConfig {
   uint32_t dsv_capacity = 512;
   uint32_t srv_static_size = 100000;
   uint32_t srv_frame_dynamic_size = 10000;
-  // uint32_t srv_capacity = 4096;      // not in use
-  // uint32_t sampler_capacity = 2048;  // not in use
+  uint32_t sampler_capacity = 2048;
 };
 
 class DescriptorHeapManager {
@@ -45,8 +44,14 @@ class DescriptorHeapManager {
     return global_srv_heap_.Get();
   }
 
+  // Get sampler heap (bindless samplers)
+  ID3D12DescriptorHeap* GetSamplerHeap() const {
+    return sampler_heap_.Get();
+  }
+
  private:
   ComPtr<ID3D12DescriptorHeap> global_srv_heap_;
+  ComPtr<ID3D12DescriptorHeap> sampler_heap_;
 
   DescriptorHeapAllocator rtv_heap_;
   DescriptorHeapAllocator dsv_heap_;
@@ -56,4 +61,8 @@ class DescriptorHeapManager {
   std::vector<std::unique_ptr<DescriptorHeapAllocator>> srv_dynamic_;
 
   DescriptorHeapConfig config_;
+
+  // Sampler heap initialization
+  bool InitializeSamplerHeap(ID3D12Device* device);
+  void CreateDefaultSamplers(ID3D12Device* device);
 };

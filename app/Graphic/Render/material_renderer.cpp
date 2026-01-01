@@ -76,9 +76,14 @@ void MaterialRenderer::Record(const RenderFrameContext& frame,
     // === INSTANCED RENDERING PATH ===
     // Check if this command uses hardware instancing (for batched text/sprite rendering)
     if (!draw_cmd.instances.empty()) {
+      // Set minimal ObjectCB for sampler index (instanced rendering gets per-instance data from vertex buffer)
+      ObjectCB obj_data = {};
+      obj_data.samplerIndex = draw_cmd.material_instance.sampler_index;
+      cmd.SetObjectConstants(obj_data);
+
       // Draw all instances in a single draw call
       cmd.DrawMeshInstanced(draw_cmd.mesh, draw_cmd.instances);
-    } 
+    }
     // === LEGACY SINGLE-OBJECT RENDERING PATH ===
     else {
       // Set per-object constants (for backward compatibility with non-instanced rendering)
@@ -90,6 +95,7 @@ void MaterialRenderer::Record(const RenderFrameContext& frame,
       obj_data.color = draw_cmd.color;
       obj_data.uvOffset = draw_cmd.uv_offset;
       obj_data.uvScale = draw_cmd.uv_scale;
+      obj_data.samplerIndex = draw_cmd.material_instance.sampler_index;
       cmd.SetObjectConstants(obj_data);
 
       // Draw mesh (single instance)

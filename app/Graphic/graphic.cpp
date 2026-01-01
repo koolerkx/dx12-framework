@@ -283,6 +283,8 @@ void Graphic::EndFrame(const RenderFrameContext& frame) {
 
   texture_manager_.CleanUploadBuffers();
 
+  material_manager_.OnFrameEnd();
+
   UINT sync_interval = enable_vsync_ ? 1 : 0;
   swap_chain_manager_.Present(sync_interval, 0);
 }
@@ -353,6 +355,16 @@ bool Graphic::CreateDevice() {
   for (auto level : levels) {
     auto hr = D3D12CreateDevice(tmpAdapter.Get(), level, IID_PPV_ARGS(&device_));
     if (SUCCEEDED(hr) && device_ != nullptr) {
+      // Check bindless sampler support (Tier 3)
+      D3D12_FEATURE_DATA_D3D12_OPTIONS options = {};
+      if (SUCCEEDED(device_->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &options, sizeof(options)))) {
+        use_bindless_sampler_ = (options.ResourceBindingTier >= D3D12_RESOURCE_BINDING_TIER_3);
+      } else {
+        use_bindless_sampler_ = false;
+        std::cerr << "Not support bindless sampler support." << std::endl;
+        return false;
+      }
+
       return true;
     }
   }

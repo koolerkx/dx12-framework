@@ -72,6 +72,7 @@ struct MaterialInstance {
   uint32_t albedo_texture_index = 0;
   uint32_t normal_texture_index = 0;
   uint32_t metallic_roughness_index = 0;
+  uint32_t sampler_index = 0;  // Sampler index for bindless sampler array
 
   // Material flags
   bool use_alpha_test = false;

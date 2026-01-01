@@ -1,7 +1,9 @@
 #include "material_manager.h"
 
 #include <iostream>
+#include <sstream>
 
+#include "Game/Component/render_settings.h"
 #include "Pipeline/root_signature_builder.h"
 #include "Pipeline/sampler_builder.h"
 
@@ -310,4 +312,166 @@ ComPtr<ID3D12RootSignature> MaterialManager::CreateWaterRootSignature() {
     std::cerr << "[MaterialManager] Exception creating water root signature: " << e.what() << std::endl;
     return nullptr;
   }
+}
+
+// Dynamic Material System Implementation
+Material* MaterialManager::GetOrCreateMaterial(const Rendering::RenderSettings& settings) {
+  settings.Validate();
+  uint32_t key = settings.GetCacheKey();
+
+  // Read lock first (fast path)
+  {
+    std::shared_lock read_lock(cache_mutex_);
+    if (auto it = pso_cache_.find(key); it != pso_cache_.end()) {
+      it->second.last_used_frame = current_frame_;
+      return it->second.material.get();
+    }
+  }
+
+  // Write lock for creation (slow path)
+  std::unique_lock write_lock(cache_mutex_);
+
+  // Double-check after acquiring write lock
+  if (auto it = pso_cache_.find(key); it != pso_cache_.end()) {
+    it->second.last_used_frame = current_frame_;
+    return it->second.material.get();
+  }
+
+  // Create new material
+  CacheEntry entry;
+  entry.material = std::make_unique<Material>(CreateMaterialInternal(settings));
+  entry.last_used_frame = current_frame_;
+
+  Material* ptr = entry.material.get();
+  pso_cache_[key] = std::move(entry);
+
+  return ptr;
+}
+
+Material MaterialManager::CreateMaterialInternal(const Rendering::RenderSettings& settings) {
+  // Map Rendering::BlendMode to Graphics::BlendMode
+  BlendMode blend_mode = BlendMode::AlphaBlend;  // Default
+  switch (settings.blend_mode) {
+    case Rendering::BlendMode::Opaque:
+      blend_mode = BlendMode::Opaque;
+      break;
+    case Rendering::BlendMode::AlphaBlend:
+      blend_mode = BlendMode::AlphaBlend;
+      break;
+    case Rendering::BlendMode::Additive:
+      blend_mode = BlendMode::Additive;
+      break;
+    case Rendering::BlendMode::Premultiplied:
+      blend_mode = BlendMode::Premultiplied;
+      break;
+  }
+
+  // Select appropriate shader based on blend mode
+  ShaderConfig shader_config;
+  if (blend_mode == BlendMode::Opaque) {
+    shader_config = ShaderPresets::CreateSpriteInstancedWorld();
+  } else {
+    shader_config = ShaderPresets::CreateSpriteInstancedWorldTransparent();
+  }
+
+  // Load shaders
+  ID3DBlob* vs_blob = LoadShader(shader_config.vs_path);
+  ID3DBlob* ps_blob = LoadShader(shader_config.ps_path);
+
+  if (!vs_blob || !ps_blob) {
+    // Return default material if shader loading fails
+    return Material();
+  }
+
+  // Build render state
+  RenderStateConfig render_state;
+  render_state.blend_mode = blend_mode;
+  render_state.depth_test_enabled = settings.depth_test;
+  render_state.depth_write_enabled = settings.depth_write;
+  render_state.cull_mode = settings.double_sided ? D3D12_CULL_MODE_NONE : D3D12_CULL_MODE_BACK;
+
+  // Create PSO
+  auto pso = PipelineStateBuilder()
+               .SetRootSignature(shared_root_signature_.Get())
+               .SetVertexShader(vs_blob)
+               .SetPixelShader(ps_blob)
+               .SetInputLayout(shader_config.input_layout)
+               .SetBlendMode(render_state.blend_mode)
+               .SetCullMode(render_state.cull_mode)
+               .SetDepthTest(render_state.depth_test_enabled)
+               .SetDepthWrite(render_state.depth_write_enabled)
+               .SetRenderTargetFormat(render_state.rtv_format)
+               .SetDepthStencilFormat(render_state.dsv_format)
+               .SetPrimitiveTopology(render_state.primitive_topology)
+               .Build(device_);
+
+  if (!pso) {
+    return Material();
+  }
+
+  // Generate name for debugging
+  std::string name = GenerateMaterialName(settings);
+  std::wstring wide_name(name.begin(), name.end());
+  pso->SetName(wide_name.c_str());
+
+  // Generate sort key
+  uint64_t sort_key = GenerateSortKey(shared_root_signature_.Get(), pso.Get());
+
+  return Material(name, shared_root_signature_.Get(), pso.Get(), sort_key);
+}
+
+std::string MaterialManager::GenerateMaterialName(const Rendering::RenderSettings& settings) const {
+  std::ostringstream oss;
+  oss << "Dynamic_";
+
+  switch (settings.blend_mode) {
+    case Rendering::BlendMode::Opaque:
+      oss << "Opaque";
+      break;
+    case Rendering::BlendMode::AlphaBlend:
+      oss << "Alpha";
+      break;
+    case Rendering::BlendMode::Additive:
+      oss << "Add";
+      break;
+    case Rendering::BlendMode::Premultiplied:
+      oss << "Premult";
+      break;
+  }
+
+  if (settings.depth_test) {
+    oss << "_Depth";
+    if (settings.depth_write) {
+      oss << "W";
+    }
+  }
+
+  if (settings.double_sided) {
+    oss << "_2Side";
+  }
+
+  oss << "_S" << static_cast<int>(settings.sampler_type);
+
+  return oss.str();
+}
+
+// Update frame counter for LRU cache
+void MaterialManager::OnFrameEnd() {
+  current_frame_++;
+
+  std::unique_lock lock(cache_mutex_);
+  if (pso_cache_.size() > MAX_CACHE_SIZE) {
+    EvictLRU();
+  }
+}
+
+void MaterialManager::EvictLRU() {
+  if (pso_cache_.empty()) {
+    return;
+  }
+
+  auto oldest = std::min_element(
+    pso_cache_.begin(), pso_cache_.end(), [](const auto& a, const auto& b) { return a.second.last_used_frame < b.second.last_used_frame; });
+
+  pso_cache_.erase(oldest);
 }

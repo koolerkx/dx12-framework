@@ -13,8 +13,10 @@ cbuffer ObjectCB : register(b1) {
   float4x4 g_World;
   float4x4 g_WorldViewProj;
   float4 g_ObjectColor;
-  float2 g_UVOffset;  // UV offset for atlas/sprite sheet
-  float2 g_UVScale;   // UV scale (1,1 = full texture)
+  float2 g_UVOffset;      // UV offset for atlas/sprite sheet
+  float2 g_UVScale;       // UV scale (1,1 = full texture)
+  uint g_SamplerIndex;    // Sampler index for bindless sampler array
+  uint3 _padding1;        // Padding to maintain alignment
 };
 
 // Material data from root constants
@@ -28,7 +30,7 @@ ConstantBuffer<MaterialData> g_MaterialData : register(b3);
 
 // === Bindless Resources ===
 Texture2D g_Textures[] : register(t0, space1);
-SamplerState g_Sampler : register(s0);
+SamplerState g_Samplers[] : register(s0, space0);
 
 // === Vertex Shader ===
 struct PSIN {
@@ -37,6 +39,6 @@ struct PSIN {
 };
 
 float4 main(PSIN input) : SV_TARGET {
-  float4 texColor = g_Textures[g_MaterialData.albedoTextureIndex].Sample(g_Sampler, input.uv);
+  float4 texColor = g_Textures[g_MaterialData.albedoTextureIndex].Sample(g_Samplers[g_SamplerIndex], input.uv);
   return texColor * g_ObjectColor;
 }

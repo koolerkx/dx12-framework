@@ -4,6 +4,7 @@
 #include <string>
 
 #include "Component/component.h"
+#include "Component/render_settings.h"
 #include "Framework/Font/text_layout.h"
 #include "Game/Asset/asset_manager.h"
 #include "Graphic/Frame/frame_packet.h"
@@ -17,7 +18,7 @@ class TextRenderer : public Component<TextRenderer> {
   TextRenderer(GameObject* owner) : Component(owner) {
   }
 
-  // ===== Text Content =====
+  // Text Content
   void SetText(const std::wstring& text) {
     if (text_ != text) {
       text_ = text;
@@ -29,7 +30,7 @@ class TextRenderer : public Component<TextRenderer> {
     return text_;
   }
 
-  // ===== Font Properties =====
+  // Font Properties
   void SetFont(Font::FontFamily family) {
     if (font_family_ != family) {
       font_family_ = family;
@@ -48,7 +49,7 @@ class TextRenderer : public Component<TextRenderer> {
     color_ = color;
   }
 
-  // ===== Layout Properties =====
+  // Layout Properties
   // Text Layout
   void SetHorizontalAlign(Text::HorizontalAlign align) {
     if (h_align_ != align) {
@@ -86,21 +87,63 @@ class TextRenderer : public Component<TextRenderer> {
     }
   }
 
-  // ===== Render Properties =====
+  // Render Properties
+  // This will override render settings
   void SetRenderPassTag(RenderPassTag tag) {
     pass_tag_ = tag;
+
+    switch (tag) {
+      case RenderPassTag::Ui:
+        render_settings_ = Rendering::RenderSettings::UI();
+        break;
+      case RenderPassTag::WorldOpaque:
+        render_settings_ = Rendering::RenderSettings::Opaque();
+        break;
+      case RenderPassTag::WorldTransparent:
+        render_settings_ = Rendering::RenderSettings::Transparent();
+        break;
+      default:
+        break;
+    }
+
+    SetDoubleSided(true);
+    SetSampler(Rendering::SamplerType::AnisotropicWrap);
+    SetSampler(Rendering::SamplerType::LinearWrap);
+    SetSampler(Rendering::SamplerType::LinearClamp);
+    SetSampler(Rendering::SamplerType::PointWrap);
+    SetSampler(Rendering::SamplerType::PointClamp);
   }
 
   void SetLayerId(int id) {
     layer_id_ = id;
   }
 
-  // ===== Query =====
+  // Render Settings API
+  void SetBlendMode(Rendering::BlendMode mode) {
+    render_settings_.blend_mode = mode;
+  }
+  void SetSampler(Rendering::SamplerType type) {
+    render_settings_.sampler_type = type;
+  }
+  void SetDepthTest(bool enabled) {
+    render_settings_.depth_test = enabled;
+  }
+  void SetDepthWrite(bool enabled) {
+    render_settings_.depth_write = enabled;
+  }
+  void SetDoubleSided(bool enabled) {
+    render_settings_.double_sided = enabled;
+  }
+  const Rendering::RenderSettings& GetRenderSettings() const {
+    return render_settings_;
+  }
+
+  // Query
   DirectX::XMFLOAT2 GetSize() const {
     return DirectX::XMFLOAT2(text_mesh_handle_.GetWidth(), text_mesh_handle_.GetHeight());
   }
 
-  // ===== Rendering =====
+  // Rendering
   void OnRender(FramePacket& packet) override;
 
  private:
@@ -123,6 +166,7 @@ class TextRenderer : public Component<TextRenderer> {
   // Render properties
   RenderPassTag pass_tag_ = RenderPassTag::Ui;
   int layer_id_ = 0;
+  Rendering::RenderSettings render_settings_ = Rendering::RenderSettings::UI();
 
   // Cached text mesh (managed by AssetManager)
   bool dirty_ = true;
