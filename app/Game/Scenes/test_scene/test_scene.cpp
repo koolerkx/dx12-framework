@@ -23,13 +23,14 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   texture_background_ = asset_manager.LoadTexture("Content/textures/result_bg_1.png");
   texture_character_ = asset_manager.LoadTexture("Content/textures/ship_J.png");
   texture_ao_ = asset_manager.LoadTexture("Content/textures/metal_plate_ao_1k.png");
+  texture_additive_ = asset_manager.LoadTexture("Content/textures/sun_additive.png");
 
   SetupCamera();
 
   // Create terrain plane
   terrain_plane_ = CreateGameObject("TerrainPlane");
   auto* plane_transform = terrain_plane_->GetComponent<TransformComponent>();
-  plane_transform->SetPosition({0.0f, -10.0f, 0.0f});
+  plane_transform->SetPosition({0.0f, -5.0f, 0.0f});
   plane_transform->SetScale({20.0f, 1.0f, 20.0f});  // 20x20 size
 
   auto* plane_renderer = terrain_plane_->AddComponent<MeshRenderer>();
@@ -82,6 +83,16 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   char_sprite2->SetSize({150, 150});
   character_object2_->AddComponent<CharacterMover>();
 
+  additive_ = CreateGameObject("Additive");
+  additive_->GetComponent<TransformComponent>()->SetPosition({0, -3, -1.0f});
+  auto* additive_sprite = additive_->AddComponent<SpriteRenderer>();
+  additive_sprite->SetTexture(texture_additive_.Get());
+  additive_sprite->SetSize({1.0f, 1.0f});
+  additive_sprite->SetRenderPassTag(RenderPassTag::WorldTransparent);
+  additive_sprite->SetBillboardMode(Billboard::Mode::Spherical);
+  additive_sprite->SetBlendMode(Rendering::BlendMode::Additive);
+  additive_sprite->SetColor({0.0f, 1.0f, 0.0f, 0.5f});
+
   // Animated Background Sprite Example
   // Using texture_background_ (576x324) as a sprite sheet with mock animation frames
   // Assume 9 frames arranged in a 3x3 grid (each frame ~192x108 with padding)
@@ -109,7 +120,7 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   bg_sheet_config.margin = {0, 0};
 
   bg_anim->SetSpriteSheetConfig(bg_sheet_config);
-  bg_anim->SetFrameCount(64);           // 3x3 = 9 frames
+  bg_anim->SetFrameCount(64);          // 3x3 = 9 frames
   bg_anim->SetFramesPerSecond(30.0f);  // 10 FPS animation
   bg_anim->SetLoopEnabled(true);
   bg_anim->SetPlayOnStart(true);
@@ -143,7 +154,7 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   text_obj2_ = CreateGameObject("Basic Text 2");
   // text_obj2_->SetParent(cube_object_);
   // Position in screen space
-  text_obj2_->GetTransform()->SetPosition(DirectX::XMFLOAT3(-2.0f, -3.0f, 3.0f));
+  text_obj2_->GetTransform()->SetPosition(DirectX::XMFLOAT3(0.0f, -3.0f, 1.0f));
 
   // Add TextRenderer Component
   auto* text2 = text_obj2_->AddComponent<TextRenderer>();
@@ -155,6 +166,7 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   text2->SetColor({1.0f, 1.0f, 1.0f, 1.0f});
   text2->SetRenderPassTag(RenderPassTag::WorldTransparent);  // Use transparent for alpha blending
   text2->SetBillboardMode(Billboard::Mode::None);
+  // text2->SetBlendMode(Rendering::BlendMode::AlphaBlend);
 
   text2->SetHorizontalAlign(Text::HorizontalAlign::Center);
   text2->SetVerticalAlign(Text::VerticalAlign::Center);
@@ -162,7 +174,6 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   // text2->SetDepthTest(true);
   // text2->SetDepthWrite(true);
   text2->SetDoubleSided(true);
-
 }
 
 void TestScene::OnPostUpdate(float dt) {

@@ -41,6 +41,15 @@ PipelineStateBuilder& PipelineStateBuilder::SetBlendMode(BlendMode mode) {
       blendDesc.SrcBlendAlpha = D3D12_BLEND_ONE;
       blendDesc.DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA;
       break;
+    case BlendMode::Additive:
+      // RGB = src.rgb * src.a + dst.rgb * 1
+      // A = src.a + dst.a * (1 - src.a)
+      blendDesc.BlendEnable = TRUE;
+      blendDesc.SrcBlend = D3D12_BLEND_SRC_ALPHA;
+      blendDesc.DestBlend = D3D12_BLEND_ONE;
+      blendDesc.SrcBlendAlpha = D3D12_BLEND_ONE;
+      blendDesc.DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA;
+      break;
     case BlendMode::NonPremultiplied:
       blendDesc.BlendEnable = TRUE;
       blendDesc.SrcBlend = D3D12_BLEND_SRC_ALPHA;
