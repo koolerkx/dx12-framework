@@ -1,5 +1,7 @@
 #include "text_renderer.h"
 
+#include <DirectXMath.h>
+
 #include "Component/billboard_helper.h"
 #include "Component/pivot_type.h"
 #include "Game/Asset/asset_manager.h"
@@ -120,7 +122,14 @@ void TextRenderer::OnRender(FramePacket& packet) {
     InstanceDrawCommand cmd;
     cmd.mesh = quad_mesh;
     cmd.material = material;
-    cmd.depth = 0.0f;
+
+    // Calculate depth from camera for sorting (distance squared)
+    DirectX::XMFLOAT3 worldPos = transform->GetWorldPosition();
+    DirectX::XMFLOAT3 camPos = packet.main_camera.position;
+    DirectX::XMVECTOR worldVec = XMLoadFloat3(&worldPos);
+    DirectX::XMVECTOR camVec = XMLoadFloat3(&camPos);
+    cmd.depth = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(DirectX::XMVectorSubtract(worldVec, camVec)));
+    std::cout << "Text Depth: " << cmd.depth << std::endl;
 
     // Setup material instance (shared across all glyphs)
     cmd.material_instance.material = cmd.material;

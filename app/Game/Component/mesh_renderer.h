@@ -58,10 +58,11 @@ class MeshRenderer : public Component<MeshRenderer> {
     cmd.material_instance.albedo_texture_index = texture_ ? texture_->GetBindlessIndex() : 0;
     cmd.material_instance.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
 
-    // Calculate depth from camera for sorting
-    // TODO: Use actual camera position from FramePacket
-    DirectX::XMFLOAT3 position = transform->GetPosition();
-    cmd.depth = position.z;  // Simple depth calculation
+    DirectX::XMFLOAT3 worldPos = transform->GetWorldPosition();
+    DirectX::XMFLOAT3 camPos = packet.main_camera.position;
+    DirectX::XMVECTOR worldVec = XMLoadFloat3(&worldPos);
+    DirectX::XMVECTOR camVec = XMLoadFloat3(&camPos);
+    cmd.depth = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(DirectX::XMVectorSubtract(worldVec, camVec)));
 
     packet.opaque_pass.emplace_back(cmd);
   }

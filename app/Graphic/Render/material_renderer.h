@@ -14,8 +14,9 @@ class RenderCommandList;
 
 // Helper for extracting sort key from DrawCommandVariant
 struct DrawCommandVariantSorter {
-  static uint64_t GetSortKey(const DrawCommandVariant& variant, bool front_to_back) {
-    return std::visit([&](auto&& cmd) -> uint64_t { return cmd.GetSortKeyWithDepth(cmd.material, cmd.depth, front_to_back); }, variant);
+  static uint64_t GetSortKey(const DrawCommandVariant& variant, bool front_to_back, bool depth_first = false) {
+    return std::visit(
+      [&](auto&& cmd) -> uint64_t { return cmd.GetSortKeyWithDepth(cmd.material, cmd.depth, front_to_back, depth_first); }, variant);
   }
 };
 
@@ -38,10 +39,10 @@ class MaterialRenderer {
  protected:
   // Sort commands to minimize RS/PSO switches
   // Strategy: Sort by [RS hash | PSO hash | depth]
-  void SortCommands(std::vector<DrawCommandVariant>& commands, bool front_to_back = true) {
+  void SortCommands(std::vector<DrawCommandVariant>& commands, bool front_to_back = true, bool depth_first = false) {
     std::sort(commands.begin(), commands.end(), [&](const DrawCommandVariant& a, const DrawCommandVariant& b) -> bool {
-      uint64_t a_key = DrawCommandVariantSorter::GetSortKey(a, front_to_back);
-      uint64_t b_key = DrawCommandVariantSorter::GetSortKey(b, front_to_back);
+      uint64_t a_key = DrawCommandVariantSorter::GetSortKey(a, front_to_back, depth_first);
+      uint64_t b_key = DrawCommandVariantSorter::GetSortKey(b, front_to_back, depth_first);
       return a_key < b_key;
     });
   }
@@ -77,7 +78,7 @@ class TransparentRenderer : public MaterialRenderer {
     out_commands = packet.transparent_pass;
 
     // Sort back-to-front for correct alpha blending
-    SortCommands(out_commands, false);
+    SortCommands(out_commands, false, true);
   }
 };
 

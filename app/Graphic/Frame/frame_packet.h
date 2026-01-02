@@ -27,12 +27,12 @@ struct SpriteInstanceData {
 
 // Common sort key for both single and instance draw commands
 struct DrawSortKey {
-  [[nodiscard]] uint64_t GetSortKeyWithDepth(const Material* material, float depth, bool front_to_back) const {
+  // Key: [RS hash 16-bit | PSO hash 16-bit | Depth 32-bit]
+  [[nodiscard]] uint64_t GetSortKeyForOpaque(const Material* material, float depth, bool front_to_back) const {
     if (!material) {
       return UINT64_MAX;
     }
 
-    // [RS hash 16-bit | PSO hash 16-bit | Depth 32-bit]
     uint32_t rs_key = material->GetRootSignatureKey() & 0xFFFF;
     uint32_t pso_key = material->GetPSOKey() & 0xFFFF;
     uint64_t compressed_material = (static_cast<uint64_t>(rs_key) << 48) | (static_cast<uint64_t>(pso_key) << 32);
@@ -43,6 +43,28 @@ struct DrawSortKey {
     }
 
     return compressed_material | depth_key;
+  }
+
+  // Key: [Depth 32-bit | RS hash 16-bit | PSO hash 16-bit]
+  [[nodiscard]] uint64_t GetSortKeyForTransparent(const Material* material, float depth, bool front_to_back) const {
+    if (!material) {
+      return UINT64_MAX;
+    }
+
+    uint32_t depth_key = std::bit_cast<uint32_t>(depth);
+    if (!front_to_back) {
+      depth_key = ~depth_key;
+    }
+
+    uint32_t rs_key = material->GetRootSignatureKey() & 0xFFFF;
+    uint32_t pso_key = material->GetPSOKey() & 0xFFFF;
+    uint64_t material_key = (static_cast<uint64_t>(rs_key) << 16) | static_cast<uint64_t>(pso_key);
+
+    return (static_cast<uint64_t>(depth_key) << 32) | material_key;
+  }
+
+  [[nodiscard]] uint64_t GetSortKeyWithDepth(const Material* material, float depth, bool front_to_back, bool depth_first) const {
+    return depth_first ? GetSortKeyForTransparent(material, depth, front_to_back) : GetSortKeyForOpaque(material, depth, front_to_back);
   }
 };
 
