@@ -16,6 +16,12 @@
 
 class Graphic;
 
+// Texture usage type for proper color space handling
+enum class TextureUsage {
+  Color,  // Albedo, diffuse, UI - use sRGB
+  Data    // Normal, roughness, metallic - use linear
+};
+
 class TextureManager {
  public:
   bool Initialize(Graphic* graphic, ID3D12Device* device, DescriptorHeapManager* heap_manager) {
@@ -30,6 +36,23 @@ class TextureManager {
   std::shared_ptr<Texture> LoadTexture(const std::string& path) {
     return LoadTexture(utils::utf8_to_wstring(path));
   }
+
+  // NEW: Explicit sRGB and linear loading methods
+  std::shared_ptr<Texture> LoadTextureSRGB(const std::wstring& path);
+  std::shared_ptr<Texture> LoadTextureSRGB(const std::string& path) {
+    return LoadTextureSRGB(utils::utf8_to_wstring(path));
+  }
+  std::shared_ptr<Texture> LoadTextureLinear(const std::wstring& path);
+  std::shared_ptr<Texture> LoadTextureLinear(const std::string& path) {
+    return LoadTextureLinear(utils::utf8_to_wstring(path));
+  }
+
+  // NEW: With explicit usage tracking (for debugging)
+  std::shared_ptr<Texture> LoadTexture(const std::wstring& path, TextureUsage usage);
+  std::shared_ptr<Texture> LoadTexture(const std::string& path, TextureUsage usage) {
+    return LoadTexture(utils::utf8_to_wstring(path), usage);
+  }
+
   std::vector<std::shared_ptr<Texture>> LoadTextures(const std::vector<std::wstring>& paths);
   std::vector<std::shared_ptr<Texture>> LoadTextures(const std::vector<std::string>& paths) {
     return LoadTextures(paths | std::views::transform(utils::utf8_to_wstring) | std::ranges::to<std::vector>());
@@ -67,9 +90,14 @@ class TextureManager {
     std::vector<D3D12_SUBRESOURCE_DATA> subresources;
   };
 
-  bool LoadAndGenerateMipmaps(const std::wstring& path, DirectX::ScratchImage& mipChain);
+  // NEW: Added force_srgb parameter
+  bool LoadAndGenerateMipmaps(const std::wstring& path, DirectX::ScratchImage& mipChain, bool force_srgb);
 
-  bool CreateTextureResource(const DirectX::TexMetadata& metadata, ComPtr<ID3D12Resource>& texture);
+  // NEW: Added use_srgb parameter
+  bool CreateTextureResource(const DirectX::TexMetadata& metadata, ComPtr<ID3D12Resource>& texture, bool use_srgb);
+
+  // Helper: Check if format can be converted to sRGB
+  static bool CanConvertToSRGB(DXGI_FORMAT format);
 
   bool PrepareUpload(const DirectX::ScratchImage& mipChain, ComPtr<ID3D12Resource> texture, UploadInfo& uploadInfo);
 

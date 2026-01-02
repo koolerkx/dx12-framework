@@ -32,6 +32,7 @@ Rendering::RenderSettings MaterialManager::GetDefaultSettings(Graphics::ShaderID
       settings.depth_write = false;
       settings.double_sided = true;
       settings.sampler_type = Rendering::SamplerType::LinearWrap;
+      settings.render_target_format = Rendering::RenderTargetFormat::HDR;  // Scene pass
       break;
 
     // Sprite shaders: use appropriate defaults based on usage
@@ -41,6 +42,7 @@ Rendering::RenderSettings MaterialManager::GetDefaultSettings(Graphics::ShaderID
       settings.depth_write = false;
       settings.double_sided = false;
       settings.sampler_type = Rendering::SamplerType::LinearWrap;
+      settings.render_target_format = Rendering::RenderTargetFormat::HDR;  // Scene pass (world sprite)
       break;
 
     case Graphics::ShaderID::SpriteInstancedUI:
@@ -144,7 +146,17 @@ Material MaterialManager::CreateMaterialInternal(Graphics::ShaderID shader_id, c
   }
 
   // Render state formats
-  constexpr DXGI_FORMAT rtv_format = DXGI_FORMAT_R8G8B8A8_UNORM;
+  // Determine RTV format based on RenderSettings
+  DXGI_FORMAT rtv_format;
+  switch (settings.render_target_format) {
+    case Rendering::RenderTargetFormat::HDR:
+      rtv_format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+      break;
+    case Rendering::RenderTargetFormat::SDR:
+    default:
+      rtv_format = DXGI_FORMAT_R8G8B8A8_UNORM;
+      break;
+  }
   constexpr DXGI_FORMAT dsv_format = DXGI_FORMAT_D32_FLOAT;
   D3D12_CULL_MODE cull_mode = settings.double_sided ? D3D12_CULL_MODE_NONE : D3D12_CULL_MODE_BACK;
   D3D12_PRIMITIVE_TOPOLOGY_TYPE primitive_topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;

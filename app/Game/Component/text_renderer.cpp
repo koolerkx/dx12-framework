@@ -129,7 +129,6 @@ void TextRenderer::OnRender(FramePacket& packet) {
     DirectX::XMVECTOR worldVec = XMLoadFloat3(&worldPos);
     DirectX::XMVECTOR camVec = XMLoadFloat3(&camPos);
     cmd.depth = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(DirectX::XMVectorSubtract(worldVec, camVec)));
-    std::cout << "Text Depth: " << cmd.depth << std::endl;
 
     // Setup material instance (shared across all glyphs)
     cmd.material_instance.material = cmd.material;

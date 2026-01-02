@@ -7,7 +7,12 @@
 #include "d3dx12.h"
 #include "graphic.h"
 
-bool TextureManager::LoadAndGenerateMipmaps(const std::wstring& path, DirectX::ScratchImage& mipChain) {
+bool TextureManager::CanConvertToSRGB(DXGI_FORMAT format) {
+  return format == DXGI_FORMAT_R8G8B8A8_UNORM || format == DXGI_FORMAT_B8G8R8A8_UNORM || format == DXGI_FORMAT_R8G8B8A8_TYPELESS ||
+         format == DXGI_FORMAT_B8G8R8A8_TYPELESS;
+}
+
+bool TextureManager::LoadAndGenerateMipmaps(const std::wstring& path, DirectX::ScratchImage& mipChain, bool force_srgb) {
   using namespace DirectX;
 
   std::wstring ext = path.substr(path.find_last_of(L'.') + 1);
@@ -17,45 +22,65 @@ bool TextureManager::LoadAndGenerateMipmaps(const std::wstring& path, DirectX::S
   ScratchImage image;
   HRESULT hr = E_FAIL;
 
-  // load texture
+  // load texture based on extension
   if (ext == L"dds") {
     hr = LoadFromDDSFile(path.c_str(), DDS_FLAGS_NONE, &metadata, image);
+    if (FAILED(hr)) {
+      std::wcerr << L"[Texture] Failed to load DDS: " << path << std::endl;
+      return false;
+    }
+    // For DDS, convert to sRGB if requested and format is compatible
+    if (force_srgb && CanConvertToSRGB(metadata.format)) {
+      hr = Convert(image.GetImages(), image.GetImageCount(), metadata, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, TEX_FILTER_DEFAULT, 0.5f, mipChain);
+      if (FAILED(hr)) {
+        std::wcerr << L"[Texture] Failed to convert DDS to sRGB: " << path << std::endl;
+        return false;
+      }
+    } else if (metadata.mipLevels > 1) {
+      mipChain = std::move(image);
+    } else {
+      hr = GenerateMipMaps(image.GetImages(), image.GetImageCount(), metadata, TEX_FILTER_DEFAULT, 0, mipChain);
+    }
   } else if (ext == L"tga") {
     hr = LoadFromTGAFile(path.c_str(), &metadata, image);
+    if (FAILED(hr)) {
+      std::wcerr << L"[Texture] Failed to load TGA: " << path << std::endl;
+      return false;
+    }
+    // Convert to sRGB if requested and format is compatible
+    if (force_srgb && CanConvertToSRGB(metadata.format)) {
+      hr = Convert(image.GetImages(), image.GetImageCount(), metadata, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, TEX_FILTER_DEFAULT, 0.5f, mipChain);
+    } else {
+      hr = GenerateMipMaps(image.GetImages(), image.GetImageCount(), metadata, TEX_FILTER_DEFAULT, 0, mipChain);
+    }
   } else if (ext == L"hdr") {
+    // HDR is always linear (floating point), ignore force_srgb
     hr = LoadFromHDRFile(path.c_str(), &metadata, image);
+    if (FAILED(hr)) {
+      std::wcerr << L"[Texture] Failed to load HDR: " << path << std::endl;
+      return false;
+    }
+    hr = GenerateMipMaps(image.GetImages(), image.GetImageCount(), metadata, TEX_FILTER_DEFAULT, 0, mipChain);
   } else {
-    hr = LoadFromWICFile(path.c_str(), WIC_FLAGS_NONE, &metadata, image);
+    // WIC formats: PNG, JPG, JPEG, BMP, etc.
+    DirectX::WIC_FLAGS loadFlags = force_srgb ? DirectX::WIC_FLAGS_FORCE_SRGB : DirectX::WIC_FLAGS_NONE;
+    hr = LoadFromWICFile(path.c_str(), loadFlags, &metadata, image);
+    if (FAILED(hr)) {
+      std::wcerr << L"[Texture] Failed to load WIC texture: " << path << std::endl;
+      return false;
+    }
+    hr = GenerateMipMaps(image.GetImages(), image.GetImageCount(), metadata, TEX_FILTER_DEFAULT, 0, mipChain);
   }
 
   if (FAILED(hr)) {
-    std::wcerr << L"Failed to load texture: " << path << std::endl;
-    return false;
-  }
-
-  // if mipmap are already available
-  if (metadata.mipLevels > 1) {
-    mipChain = std::move(image);
-    return true;
-  }
-
-  // generate mipmap
-  hr = GenerateMipMaps(image.GetImages(),
-    image.GetImageCount(),
-    image.GetMetadata(),
-    TEX_FILTER_DEFAULT,  // TEX_FILTER_DEFAULT, TEX_FILTER_POINT, TEX_FILTER_LINEAR, TEX_FILTER_CUBIC
-    0,                   // 0 = generate complete mipmap chain
-    mipChain);
-
-  if (FAILED(hr)) {
-    std::cerr << "Failed to generate mipmaps for: " << utils::wstring_to_utf8(path) << std::endl;
+    std::wcerr << L"[Texture] Failed to generate mipmaps for: " << path << std::endl;
     return false;
   }
 
   return true;
 }
 
-bool TextureManager::CreateTextureResource(const DirectX::TexMetadata& metadata, ComPtr<ID3D12Resource>& texture) {
+bool TextureManager::CreateTextureResource(const DirectX::TexMetadata& metadata, ComPtr<ID3D12Resource>& texture, bool use_srgb) {
   // texture desc
   D3D12_RESOURCE_DESC texDesc = {};
   texDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
@@ -64,6 +89,17 @@ bool TextureManager::CreateTextureResource(const DirectX::TexMetadata& metadata,
   texDesc.DepthOrArraySize = static_cast<UINT16>(metadata.arraySize);
   texDesc.MipLevels = static_cast<UINT16>(metadata.mipLevels);
   texDesc.Format = metadata.format;
+
+  // Convert to sRGB format if requested and format is compatible
+  if (use_srgb) {
+    if (metadata.format == DXGI_FORMAT_R8G8B8A8_UNORM) {
+      texDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+    } else if (metadata.format == DXGI_FORMAT_B8G8R8A8_UNORM) {
+      texDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
+    }
+    // Note: DDS/TGA already converted in LoadAndGenerateMipmaps if needed
+  }
+
   texDesc.SampleDesc.Count = 1;
   texDesc.SampleDesc.Quality = 0;
   texDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
@@ -134,18 +170,27 @@ uint32_t TextureManager::CreateSrv(ComPtr<ID3D12Resource> texture_buffer) {
 }
 
 std::shared_ptr<Texture> TextureManager::LoadTexture(const std::wstring& path) {
+  // Default to sRGB for color textures (backward compatible)
+  return LoadTextureSRGB(path);
+}
+
+// NEW: With explicit usage tracking
+std::shared_ptr<Texture> TextureManager::LoadTexture(const std::wstring& path, TextureUsage usage) {
+  return (usage == TextureUsage::Color) ? LoadTextureSRGB(path) : LoadTextureLinear(path);
+}
+
+// NEW: Load texture with sRGB color space
+std::shared_ptr<Texture> TextureManager::LoadTextureSRGB(const std::wstring& path) {
   // check cache
   if (texture_cache_.count(path)) return texture_cache_[path];
 
-  ComPtr<ID3D12Resource> texture_buffer_;
-
   DirectX::ScratchImage mipChain;
-  if (!LoadAndGenerateMipmaps(path, mipChain)) {
+  if (!LoadAndGenerateMipmaps(path, mipChain, true)) {
     return nullptr;
   }
 
   ComPtr<ID3D12Resource> texture_buffer;
-  if (!CreateTextureResource(mipChain.GetMetadata(), texture_buffer)) {
+  if (!CreateTextureResource(mipChain.GetMetadata(), texture_buffer, true)) {
     return nullptr;
   }
 
@@ -175,12 +220,66 @@ std::shared_ptr<Texture> TextureManager::LoadTexture(const std::wstring& path) {
 
   auto texture = std::make_shared<Texture>();
   texture->resource = texture_buffer;
-  texture->srv_index = CreateSrv(texture_buffer);  // important: this is the bindless index
+  texture->srv_index = CreateSrv(texture_buffer);
   texture->source_path = path;
   texture_cache_[path] = texture;
 
   D3D12_RESOURCE_DESC texDesc = texture_buffer->GetDesc();
-  std::cout << "[Texture] Loaded \"" << utils::wstring_to_utf8(path) << "\" | " << texDesc.Width << "x" << texDesc.Height << " | "
+  std::cout << "[Texture] Loaded SRGB \"" << utils::wstring_to_utf8(path) << "\" | " << texDesc.Width << "x" << texDesc.Height << " | "
+            << texDesc.MipLevels << " mips | " << "Format: " << utils::GetDxgiFormatName(texDesc.Format) << " | "
+            << "SRV Index: " << texture->srv_index << std::endl;
+
+  return texture;
+}
+
+// NEW: Load texture with linear color space
+std::shared_ptr<Texture> TextureManager::LoadTextureLinear(const std::wstring& path) {
+  // Separate cache key for linear version
+  std::wstring linear_key = path + L"_linear";
+  if (texture_cache_.count(linear_key)) return texture_cache_[linear_key];
+
+  DirectX::ScratchImage mipChain;
+  if (!LoadAndGenerateMipmaps(path, mipChain, false)) {
+    return nullptr;
+  }
+
+  ComPtr<ID3D12Resource> texture_buffer;
+  if (!CreateTextureResource(mipChain.GetMetadata(), texture_buffer, false)) {
+    return nullptr;
+  }
+
+  UploadInfo uploadInfo;
+  if (!PrepareUpload(mipChain, texture_buffer, uploadInfo)) {
+    return nullptr;
+  }
+
+  graphic_->ExecuteSync([&](ID3D12GraphicsCommandList* command_list) {
+    UpdateSubresources(command_list,
+      texture_buffer.Get(),
+      uploadInfo.upload_buffer.Get(),
+      0,
+      0,
+      static_cast<UINT>(uploadInfo.subresources.size()),
+      uploadInfo.subresources.data());
+
+    auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+      texture_buffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+    command_list->ResourceBarrier(1, &barrier);
+  });
+
+  {
+    std::lock_guard<std::mutex> lock(upload_mutex_);
+    upload_buffers_.push_back(uploadInfo.upload_buffer);
+  }
+
+  auto texture = std::make_shared<Texture>();
+  texture->resource = texture_buffer;
+  texture->srv_index = CreateSrv(texture_buffer);
+  texture->source_path = path;  // Store original path for reference
+  texture_cache_[linear_key] = texture;
+
+  D3D12_RESOURCE_DESC texDesc = texture_buffer->GetDesc();
+  std::cout << "[Texture] Loaded Linear \"" << utils::wstring_to_utf8(path) << "\" | " << texDesc.Width << "x" << texDesc.Height << " | "
             << texDesc.MipLevels << " mips | " << "Format: " << utils::GetDxgiFormatName(texDesc.Format) << " | "
             << "SRV Index: " << texture->srv_index << std::endl;
 
@@ -213,8 +312,9 @@ std::vector<std::shared_ptr<Texture>> TextureManager::LoadTextures(const std::ve
     LoadTask task;
     task.path = path;
 
-    if (!LoadAndGenerateMipmaps(path, task.mipChain)) continue;
-    if (!CreateTextureResource(task.mipChain.GetMetadata(), task.texture_buffer)) continue;
+    // Use sRGB by default to match LoadTexture() behavior
+    if (!LoadAndGenerateMipmaps(path, task.mipChain, true)) continue;
+    if (!CreateTextureResource(task.mipChain.GetMetadata(), task.texture_buffer, true)) continue;
     if (!PrepareUpload(task.mipChain, task.texture_buffer, task.uploadInfo)) continue;
 
     tasks.push_back(std::move(task));

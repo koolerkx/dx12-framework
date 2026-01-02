@@ -49,6 +49,10 @@ extern const size_t BASIC3D_COUNT;
 // Debug line: POSITION + COLOR
 extern const D3D12_INPUT_ELEMENT_DESC DEBUG_LINE[];
 extern const size_t DEBUG_LINE_COUNT;
+
+// Empty: Full-screen triangle (no input layout)
+extern const D3D12_INPUT_ELEMENT_DESC* EMPTY;
+extern const size_t EMPTY_COUNT;
 }  // namespace InputLayouts
 
 }  // namespace ShaderRegistry

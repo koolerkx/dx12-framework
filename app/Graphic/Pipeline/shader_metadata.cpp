@@ -54,6 +54,11 @@ const D3D12_INPUT_ELEMENT_DESC DEBUG_LINE[] = {
 };
 const size_t DEBUG_LINE_COUNT = std::size(DEBUG_LINE);
 
+// Empty: Full-screen triangle (no input layout)
+// Use nullptr for empty input layout with count 0
+const D3D12_INPUT_ELEMENT_DESC* EMPTY = nullptr;
+const size_t EMPTY_COUNT = 0;
+
 }  // namespace InputLayouts
 
 // ============================================================================
@@ -62,7 +67,7 @@ const size_t DEBUG_LINE_COUNT = std::size(DEBUG_LINE);
 
 namespace {
 // Centralized shader registry table
-constexpr ShaderMetadata SHADER_TABLE[] = {
+const ShaderMetadata SHADER_TABLE[] = {
   // === Sprite Shaders ===
 
   // Non-instanced sprite
@@ -114,11 +119,21 @@ constexpr ShaderMetadata SHADER_TABLE[] = {
     L"Content/shaders/debug_line.vs.cso",
     L"Content/shaders/debug_line.ps.cso",
     {InputLayouts::DEBUG_LINE, InputLayouts::DEBUG_LINE_COUNT}},
+
+  // === Post-Process Shaders ===
+
+  // Tone mapping pass (HDR to SDR)
+  {ShaderID::PostProcessToneMap,
+    ShaderFamily::PostProcess,
+    "ToneMap",
+    L"Content/shaders/tonemap.vs.cso",
+    L"Content/shaders/tonemap.ps.cso",
+    {InputLayouts::EMPTY, InputLayouts::EMPTY_COUNT}},
 };
 
-static_assert(sizeof(SHADER_TABLE) / sizeof(ShaderMetadata) == 6,
-  "Shader table must have exactly 6 implemented shader entries (Sprite, SpriteInstancedUI, SpriteInstancedWorld, "
-  "SpriteInstancedWorldTransparent, Basic3D, DebugLine)");
+static_assert(sizeof(SHADER_TABLE) / sizeof(ShaderMetadata) == 7,
+  "Shader table must have exactly 7 implemented shader entries (Sprite, SpriteInstancedUI, "
+  "SpriteInstancedWorld, SpriteInstancedWorldTransparent, Basic3D, DebugLine, PostProcessToneMap)");
 }  // namespace
 
 // ============================================================================
@@ -126,12 +141,26 @@ static_assert(sizeof(SHADER_TABLE) / sizeof(ShaderMetadata) == 6,
 // ============================================================================
 
 const ShaderMetadata& GetMetadata(ShaderID id) {
-  size_t index = static_cast<size_t>(id);
-  if (index >= sizeof(SHADER_TABLE) / sizeof(ShaderMetadata)) {
-    // Return first shader as fallback (should not happen)
-    return SHADER_TABLE[0];
+  // Switch-based lookup to handle sparse ShaderID enum values
+  switch (id) {
+    case ShaderID::Sprite:
+      return SHADER_TABLE[0];
+    case ShaderID::SpriteInstancedUI:
+      return SHADER_TABLE[1];
+    case ShaderID::SpriteInstancedWorld:
+      return SHADER_TABLE[2];
+    case ShaderID::SpriteInstancedWorldTransparent:
+      return SHADER_TABLE[3];
+    case ShaderID::Basic3D:
+      return SHADER_TABLE[4];
+    case ShaderID::DebugLine:
+      return SHADER_TABLE[5];
+    case ShaderID::PostProcessToneMap:
+      return SHADER_TABLE[6];
+    default:
+      // Return first shader as fallback for unimplemented shaders
+      return SHADER_TABLE[0];
   }
-  return SHADER_TABLE[index];
 }
 
 ShaderFamily GetFamily(ShaderID id) {

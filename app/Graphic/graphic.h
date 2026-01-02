@@ -19,9 +19,12 @@
 #include "Pipeline/material_manager.h"
 #include "Pipeline/shader_manager.h"
 #include "Presentation/depth_buffer.h"
+#include "Presentation/hdr_render_target.h"
 #include "Presentation/swapchain_manager.h"
 #include "Render/material_renderer.h"
 #include "Render/render_pass_manager.h"
+#include "Render/tone_map_pass.h"
+#include "Rendering/hdr_config.h"
 #include "Resource/Font/sprite_font_manager.h"
 #include "Resource/Texture/texture_manager.h"
 
@@ -110,6 +113,12 @@ class Graphic {
   DepthBuffer depth_buffer_;
   FenceManager fence_manager_;
 
+  // HDR rendering
+  std::unique_ptr<HdrRenderTarget> hdr_render_target_;
+  std::unique_ptr<ToneMapPass> tone_map_pass_;
+  HdrConfig hdr_config_;
+  HdrDebug hdr_debug_;
+
   UINT frame_buffer_width_ = 0;
   UINT frame_buffer_height_ = 0;
 
@@ -135,6 +144,7 @@ class Graphic {
   std::unique_ptr<OpaqueRenderer> opaque_renderer_;
   std::unique_ptr<TransparentRenderer> transparent_renderer_;
   std::unique_ptr<RenderPassManager> render_pass_manager_;
+
   std::unique_ptr<DebugLineRenderer> debug_line_renderer_;
 
   // Initialization

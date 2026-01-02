@@ -146,6 +146,19 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
   render_pass_manager_->AddPass(std::make_unique<OpaquePass>(opaque_renderer_.get()));
   render_pass_manager_->AddPass(std::make_unique<TransparentPass>(transparent_renderer_.get()));
   render_pass_manager_->AddPass(std::make_unique<DebugPass>(debug_line_renderer_.get(), &material_manager_));
+
+  // Create HDR render target
+  hdr_render_target_ = std::make_unique<HdrRenderTarget>();
+  if (!hdr_render_target_->Initialize(device_.Get(), frame_buffer_width, frame_buffer_height, descriptor_heap_manager_)) {
+    std::cerr << "Failed to initialize HDR render target" << std::endl;
+    return false;
+  }
+
+  // Create tone mapping pass and set up dependencies
+  tone_map_pass_ = std::make_unique<ToneMapPass>(device_.Get(), &material_manager_, shader_manager_.get());
+  tone_map_pass_->SetDependencies(hdr_render_target_.get(), &swap_chain_manager_, &hdr_config_, &hdr_debug_);
+  render_pass_manager_->AddPass(std::move(tone_map_pass_));
+
   render_pass_manager_->AddPass(std::make_unique<UiPass>(ui_renderer_.get()));
 
   is_initialized_ = true;
@@ -164,6 +177,9 @@ bool Graphic::ResizeBuffers(UINT width, UINT height) {
   fence_manager_.WaitForGpu(command_queue_.Get());
   depth_buffer_.SafeRelease();
 
+  // Release HDR RT (CRITICAL: pass descriptor_manager to free SRV)
+  hdr_render_target_->SafeRelease(descriptor_heap_manager_);
+
   // Resize swap chain
   if (!swap_chain_manager_.Resize(width, height, descriptor_heap_manager_)) {
     std::cerr << "Failed to resize swap chain" << std::endl;
@@ -173,6 +189,12 @@ bool Graphic::ResizeBuffers(UINT width, UINT height) {
   // Recreate depth buffer
   if (!depth_buffer_.Initialize(device_.Get(), width, height, descriptor_heap_manager_)) {
     std::cerr << "Failed to recreate depth buffer" << std::endl;
+    return false;
+  }
+
+  // Recreate HDR RT
+  if (!hdr_render_target_->Initialize(device_.Get(), width, height, descriptor_heap_manager_)) {
+    std::cerr << "Failed to recreate HDR render target" << std::endl;
     return false;
   }
 
@@ -251,14 +273,18 @@ RenderFrameContext Graphic::BeginFrame() {
 
   descriptor_heap_manager_.BeginFrame(frame_index);
   descriptor_heap_manager_.SetDescriptorHeaps(command_list_.Get());  // Bind Global Heap
-  swap_chain_manager_.TransitionToRenderTarget(command_list_.Get());
 
-  D3D12_CPU_DESCRIPTOR_HANDLE rtv = swap_chain_manager_.GetCurrentRTV();
-  D3D12_CPU_DESCRIPTOR_HANDLE dsv = depth_buffer_.GetDSV();
+  // HDR workflow: Transition HDR RT to RENDER_TARGET and clear to black
+  hdr_render_target_->TransitionTo(command_list_.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET);
+  hdr_render_target_->Clear(command_list_.Get());
 
-  command_list_->ClearRenderTargetView(rtv, CLEAR_COLOR.data(), 0, nullptr);
+  // Clear depth buffer (unchanged)
   depth_buffer_.Clear(command_list_.Get(), 1.0, 0);
-  command_list_->OMSetRenderTargets(1, &rtv, FALSE, &dsv);
+
+  // Set HDR RT as render target (swapchain remains in PRESENT state)
+  D3D12_CPU_DESCRIPTOR_HANDLE hdr_rtv = hdr_render_target_->GetRTV();
+  D3D12_CPU_DESCRIPTOR_HANDLE dsv = depth_buffer_.GetDSV();
+  command_list_->OMSetRenderTargets(1, &hdr_rtv, FALSE, &dsv);
 
   command_list_->RSSetViewports(1, &viewport_);
   command_list_->RSSetScissorRects(1, &scissor_rect_);
@@ -297,6 +323,7 @@ void Graphic::EndFrame(const RenderFrameContext& frame) {
 }
 
 void Graphic::RenderScene(const RenderFrameContext& frame, const FramePacket& world) {
+  // All passes managed uniformly through RenderPassManager
   render_pass_manager_->Execute(frame, world);
 }
 

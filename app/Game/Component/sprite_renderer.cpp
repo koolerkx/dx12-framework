@@ -112,7 +112,6 @@ void SpriteRenderer::OnRender(FramePacket& packet) {
       XMFLOAT3 worldPos = transform->GetWorldPosition();
       XMFLOAT3 camPos = packet.main_camera.position;
       cmd.depth = XMVectorGetX(XMVector3LengthSq(XMLoadFloat3(&worldPos) - XMLoadFloat3(&camPos)));
-      std::cout << "Sprite Depth: " << cmd.depth << std::endl;
 
       cmd.material_instance.material = cmd.material;
       cmd.material_instance.albedo_texture_index = texture_->GetBindlessIndex();

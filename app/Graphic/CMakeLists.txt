@@ -19,6 +19,10 @@ add_library(graphic STATIC
     Presentation/swapchain_manager.cpp
     Presentation/depth_buffer.h
     Presentation/depth_buffer.cpp
+    Presentation/hdr_render_target.h
+    Presentation/hdr_render_target.cpp
+
+    Rendering/hdr_config.h
 
     Pipeline/pipeline_state_builder.h
     Pipeline/pipeline_state_builder.cpp
@@ -75,6 +79,9 @@ add_library(graphic STATIC
 
     Render/debug_pass.h
     Render/debug_pass.cpp
+
+    Render/tone_map_pass.h
+    Render/tone_map_pass.cpp
 )
 
 target_link_libraries(app PRIVATE framework)
@@ -98,6 +105,8 @@ target_add_hlsl_auto(graphic "6.6"
     "${CMAKE_SOURCE_DIR}/shaders/sprite_instanced_world_transparent.ps.hlsl"
     "${CMAKE_SOURCE_DIR}/shaders/debug_line.vs.hlsl"
     "${CMAKE_SOURCE_DIR}/shaders/debug_line.ps.hlsl"
+    "${CMAKE_SOURCE_DIR}/shaders/tonemap.vs.hlsl"
+    "${CMAKE_SOURCE_DIR}/shaders/tonemap.ps.hlsl"
 )
 
 # manually add shaders files
