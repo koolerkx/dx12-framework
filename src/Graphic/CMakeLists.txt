@@ -117,15 +117,14 @@ target_add_hlsl_auto(graphic "6.6"
 #     "${CMAKE_SOURCE_DIR}/shaders/basic_ps.hlsl"
 # )
 
-# Require CMake 3.11
-include(FetchContent)
+include(fetch)
 
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "MSVC Runtime Library")
 
-FetchContent_Declare(
-    DirectXTex
-    GIT_REPOSITORY https://github.com/microsoft/DirectXTex.git
-    GIT_TAG oct2025
-)
+FetchContent_MSVC(DirectXTex https://github.com/microsoft/DirectXTex.git oct2025)
+set(BUILD_TOOLS OFF CACHE BOOL "" FORCE)
+set(BUILD_SAMPLE OFF CACHE BOOL "" FORCE)
+set(BUILD_DX11 OFF CACHE BOOL "" FORCE)
+
 FetchContent_MakeAvailable(DirectXTex)
 target_link_libraries(graphic PUBLIC DirectXTex)
