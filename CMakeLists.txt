@@ -40,4 +40,4 @@ function(set_msvc_runtime target)
 endfunction()
 
 # サブプロジェクトを含めます。
-add_subdirectory("app")
+add_subdirectory("src")
