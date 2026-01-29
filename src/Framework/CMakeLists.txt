@@ -24,6 +24,22 @@ add_library(framework STATIC
   Font/bmfont_parser.cpp
   Font/text_layout.h
   Font/text_layout.cpp
+
+  # Error
+  Error/framework_bootstrap_log.h
+  Error/framework_bootstrap_log.cpp
+
+  # Utils
+  Utils/path_utils.h
+
+  # Logging
+  Logging/logger.h
+  Logging/logger.cpp
+  Logging/logger_config.h
+  Logging/sinks.h
+  Logging/sinks/console_sink.cpp
+  Logging/sinks/debug_sink.cpp
+  Logging/sinks/file_sink.cpp
 )
 
 target_link_libraries(framework PUBLIC
@@ -32,4 +48,5 @@ target_link_libraries(framework PUBLIC
 
 set_msvc_runtime(framework)
 
+target_include_directories(framework PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
 target_include_directories(framework PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

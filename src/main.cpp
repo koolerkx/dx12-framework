@@ -6,7 +6,6 @@
 #include <wrl/client.h>
 
 #include <exception>
-#include <iostream>
 
 #include "Application/Application.h"
 #include "Core/utils.h"
@@ -25,12 +24,18 @@ using namespace DirectX;
 constexpr int window_width = 1920;
 constexpr int window_height = 1080;
 
+void InitializeLogger();
+
 int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
   [[maybe_unused]] HINSTANCE hPrevInstance,
   [[maybe_unused]] PWSTR lpCmdLine,
   [[maybe_unused]] int nCmdShow) try {
   (void)CoInitializeEx(nullptr, COINIT_MULTITHREADED);
   (void)SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+
+  // Initialize Logger (before any other systems)
+  InitializeLogger();
+  Logger::LogFormat(LogLevel::Info, LogCategory::Core, Logger::Here(), "Application starting...");
 
   Application app(hInstance, window_width, window_height);
   Graphic graphic;
@@ -97,4 +102,23 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
   std::cerr << "Fatal exception: " << e.what() << std::endl;
   MessageBoxW(nullptr, utils::utf8_to_wstring(e.what()).c_str(), L"Fatal Error", MB_OK | MB_ICONERROR);
   return -1;
+}
+
+void InitializeLogger() {
+  LoggerConfig logger_config;
+  logger_config.app_name_fallback = "dx12-game-with-framework";
+  logger_config.file_path_mode = LoggerConfig::FilePathMode::WorkingDir;
+
+  std::vector<std::unique_ptr<ILogSink>> sinks;
+  sinks.push_back(std::make_unique<ConsoleSink>());
+  sinks.push_back(std::make_unique<DebugSink>());
+
+  try {
+    sinks.push_back(std::make_unique<FileSink>(logger_config));
+  } catch (const std::exception&) {
+    // FileSink creation failed - continue with Console + Debug only
+    OutputDebugStringA("[Logger] Warning: FileSink creation failed, continuing without file logging\n");
+  }
+
+  Logger::Init(std::move(logger_config), std::move(sinks));
 }

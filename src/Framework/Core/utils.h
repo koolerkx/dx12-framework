@@ -29,6 +29,24 @@ inline std::wstring utf8_to_wstring(const std::string& utf8_str) {
 }
 
 /**
+ * @brief Convert UTF-8 string to UTF-16 wstring without throwing exceptions.
+ * @param utf8_str std::string
+ * @return std::wstring (empty on failure)
+ */
+inline std::wstring Utf8ToWstringNoThrow(std::string_view utf8_str) noexcept {
+  if (utf8_str.empty()) return std::wstring();
+
+  int size_needed = MultiByteToWideChar(CP_UTF8, 0, utf8_str.data(), (int)utf8_str.size(), NULL, 0);
+  if (size_needed == 0) {
+    return std::wstring();
+  }
+
+  std::wstring wstr(size_needed, 0);
+  MultiByteToWideChar(CP_UTF8, 0, utf8_str.data(), (int)utf8_str.size(), &wstr[0], size_needed);
+  return wstr;
+}
+
+/**
  * @brief Convert UTF-8 string to UTF-16 wstring.
  * @param wstr std::wstring
  * @return std::string
