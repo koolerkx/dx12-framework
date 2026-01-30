@@ -1,18 +1,18 @@
 #include "material_manager.h"
 
-#include <iostream>
 #include <sstream>
 
+#include "Framework/Logging/logger.h"
 #include "Game/Component/render_settings.h"
 #include "Pipeline/shader_metadata.h"
 
 bool MaterialManager::Initialize(ID3D12Device* device, ShaderManager* shader_manager) {
   if (!device) {
-    std::cerr << "[MaterialManager] Invalid device" << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Resource, Logger::Here(), "[MaterialManager] Invalid device");
     return false;
   }
   if (!shader_manager) {
-    std::cerr << "[MaterialManager] Invalid shader manager" << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Resource, Logger::Here(), "[MaterialManager] Invalid shader manager");
     return false;
   }
 
@@ -100,7 +100,8 @@ Material* MaterialManager::GetOrCreateMaterial(Graphics::ShaderID shader_id, con
 
   // Validate material before caching
   if (!entry.material || !entry.material->IsValid()) {
-    std::cerr << "[MaterialManager] Failed to create valid material for ShaderID: " << static_cast<uint32_t>(shader_id) << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Resource, Logger::Here(), "[MaterialManager] Failed to create valid material for ShaderID: {}",
+      static_cast<uint32_t>(shader_id));
     return nullptr;
   }
 
@@ -117,14 +118,16 @@ Material MaterialManager::CreateMaterialInternal(Graphics::ShaderID shader_id, c
   ID3DBlob* ps_blob = shader_manager_->GetPixelShader(shader_id);
 
   if (!vs_blob || !ps_blob) {
-    std::cerr << "[MaterialManager] Failed to load shaders for ShaderID: " << static_cast<uint32_t>(shader_id) << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Resource, Logger::Here(), "[MaterialManager] Failed to load shaders for ShaderID: {}",
+      static_cast<uint32_t>(shader_id));
     return Material();
   }
 
   // Get Root Signature from ShaderManager
   ID3D12RootSignature* rs = shader_manager_->GetRootSignature(shader_id);
   if (!rs) {
-    std::cerr << "[MaterialManager] Failed to get Root Signature for ShaderID: " << static_cast<uint32_t>(shader_id) << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Resource, Logger::Here(),
+      "[MaterialManager] Failed to get Root Signature for ShaderID: {}", static_cast<uint32_t>(shader_id));
     return Material();
   }
 

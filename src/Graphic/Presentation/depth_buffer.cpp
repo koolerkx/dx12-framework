@@ -4,9 +4,9 @@
 #include <winerror.h>
 
 #include <cassert>
-#include <iostream>
 
 #include "d3dx12.h"
+#include "Framework/Logging/logger.h"
 #include "Core/types.h"
 
 bool DepthBuffer::Initialize(ID3D12Device* device, UINT width, UINT height, DescriptorHeapManager& descriptor_manager, DXGI_FORMAT format) {
@@ -34,7 +34,7 @@ bool DepthBuffer::Initialize(ID3D12Device* device, UINT width, UINT height, Desc
     IID_PPV_ARGS(resource.GetAddressOf()));
 
   if (FAILED(hr)) {
-    std::cerr << "[DepthBuffer] Failed to create depth stencil resource" << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[DepthBuffer] Failed to create depth stencil resource");
     return false;
   }
 
@@ -42,7 +42,7 @@ bool DepthBuffer::Initialize(ID3D12Device* device, UINT width, UINT height, Desc
 
   dsv_allocation_ = descriptor_manager.GetDsvAllocator().Allocate(1);
   if (!dsv_allocation_.IsValid()) {
-    std::cerr << "[DepthBuffer] Failed to allocate DSV" << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[DepthBuffer] Failed to allocate DSV");
     return false;
   }
 

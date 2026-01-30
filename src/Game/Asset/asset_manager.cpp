@@ -1,7 +1,6 @@
 #include "asset_manager.h"
 
-#include <iostream>
-
+#include "Framework/Logging/logger.h"
 #include "Graphic/Resource/Font/sprite_font_manager.h"
 #include "Graphic/Resource/Texture/texture_manager.h"
 #include "Graphic/Resource/mesh_factory.h"
@@ -97,13 +96,13 @@ const Mesh* AssetManager::GetDefaultMesh(DefaultMesh type) const {
     return it->second;
   }
 
-  std::cerr << "[AssetManager] Default mesh not found: " << static_cast<int>(type) << std::endl;
+  Logger::LogFormat(LogLevel::Error, LogCategory::Game, Logger::Here(), "[AssetManager] Default mesh not found: {}", static_cast<int>(type));
   return nullptr;
 }
 
 bool AssetManager::LoadFont(Font::FontFamily family, const std::string& fnt_path, const std::string& texture_path) {
   if (!impl_->font_manager) {
-    std::cerr << "[AssetManager] Font manager not initialized" << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Game, Logger::Here(), "[AssetManager] Font manager not initialized");
     return false;
   }
 
@@ -113,14 +112,14 @@ bool AssetManager::LoadFont(Font::FontFamily family, const std::string& fnt_path
 TextMeshHandle AssetManager::CreateTextMesh(
   const std::wstring& text, Font::FontFamily family, float pixel_size, const Text::TextLayoutProps& layout_props) {
   if (!impl_->font_manager) {
-    std::cerr << "[AssetManager] Font manager not initialized" << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Game, Logger::Here(), "[AssetManager] Font manager not initialized");
     return TextMeshHandle();
   }
 
   // Create text layout - pure CPU data
   Font::TextLayoutData layout_data;
   if (!impl_->font_manager->CreateTextLayout(text, family, pixel_size, layout_props, layout_data)) {
-    std::cerr << "[AssetManager] Failed to create text layout" << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Game, Logger::Here(), "[AssetManager] Failed to create text layout");
     return TextMeshHandle();
   }
 

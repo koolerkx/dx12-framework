@@ -1,8 +1,7 @@
 // scene.cpp
 #include "scene.h"
 
-#include <iostream>
-
+#include "Framework/Logging/logger.h"
 #include "game_object.h"
 
 IScene::IScene() = default;
@@ -55,7 +54,7 @@ void IScene::Render(FramePacket& packet) {
   if (active_camera_) {
     packet.main_camera = active_camera_->GetCameraData();
   } else {
-    std::cerr << "[IScene::Render] No active camera, using default setting" << std::endl;
+    Logger::LogFormat(LogLevel::Warn, LogCategory::Game, Logger::Here(), "[IScene::Render] No active camera, using default setting");
 
     // Fallback: default camera
     using namespace DirectX;

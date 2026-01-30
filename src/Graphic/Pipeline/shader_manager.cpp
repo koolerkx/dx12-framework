@@ -3,24 +3,25 @@
 #include <d3d12shader.h>
 #include <d3dcompiler.h>
 
-#include <iostream>
-
+#include "Core/utils.h"
+#include "Framework/Logging/logger.h"
 #include "Pipeline/root_signature_builder.h"
 
 bool ShaderManager::Initialize(ID3D12Device* device) {
   if (!device) {
-    std::cerr << "[ShaderManager] Invalid device" << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Resource, Logger::Here(), "[ShaderManager] Invalid device");
     return false;
   }
 
   device_ = device;
 
   if (!CreateRSPresets()) {
-    std::cerr << "[ShaderManager] Failed to create root signature presets" << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Resource, Logger::Here(), "[ShaderManager] Failed to create root signature presets");
     return false;
   }
 
-  std::cout << "[ShaderManager] Initialized with " << static_cast<size_t>(Graphics::RSPreset::Count) << " RS presets" << std::endl;
+  Logger::LogFormat(LogLevel::Info, LogCategory::Resource, Logger::Here(), "[ShaderManager] Initialized with {} RS presets",
+    static_cast<size_t>(Graphics::RSPreset::Count));
   return true;
 }
 
@@ -91,14 +92,14 @@ ID3DBlob* ShaderManager::GetPixelShader(Graphics::ShaderID id) {
 }
 
 void ShaderManager::PreloadShaders(const std::vector<Graphics::ShaderID>& shader_ids) {
-  std::cout << "[ShaderManager] Preloading " << shader_ids.size() << " shaders..." << std::endl;
+  Logger::LogFormat(LogLevel::Info, LogCategory::Resource, Logger::Here(), "[ShaderManager] Preloading {} shaders...", shader_ids.size());
 
   for (Graphics::ShaderID id : shader_ids) {
     GetVertexShader(id);
     GetPixelShader(id);
   }
 
-  std::cout << "[ShaderManager] Preload complete" << std::endl;
+  Logger::LogFormat(LogLevel::Info, LogCategory::Resource, Logger::Here(), "[ShaderManager] Preload complete");
 }
 
 bool ShaderManager::CreateRSPresets() {
@@ -143,14 +144,14 @@ bool ShaderManager::CreateStandardRS() {
                                                                        .Build(device_);
 
     if (!rs_presets_[static_cast<size_t>(Graphics::RSPreset::Standard)]) {
-      std::cerr << "[ShaderManager] Failed to create Standard RS" << std::endl;
+      Logger::LogFormat(LogLevel::Error, LogCategory::Resource, Logger::Here(), "[ShaderManager] Failed to create Standard RS");
       return false;
     }
 
-    std::cout << "[ShaderManager] Created Standard RS preset" << std::endl;
+    Logger::LogFormat(LogLevel::Info, LogCategory::Resource, Logger::Here(), "[ShaderManager] Created Standard RS preset");
     return true;
   } catch (const std::exception& e) {
-    std::cerr << "[ShaderManager] Exception creating Standard RS: " << e.what() << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Resource, Logger::Here(), "[ShaderManager] Exception creating Standard RS: {}", e.what());
     return false;
   }
 }
@@ -172,7 +173,8 @@ ID3DBlob* ShaderManager::LoadShaderFromFile(const std::wstring& path) {
   HRESULT hr = D3DReadFileToBlob(path.c_str(), &blob);
 
   if (FAILED(hr)) {
-    std::wcerr << L"[ShaderManager] Failed to load shader: " << path << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Resource, Logger::Here(), "[ShaderManager] Failed to load shader: {}",
+      utils::wstring_to_utf8(path));
     return nullptr;
   }
 

@@ -1,8 +1,8 @@
 #include "tone_map_pass.h"
 
 #include <array>
-#include <iostream>
 
+#include "Framework/Logging/logger.h"
 #include "Pipeline/material_manager.h"
 #include "Pipeline/shader_manager.h"
 #include "Presentation/hdr_render_target.h"
@@ -14,7 +14,7 @@ static constexpr std::array<float, 4> CLEAR_COLOR = {0.0f, 0.0f, 0.0f, 1.0f};
 ToneMapPass::ToneMapPass(ID3D12Device* device, MaterialManager* material_manager, ShaderManager* shader_manager)
     : device_(device), material_manager_(material_manager), shader_manager_(shader_manager) {
   if (!CreatePipelineObjects()) {
-    std::cerr << "[ToneMapPass] Failed to create pipeline objects" << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[ToneMapPass] Failed to create pipeline objects");
   }
 }
 
@@ -23,14 +23,14 @@ bool ToneMapPass::CreatePipelineObjects() {
   auto* vs = shader_manager_->GetVertexShader(Graphics::ShaderID::PostProcessToneMap);
   auto* ps = shader_manager_->GetPixelShader(Graphics::ShaderID::PostProcessToneMap);
   if (!vs || !ps) {
-    std::cerr << "[ToneMapPass] Shaders not loaded" << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[ToneMapPass] Shaders not loaded");
     return false;
   }
 
   // Get root signature
   auto* root_signature = shader_manager_->GetRootSignature(Graphics::RSPreset::Standard);
   if (!root_signature) {
-    std::cerr << "[ToneMapPass] Root signature not found" << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[ToneMapPass] Root signature not found");
     return false;
   }
 
@@ -52,7 +52,7 @@ bool ToneMapPass::CreatePipelineObjects() {
 
   HRESULT hr = device_->CreateGraphicsPipelineState(&pso_desc, IID_PPV_ARGS(&pipeline_state_));
   if (FAILED(hr)) {
-    std::cerr << "[ToneMapPass] Failed to create PSO" << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[ToneMapPass] Failed to create PSO");
     return false;
   }
 

@@ -1,9 +1,9 @@
 #include "game_object.h"
 
 #include <cassert>
-#include <iostream>
 
 #include "Component/transform_component.h"
+#include "Framework/Logging/logger.h"
 #include "scene.h"
 
 GameObject::GameObject(IScene* scene, const std::string& name) : name_(name), scene_(scene) {
@@ -62,12 +62,12 @@ void GameObject::SetParent(GameObject* parent) {
   if (parent_ == parent) return;
 
   if (parent == this) {
-    std::cerr << "[GameObject] " << name_ << ": Cannot set parent to self." << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Game, Logger::Here(), "[GameObject] {}: Cannot set parent to self.", name_);
     return;
   }
 
   if (parent && IsDescendantOf(parent, this)) {
-    std::cerr << "[GameObject] " << name_ << ": circular parent hierarchy." << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Game, Logger::Here(), "[GameObject] {}: circular parent hierarchy.", name_);
     return;
   }
 

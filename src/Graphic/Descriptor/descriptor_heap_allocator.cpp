@@ -2,7 +2,8 @@
 
 #include <algorithm>
 #include <cassert>
-#include <iostream>
+
+#include "Framework/Logging/logger.h"
 
 bool DescriptorHeapAllocator::Initialize(ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t capacity, bool shader_visible) {
   assert(device != nullptr);
@@ -69,7 +70,7 @@ DescriptorHeapAllocator::Allocation DescriptorHeapAllocator::Allocate(uint32_t c
   }
 
   if (allocated_ + count > capacity_) {
-    std::cerr << "Descriptor Heap Overflow!" << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Resource, Logger::Here(), "Descriptor Heap Overflow!");
     return {};
   }
 

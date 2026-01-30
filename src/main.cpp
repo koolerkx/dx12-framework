@@ -12,6 +12,8 @@
 #include "Framework/Event/event_system.h"
 #include "Framework/Event/input_event_generator.h"
 #include "Framework/Input/input.h"
+#include "Framework/Logging/logger.h"
+#include "Framework/Logging/sinks.h"
 #include "Game/game.h"
 #include "Game/game_context.h"
 #include "Graphic/graphic.h"
@@ -85,22 +87,28 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
   game.Shutdown();
   graphic.Shutdown();
 
+  Logger::LogFormat(LogLevel::Info, LogCategory::Core, Logger::Here(), "Application shutdown complete");
+  Logger::Shutdown();
+
   return 0;
 } catch (const std::system_error& e) {
-  std::string error_msg = std::string("System error: ") + e.what() + " (code: " + std::to_string(e.code().value()) + ")";
-  std::cerr << error_msg << std::endl;
+  Logger::LogFormat(LogLevel::Error, LogCategory::Core, Logger::Here(), "System error: {} (code: {})", e.what(), e.code().value());
 
   // Showing message box in deadlog exception casue freeze
   if (e.code().value() == static_cast<int>(std::errc::resource_deadlock_would_occur)) {
+    Logger::Shutdown();
     return -1;
   }
 
+  std::string error_msg = std::string("System error: ") + e.what() + " (code: " + std::to_string(e.code().value()) + ")";
   MessageBoxA(nullptr, error_msg.c_str(), "System Error", MB_OK | MB_ICONERROR);
+  Logger::Shutdown();
 
   return -1;
 } catch (const std::exception& e) {
-  std::cerr << "Fatal exception: " << e.what() << std::endl;
+  Logger::LogFormat(LogLevel::Error, LogCategory::Core, Logger::Here(), "Fatal exception: {}", e.what());
   MessageBoxW(nullptr, utils::utf8_to_wstring(e.what()).c_str(), L"Fatal Error", MB_OK | MB_ICONERROR);
+  Logger::Shutdown();
   return -1;
 }
 

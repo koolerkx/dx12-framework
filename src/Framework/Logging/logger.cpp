@@ -1,9 +1,16 @@
 /**
-@filename logger.cpp
-@brief Core logging manager implementation. Owns global logger state, manages sinks, performs thread-safe log dispatch, filtering, and
-flushing.
-@author Kooler Fan
-**/
+ * @file logger.cpp
+ * @author Kooler Fan
+ * @brief Core logging manager implementation
+ *
+ * Behavior:
+ * 1. new message enqueued -> notify worker (state.cv.notify_one())
+ * 2. worker wakes on notify OR after LoggerConfig.worker_wait_ms timeout
+ * 3. worker drains up to LoggerConfig.batch_size messages and calls sinks via EmitBatchToSinks()
+ *
+ * Flush(): drain up to QUEUE_BATCH_SIZE and then call FlushSinks() (force write)
+ * EmitDirectMinimal(): bypass queue and log+flush directly (used for panic/fatal)
+ */
 #include "Framework/Logging/logger.h"
 
 #include <array>
@@ -18,10 +25,8 @@ flushing.
 
 #include "Framework/Error/framework_bootstrap_log.h"
 
-namespace {
-constexpr size_t QUEUE_BATCH_SIZE = 2048;
-constexpr std::chrono::milliseconds WORKER_WAIT_MS(25);
-}  // namespace
+// Batch size and worker wait are configured via LoggerConfig (batch_size, worker_wait_ms)
+// See LoggerConfig in Framework/Logging/logger_config.h for defaults and customization
 
 struct Logger::State {
   std::mutex sinks_mutex;
@@ -129,29 +134,32 @@ void Logger::Init(LoggerConfig cfg, std::vector<std::unique_ptr<ILogSink>> sinks
   state.running.store(true, std::memory_order_release);
 
   state.worker = std::thread([]() {
-    State& s = GetState();
+    State& state = GetState();
     std::vector<LogEntry> batch;
     batch.reserve(512);
 
     while (true) {
       {  // wait for batch full or timeout to send log request from queue to batch
-        std::unique_lock<std::mutex> lock(s.queue_mutex);
-        s.cv.wait_for(lock, WORKER_WAIT_MS, [&]() { return !s.queue.empty() || !s.running.load(); });
+        std::unique_lock<std::mutex> lock(state.queue_mutex);
+        // use configured wait duration and batch size from LoggerConfig
+        auto wait_ms = state.config.worker_wait_ms;
+        const size_t batch_size = state.config.batch_size;
+        state.cv.wait_for(lock, wait_ms, [&]() { return !state.queue.empty() || !state.running.load(); });
 
         batch.clear();
-        while (!s.queue.empty() && batch.size() < QUEUE_BATCH_SIZE) {
-          batch.push_back(std::move(s.queue.front()));
-          s.queue.pop_front();
+        while (!state.queue.empty() && batch.size() < batch_size) {
+          batch.push_back(std::move(state.queue.front()));
+          state.queue.pop_front();
         }
       }
 
       if (!batch.empty()) {  // log the batch to sinks
-        EmitBatchToSinks(s, batch);
+        EmitBatchToSinks(state, batch);
       }
 
       {  // check running state
-        std::unique_lock<std::mutex> lock(s.queue_mutex);
-        if (!s.running.load(std::memory_order_acquire) && s.queue.empty() && batch.empty()) {
+        std::unique_lock<std::mutex> lock(state.queue_mutex);
+        if (!state.running.load(std::memory_order_acquire) && state.queue.empty() && batch.empty()) {
           break;
         }
       }
@@ -162,8 +170,8 @@ void Logger::Init(LoggerConfig cfg, std::vector<std::unique_ptr<ILogSink>> sinks
 }
 
 void Logger::Init(std::vector<std::unique_ptr<ILogSink>> sinks) {
-  LoggerConfig cfg;
-  Init(std::move(cfg), std::move(sinks));
+  LoggerConfig config;
+  Init(std::move(config), std::move(sinks));
 }
 
 void Logger::Shutdown() {
@@ -189,11 +197,12 @@ void Logger::Flush() {
   }
 
   std::vector<LogEntry> drained;
-  drained.reserve(QUEUE_BATCH_SIZE);
+  const size_t batch_size = state.config.batch_size;
+  drained.reserve(batch_size);
 
   {
     std::scoped_lock lock(state.queue_mutex);
-    while (!state.queue.empty() && drained.size() < QUEUE_BATCH_SIZE) {
+    while (!state.queue.empty() && drained.size() < batch_size) {
       drained.push_back(std::move(state.queue.front()));
       state.queue.pop_front();
     }
@@ -248,7 +257,7 @@ void Logger::Log(LogLevel level, LogCategory category, std::string message, cons
     if (state.queue.size() < state.queue_capacity) {
       state.queue.push_back(std::move(entry));
       enqueued = true;
-    } else if (state.config.overflow_policy == OverflowPolicy::DropLowFirst) {
+    } else if (state.config.overflow_policy == LoggerConfig::OverflowPolicy::DropLowFirst) {
       if (DropOneLowPriority(state.queue)) {
         state.queue.push_back(std::move(entry));
         enqueued = true;
@@ -279,7 +288,8 @@ void Logger::Log(LogLevel level, LogCategory category, std::string message, cons
   }
 }
 
-void Logger::Logv(LogLevel level, LogCategory category, std::string_view fmt, std::format_args args, const std::source_location& loc) {
+void Logger::LogFormatArgs(
+  LogLevel level, LogCategory category, std::string_view fmt, std::format_args args, const std::source_location& loc) {
   if (!IsEnabled(level, category)) {
     return;
   }

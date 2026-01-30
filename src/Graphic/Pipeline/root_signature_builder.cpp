@@ -1,7 +1,8 @@
 #include "root_signature_builder.h"
 
-#include <iostream>
 #include <stdexcept>
+
+#include "Framework/Logging/logger.h"
 
 
 ComPtr<ID3D12RootSignature> RootSignatureBuilder::Build(ID3D12Device* device) {
@@ -16,7 +17,7 @@ ComPtr<ID3D12RootSignature> RootSignatureBuilder::Build(ID3D12Device* device) {
 
   if (FAILED(hr)) {
     if (error) {
-      std::cerr << (char*)error->GetBufferPointer() << std::endl;
+      Logger::LogFormat(LogLevel::Error, LogCategory::Resource, Logger::Here(), "{}", (char*)error->GetBufferPointer());
     }
     throw std::runtime_error("Failed to serialize root signature");
   }

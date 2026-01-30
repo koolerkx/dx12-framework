@@ -1,8 +1,7 @@
 #include "debug_line_renderer.h"
 
-#include <iostream>
-
 #include "Frame/constant_buffers.h"
+#include "Framework/Logging/logger.h"
 
 bool DebugLineRenderer::Initialize(ID3D12Device* device) {
   device_ = device;
@@ -36,7 +35,7 @@ void DebugLineRenderer::UploadVertices(const RenderFrameContext& frame) {
   DynamicUploadBuffer::Allocation alloc = frame.object_cb_allocator->Allocate(data_size);
 
   if (alloc.cpu_ptr == nullptr) {
-    std::cerr << "[DebugLineRenderer] Failed to allocate upload buffer" << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[DebugLineRenderer] Failed to allocate upload buffer");
     current_frame_gpu_address_ = 0;
     current_frame_vertex_count_ = 0;
     return;

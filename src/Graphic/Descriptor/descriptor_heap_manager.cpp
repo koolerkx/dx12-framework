@@ -1,6 +1,6 @@
 #include "descriptor_heap_manager.h"
 
-#include <iostream>
+#include "Framework/Logging/logger.h"
 
 bool DescriptorHeapManager::Initialize(ID3D12Device* device, uint32_t frame_count, const DescriptorHeapConfig& config) {
   config_ = config;
@@ -38,7 +38,7 @@ bool DescriptorHeapManager::Initialize(ID3D12Device* device, uint32_t frame_coun
 
   // Create Sampler Heap
   if (!InitializeSamplerHeap(device)) {
-    std::cerr << "DescriptorHeapManager: Failed to initialize sampler heap" << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Resource, Logger::Here(), "DescriptorHeapManager: Failed to initialize sampler heap");
     return false;
   }
 

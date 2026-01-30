@@ -2,9 +2,8 @@
 
 #include <DirectXMath.h>
 
-#include <iostream>
-
 #include "Framework/Font/text_layout.h"
+#include "Framework/Logging/logger.h"
 #include "Resource/Texture/texture_manager.h"
 
 namespace Font {
@@ -132,7 +131,7 @@ void LoadDefaultFonts(SpriteFontManager& sprite_font_manager) {
     Font::FontFamily::ZenOldMincho, base_path + "Zen_Old_Mincho_32px.fnt", base_path + "Zen_Old_Mincho_32px_0.png");
 
   if (!success) {
-    std::cerr << "Warning: Failed to load default font" << std::endl;
+    Logger::LogFormat(LogLevel::Warn, LogCategory::Resource, Logger::Here(), "Warning: Failed to load default font");
   }
 }
 

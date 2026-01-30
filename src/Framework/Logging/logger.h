@@ -1,9 +1,8 @@
 /**
-@filename logger.h
-@brief Public logging API and data structures. Defines log levels, categories, log entry format, and the static Logger interface used
-throughout the engine.
-@author Kooler Fan
-**/
+ * @file logger.h
+ * @author Kooler Fan
+ * @brief Logging API
+ */
 #pragma once
 
 #include <chrono>
@@ -16,7 +15,6 @@ throughout the engine.
 
 #include "Framework/Logging/logger_config.h"
 #include "Framework/Logging/sinks.h"
-
 
 enum class LogLevel : uint8_t { Trace, Debug, Info, Warn, Error, Fatal };
 
@@ -53,9 +51,11 @@ class Logger final {
   [[nodiscard]] static bool IsEnabled(LogLevel level, LogCategory category);
   [[nodiscard]] static LoggerConfig GetConfig();
 
+  // Enqueue and log with batch
   static void Log(
     LogLevel level, LogCategory category, std::string message, const std::source_location& loc = std::source_location::current());
 
+  // Log Immediately
   static void EmitDirectMinimal(LogLevel level,
     LogCategory category,
     std::string_view message,
@@ -65,16 +65,17 @@ class Logger final {
     return loc;
   }
 
-  // Log with format, using C++20 std::format
+  // Log with format (vprintf)
   template <class... Args>
-  static void Logf(LogLevel level, LogCategory category, const std::source_location& loc, std::format_string<Args...> fmt, Args&&... args) {
+  static void LogFormat(
+    LogLevel level, LogCategory category, const std::source_location& loc, std::format_string<Args...> fmt, Args&&... args) {
     if (!IsEnabled(level, category)) {
       return;
     }
     Log(level, category, std::format(fmt, std::forward<Args>(args)...), loc);
   }
 
-  static void Logv(LogLevel level,
+  static void LogFormatArgs(LogLevel level,
     LogCategory category,
     std::string_view fmt,
     std::format_args args,

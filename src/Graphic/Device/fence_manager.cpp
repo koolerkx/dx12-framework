@@ -1,14 +1,15 @@
 #include "fence_manager.h"
 
 #include <cassert>
-#include <iostream>
+
+#include "Framework/Logging/logger.h"
 
 bool FenceManager::Initialize(ID3D12Device* device) {
   assert(device != nullptr);
 
   HRESULT hr = device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence_));
   if (FAILED(hr)) {
-    std::cerr << "[FenceManager] Failed to create fence." << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[FenceManager] Failed to create fence");
     return false;
   }
 
@@ -16,7 +17,7 @@ bool FenceManager::Initialize(ID3D12Device* device) {
 
   fence_event_ = CreateEvent(nullptr, false, false, nullptr);
   if (!fence_event_) {
-    std::cerr << "[FenceManager] Failed to create fence event." << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[FenceManager] Failed to create fence event");
     return false;
   }
 
@@ -46,7 +47,8 @@ void FenceManager::WaitForFenceValue(UINT64 fence_value) {
 
   HRESULT hr = fence_->SetEventOnCompletion(fence_value, fence_event_);
   if (FAILED(hr)) {
-    std::cerr << "[FenceManager] SetEventOnCompletion failed, HRESULT: 0x" << std::hex << hr << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[FenceManager] SetEventOnCompletion failed: HRESULT = 0x{:08X}",
+      static_cast<uint32_t>(hr));
 
 #ifdef _DEBUG
     std::terminate();  // Fail fast in debug
@@ -59,31 +61,33 @@ void FenceManager::WaitForFenceValue(UINT64 fence_value) {
   DWORD wait_result = WaitForSingleObject(fence_event_, INITIAL_TIMEOUT_MS);
 
   if (wait_result == WAIT_TIMEOUT) {
-    std::cerr << "[FenceManager] WARNING: Fence wait timeout after " << INITIAL_TIMEOUT_MS << "ms (fence value: " << fence_value << ")"
-              << std::endl;
+    Logger::LogFormat(LogLevel::Warn, LogCategory::Graphic, Logger::Here(),
+      "[FenceManager] WARNING: Fence wait timeout after {}ms (fence value: {})", INITIAL_TIMEOUT_MS, fence_value);
 
 #ifdef _DEBUG
     // Debug: terminate immediately to catch the issue
-    std::cerr << "[FenceManager] Debug build: terminating on timeout" << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[FenceManager] Debug build: terminating on timeout");
     std::terminate();
 #else
     // Release: try extended wait
     constexpr DWORD EXTENDED_TIMEOUT_MS = 30000;  // 30 seconds
-    std::cerr << "[FenceManager] Attempting extended wait (" << EXTENDED_TIMEOUT_MS << "ms)..." << std::endl;
+    Logger::LogFormat(LogLevel::Warn, LogCategory::Graphic, Logger::Here(), "[FenceManager] Attempting extended wait ({}ms)...",
+      EXTENDED_TIMEOUT_MS);
 
     wait_result = WaitForSingleObject(fence_event_, EXTENDED_TIMEOUT_MS);
 
     if (wait_result != WAIT_OBJECT_0) {
-      std::cerr << "[FenceManager] CRITICAL: Extended wait failed! Result: " << wait_result << std::endl;
+      Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[FenceManager] CRITICAL: Extended wait failed! Result: {}",
+        wait_result);
       throw std::runtime_error("GPU fence wait timeout - cannot safely proceed");
     }
 
-    std::cerr << "[FenceManager] Extended wait succeeded" << std::endl;
+    Logger::LogFormat(LogLevel::Info, LogCategory::Graphic, Logger::Here(), "[FenceManager] Extended wait succeeded");
 #endif
 
   } else if (wait_result != WAIT_OBJECT_0) {
-    std::cerr << "[FenceManager] ERROR: WaitForSingleObject failed with code " << wait_result << ", last error: " << GetLastError()
-              << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(),
+      "[FenceManager] ERROR: WaitForSingleObject failed with code {}, last error: {}", wait_result, GetLastError());
 
 #ifdef _DEBUG
     std::terminate();
@@ -108,7 +112,8 @@ void FenceManager::WaitForGpu(ID3D12CommandQueue* command_queue) {
 
     HRESULT hr = command_queue->Signal(fence_.Get(), fence_value_to_wait);
     if (FAILED(hr)) {
-      std::cerr << "[FenceManager] CRITICAL: Signal failed in WaitForGpu, HRESULT: 0x" << std::hex << hr << std::endl;
+      Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(),
+        "[FenceManager] CRITICAL: Signal failed in WaitForGpu, HRESULT = 0x{:08X}", static_cast<uint32_t>(hr));
 
 #ifdef _DEBUG
       std::terminate();  // Fail fast in debug
@@ -127,7 +132,8 @@ void FenceManager::WaitForGpu(ID3D12CommandQueue* command_queue) {
 
   HRESULT hr = fence_->SetEventOnCompletion(fence_value_to_wait, fence_event_);
   if (FAILED(hr)) {
-    std::cerr << "[FenceManager] CRITICAL: SetEventOnCompletion failed in WaitForGpu, HRESULT: 0x" << std::hex << hr << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(),
+      "[FenceManager] CRITICAL: SetEventOnCompletion failed in WaitForGpu, HRESULT = 0x{:08X}", static_cast<uint32_t>(hr));
 
 #ifdef _DEBUG
     std::terminate();
@@ -140,35 +146,41 @@ void FenceManager::WaitForGpu(ID3D12CommandQueue* command_queue) {
   DWORD wait_result = WaitForSingleObject(fence_event_, INITIAL_TIMEOUT_MS);
 
   if (wait_result == WAIT_TIMEOUT) {
-    std::cerr << "[FenceManager] CRITICAL: GPU sync timeout after " << INITIAL_TIMEOUT_MS << "ms!" << std::endl;
-    std::cerr << "[FenceManager] Fence value: " << fence_value_to_wait << ", Completed: " << fence_->GetCompletedValue() << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[FenceManager] CRITICAL: GPU sync timeout after {}ms!",
+      INITIAL_TIMEOUT_MS);
+    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[FenceManager] Fence value: {}, Completed: {}",
+      fence_value_to_wait, fence_->GetCompletedValue());
 
 #ifdef _DEBUG
     // Debug: terminate immediately - GPU hang needs investigation
-    std::cerr << "[FenceManager] Debug build: terminating to prevent resource corruption" << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(),
+      "[FenceManager] Debug build: terminating to prevent resource corruption");
     std::terminate();
 #else
     // Release: try extended wait before giving up
     constexpr DWORD EXTENDED_TIMEOUT_MS = 30000;
-    std::cerr << "[FenceManager] Attempting extended wait (" << EXTENDED_TIMEOUT_MS << "ms)..." << std::endl;
+    Logger::LogFormat(LogLevel::Warn, LogCategory::Graphic, Logger::Here(), "[FenceManager] Attempting extended wait ({}ms)...",
+      EXTENDED_TIMEOUT_MS);
 
     wait_result = WaitForSingleObject(fence_event_, EXTENDED_TIMEOUT_MS);
 
     if (wait_result != WAIT_OBJECT_0) {
-      std::cerr << "[FenceManager] CRITICAL: Extended GPU sync failed! Result: " << wait_result << ", last error: " << GetLastError()
-                << std::endl;
-      std::cerr << "[FenceManager] GPU may still be using resources - UNSAFE TO RELEASE!" << std::endl;
+      Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(),
+        "[FenceManager] CRITICAL: Extended GPU sync failed! Result: {}, last error: {}", wait_result, GetLastError());
+      Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(),
+        "[FenceManager] GPU may still be using resources - UNSAFE TO RELEASE!");
 
       // Cannot safely release resources
       throw std::runtime_error("GPU sync timeout after extended wait - cannot safely release resources");
     }
 
-    std::cerr << "[FenceManager] Extended wait succeeded (slow GPU performance detected)" << std::endl;
+    Logger::LogFormat(LogLevel::Warn, LogCategory::Graphic, Logger::Here(),
+      "[FenceManager] Extended wait succeeded (slow GPU performance detected)");
 #endif
 
   } else if (wait_result != WAIT_OBJECT_0) {
-    std::cerr << "[FenceManager] CRITICAL: WaitForSingleObject failed with code " << wait_result << ", last error: " << GetLastError()
-              << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(),
+      "[FenceManager] CRITICAL: WaitForSingleObject failed with code {}, last error: {}", wait_result, GetLastError());
 
 #ifdef _DEBUG
     std::terminate();

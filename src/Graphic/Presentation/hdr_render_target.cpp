@@ -2,9 +2,8 @@
 
 #include <d3d12.h>
 
-#include <iostream>
-
 #include "d3dx12.h"
+#include "Framework/Logging/logger.h"
 
 bool HdrRenderTarget::Initialize(ID3D12Device* device, UINT width, UINT height, DescriptorHeapManager& descriptor_manager) {
   width_ = width;
@@ -32,7 +31,7 @@ bool HdrRenderTarget::Initialize(ID3D12Device* device, UINT width, UINT height, 
     IID_PPV_ARGS(resource.GetAddressOf()));
 
   if (FAILED(hr)) {
-    std::cerr << "[HdrRenderTarget] Failed to create resource" << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[HdrRenderTarget] Failed to create resource");
     return false;
   }
 
@@ -41,7 +40,7 @@ bool HdrRenderTarget::Initialize(ID3D12Device* device, UINT width, UINT height, 
   // Allocate RTV
   rtv_allocation_ = descriptor_manager.GetRtvAllocator().Allocate(1);
   if (!rtv_allocation_.IsValid()) {
-    std::cerr << "[HdrRenderTarget] Failed to allocate RTV" << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[HdrRenderTarget] Failed to allocate RTV");
     return false;
   }
 
@@ -51,7 +50,7 @@ bool HdrRenderTarget::Initialize(ID3D12Device* device, UINT width, UINT height, 
   auto& srv_allocator = descriptor_manager.GetSrvStaticAllocator();
   DescriptorHeapAllocator::Allocation srv_allocation = srv_allocator.Allocate(1);
   if (!srv_allocation.IsValid()) {
-    std::cerr << "[HdrRenderTarget] Failed to allocate SRV" << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[HdrRenderTarget] Failed to allocate SRV");
     return false;
   }
   srv_index_ = srv_allocation.index;

@@ -7,10 +7,10 @@
 #include <dxgiformat.h>
 
 #include <cstdint>
-#include <iostream>
 #include <vector>
 
 #include "Core/types.h"
+#include "Framework/Logging/logger.h"
 #include "Frame/frame_packet.h"
 #include "Render/debug_pass.h"
 #include "Render/opaque_pass.h"
@@ -92,7 +92,7 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
 
   shader_manager_ = std::make_unique<ShaderManager>();
   if (!shader_manager_->Initialize(device_.Get())) {
-    std::cerr << "Failed to initialize ShaderManager" << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "Failed to initialize ShaderManager");
     return false;
   }
 
@@ -101,7 +101,7 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
   }
 
   if (!sprite_font_manager_.Initialize(&texture_manager_, device_.Get())) {
-    std::cerr << "Failed to initialize SpriteFontManager" << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "Failed to initialize SpriteFontManager");
     return false;
   }
   Font::LoadDefaultFonts(sprite_font_manager_);
@@ -137,7 +137,7 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
 
   debug_line_renderer_ = std::make_unique<DebugLineRenderer>();
   if (!debug_line_renderer_->Initialize(device_.Get())) {
-    std::cerr << "Failed to initialize debug line renderer" << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "Failed to initialize debug line renderer");
     return false;
   }
 
@@ -150,7 +150,7 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
   // Create HDR render target
   hdr_render_target_ = std::make_unique<HdrRenderTarget>();
   if (!hdr_render_target_->Initialize(device_.Get(), frame_buffer_width, frame_buffer_height, descriptor_heap_manager_)) {
-    std::cerr << "Failed to initialize HDR render target" << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "Failed to initialize HDR render target");
     return false;
   }
 
@@ -182,19 +182,19 @@ bool Graphic::ResizeBuffers(UINT width, UINT height) {
 
   // Resize swap chain
   if (!swap_chain_manager_.Resize(width, height, descriptor_heap_manager_)) {
-    std::cerr << "Failed to resize swap chain" << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "Failed to resize swap chain");
     return false;
   }
 
   // Recreate depth buffer
   if (!depth_buffer_.Initialize(device_.Get(), width, height, descriptor_heap_manager_)) {
-    std::cerr << "Failed to recreate depth buffer" << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "Failed to recreate depth buffer");
     return false;
   }
 
   // Recreate HDR RT
   if (!hdr_render_target_->Initialize(device_.Get(), width, height, descriptor_heap_manager_)) {
-    std::cerr << "Failed to recreate HDR render target" << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "Failed to recreate HDR render target");
     return false;
   }
 
@@ -232,15 +232,16 @@ void Graphic::Shutdown() {
       texture_manager_.CleanUploadBuffers();
     }
   } catch (const std::system_error& e) {
-    std::cerr << "[Graphic::Shutdown] System error: " << e.what() << " (code: " << e.code() << ")" << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[Graphic::Shutdown] System error: {} (code: {})", e.what(),
+      e.code().value());
   } catch (const std::exception& e) {
-    std::cerr << "[Graphic::Shutdown] Exception: " << e.what() << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[Graphic::Shutdown] Exception: {}", e.what());
   } catch (...) {
-    std::cerr << "[Graphic::Shutdown] Unknown exception" << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[Graphic::Shutdown] Unknown exception");
   }
 
   if (!gpu_synced) {
-    std::cerr << "[Graphic::Shutdown] WARNING: GPU sync failed, potential resource leak" << std::endl;
+    Logger::LogFormat(LogLevel::Warn, LogCategory::Graphic, Logger::Here(), "[Graphic::Shutdown] WARNING: GPU sync failed, potential resource leak");
   }
 
   // Resources released by ComPtr destructors
@@ -395,7 +396,7 @@ bool Graphic::CreateDevice() {
         use_bindless_sampler_ = (options.ResourceBindingTier >= D3D12_RESOURCE_BINDING_TIER_3);
       } else {
         use_bindless_sampler_ = false;
-        std::cerr << "Not support bindless sampler support." << std::endl;
+        Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "Not support bindless sampler support");
         return false;
       }
 
@@ -403,7 +404,7 @@ bool Graphic::CreateDevice() {
     }
   }
 
-  std::cerr << "Failed to create device." << std::endl;
+  Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "Failed to create device");
   return false;
 }
 
@@ -416,7 +417,7 @@ bool Graphic::CreateCommandQueue() {
 
   auto hr = device_->CreateCommandQueue(&command_queue_desc, IID_PPV_ARGS(&command_queue_));
   if (FAILED(hr) || command_queue_ == nullptr) {
-    std::cerr << "Failed to create command queue." << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "Failed to create command queue");
     return false;
   }
   return true;
@@ -428,7 +429,7 @@ bool Graphic::CreateCommandList() {
   command_list_->SetName(L"Main_Graphics_CommandList");
 
   if (FAILED(hr) || command_list_ == nullptr) {
-    std::cerr << "Failed to create command list." << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "Failed to create command list");
     return false;
   }
 
@@ -440,7 +441,7 @@ bool Graphic::CreateCommandAllocators() {
   auto hr = device_->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&utility_command_allocator_));
 
   if (FAILED(hr) || utility_command_allocator_ == nullptr) {
-    std::cerr << "Failed to create utility command allocator" << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "Failed to create utility command allocator");
     return false;
   }
   utility_command_allocator_->SetName(L"UtilityCommandAllocator");
@@ -449,7 +450,7 @@ bool Graphic::CreateCommandAllocators() {
     hr = device_->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&command_allocators_[i]));
 
     if (FAILED(hr) || command_allocators_[i] == nullptr) {
-      std::cerr << "Failed to create command allocator " << i << std::endl;
+      Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "Failed to create command allocator {}", i);
       return false;
     }
 

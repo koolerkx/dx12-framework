@@ -3,6 +3,7 @@
 #include <DirectXMath.h>
 
 #include "Asset/asset_manager.h"
+#include "Framework/Logging/logger.h"
 #include "Component/animated_sprite.h"
 #include "Component/free_camera_controller.h"
 #include "Component/mesh_renderer.h"
@@ -147,7 +148,7 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
     // Set as UI element
     text->SetRenderPassTag(RenderPassTag::Ui);
     text->SetLayerId(100);  // Higher layer = rendered later
-    std::cout << "UI Text size: " << text->GetSize().x << " x " << text->GetSize().y << std::endl;
+    Logger::LogFormat(LogLevel::Info, LogCategory::Game, Logger::Here(), "UI Text size: {} x {}", text->GetSize().x, text->GetSize().y);
   }
 
   // Text

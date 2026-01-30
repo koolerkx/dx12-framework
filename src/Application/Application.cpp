@@ -1,8 +1,9 @@
 #include "Application.h"
 
-#include <iostream>
 #include <memory>
 #include <stdexcept>
+
+#include "Framework/Logging/logger.h"
 
 Application::Application(HINSTANCE__* const hInstance, const int width, const int height, const float frequency)
     : hInstance_(hInstance), hwnd_(nullptr), width_(width), height_(height), running_(true), frequency_(frequency) {
@@ -107,7 +108,7 @@ bool Application::SetBorderlessFullscreen(bool enable) {
     monitor_info.cbSize = sizeof(MONITORINFO);
 
     if (!GetMonitorInfo(monitor, &monitor_info)) {
-      std::cerr << "Failed to get monitor info" << std::endl;
+      Logger::LogFormat(LogLevel::Error, LogCategory::Core, Logger::Here(), "Failed to get monitor info");
       return false;
     }
 
@@ -132,7 +133,7 @@ bool Application::SetBorderlessFullscreen(bool enable) {
     UINT monitor_height = monitor_rect.bottom - monitor_rect.top;
 
     if (!HandleResize(monitor_width, monitor_height)) {
-      std::cerr << "Failed to resize graphics for fullscreen" << std::endl;
+      Logger::LogFormat(LogLevel::Error, LogCategory::Core, Logger::Here(), "Failed to resize graphics for fullscreen");
       // Try to restore window
       SetWindowLong(hwnd_, GWL_STYLE, window_style_cache_);
       SetWindowPos(hwnd_,
@@ -169,7 +170,7 @@ bool Application::SetBorderlessFullscreen(bool enable) {
     UINT windowed_height = client_rect.bottom - client_rect.top;
 
     if (!HandleResize(windowed_width, windowed_height)) {
-      std::cerr << "Failed to resize graphics for windowed mode" << std::endl;
+      Logger::LogFormat(LogLevel::Error, LogCategory::Core, Logger::Here(), "Failed to resize graphics for windowed mode");
       return false;
     }
 

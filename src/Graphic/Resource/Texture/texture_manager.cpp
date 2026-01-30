@@ -1,9 +1,9 @@
 #include "texture_manager.h"
 
 #include <algorithm>
-#include <iostream>
 
 #include "Core/utils.h"
+#include "Framework/Logging/logger.h"
 #include "d3dx12.h"
 #include "graphic.h"
 
@@ -26,14 +26,16 @@ bool TextureManager::LoadAndGenerateMipmaps(const std::wstring& path, DirectX::S
   if (ext == L"dds") {
     hr = LoadFromDDSFile(path.c_str(), DDS_FLAGS_NONE, &metadata, image);
     if (FAILED(hr)) {
-      std::wcerr << L"[Texture] Failed to load DDS: " << path << std::endl;
+      Logger::LogFormat(LogLevel::Error, LogCategory::Resource, Logger::Here(), "[Texture] Failed to load DDS: {}",
+        utils::wstring_to_utf8(path));
       return false;
     }
     // For DDS, convert to sRGB if requested and format is compatible
     if (force_srgb && CanConvertToSRGB(metadata.format)) {
       hr = Convert(image.GetImages(), image.GetImageCount(), metadata, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, TEX_FILTER_DEFAULT, 0.5f, mipChain);
       if (FAILED(hr)) {
-        std::wcerr << L"[Texture] Failed to convert DDS to sRGB: " << path << std::endl;
+        Logger::LogFormat(LogLevel::Error, LogCategory::Resource, Logger::Here(), "[Texture] Failed to convert DDS to sRGB: {}",
+          utils::wstring_to_utf8(path));
         return false;
       }
     } else if (metadata.mipLevels > 1) {
@@ -44,7 +46,8 @@ bool TextureManager::LoadAndGenerateMipmaps(const std::wstring& path, DirectX::S
   } else if (ext == L"tga") {
     hr = LoadFromTGAFile(path.c_str(), &metadata, image);
     if (FAILED(hr)) {
-      std::wcerr << L"[Texture] Failed to load TGA: " << path << std::endl;
+      Logger::LogFormat(LogLevel::Error, LogCategory::Resource, Logger::Here(), "[Texture] Failed to load TGA: {}",
+        utils::wstring_to_utf8(path));
       return false;
     }
     // Convert to sRGB if requested and format is compatible
@@ -57,7 +60,8 @@ bool TextureManager::LoadAndGenerateMipmaps(const std::wstring& path, DirectX::S
     // HDR is always linear (floating point), ignore force_srgb
     hr = LoadFromHDRFile(path.c_str(), &metadata, image);
     if (FAILED(hr)) {
-      std::wcerr << L"[Texture] Failed to load HDR: " << path << std::endl;
+      Logger::LogFormat(LogLevel::Error, LogCategory::Resource, Logger::Here(), "[Texture] Failed to load HDR: {}",
+        utils::wstring_to_utf8(path));
       return false;
     }
     hr = GenerateMipMaps(image.GetImages(), image.GetImageCount(), metadata, TEX_FILTER_DEFAULT, 0, mipChain);
@@ -66,14 +70,16 @@ bool TextureManager::LoadAndGenerateMipmaps(const std::wstring& path, DirectX::S
     DirectX::WIC_FLAGS loadFlags = force_srgb ? DirectX::WIC_FLAGS_FORCE_SRGB : DirectX::WIC_FLAGS_NONE;
     hr = LoadFromWICFile(path.c_str(), loadFlags, &metadata, image);
     if (FAILED(hr)) {
-      std::wcerr << L"[Texture] Failed to load WIC texture: " << path << std::endl;
+      Logger::LogFormat(LogLevel::Error, LogCategory::Resource, Logger::Here(), "[Texture] Failed to load WIC texture: {}",
+        utils::wstring_to_utf8(path));
       return false;
     }
     hr = GenerateMipMaps(image.GetImages(), image.GetImageCount(), metadata, TEX_FILTER_DEFAULT, 0, mipChain);
   }
 
   if (FAILED(hr)) {
-    std::wcerr << L"[Texture] Failed to generate mipmaps for: " << path << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Resource, Logger::Here(), "[Texture] Failed to generate mipmaps for: {}",
+      utils::wstring_to_utf8(path));
     return false;
   }
 
@@ -112,7 +118,7 @@ bool TextureManager::CreateTextureResource(const DirectX::TexMetadata& metadata,
     &defaultHeapProps, D3D12_HEAP_FLAG_NONE, &texDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&texture));
 
   if (FAILED(hr)) {
-    std::cerr << "Failed to create texture resource." << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Resource, Logger::Here(), "Failed to create texture resource");
     return false;
   }
 
@@ -146,7 +152,7 @@ bool TextureManager::PrepareUpload(const DirectX::ScratchImage& mipChain, ComPtr
     IID_PPV_ARGS(&uploadInfo.upload_buffer));
 
   if (FAILED(hr)) {
-    std::cerr << "Failed to create upload buffer." << std::endl;
+    Logger::LogFormat(LogLevel::Error, LogCategory::Resource, Logger::Here(), "Failed to create upload buffer");
     return false;
   }
 
@@ -225,9 +231,9 @@ std::shared_ptr<Texture> TextureManager::LoadTextureSRGB(const std::wstring& pat
   texture_cache_[path] = texture;
 
   D3D12_RESOURCE_DESC texDesc = texture_buffer->GetDesc();
-  std::cout << "[Texture] Loaded SRGB \"" << utils::wstring_to_utf8(path) << "\" | " << texDesc.Width << "x" << texDesc.Height << " | "
-            << texDesc.MipLevels << " mips | " << "Format: " << utils::GetDxgiFormatName(texDesc.Format) << " | "
-            << "SRV Index: " << texture->srv_index << std::endl;
+  Logger::LogFormat(LogLevel::Info, LogCategory::Resource, Logger::Here(),
+    "[Texture] Loaded SRGB \"{}\" | {}x{} | {} mips | Format: {} | SRV Index: {}", utils::wstring_to_utf8(path), texDesc.Width,
+    texDesc.Height, texDesc.MipLevels, utils::GetDxgiFormatName(texDesc.Format), texture->srv_index);
 
   return texture;
 }
@@ -279,9 +285,9 @@ std::shared_ptr<Texture> TextureManager::LoadTextureLinear(const std::wstring& p
   texture_cache_[linear_key] = texture;
 
   D3D12_RESOURCE_DESC texDesc = texture_buffer->GetDesc();
-  std::cout << "[Texture] Loaded Linear \"" << utils::wstring_to_utf8(path) << "\" | " << texDesc.Width << "x" << texDesc.Height << " | "
-            << texDesc.MipLevels << " mips | " << "Format: " << utils::GetDxgiFormatName(texDesc.Format) << " | "
-            << "SRV Index: " << texture->srv_index << std::endl;
+  Logger::LogFormat(LogLevel::Info, LogCategory::Resource, Logger::Here(),
+    "[Texture] Loaded Linear \"{}\" | {}x{} | {} mips | Format: {} | SRV Index: {}", utils::wstring_to_utf8(path), texDesc.Width,
+    texDesc.Height, texDesc.MipLevels, utils::GetDxgiFormatName(texDesc.Format), texture->srv_index);
 
   return texture;
 }
@@ -345,9 +351,9 @@ std::vector<std::shared_ptr<Texture>> TextureManager::LoadTextures(const std::ve
     results.push_back(texture);
 
     D3D12_RESOURCE_DESC texDesc = task.texture_buffer->GetDesc();
-    std::cout << "[Texture] Loaded \"" << utils::wstring_to_utf8(task.path) << "\" | " << texDesc.Width << "x" << texDesc.Height << " | "
-              << texDesc.MipLevels << " mips | " << "Format: " << utils::GetDxgiFormatName(texDesc.Format) << " | "
-              << "SRV Index: " << texture->srv_index << std::endl;
+    Logger::LogFormat(LogLevel::Info, LogCategory::Resource, Logger::Here(),
+      "[Texture] Loaded \"{}\" | {}x{} | {} mips | Format: {} | SRV Index: {}", utils::wstring_to_utf8(task.path), texDesc.Width,
+      texDesc.Height, texDesc.MipLevels, utils::GetDxgiFormatName(texDesc.Format), texture->srv_index);
 
     std::lock_guard<std::mutex> lock(upload_mutex_);
     upload_buffers_.push_back(task.uploadInfo.upload_buffer);
@@ -367,8 +373,9 @@ void TextureManager::UnloadTexture(const std::wstring& path) {
   // Safety check: Only unload if this is the last reference
   // ref_count > 1: other GameObjects/ Handler are still using this texture
   if (long ref_count = it->second.use_count(); ref_count > 1) {
-    std::cerr << "[TextureManager] WARNING: Cannot unload \"" << utils::wstring_to_utf8(path) << "\" - still has " << (ref_count - 1)
-              << " external references (must be exactly 1 to unload)" << std::endl;
+    Logger::LogFormat(LogLevel::Warn, LogCategory::Resource, Logger::Here(),
+      "[TextureManager] WARNING: Cannot unload \"{}\" - still has {} external references (must be exactly 1 to unload)",
+      utils::wstring_to_utf8(path), ref_count - 1);
     return;
   }
 
