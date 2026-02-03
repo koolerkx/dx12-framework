@@ -10,8 +10,8 @@
 #include <vector>
 
 #include "Core/types.h"
-#include "Framework/Logging/logger.h"
 #include "Frame/frame_packet.h"
+#include "Framework/Logging/logger.h"
 #include "Render/debug_pass.h"
 #include "Render/opaque_pass.h"
 #include "Render/transparent_pass.h"
@@ -43,29 +43,35 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
   std::wstring init_error_caption = L"Graphic Initialization Error";
 
   if (!CreateFactory()) {
+    Logger::LogFormat(LogLevel::Fatal, LogCategory::Graphic, Logger::Here(), "Failed to create factory");
     MessageBoxW(nullptr, L"Graphic: Failed to create factory", init_error_caption.c_str(), MB_OK | MB_ICONERROR);
     return false;
   }
   if (!CreateDevice()) {
+    Logger::LogFormat(LogLevel::Fatal, LogCategory::Graphic, Logger::Here(), "Failed to create device");
     MessageBoxW(nullptr, L"Graphic: Failed to create device", init_error_caption.c_str(), MB_OK | MB_ICONERROR);
     return false;
   }
 
   DescriptorHeapConfig heapConfig;
   if (!descriptor_heap_manager_.Initialize(device_.Get(), FRAME_BUFFER_COUNT, heapConfig)) {
+    Logger::LogFormat(LogLevel::Fatal, LogCategory::Graphic, Logger::Here(), "Failed to initialize descriptor heap manager");
     MessageBoxW(nullptr, L"Graphic: Failed to initialize descriptor heap manager", init_error_caption.c_str(), MB_OK | MB_ICONERROR);
     return false;
   }
 
   if (!CreateCommandQueue()) {
+    Logger::LogFormat(LogLevel::Fatal, LogCategory::Graphic, Logger::Here(), "Failed to create command queue");
     MessageBoxW(nullptr, L"Graphic: Failed to create command queue", init_error_caption.c_str(), MB_OK | MB_ICONERROR);
     return false;
   }
   if (!CreateCommandAllocators()) {
+    Logger::LogFormat(LogLevel::Fatal, LogCategory::Graphic, Logger::Here(), "Failed to create command allocators");
     MessageBoxW(nullptr, L"Graphic: Failed to create command allocators", init_error_caption.c_str(), MB_OK | MB_ICONERROR);
     return false;
   }
   if (!CreateCommandList()) {
+    Logger::LogFormat(LogLevel::Fatal, LogCategory::Graphic, Logger::Here(), "Failed to create command list");
     MessageBoxW(nullptr, L"Graphic: Failed to create command list", init_error_caption.c_str(), MB_OK | MB_ICONERROR);
     return false;
   }
@@ -232,8 +238,8 @@ void Graphic::Shutdown() {
       texture_manager_.CleanUploadBuffers();
     }
   } catch (const std::system_error& e) {
-    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[Graphic::Shutdown] System error: {} (code: {})", e.what(),
-      e.code().value());
+    Logger::LogFormat(
+      LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[Graphic::Shutdown] System error: {} (code: {})", e.what(), e.code().value());
   } catch (const std::exception& e) {
     Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[Graphic::Shutdown] Exception: {}", e.what());
   } catch (...) {
@@ -241,7 +247,8 @@ void Graphic::Shutdown() {
   }
 
   if (!gpu_synced) {
-    Logger::LogFormat(LogLevel::Warn, LogCategory::Graphic, Logger::Here(), "[Graphic::Shutdown] WARNING: GPU sync failed, potential resource leak");
+    Logger::LogFormat(
+      LogLevel::Warn, LogCategory::Graphic, Logger::Here(), "[Graphic::Shutdown] WARNING: GPU sync failed, potential resource leak");
   }
 
   // Resources released by ComPtr destructors
