@@ -42,16 +42,22 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
 
   std::wstring init_error_caption = L"Graphic Initialization Error";
 
-  if (!CreateFactory()) {
-    Logger::LogFormat(LogLevel::Fatal, LogCategory::Graphic, Logger::Here(), "Failed to create factory");
-    MessageBoxW(nullptr, L"Graphic: Failed to create factory", init_error_caption.c_str(), MB_OK | MB_ICONERROR);
+  // Create DeviceContext (new modular subsystem)
+  gfx::DeviceContext::CreateInfo device_info{};
+#if defined(DEBUG) || defined(_DEBUG)
+  device_info.enable_debug_layer = true;
+#endif
+  device_context_ = gfx::DeviceContext::Create(device_info);
+  if (!device_context_) {
+    Logger::LogFormat(LogLevel::Fatal, LogCategory::Graphic, Logger::Here(), "Failed to create DeviceContext");
+    MessageBoxW(nullptr, L"Graphic: Failed to create DeviceContext", init_error_caption.c_str(), MB_OK | MB_ICONERROR);
     return false;
   }
-  if (!CreateDevice()) {
-    Logger::LogFormat(LogLevel::Fatal, LogCategory::Graphic, Logger::Here(), "Failed to create device");
-    MessageBoxW(nullptr, L"Graphic: Failed to create device", init_error_caption.c_str(), MB_OK | MB_ICONERROR);
-    return false;
-  }
+
+  // Copy references for backward compatibility
+  device_ = device_context_->GetDevice();
+  dxgi_factory_ = device_context_->GetFactory();
+  use_bindless_sampler_ = device_context_->SupportsBindlessSamplers();
 
   DescriptorHeapConfig heapConfig;
   if (!descriptor_heap_manager_.Initialize(device_.Get(), FRAME_BUFFER_COUNT, heapConfig)) {
@@ -89,6 +95,13 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
     return false;
   }
   if (!fence_manager_.Initialize(device_.Get())) {
+    return false;
+  }
+
+  // Create FrameSynchronizer (new modular subsystem)
+  frame_synchronizer_ = gfx::FrameSynchronizer::Create(device_.Get());
+  if (!frame_synchronizer_) {
+    Logger::LogFormat(LogLevel::Fatal, LogCategory::Graphic, Logger::Here(), "Failed to create FrameSynchronizer");
     return false;
   }
 
@@ -158,6 +171,20 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
   if (!hdr_render_target_->Initialize(device_.Get(), frame_buffer_width, frame_buffer_height, descriptor_heap_manager_)) {
     Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "Failed to initialize HDR render target");
     return false;
+  }
+
+  // Create PresentationContext (new modular subsystem - for future use)
+  gfx::PresentationContext::CreateInfo presentation_info{};
+  presentation_info.hwnd = hwnd;
+  presentation_info.width = frame_buffer_width;
+  presentation_info.height = frame_buffer_height;
+  presentation_info.buffer_count = FRAME_BUFFER_COUNT;
+  presentation_info.enable_vsync = props.enable_vsync;
+  presentation_context_ = gfx::PresentationContext::Create(
+    device_.Get(), dxgi_factory_.Get(), command_queue_.Get(), &descriptor_heap_manager_, presentation_info);
+  if (!presentation_context_) {
+    Logger::LogFormat(
+      LogLevel::Warn, LogCategory::Graphic, Logger::Here(), "PresentationContext creation failed - using legacy presentation path");
   }
 
   // Create tone mapping pass and set up dependencies

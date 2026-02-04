@@ -4,7 +4,7 @@
 
 #include "Framework/Logging/logger.h"
 #include "Game/Component/render_settings.h"
-#include "Pipeline/shader_metadata.h"
+#include "Pipeline/shader_registry.h"
 
 bool MaterialManager::Initialize(ID3D12Device* device, ShaderManager* shader_manager) {
   if (!device) {

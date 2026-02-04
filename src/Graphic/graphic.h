@@ -10,7 +10,9 @@
 #include "Core/types.h"
 #include "Debug/debug_line_renderer.h"
 #include "Descriptor/descriptor_heap_manager.h"
+#include "Device/device_context.h"
 #include "Device/fence_manager.h"
+#include "Device/frame_synchronizer.h"
 #include "Frame/constant_buffers.h"
 #include "Frame/dynamic_upload_buffer.h"
 #include "Frame/frame_packet.h"
@@ -20,6 +22,7 @@
 #include "Pipeline/shader_manager.h"
 #include "Presentation/depth_buffer.h"
 #include "Presentation/hdr_render_target.h"
+#include "Presentation/presentation_context.h"
 #include "Presentation/swapchain_manager.h"
 #include "Render/material_renderer.h"
 #include "Render/render_pass_manager.h"
@@ -97,8 +100,29 @@ class Graphic {
     enable_vsync_ = enable;
   }
 
+  gfx::DeviceContext* GetDeviceContext() const {
+    return device_context_.get();
+  }
+
+  gfx::PresentationContext* GetPresentationContext() const {
+    return presentation_context_.get();
+  }
+
+  gfx::FrameSynchronizer* GetFrameSynchronizer() const {
+    return frame_synchronizer_.get();
+  }
+
+  DescriptorHeapManager& GetDescriptorHeapManager() {
+    return descriptor_heap_manager_;
+  }
+
  private:
-  // Core
+  // New modular subsystems
+  std::unique_ptr<gfx::DeviceContext> device_context_;
+  std::unique_ptr<gfx::PresentationContext> presentation_context_;
+  std::unique_ptr<gfx::FrameSynchronizer> frame_synchronizer_;
+
+  // Core (DEPRECATED: will be replaced by subsystems)
   ComPtr<ID3D12Device5> device_ = nullptr;  /// @note D3D Device, RTX graphic card required
   ComPtr<IDXGIFactory6> dxgi_factory_ = nullptr;
 

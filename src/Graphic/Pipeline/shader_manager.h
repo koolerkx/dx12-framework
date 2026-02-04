@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "Core/types.h"
-#include "shader_metadata.h"
+#include "shader_registry.h"
 
 class ShaderManager {
  public:

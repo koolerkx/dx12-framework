@@ -1,4 +1,4 @@
-#include "shader_metadata.h"
+#include "shader_registry.h"
 
 namespace ShaderRegistry {
 

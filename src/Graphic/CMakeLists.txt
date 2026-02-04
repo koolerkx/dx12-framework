@@ -9,6 +9,10 @@ add_library(graphic STATIC
     Device/gpu_resource.cpp
     Device/fence_manager.h
     Device/fence_manager.cpp
+    Device/device_context.h
+    Device/device_context.cpp
+    Device/frame_synchronizer.h
+    Device/frame_synchronizer.cpp
 
     Descriptor/descriptor_heap_allocator.h
     Descriptor/descriptor_heap_allocator.cpp
@@ -21,6 +25,8 @@ add_library(graphic STATIC
     Presentation/depth_buffer.cpp
     Presentation/hdr_render_target.h
     Presentation/hdr_render_target.cpp
+    Presentation/presentation_context.h
+    Presentation/presentation_context.cpp
 
     Rendering/hdr_config.h
 
@@ -32,8 +38,8 @@ add_library(graphic STATIC
     Pipeline/sampler_builder.cpp
     Pipeline/root_parameter_slots.h
     Pipeline/shader_types.h
-    Pipeline/shader_metadata.h
-    Pipeline/shader_metadata.cpp
+    Pipeline/shader_registry.h
+    Pipeline/shader_registry.cpp
     Pipeline/shader_manager.h
     Pipeline/shader_manager.cpp
     Pipeline/material.h
@@ -42,6 +48,8 @@ add_library(graphic STATIC
 
     Resource/mesh.h
     Resource/mesh.cpp
+    Resource/render_services.h
+    Resource/render_services.cpp
     Resource/Texture/texture.h
     Resource/Texture/texture_manager.h
     Resource/Texture/texture_manager.cpp
@@ -56,6 +64,8 @@ add_library(graphic STATIC
     Frame/camera_data.h
 
     Command/buffer.h
+    Command/command_context.h
+    Command/command_context.cpp
     Command/render_command_list.h
     Command/render_command_list.cpp
 
