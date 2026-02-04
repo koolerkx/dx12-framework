@@ -36,8 +36,18 @@ bool RenderServices::Initialize(const CreateInfo& info) {
   }
 
   texture_manager_ = std::make_unique<TextureManager>();
+  if (!texture_manager_->Initialize(
+        info.device, info.heap_manager, info.execute_sync, info.get_current_fence_value, info.frame_buffer_count)) {
+    Logger::LogFormat(LogLevel::Fatal, LogCategory::Graphic, Logger::Here(), "Failed to initialize TextureManager");
+    return false;
+  }
 
   font_manager_ = std::make_unique<Font::SpriteFontManager>();
+  if (!font_manager_->Initialize(texture_manager_.get(), info.device)) {
+    Logger::LogFormat(LogLevel::Fatal, LogCategory::Graphic, Logger::Here(), "Failed to initialize SpriteFontManager");
+    return false;
+  }
+  Font::LoadDefaultFonts(*font_manager_);
 
   Logger::LogFormat(LogLevel::Info, LogCategory::Graphic, Logger::Here(), "RenderServices initialized");
   return true;

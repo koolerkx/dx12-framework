@@ -100,7 +100,10 @@ Material* MaterialManager::GetOrCreateMaterial(Graphics::ShaderID shader_id, con
 
   // Validate material before caching
   if (!entry.material || !entry.material->IsValid()) {
-    Logger::LogFormat(LogLevel::Error, LogCategory::Resource, Logger::Here(), "[MaterialManager] Failed to create valid material for ShaderID: {}",
+    Logger::LogFormat(LogLevel::Error,
+      LogCategory::Resource,
+      Logger::Here(),
+      "[MaterialManager] Failed to create valid material for ShaderID: {}",
       static_cast<uint32_t>(shader_id));
     return nullptr;
   }
@@ -118,7 +121,10 @@ Material MaterialManager::CreateMaterialInternal(Graphics::ShaderID shader_id, c
   ID3DBlob* ps_blob = shader_manager_->GetPixelShader(shader_id);
 
   if (!vs_blob || !ps_blob) {
-    Logger::LogFormat(LogLevel::Error, LogCategory::Resource, Logger::Here(), "[MaterialManager] Failed to load shaders for ShaderID: {}",
+    Logger::LogFormat(LogLevel::Error,
+      LogCategory::Resource,
+      Logger::Here(),
+      "[MaterialManager] Failed to load shaders for ShaderID: {}",
       static_cast<uint32_t>(shader_id));
     return Material();
   }
@@ -126,8 +132,11 @@ Material MaterialManager::CreateMaterialInternal(Graphics::ShaderID shader_id, c
   // Get Root Signature from ShaderManager
   ID3D12RootSignature* rs = shader_manager_->GetRootSignature(shader_id);
   if (!rs) {
-    Logger::LogFormat(LogLevel::Error, LogCategory::Resource, Logger::Here(),
-      "[MaterialManager] Failed to get Root Signature for ShaderID: {}", static_cast<uint32_t>(shader_id));
+    Logger::LogFormat(LogLevel::Error,
+      LogCategory::Resource,
+      Logger::Here(),
+      "[MaterialManager] Failed to get Root Signature for ShaderID: {}",
+      static_cast<uint32_t>(shader_id));
     return Material();
   }
 

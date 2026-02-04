@@ -28,6 +28,7 @@
 #include "Rendering/hdr_config.h"
 #include "Resource/Font/sprite_font_manager.h"
 #include "Resource/Texture/texture_manager.h"
+#include "Resource/render_services.h"
 
 class Graphic {
  public:
@@ -71,15 +72,15 @@ class Graphic {
   static constexpr int FRAME_BUFFER_COUNT = 2;
 
   TextureManager& GetTextureManager() {
-    return texture_manager_;
+    return render_services_->GetTextureManager();
   }
 
   MaterialManager& GetMaterialManager() {
-    return material_manager_;
+    return render_services_->GetMaterialManager();
   }
 
   ShaderManager& GetShaderManager() {
-    return *shader_manager_;
+    return render_services_->GetShaderManager();
   }
 
   FenceManager& GetFenceManager() {
@@ -87,7 +88,7 @@ class Graphic {
   }
 
   Font::SpriteFontManager& GetSpriteFontManager() {
-    return sprite_font_manager_;
+    return render_services_->GetFontManager();
   }
 
   ID3D12Device* GetDevice() const {
@@ -146,11 +147,8 @@ class Graphic {
   PerFrameConstantBuffer<FrameCB> frame_cb_storage_;
   std::vector<std::unique_ptr<DynamicUploadBuffer>> object_cb_allocators_;
 
-  // texture
-  TextureManager texture_manager_;
-  Font::SpriteFontManager sprite_font_manager_;
-  std::unique_ptr<ShaderManager> shader_manager_;
-  MaterialManager material_manager_;
+  // render services (owns all resource managers)
+  std::unique_ptr<gfx::RenderServices> render_services_;
 
   std::unique_ptr<UiRenderer> ui_renderer_;
   std::unique_ptr<OpaqueRenderer> opaque_renderer_;

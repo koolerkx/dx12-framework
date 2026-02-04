@@ -84,29 +84,19 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
     return false;
   }
 
-  // Provide callbacks to decouple TextureManager from Graphic
-  auto execute_sync_fn = [this](std::function<void(ID3D12GraphicsCommandList*)> cb) { ExecuteSync(std::move(cb)); };
-  auto get_fence_value_fn = [this]() { return frame_synchronizer_->GetFenceManager().GetCurrentFenceValue(); };
+  // Create RenderServices (owns all resource managers)
+  gfx::RenderServices::CreateInfo services_info{};
+  services_info.device = device_.Get();
+  services_info.heap_manager = &descriptor_heap_manager_;
+  services_info.execute_sync = [this](auto cb) { ExecuteSync(std::move(cb)); };
+  services_info.get_current_fence_value = [this]() { return frame_synchronizer_->GetFenceManager().GetCurrentFenceValue(); };
+  services_info.frame_buffer_count = FRAME_BUFFER_COUNT;
 
-  if (!texture_manager_.Initialize(device_.Get(), &descriptor_heap_manager_, execute_sync_fn, get_fence_value_fn, FRAME_BUFFER_COUNT)) {
+  render_services_ = gfx::RenderServices::Create(services_info);
+  if (!render_services_) {
+    Logger::LogFormat(LogLevel::Fatal, LogCategory::Graphic, Logger::Here(), "Failed to create RenderServices");
     return false;
   }
-
-  shader_manager_ = std::make_unique<ShaderManager>();
-  if (!shader_manager_->Initialize(device_.Get())) {
-    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "Failed to initialize ShaderManager");
-    return false;
-  }
-
-  if (!material_manager_.Initialize(device_.Get(), shader_manager_.get())) {
-    return false;
-  }
-
-  if (!sprite_font_manager_.Initialize(&texture_manager_, device_.Get())) {
-    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "Failed to initialize SpriteFontManager");
-    return false;
-  }
-  Font::LoadDefaultFonts(sprite_font_manager_);
 
   if (!frame_cb_storage_.Initialize(device_.Get(), FRAME_BUFFER_COUNT)) return false;
 
@@ -135,7 +125,7 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
 
   render_pass_manager_->AddPass(std::make_unique<OpaquePass>(opaque_renderer_.get()));
   render_pass_manager_->AddPass(std::make_unique<TransparentPass>(transparent_renderer_.get()));
-  render_pass_manager_->AddPass(std::make_unique<DebugPass>(debug_line_renderer_.get(), &material_manager_));
+  render_pass_manager_->AddPass(std::make_unique<DebugPass>(debug_line_renderer_.get(), &render_services_->GetMaterialManager()));
 
   // Create PresentationContext
   gfx::PresentationContext::CreateInfo presentation_info{};
@@ -152,7 +142,8 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
   }
 
   // Create tone mapping pass and set up dependencies
-  tone_map_pass_ = std::make_unique<ToneMapPass>(device_.Get(), &material_manager_, shader_manager_.get());
+  tone_map_pass_ =
+    std::make_unique<ToneMapPass>(device_.Get(), &render_services_->GetMaterialManager(), &render_services_->GetShaderManager());
   tone_map_pass_->SetDependencies(presentation_context_.get(), &hdr_config_, &hdr_debug_);
   render_pass_manager_->AddPass(std::move(tone_map_pass_));
 
@@ -204,9 +195,12 @@ void Graphic::Shutdown() {
       frame_synchronizer_->WaitForGpuIdle(command_queue_.Get());
       gpu_synced = true;
 
-      uint64_t completed = frame_synchronizer_->GetCompletedValue();
-      texture_manager_.ProcessDeferredFrees(completed);
-      texture_manager_.CleanUploadBuffers();
+      // Flush RenderServices resources before destruction
+      if (render_services_) {
+        uint64_t completed = frame_synchronizer_->GetCompletedValue();
+        render_services_->OnFrameBegin(0, completed);
+        render_services_->OnFrameEnd();
+      }
     }
   } catch (const std::system_error& e) {
     Logger::LogFormat(
@@ -224,6 +218,7 @@ void Graphic::Shutdown() {
 
   // Explicitly release subsystems that depend on descriptor_heap_manager_
   // Must happen before descriptor_heap_manager_ is destroyed (reverse declaration order)
+  render_services_.reset();
   presentation_context_.reset();
 
   // Resources released by ComPtr destructors
@@ -242,7 +237,7 @@ RenderFrameContext Graphic::BeginFrame() {
   // Wait for previous frame using this buffer to complete
   frame_synchronizer_->WaitForFrame(frame_index);
   uint64_t completed_fence = frame_synchronizer_->GetCompletedValue();
-  texture_manager_.ProcessDeferredFrees(completed_fence);
+  render_services_->OnFrameBegin(frame_index, completed_fence);
 
   object_cb_allocators_[frame_index]->Reset();  // manually reset for dynamic allocation
 
@@ -277,9 +272,7 @@ void Graphic::EndFrame(const RenderFrameContext& frame) {
   uint64_t fence_value = frame_synchronizer_->SignalFrame(command_queue_.Get(), frame.frame_index);
   frame_cb_storage_.MarkFrameSubmitted(frame.frame_index, fence_value);
 
-  texture_manager_.CleanUploadBuffers();
-
-  material_manager_.OnFrameEnd();
+  render_services_->OnFrameEnd();
 
   presentation_context_->Present();
 }
