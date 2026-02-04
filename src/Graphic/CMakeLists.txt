@@ -39,7 +39,6 @@ add_library(graphic STATIC
     Pipeline/root_parameter_slots.h
     Pipeline/shader_types.h
     Pipeline/shader_registry.h
-    Pipeline/shader_registry.cpp
     Pipeline/shader_manager.h
     Pipeline/shader_manager.cpp
     Pipeline/material.h

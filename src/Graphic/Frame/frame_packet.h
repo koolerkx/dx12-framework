@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "Pipeline/material.h"
+#include "Pipeline/vertex_types.h"
 #include "camera_data.h"
 
 struct Texture;
@@ -18,12 +19,7 @@ enum class RenderPassTag {
   Debug              // Used for engine tools/gizmos
 };
 
-struct SpriteInstanceData {
-  DirectX::XMFLOAT4X4 world_matrix;  // 64 bytes - per-glyph/sprite world transform
-  DirectX::XMFLOAT4 color;           // 16 bytes - per-instance tint color
-  DirectX::XMFLOAT2 uv_offset;       //  8 bytes - UV offset for atlas lookup
-  DirectX::XMFLOAT2 uv_scale;        //  8 bytes - UV scale for atlas lookup
-};
+using SpriteInstanceData = Graphics::Vertex::SpriteInstance;
 
 // Common sort key for both single and instance draw commands
 struct DrawSortKey {

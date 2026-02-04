@@ -5,7 +5,7 @@
 #include "Component/billboard_helper.h"
 #include "Component/pivot_type.h"
 #include "Game/Asset/asset_manager.h"
-#include "Graphic/Pipeline/shader_types.h"
+#include "Graphic/Pipeline/shader_descriptors.h"
 #include "game_context.h"
 #include "transform_component.h"
 
@@ -36,13 +36,13 @@ void TextRenderer::OnRender(FramePacket& packet) {
 
   auto& material_mgr = context->GetGraphic()->GetMaterialManager();
 
-  Graphics::ShaderID shader_id;
+  Graphics::ShaderId shader_id;
   if (pass_tag_ == RenderPassTag::Ui) {
-    shader_id = Graphics::ShaderID::SpriteInstancedUI;
+    shader_id = Graphics::SpriteInstancedUIShader::ID;
   } else if (pass_tag_ == RenderPassTag::WorldTransparent) {
-    shader_id = Graphics::ShaderID::SpriteInstancedWorldTransparent;
+    shader_id = Graphics::SpriteInstancedWorldTransparentShader::ID;
   } else {
-    shader_id = Graphics::ShaderID::SpriteInstancedWorld;
+    shader_id = Graphics::SpriteInstancedWorldShader::ID;
   }
 
   const Material* material = material_mgr.GetOrCreateMaterial(shader_id, render_settings_);

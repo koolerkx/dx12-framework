@@ -19,8 +19,8 @@ ToneMapPass::ToneMapPass(ID3D12Device* device, MaterialManager* material_manager
 
 bool ToneMapPass::CreatePipelineObjects() {
   // Get shaders
-  auto* vs = shader_manager_->GetVertexShader(Graphics::ShaderID::PostProcessToneMap);
-  auto* ps = shader_manager_->GetPixelShader(Graphics::ShaderID::PostProcessToneMap);
+  auto* vs = shader_manager_->GetVertexShader<Graphics::PostProcessToneMapShader>();
+  auto* ps = shader_manager_->GetPixelShader<Graphics::PostProcessToneMapShader>();
   if (!vs || !ps) {
     Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[ToneMapPass] Shaders not loaded");
     return false;

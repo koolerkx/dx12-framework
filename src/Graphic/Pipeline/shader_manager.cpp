@@ -20,20 +20,19 @@ bool ShaderManager::Initialize(ID3D12Device* device) {
     return false;
   }
 
-  Logger::LogFormat(LogLevel::Info, LogCategory::Resource, Logger::Here(), "[ShaderManager] Initialized with {} RS presets",
+  Logger::LogFormat(LogLevel::Info,
+    LogCategory::Resource,
+    Logger::Here(),
+    "[ShaderManager] Initialized with {} RS presets",
     static_cast<size_t>(Graphics::RSPreset::Count));
   return true;
 }
 
-const ShaderRegistry::ShaderMetadata& ShaderManager::GetShaderMetadata(Graphics::ShaderID id) const {
+const ShaderRegistry::ShaderMetadata& ShaderManager::GetShaderMetadata(Graphics::ShaderId id) const {
   return ShaderRegistry::GetMetadata(id);
 }
 
-Graphics::ShaderFamily ShaderManager::GetFamily(Graphics::ShaderID id) const {
-  return ShaderRegistry::GetFamily(id);
-}
-
-std::string_view ShaderManager::GetShaderName(Graphics::ShaderID id) const {
+std::string_view ShaderManager::GetShaderName(Graphics::ShaderId id) const {
   return ShaderRegistry::GetName(id);
 }
 
@@ -45,17 +44,12 @@ ID3D12RootSignature* ShaderManager::GetRootSignature(Graphics::RSPreset preset) 
   return rs_presets_[index].Get();
 }
 
-ID3D12RootSignature* ShaderManager::GetRootSignature(Graphics::ShaderID shader_id) const {
-  Graphics::ShaderFamily family = GetFamily(shader_id);
-  return GetRootSignature(family);
-}
-
-ID3D12RootSignature* ShaderManager::GetRootSignature(Graphics::ShaderFamily family) const {
-  Graphics::RSPreset preset = ShaderRegistry::GetRSPreset(family);
+ID3D12RootSignature* ShaderManager::GetRootSignature(Graphics::ShaderId shader_id) const {
+  Graphics::RSPreset preset = ShaderRegistry::GetRSPreset(shader_id);
   return GetRootSignature(preset);
 }
 
-ID3DBlob* ShaderManager::GetVertexShader(Graphics::ShaderID id) {
+ID3DBlob* ShaderManager::GetVertexShader(Graphics::ShaderId id) {
   // Check cache first
   auto it = vertex_shaders_.find(id);
   if (it != vertex_shaders_.end()) {
@@ -73,7 +67,7 @@ ID3DBlob* ShaderManager::GetVertexShader(Graphics::ShaderID id) {
   return blob;
 }
 
-ID3DBlob* ShaderManager::GetPixelShader(Graphics::ShaderID id) {
+ID3DBlob* ShaderManager::GetPixelShader(Graphics::ShaderId id) {
   // Check cache first
   auto it = pixel_shaders_.find(id);
   if (it != pixel_shaders_.end()) {
@@ -91,10 +85,10 @@ ID3DBlob* ShaderManager::GetPixelShader(Graphics::ShaderID id) {
   return blob;
 }
 
-void ShaderManager::PreloadShaders(const std::vector<Graphics::ShaderID>& shader_ids) {
+void ShaderManager::PreloadShaders(const std::vector<Graphics::ShaderId>& shader_ids) {
   Logger::LogFormat(LogLevel::Info, LogCategory::Resource, Logger::Here(), "[ShaderManager] Preloading {} shaders...", shader_ids.size());
 
-  for (Graphics::ShaderID id : shader_ids) {
+  for (Graphics::ShaderId id : shader_ids) {
     GetVertexShader(id);
     GetPixelShader(id);
   }
@@ -151,20 +145,17 @@ bool ShaderManager::CreateStandardRS() {
     Logger::LogFormat(LogLevel::Info, LogCategory::Resource, Logger::Here(), "[ShaderManager] Created Standard RS preset");
     return true;
   } catch (const std::exception& e) {
-    Logger::LogFormat(LogLevel::Error, LogCategory::Resource, Logger::Here(), "[ShaderManager] Exception creating Standard RS: {}", e.what());
+    Logger::LogFormat(
+      LogLevel::Error, LogCategory::Resource, Logger::Here(), "[ShaderManager] Exception creating Standard RS: {}", e.what());
     return false;
   }
 }
 
 bool ShaderManager::CreateDeferredRS() {
-  // TODO: Implement Deferred RS with additional render targets
-  // For now, use Standard RS as fallback
   return true;
 }
 
 bool ShaderManager::CreateComputeRS() {
-  // TODO: Implement Compute RS (no input layout, different shader visibility)
-  // For now, use Standard RS as fallback
   return true;
 }
 
@@ -173,8 +164,8 @@ ID3DBlob* ShaderManager::LoadShaderFromFile(const std::wstring& path) {
   HRESULT hr = D3DReadFileToBlob(path.c_str(), &blob);
 
   if (FAILED(hr)) {
-    Logger::LogFormat(LogLevel::Error, LogCategory::Resource, Logger::Here(), "[ShaderManager] Failed to load shader: {}",
-      utils::wstring_to_utf8(path));
+    Logger::LogFormat(
+      LogLevel::Error, LogCategory::Resource, Logger::Here(), "[ShaderManager] Failed to load shader: {}", utils::wstring_to_utf8(path));
     return nullptr;
   }
 

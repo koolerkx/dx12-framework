@@ -4,7 +4,7 @@
 #include "Component/component.h"
 #include "Component/render_settings.h"
 #include "Graphic/Frame/frame_packet.h"
-#include "Graphic/Pipeline/shader_types.h"
+#include "Graphic/Pipeline/shader_descriptors.h"
 #include "Graphic/Resource/Texture/texture.h"
 #include "Graphic/Resource/mesh.h"
 #include "game_context.h"
@@ -31,8 +31,13 @@ class MeshRenderer : public Component<MeshRenderer> {
     render_settings_ = settings;
   }
 
-  void SetShaderID(Graphics::ShaderID shader_id) {
+  void SetShaderId(Graphics::ShaderId shader_id) {
     shader_id_ = shader_id;
+  }
+
+  template <typename ShaderType>
+  void SetShader() {
+    shader_id_ = ShaderType::ID;
   }
 
   const Mesh* GetMesh() const {
@@ -70,7 +75,7 @@ class MeshRenderer : public Component<MeshRenderer> {
  private:
   const Mesh* mesh_ = nullptr;
   Texture* texture_ = nullptr;
-  Graphics::ShaderID shader_id_ = Graphics::ShaderID::Basic3D;
+  Graphics::ShaderId shader_id_ = Graphics::Basic3DShader::ID;
   Rendering::RenderSettings render_settings_ = Rendering::RenderSettings::Opaque();
   DirectX::XMFLOAT4 color_ = {1.0f, 1.0f, 1.0f, 1.0f};
 };

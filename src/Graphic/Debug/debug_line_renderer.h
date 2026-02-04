@@ -6,11 +6,9 @@
 
 #include "Frame/render_frame_context.h"
 #include "Pipeline/material.h"
+#include "Pipeline/vertex_types.h"
 
-struct LineVertex {
-  DirectX::XMFLOAT3 position;
-  DirectX::XMFLOAT4 color;
-};
+using LineVertex = Graphics::Vertex::LineVertex;
 
 class DebugLineRenderer {
  public:

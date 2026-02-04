@@ -10,11 +10,10 @@
 #include "Frame/dynamic_upload_buffer.h"
 #include "Pipeline/material.h"
 #include "Pipeline/root_parameter_slots.h"
+#include "Pipeline/vertex_types.h"
 #include "Resource/mesh.h"
 
-// Forward decls
 struct Texture;
-struct SpriteInstanceData;
 
 class RenderCommandList {
  public:
@@ -118,7 +117,7 @@ class RenderCommandList {
   }
 
   // Draw mesh with hardware instancing (for batched rendering)
-  void DrawMeshInstanced(const Mesh* mesh, const std::vector<SpriteInstanceData>& instances);
+  void DrawMeshInstanced(const Mesh* mesh, const std::vector<Graphics::Vertex::SpriteInstance>& instances);
 
  private:
   ID3D12GraphicsCommandList* cmd_;

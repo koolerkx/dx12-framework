@@ -1,13 +1,12 @@
 #include "render_command_list.h"
-#include "Frame/frame_packet.h"
 
-void RenderCommandList::DrawMeshInstanced(const Mesh* mesh, const std::vector<SpriteInstanceData>& instances) {
+void RenderCommandList::DrawMeshInstanced(const Mesh* mesh, const std::vector<Graphics::Vertex::SpriteInstance>& instances) {
   if (!mesh || instances.empty()) {
     return;
   }
 
   // 1. Allocate GPU memory for instance data using DynamicUploadBuffer
-  size_t data_size = instances.size() * sizeof(SpriteInstanceData);
+  size_t data_size = instances.size() * sizeof(Graphics::Vertex::SpriteInstance);
   auto allocation = object_allocator_->Allocate(data_size);
 
   if (!allocation.cpu_ptr) {
@@ -22,7 +21,7 @@ void RenderCommandList::DrawMeshInstanced(const Mesh* mesh, const std::vector<Sp
   D3D12_VERTEX_BUFFER_VIEW instance_view{};
   instance_view.BufferLocation = allocation.gpu_ptr;
   instance_view.SizeInBytes = static_cast<UINT>(data_size);
-  instance_view.StrideInBytes = sizeof(SpriteInstanceData);  // 96 bytes per instance
+  instance_view.StrideInBytes = sizeof(Graphics::Vertex::SpriteInstance);  // 96 bytes per instance
 
   // 4. Bind both vertex buffers: Slot 0 (mesh vertices) + Slot 1 (instance data)
   auto vbv = mesh->GetVertexBuffer().GetView();
@@ -47,11 +46,10 @@ void RenderCommandList::DrawMeshInstanced(const Mesh* mesh, const std::vector<Sp
     base_vertex_location = submesh.baseVertexLocation;
   }
 
-  cmd_->DrawIndexedInstanced(
-    index_count,                              // indexCountPerInstance
-    static_cast<UINT>(instances.size()),      // instanceCount (number of glyphs/sprites)
-    start_index_location,                     // startIndexLocation
-    base_vertex_location,                     // baseVertexLocation
-    0                                         // startInstanceLocation
+  cmd_->DrawIndexedInstanced(index_count,  // indexCountPerInstance
+    static_cast<UINT>(instances.size()),   // instanceCount (number of glyphs/sprites)
+    start_index_location,                  // startIndexLocation
+    base_vertex_location,                  // baseVertexLocation
+    0                                      // startInstanceLocation
   );
 }

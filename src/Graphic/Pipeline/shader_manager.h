@@ -14,28 +14,37 @@ class ShaderManager {
   ShaderManager() = default;
   ~ShaderManager() = default;
 
-  // Create RS Preset
   bool Initialize(ID3D12Device* device);
 
-  const ShaderRegistry::ShaderMetadata& GetShaderMetadata(Graphics::ShaderID id) const;
+  const ShaderRegistry::ShaderMetadata& GetShaderMetadata(Graphics::ShaderId id) const;
 
-  Graphics::ShaderFamily GetFamily(Graphics::ShaderID id) const;
+  std::string_view GetShaderName(Graphics::ShaderId id) const;
 
-  std::string_view GetShaderName(Graphics::ShaderID id) const;
-
-  // RS
+  // Root Signature
   ID3D12RootSignature* GetRootSignature(Graphics::RSPreset preset) const;
+  ID3D12RootSignature* GetRootSignature(Graphics::ShaderId shader_id) const;
 
-  ID3D12RootSignature* GetRootSignature(Graphics::ShaderID shader_id) const;
+  template <typename ShaderType>
+  ID3D12RootSignature* GetRootSignature() const {
+    return GetRootSignature(ShaderType::RS_PRESET);
+  }
 
-  ID3D12RootSignature* GetRootSignature(Graphics::ShaderFamily family) const;
+  // Shader bytecode
+  ID3DBlob* GetVertexShader(Graphics::ShaderId id);
+  ID3DBlob* GetPixelShader(Graphics::ShaderId id);
 
-  // Shader
-  ID3DBlob* GetVertexShader(Graphics::ShaderID id);
-  ID3DBlob* GetPixelShader(Graphics::ShaderID id);
+  template <typename ShaderType>
+  ID3DBlob* GetVertexShader() {
+    return GetVertexShader(ShaderType::ID);
+  }
 
-  // Prevent runtime shader
-  void PreloadShaders(const std::vector<Graphics::ShaderID>& shader_ids);
+  template <typename ShaderType>
+  ID3DBlob* GetPixelShader() {
+    return GetPixelShader(ShaderType::ID);
+  }
+
+  // Preload shaders to avoid runtime loading
+  void PreloadShaders(const std::vector<Graphics::ShaderId>& shader_ids);
 
  private:
   ID3D12Device* device_ = nullptr;
@@ -44,8 +53,8 @@ class ShaderManager {
   std::array<ComPtr<ID3D12RootSignature>, static_cast<size_t>(Graphics::RSPreset::Count)> rs_presets_;
 
   // Shader bytecode cache
-  std::unordered_map<Graphics::ShaderID, ComPtr<ID3DBlob>> vertex_shaders_;
-  std::unordered_map<Graphics::ShaderID, ComPtr<ID3DBlob>> pixel_shaders_;
+  std::unordered_map<Graphics::ShaderId, ComPtr<ID3DBlob>> vertex_shaders_;
+  std::unordered_map<Graphics::ShaderId, ComPtr<ID3DBlob>> pixel_shaders_;
 
   bool CreateRSPresets();
   bool CreateStandardRS();

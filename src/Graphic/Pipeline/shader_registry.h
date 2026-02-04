@@ -1,58 +1,109 @@
+/**
+ * @file shader_registry.h
+ * @brief Auto-generated shader metadata table and lookup API.
+ *
+ * @note The metadata table is generated at compile time from AllShaders tuple.
+ *       No manual switch statements required - just add shaders to the tuple.
+ *
+ * @code
+ * // Get metadata by shader type
+ * const auto& meta = ShaderRegistry::GetMetadata<Graphics::DebugLineShader>();
+ *
+ * // Get metadata by runtime ID
+ * const auto& meta = ShaderRegistry::GetMetadata(shader_id);
+ *
+ * // Access metadata fields
+ * std::string_view name = meta.name;
+ * auto layout = meta.input_layout;
+ * auto topology = meta.render_hints.topology;
+ *
+ * // Iterate all shaders
+ * for (const auto& m : ShaderRegistry::GetAllMetadata()) {
+ *   Logger::Log("Shader: {}", m.name);
+ * }
+ * @endcode
+ */
 #pragma once
 #include <d3d12.h>
 
+#include <array>
 #include <span>
 #include <string_view>
 
+#include "shader_descriptors.h"
 #include "shader_types.h"
 
 namespace ShaderRegistry {
 
 using Graphics::RSPreset;
-using Graphics::ShaderFamily;
-using Graphics::ShaderID;
+using Graphics::ShaderId;
+using Graphics::ShaderRenderHints;
 
-// Shader metadata
+// ShaderMetadata - Runtime representation of shader properties
 struct ShaderMetadata {
-  ShaderID id;
-  ShaderFamily family;
+  ShaderId id;
+  RSPreset rs_preset;
   std::string_view name;
-
-  // Shader paths (.cso)
   std::wstring_view vs_path;
   std::wstring_view ps_path;
-
-  // Input layout
   std::span<const D3D12_INPUT_ELEMENT_DESC> input_layout;
+  ShaderRenderHints render_hints;
 };
 
-// Helper functions
-const ShaderMetadata& GetMetadata(ShaderID id);
-ShaderFamily GetFamily(ShaderID id);
-std::string_view GetName(ShaderID id);
-RSPreset GetRSPreset(ShaderFamily family);
+// Auto-generated metadata table from AllShaders tuple
+namespace detail {
 
-// Input Layout definitions
-namespace InputLayouts {
-// Sprite vertex: POSITION + TEXCOORD + COLOR
-extern const D3D12_INPUT_ELEMENT_DESC SPRITE[];
-extern const size_t SPRITE_COUNT;
+template <typename ShaderType>
+constexpr ShaderMetadata MakeMetadata() {
+  return {
+    ShaderType::ID,
+    ShaderType::RS_PRESET,
+    ShaderType::NAME,
+    ShaderType::VS_PATH,
+    ShaderType::PS_PATH,
+    ShaderType::GetInputLayout(),
+    ShaderType::HINTS,
+  };
+}
 
-// Sprite instanced: Per-vertex + Per-instance data
-extern const D3D12_INPUT_ELEMENT_DESC SPRITE_INSTANCED[];
-extern const size_t SPRITE_INSTANCED_COUNT;
+template <typename Tuple, size_t... Is>
+constexpr auto MakeMetadataArray(std::index_sequence<Is...>) {
+  return std::array<ShaderMetadata, sizeof...(Is)>{MakeMetadata<std::tuple_element_t<Is, Tuple>>()...};
+}
 
-// Basic 3D: POSITION + TEXCOORD + COLOR
-extern const D3D12_INPUT_ELEMENT_DESC BASIC3D[];
-extern const size_t BASIC3D_COUNT;
+inline const auto kMetadataTable = MakeMetadataArray<Graphics::AllShaders>(std::make_index_sequence<Graphics::SHADER_COUNT>{});
 
-// Debug line: POSITION + COLOR
-extern const D3D12_INPUT_ELEMENT_DESC DEBUG_LINE[];
-extern const size_t DEBUG_LINE_COUNT;
+}  // namespace detail
 
-// Empty: Full-screen triangle (no input layout)
-extern const D3D12_INPUT_ELEMENT_DESC* EMPTY;
-extern const size_t EMPTY_COUNT;
-}  // namespace InputLayouts
+// Public API
+inline const ShaderMetadata& GetMetadata(ShaderId id) {
+  for (const auto& meta : detail::kMetadataTable) {
+    if (meta.id == id) {
+      return meta;
+    }
+  }
+  return detail::kMetadataTable[0];
+}
+
+template <typename ShaderType>
+inline const ShaderMetadata& GetMetadata() {
+  return GetMetadata(ShaderType::ID);
+}
+
+inline std::string_view GetName(ShaderId id) {
+  return GetMetadata(id).name;
+}
+
+inline RSPreset GetRSPreset(ShaderId id) {
+  return GetMetadata(id).rs_preset;
+}
+
+inline constexpr size_t GetShaderCount() {
+  return Graphics::SHADER_COUNT;
+}
+
+inline const auto& GetAllMetadata() {
+  return detail::kMetadataTable;
+}
 
 }  // namespace ShaderRegistry

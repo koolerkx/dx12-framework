@@ -21,57 +21,39 @@ bool MaterialManager::Initialize(ID3D12Device* device, ShaderManager* shader_man
   return true;
 }
 
-Rendering::RenderSettings MaterialManager::GetDefaultSettings(Graphics::ShaderID shader_id) {
+Rendering::RenderSettings MaterialManager::GetDefaultSettings(Graphics::ShaderId shader_id) {
   Rendering::RenderSettings settings;
 
-  switch (shader_id) {
-    // Debug line shader: opaque, depth test only, double-sided
-    case Graphics::ShaderID::DebugLine:
-      settings.blend_mode = Rendering::BlendMode::Opaque;
-      settings.depth_test = true;
-      settings.depth_write = false;
-      settings.double_sided = true;
-      settings.sampler_type = Rendering::SamplerType::LinearWrap;
-      settings.render_target_format = Rendering::RenderTargetFormat::HDR;  // Scene pass
-      break;
-
-    // Sprite shaders: use appropriate defaults based on usage
-    case Graphics::ShaderID::Sprite:
-      settings.blend_mode = Rendering::BlendMode::AlphaBlend;
-      settings.depth_test = false;
-      settings.depth_write = false;
-      settings.double_sided = false;
-      settings.sampler_type = Rendering::SamplerType::LinearWrap;
-      settings.render_target_format = Rendering::RenderTargetFormat::HDR;  // Scene pass (world sprite)
-      break;
-
-    case Graphics::ShaderID::SpriteInstancedUI:
-      settings = Rendering::RenderSettings::UI();
-      break;
-
-    case Graphics::ShaderID::SpriteInstancedWorld:
-      settings = Rendering::RenderSettings::Opaque();
-      break;
-
-    case Graphics::ShaderID::SpriteInstancedWorldTransparent:
-      settings = Rendering::RenderSettings::Transparent();
-      break;
-
-    // Basic 3D shader: opaque with full depth
-    case Graphics::ShaderID::Basic3D:
-      settings = Rendering::RenderSettings::Opaque();
-      break;
-
-    // Default fallback: opaque settings
-    default:
-      settings = Rendering::RenderSettings::Opaque();
-      break;
+  if (shader_id == Graphics::DebugLineShader::ID) {
+    settings.blend_mode = Rendering::BlendMode::Opaque;
+    settings.depth_test = true;
+    settings.depth_write = false;
+    settings.double_sided = true;
+    settings.sampler_type = Rendering::SamplerType::LinearWrap;
+    settings.render_target_format = Rendering::RenderTargetFormat::HDR;
+  } else if (shader_id == Graphics::SpriteShader::ID) {
+    settings.blend_mode = Rendering::BlendMode::AlphaBlend;
+    settings.depth_test = false;
+    settings.depth_write = false;
+    settings.double_sided = false;
+    settings.sampler_type = Rendering::SamplerType::LinearWrap;
+    settings.render_target_format = Rendering::RenderTargetFormat::HDR;
+  } else if (shader_id == Graphics::SpriteInstancedUIShader::ID) {
+    settings = Rendering::RenderSettings::UI();
+  } else if (shader_id == Graphics::SpriteInstancedWorldShader::ID) {
+    settings = Rendering::RenderSettings::Opaque();
+  } else if (shader_id == Graphics::SpriteInstancedWorldTransparentShader::ID) {
+    settings = Rendering::RenderSettings::Transparent();
+  } else if (shader_id == Graphics::Basic3DShader::ID) {
+    settings = Rendering::RenderSettings::Opaque();
+  } else {
+    settings = Rendering::RenderSettings::Opaque();
   }
 
   return settings;
 }
 
-Material* MaterialManager::GetOrCreateMaterial(Graphics::ShaderID shader_id, const Rendering::RenderSettings& settings) {
+Material* MaterialManager::GetOrCreateMaterial(Graphics::ShaderId shader_id, const Rendering::RenderSettings& settings) {
   settings.Validate();
   uint64_t key = GenerateCacheKey(shader_id, settings);
 
@@ -103,8 +85,8 @@ Material* MaterialManager::GetOrCreateMaterial(Graphics::ShaderID shader_id, con
     Logger::LogFormat(LogLevel::Error,
       LogCategory::Resource,
       Logger::Here(),
-      "[MaterialManager] Failed to create valid material for ShaderID: {}",
-      static_cast<uint32_t>(shader_id));
+      "[MaterialManager] Failed to create valid material for ShaderId: {}",
+      shader_id);
     return nullptr;
   }
 
@@ -114,29 +96,23 @@ Material* MaterialManager::GetOrCreateMaterial(Graphics::ShaderID shader_id, con
   return ptr;
 }
 
-Material MaterialManager::CreateMaterialInternal(Graphics::ShaderID shader_id, const Rendering::RenderSettings& settings) {
+Material MaterialManager::CreateMaterialInternal(Graphics::ShaderId shader_id, const Rendering::RenderSettings& settings) {
   // Get shader metadata and bytecode from ShaderManager
   const ShaderRegistry::ShaderMetadata& metadata = shader_manager_->GetShaderMetadata(shader_id);
   ID3DBlob* vs_blob = shader_manager_->GetVertexShader(shader_id);
   ID3DBlob* ps_blob = shader_manager_->GetPixelShader(shader_id);
 
   if (!vs_blob || !ps_blob) {
-    Logger::LogFormat(LogLevel::Error,
-      LogCategory::Resource,
-      Logger::Here(),
-      "[MaterialManager] Failed to load shaders for ShaderID: {}",
-      static_cast<uint32_t>(shader_id));
+    Logger::LogFormat(
+      LogLevel::Error, LogCategory::Resource, Logger::Here(), "[MaterialManager] Failed to load shaders for ShaderId: {}", shader_id);
     return Material();
   }
 
   // Get Root Signature from ShaderManager
   ID3D12RootSignature* rs = shader_manager_->GetRootSignature(shader_id);
   if (!rs) {
-    Logger::LogFormat(LogLevel::Error,
-      LogCategory::Resource,
-      Logger::Here(),
-      "[MaterialManager] Failed to get Root Signature for ShaderID: {}",
-      static_cast<uint32_t>(shader_id));
+    Logger::LogFormat(
+      LogLevel::Error, LogCategory::Resource, Logger::Here(), "[MaterialManager] Failed to get Root Signature for ShaderId: {}", shader_id);
     return Material();
   }
 
@@ -157,7 +133,6 @@ Material MaterialManager::CreateMaterialInternal(Graphics::ShaderID shader_id, c
       break;
   }
 
-  // Render state formats
   // Determine RTV format based on RenderSettings
   DXGI_FORMAT rtv_format;
   switch (settings.render_target_format) {
@@ -171,12 +146,7 @@ Material MaterialManager::CreateMaterialInternal(Graphics::ShaderID shader_id, c
   }
   constexpr DXGI_FORMAT dsv_format = DXGI_FORMAT_D32_FLOAT;
   D3D12_CULL_MODE cull_mode = settings.double_sided ? D3D12_CULL_MODE_NONE : D3D12_CULL_MODE_BACK;
-  D3D12_PRIMITIVE_TOPOLOGY_TYPE primitive_topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-
-  // Handle debug line shader special case
-  if (shader_id == Graphics::ShaderID::DebugLine) {
-    primitive_topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
-  }
+  D3D12_PRIMITIVE_TOPOLOGY_TYPE primitive_topology = metadata.render_hints.topology;
 
   // Create PSO
   std::vector<D3D12_INPUT_ELEMENT_DESC> input_layout_vec(metadata.input_layout.begin(), metadata.input_layout.end());

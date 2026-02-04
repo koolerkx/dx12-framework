@@ -6,7 +6,7 @@
 #include "Component/billboard_helper.h"
 #include "Component/pivot_type.h"
 #include "Game/Asset/asset_manager.h"
-#include "Graphic/Pipeline/shader_types.h"
+#include "Graphic/Pipeline/shader_descriptors.h"
 #include "game_context.h"
 #include "transform_component.h"
 
@@ -70,7 +70,7 @@ void SpriteRenderer::OnRender(FramePacket& packet) {
     case RenderPassTag::Ui: {
       SingleDrawCommand cmd;
       cmd.mesh = context->GetAssetManager().GetDefaultMesh(DefaultMesh::Quad);
-      cmd.material = material_mgr.GetOrCreateMaterial(Graphics::ShaderID::Sprite, render_settings_);
+      cmd.material = material_mgr.GetOrCreateMaterial(Graphics::SpriteShader::ID, render_settings_);
       cmd.depth = static_cast<float>(layer_id_);
 
       cmd.material_instance.material = cmd.material;
@@ -106,7 +106,7 @@ void SpriteRenderer::OnRender(FramePacket& packet) {
 
       SingleDrawCommand cmd;
       cmd.mesh = context->GetAssetManager().GetDefaultMesh(DefaultMesh::Quad);
-      cmd.material = material_mgr.GetOrCreateMaterial(Graphics::ShaderID::Sprite, render_settings_);
+      cmd.material = material_mgr.GetOrCreateMaterial(Graphics::SpriteShader::ID, render_settings_);
 
       // Calculate depth from object position for sorting
       XMFLOAT3 worldPos = transform->GetWorldPosition();
