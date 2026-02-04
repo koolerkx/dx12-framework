@@ -5,7 +5,6 @@
 #include "Framework/Logging/logger.h"
 #include "Pipeline/material_manager.h"
 #include "Pipeline/shader_manager.h"
-#include "Presentation/hdr_render_target.h"
 #include "Presentation/swapchain_manager.h"
 #include "d3dx12.h"
 
@@ -64,13 +63,14 @@ void ToneMapPass::PreExecute(const RenderFrameContext& frame, const FramePacket&
   (void)packet;
 
   // Transition HDR RT from RENDER_TARGET to PIXEL_SHADER_RESOURCE
-  hdr_rt_->TransitionTo(frame.command_list, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+  presentation_context_->TransitionHdrToShaderResource(frame.command_list);
 
   // Transition swapchain from PRESENT to RENDER_TARGET
-  swapchain_manager_->TransitionToRenderTarget(frame.command_list);
+  auto& swapchain = presentation_context_->GetSwapChainManager();
+  swapchain.TransitionToRenderTarget(frame.command_list);
 
   // Clear swapchain to black
-  D3D12_CPU_DESCRIPTOR_HANDLE swapchain_rtv = swapchain_manager_->GetCurrentRTV();
+  D3D12_CPU_DESCRIPTOR_HANDLE swapchain_rtv = swapchain.GetCurrentRTV();
   frame.command_list->ClearRenderTargetView(swapchain_rtv, CLEAR_COLOR.data(), 0, nullptr);
 
   // Set swapchain as render target (no depth for post-processing)
@@ -93,7 +93,8 @@ void ToneMapPass::Execute(const RenderFrameContext& frame, const FramePacket& pa
     uint32_t debug_mode;
     uint32_t hdr_srv_index;
     uint32_t padding = 0;
-  } cb_data = {.exposure = config_->exposure, .debug_mode = debug_->debug_view ? 1u : 0u, .hdr_srv_index = hdr_rt_->GetSrvIndex()};
+  } cb_data = {
+    .exposure = config_->exposure, .debug_mode = debug_->debug_view ? 1u : 0u, .hdr_srv_index = presentation_context_->GetHdrSrvIndex()};
 
   // Allocate and upload constant buffer
   auto cb_alloc = frame.object_cb_allocator->Allocate<ToneMapCB>();
@@ -101,7 +102,7 @@ void ToneMapPass::Execute(const RenderFrameContext& frame, const FramePacket& pa
   frame.command_list->SetGraphicsRootConstantBufferView(2, cb_alloc.gpu_ptr);
 
   // Set descriptor heaps (already set by BeginFrame)
-  // HDR RT SRV is in the static heap at index hdr_rt_->GetSrvIndex()
+  // HDR RT SRV is in the static heap at presentation_context_->GetHdrSrvIndex()
 
   // Draw full-screen triangle
   frame.command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);

@@ -3,11 +3,10 @@
 
 #include "Frame/frame_packet.h"
 #include "Frame/render_frame_context.h"
+#include "Presentation/presentation_context.h"
 #include "Render/render_pass.h"
 #include "Rendering/hdr_config.h"
 
-class HdrRenderTarget;
-class SwapChainManager;
 struct ID3D12Device;
 class MaterialManager;
 class ShaderManager;
@@ -18,9 +17,8 @@ class ToneMapPass : public IRenderPass {
   ~ToneMapPass() = default;
 
   // Set dependencies (must be called before adding to RenderPassManager)
-  void SetDependencies(HdrRenderTarget* hdr_rt, SwapChainManager* swapchain_manager, const HdrConfig* config, const HdrDebug* debug) {
-    hdr_rt_ = hdr_rt;
-    swapchain_manager_ = swapchain_manager;
+  void SetDependencies(gfx::PresentationContext* presentation_context, const HdrConfig* config, const HdrDebug* debug) {
+    presentation_context_ = presentation_context;
     config_ = config;
     debug_ = debug;
   }
@@ -42,8 +40,7 @@ class ToneMapPass : public IRenderPass {
   ComPtr<ID3D12PipelineState> pipeline_state_;
 
   // Dependencies (set via SetDependencies)
-  HdrRenderTarget* hdr_rt_ = nullptr;
-  SwapChainManager* swapchain_manager_ = nullptr;
+  gfx::PresentationContext* presentation_context_ = nullptr;
   const HdrConfig* config_ = nullptr;
   const HdrDebug* debug_ = nullptr;
 };

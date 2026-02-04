@@ -77,19 +77,6 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
   // Copy reference for backward compatibility (SwapChainManager needs command_queue_)
   command_queue_ = command_context_->GetQueue();
 
-  if (!swap_chain_manager_.Initialize(device_.Get(),
-        dxgi_factory_.Get(),
-        command_queue_.Get(),
-        hwnd,
-        frame_buffer_width,
-        frame_buffer_height,
-        descriptor_heap_manager_)) {
-    return false;
-  }
-  if (!depth_buffer_.Initialize(device_.Get(), frame_buffer_width, frame_buffer_height, descriptor_heap_manager_)) {
-    return false;
-  }
-
   // Create FrameSynchronizer
   frame_synchronizer_ = gfx::FrameSynchronizer::Create(device_.Get());
   if (!frame_synchronizer_) {
@@ -130,18 +117,6 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
     }
   }
 
-  viewport_.Width = static_cast<FLOAT>(frame_buffer_width_);    // 出力先の幅(ピクセル数)
-  viewport_.Height = static_cast<FLOAT>(frame_buffer_height_);  // 出力先の高さ(ピクセル数)
-  viewport_.TopLeftX = 0;                                       // 出力先の左上座標X
-  viewport_.TopLeftY = 0;                                       // 出力先の左上座標Y
-  viewport_.MaxDepth = 1.0f;                                    // 深度最大値
-  viewport_.MinDepth = 0.0f;                                    // 深度最小値
-
-  scissor_rect_.top = 0;                                            // 切り抜き上座標
-  scissor_rect_.left = 0;                                           // 切り抜き左座標
-  scissor_rect_.right = scissor_rect_.left + frame_buffer_width_;   // 切り抜き右座標
-  scissor_rect_.bottom = scissor_rect_.top + frame_buffer_height_;  // 切り抜き下座標
-
   ui_renderer_ = std::make_unique<UiRenderer>();
   opaque_renderer_ = std::make_unique<OpaqueRenderer>();
   transparent_renderer_ = std::make_unique<TransparentRenderer>();
@@ -158,14 +133,7 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
   render_pass_manager_->AddPass(std::make_unique<TransparentPass>(transparent_renderer_.get()));
   render_pass_manager_->AddPass(std::make_unique<DebugPass>(debug_line_renderer_.get(), &material_manager_));
 
-  // Create HDR render target
-  hdr_render_target_ = std::make_unique<HdrRenderTarget>();
-  if (!hdr_render_target_->Initialize(device_.Get(), frame_buffer_width, frame_buffer_height, descriptor_heap_manager_)) {
-    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "Failed to initialize HDR render target");
-    return false;
-  }
-
-  // Create PresentationContext (new modular subsystem - for future use)
+  // Create PresentationContext
   gfx::PresentationContext::CreateInfo presentation_info{};
   presentation_info.hwnd = hwnd;
   presentation_info.width = frame_buffer_width;
@@ -175,13 +143,13 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
   presentation_context_ = gfx::PresentationContext::Create(
     device_.Get(), dxgi_factory_.Get(), command_queue_.Get(), &descriptor_heap_manager_, presentation_info);
   if (!presentation_context_) {
-    Logger::LogFormat(
-      LogLevel::Warn, LogCategory::Graphic, Logger::Here(), "PresentationContext creation failed - using legacy presentation path");
+    Logger::LogFormat(LogLevel::Fatal, LogCategory::Graphic, Logger::Here(), "Failed to create PresentationContext");
+    return false;
   }
 
   // Create tone mapping pass and set up dependencies
   tone_map_pass_ = std::make_unique<ToneMapPass>(device_.Get(), &material_manager_, shader_manager_.get());
-  tone_map_pass_->SetDependencies(hdr_render_target_.get(), &swap_chain_manager_, &hdr_config_, &hdr_debug_);
+  tone_map_pass_->SetDependencies(presentation_context_.get(), &hdr_config_, &hdr_debug_);
   render_pass_manager_->AddPass(std::move(tone_map_pass_));
 
   render_pass_manager_->AddPass(std::make_unique<UiPass>(ui_renderer_.get()));
@@ -200,36 +168,16 @@ bool Graphic::ResizeBuffers(UINT width, UINT height) {
   }
 
   frame_synchronizer_->WaitForGpuIdle(command_queue_.Get());
-  depth_buffer_.SafeRelease();
 
-  // Release HDR RT (CRITICAL: pass descriptor_manager to free SRV)
-  hdr_render_target_->SafeRelease(descriptor_heap_manager_);
-
-  // Resize swap chain
-  if (!swap_chain_manager_.Resize(width, height, descriptor_heap_manager_)) {
-    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "Failed to resize swap chain");
-    return false;
-  }
-
-  // Recreate depth buffer
-  if (!depth_buffer_.Initialize(device_.Get(), width, height, descriptor_heap_manager_)) {
-    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "Failed to recreate depth buffer");
-    return false;
-  }
-
-  // Recreate HDR RT
-  if (!hdr_render_target_->Initialize(device_.Get(), width, height, descriptor_heap_manager_)) {
-    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "Failed to recreate HDR render target");
+  if (!presentation_context_->Resize(width, height, command_queue_.Get(), frame_synchronizer_->GetFence())) {
+    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "PresentationContext resize failed");
     return false;
   }
 
   frame_buffer_width_ = width;
   frame_buffer_height_ = height;
-  viewport_.Width = static_cast<FLOAT>(width);
-  viewport_.Height = static_cast<FLOAT>(height);
-  scissor_rect_.right = width;
-  scissor_rect_.bottom = height;
 
+  Logger::LogFormat(LogLevel::Info, LogCategory::Graphic, Logger::Here(), "Resized to {}x{}", width, height);
   return true;
 }
 
@@ -270,13 +218,17 @@ void Graphic::Shutdown() {
       LogLevel::Warn, LogCategory::Graphic, Logger::Here(), "[Graphic::Shutdown] WARNING: GPU sync failed, potential resource leak");
   }
 
+  // Explicitly release subsystems that depend on descriptor_heap_manager_
+  // Must happen before descriptor_heap_manager_ is destroyed (reverse declaration order)
+  presentation_context_.reset();
+
   // Resources released by ComPtr destructors
   is_initialized_ = false;
   is_shutting_down_.store(false, std::memory_order_release);
 }
 
 RenderFrameContext Graphic::BeginFrame() {
-  uint32_t frame_index = swap_chain_manager_.GetCurrentBackBufferIndex();
+  uint32_t frame_index = presentation_context_->GetCurrentBackBufferIndex();
 
   // Clear debug lines at start of frame
   if (debug_line_renderer_) {
@@ -296,20 +248,8 @@ RenderFrameContext Graphic::BeginFrame() {
   descriptor_heap_manager_.BeginFrame(frame_index);
   descriptor_heap_manager_.SetDescriptorHeaps(cmd);  // Bind Global Heap
 
-  // HDR workflow: Transition HDR RT to RENDER_TARGET and clear to black
-  hdr_render_target_->TransitionTo(cmd, D3D12_RESOURCE_STATE_RENDER_TARGET);
-  hdr_render_target_->Clear(cmd);
-
-  // Clear depth buffer (unchanged)
-  depth_buffer_.Clear(cmd, 1.0, 0);
-
-  // Set HDR RT as render target (swapchain remains in PRESENT state)
-  D3D12_CPU_DESCRIPTOR_HANDLE hdr_rtv = hdr_render_target_->GetRTV();
-  D3D12_CPU_DESCRIPTOR_HANDLE dsv = depth_buffer_.GetDSV();
-  cmd->OMSetRenderTargets(1, &hdr_rtv, FALSE, &dsv);
-
-  cmd->RSSetViewports(1, &viewport_);
-  cmd->RSSetScissorRects(1, &scissor_rect_);
+  // Delegate HDR RT, depth buffer, viewport setup to PresentationContext
+  presentation_context_->BeginFrame(cmd);
 
   return RenderFrameContext{.frame_index = frame_index,
     .command_list = cmd,
@@ -326,7 +266,7 @@ RenderFrameContext Graphic::BeginFrame() {
 }
 
 void Graphic::EndFrame(const RenderFrameContext& frame) {
-  swap_chain_manager_.TransitionToPresent(frame.command_list);
+  presentation_context_->EndFrame(frame.command_list);
 
   command_context_->Execute();
 
@@ -337,8 +277,7 @@ void Graphic::EndFrame(const RenderFrameContext& frame) {
 
   material_manager_.OnFrameEnd();
 
-  UINT sync_interval = enable_vsync_ ? 1 : 0;
-  swap_chain_manager_.Present(sync_interval, 0);
+  presentation_context_->Present();
 }
 
 void Graphic::RenderScene(const RenderFrameContext& frame, const FramePacket& world) {
@@ -350,80 +289,6 @@ void Graphic::AddDebugLine(const DirectX::XMFLOAT3& start, const DirectX::XMFLOA
   if (debug_line_renderer_) {
     debug_line_renderer_->AddLine(start, end, color);
   }
-}
-
-bool Graphic::EnableDebugLayer() {
-  ID3D12Debug* debugLayer = nullptr;
-
-  if (FAILED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugLayer)))) {
-    return false;
-  }
-
-  debugLayer->EnableDebugLayer();
-  debugLayer->Release();
-
-  return true;
-}
-
-bool Graphic::CreateFactory() {
-#if defined(DEBUG) || defined(_DEBUG)
-  EnableDebugLayer();
-  UINT dxgi_factory_flag = DXGI_CREATE_FACTORY_DEBUG;
-#else
-  UINT dxgi_factory_flag = 0;
-#endif
-
-  auto hr = CreateDXGIFactory2(dxgi_factory_flag, IID_PPV_ARGS(&dxgi_factory_));
-  if (FAILED(hr)) {
-    return false;
-  }
-  return true;
-}
-
-bool Graphic::CreateDevice() {
-  std::vector<ComPtr<IDXGIAdapter>> adapters;
-  ComPtr<IDXGIAdapter> tmpAdapter = nullptr;
-
-  for (int i = 0; dxgi_factory_->EnumAdapters(i, &tmpAdapter) != DXGI_ERROR_NOT_FOUND; ++i) {
-    adapters.push_back(tmpAdapter);
-  }
-
-  for (auto adapter : adapters) {
-    DXGI_ADAPTER_DESC adapter_desc = {};
-    adapter->GetDesc(&adapter_desc);
-    if (std::wstring desc_str = adapter_desc.Description; desc_str.find(L"NVIDIA") != std::string::npos) {
-      tmpAdapter = adapter;
-      break;
-    }
-  }
-
-  D3D_FEATURE_LEVEL levels[] = {
-    D3D_FEATURE_LEVEL_12_2,
-    D3D_FEATURE_LEVEL_12_1,
-    D3D_FEATURE_LEVEL_12_0,
-    D3D_FEATURE_LEVEL_11_1,
-    D3D_FEATURE_LEVEL_11_0,
-  };
-
-  for (auto level : levels) {
-    auto hr = D3D12CreateDevice(tmpAdapter.Get(), level, IID_PPV_ARGS(&device_));
-    if (SUCCEEDED(hr) && device_ != nullptr) {
-      // Check bindless sampler support (Tier 3)
-      D3D12_FEATURE_DATA_D3D12_OPTIONS options = {};
-      if (SUCCEEDED(device_->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &options, sizeof(options)))) {
-        use_bindless_sampler_ = (options.ResourceBindingTier >= D3D12_RESOURCE_BINDING_TIER_3);
-      } else {
-        use_bindless_sampler_ = false;
-        Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "Not support bindless sampler support");
-        return false;
-      }
-
-      return true;
-    }
-  }
-
-  Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "Failed to create device");
-  return false;
 }
 
 void Graphic::ExecuteSync(std::function<void(ID3D12GraphicsCommandList*)> cb) {

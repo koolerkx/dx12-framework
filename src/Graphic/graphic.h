@@ -7,10 +7,10 @@
 #include <memory>
 #include <vector>
 
+#include "Command/command_context.h"
 #include "Core/types.h"
 #include "Debug/debug_line_renderer.h"
 #include "Descriptor/descriptor_heap_manager.h"
-#include "Command/command_context.h"
 #include "Device/device_context.h"
 #include "Device/fence_manager.h"
 #include "Device/frame_synchronizer.h"
@@ -21,10 +21,7 @@
 #include "Frame/render_frame_context.h"
 #include "Pipeline/material_manager.h"
 #include "Pipeline/shader_manager.h"
-#include "Presentation/depth_buffer.h"
-#include "Presentation/hdr_render_target.h"
 #include "Presentation/presentation_context.h"
-#include "Presentation/swapchain_manager.h"
 #include "Render/material_renderer.h"
 #include "Render/render_pass_manager.h"
 #include "Render/tone_map_pass.h"
@@ -94,11 +91,14 @@ class Graphic {
   }
 
   ID3D12Device* GetDevice() const {
-    return device_.Get();
+    return device_context_ ? device_context_->GetDevice() : nullptr;
   }
 
   void SetVSync(bool enable) {
     enable_vsync_ = enable;
+    if (presentation_context_) {
+      presentation_context_->SetVSync(enable);
+    }
   }
 
   gfx::DeviceContext* GetDeviceContext() const {
@@ -124,29 +124,21 @@ class Graphic {
   std::unique_ptr<gfx::PresentationContext> presentation_context_;
   std::unique_ptr<gfx::FrameSynchronizer> frame_synchronizer_;
 
-  // Core (DEPRECATED: will be replaced by subsystems)
-  ComPtr<ID3D12Device5> device_ = nullptr;  /// @note D3D Device, RTX graphic card required
+  // Backward compatibility references (copied from subsystems)
+  ComPtr<ID3D12Device5> device_ = nullptr;
   ComPtr<IDXGIFactory6> dxgi_factory_ = nullptr;
-
-  ComPtr<ID3D12CommandQueue> command_queue_ = nullptr;  // Reference from CommandContext for SwapChainManager
+  ComPtr<ID3D12CommandQueue> command_queue_ = nullptr;
 
   // descriptor management
   DescriptorHeapManager descriptor_heap_manager_;
-  SwapChainManager swap_chain_manager_;
-  DepthBuffer depth_buffer_;
 
   // HDR rendering
-  std::unique_ptr<HdrRenderTarget> hdr_render_target_;
   std::unique_ptr<ToneMapPass> tone_map_pass_;
   HdrConfig hdr_config_;
   HdrDebug hdr_debug_;
 
   UINT frame_buffer_width_ = 0;
   UINT frame_buffer_height_ = 0;
-
-  // Viewport
-  D3D12_VIEWPORT viewport_ = {};
-  D3D12_RECT scissor_rect_ = {};
 
   ConstantBuffer<FrameCB> frameCB_;
   ConstantBuffer<ObjectCB> objectCB_;
@@ -166,11 +158,6 @@ class Graphic {
   std::unique_ptr<RenderPassManager> render_pass_manager_;
 
   std::unique_ptr<DebugLineRenderer> debug_line_renderer_;
-
-  // Initialization (legacy - kept for reference, implementations moved to subsystems)
-  bool EnableDebugLayer();
-  bool CreateFactory();
-  bool CreateDevice();
 
   HWND hwnd_ = nullptr;
   bool enable_vsync_ = true;
