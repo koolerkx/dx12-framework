@@ -4,6 +4,7 @@
 #include <d3d12.h>
 
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <ranges>
 #include <unordered_map>
@@ -14,8 +15,6 @@
 #include "Descriptor/descriptor_heap_manager.h"
 #include "texture.h"
 
-class Graphic;
-
 // Texture usage type for proper color space handling
 enum class TextureUsage {
   Color,  // Albedo, diffuse, UI - use sRGB
@@ -24,10 +23,20 @@ enum class TextureUsage {
 
 class TextureManager {
  public:
-  bool Initialize(Graphic* graphic, ID3D12Device* device, DescriptorHeapManager* heap_manager) {
-    graphic_ = graphic;
+  // Callback types to decouple from Graphic
+  using ExecuteSyncFn = std::function<void(std::function<void(ID3D12GraphicsCommandList*)>)>;
+  using GetFenceValueFn = std::function<uint64_t()>;
+
+  bool Initialize(ID3D12Device* device,
+    DescriptorHeapManager* heap_manager,
+    ExecuteSyncFn execute_sync,
+    GetFenceValueFn get_fence_value,
+    uint32_t frame_buffer_count) {
     device_ = device;
     heap_manager_ = heap_manager;
+    execute_sync_ = std::move(execute_sync);
+    get_fence_value_ = std::move(get_fence_value);
+    frame_buffer_count_ = frame_buffer_count;
     return true;
   }
 
@@ -74,9 +83,11 @@ class TextureManager {
   void ProcessDeferredFrees(uint64_t completed_fence_value);
 
  private:
-  Graphic* graphic_ = nullptr;
   ComPtr<ID3D12Device> device_ = nullptr;
   DescriptorHeapManager* heap_manager_ = nullptr;
+  ExecuteSyncFn execute_sync_;
+  GetFenceValueFn get_fence_value_;
+  uint32_t frame_buffer_count_ = 2;
 
   // cache
   std::unordered_map<std::wstring, std::shared_ptr<Texture>> texture_cache_;

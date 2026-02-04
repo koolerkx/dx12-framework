@@ -84,7 +84,11 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
     return false;
   }
 
-  if (!texture_manager_.Initialize(this, device_.Get(), &descriptor_heap_manager_)) {
+  // Provide callbacks to decouple TextureManager from Graphic
+  auto execute_sync_fn = [this](std::function<void(ID3D12GraphicsCommandList*)> cb) { ExecuteSync(std::move(cb)); };
+  auto get_fence_value_fn = [this]() { return frame_synchronizer_->GetFenceManager().GetCurrentFenceValue(); };
+
+  if (!texture_manager_.Initialize(device_.Get(), &descriptor_heap_manager_, execute_sync_fn, get_fence_value_fn, FRAME_BUFFER_COUNT)) {
     return false;
   }
 
