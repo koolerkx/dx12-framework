@@ -68,7 +68,7 @@ uint64_t FrameSynchronizer::GetCurrentFenceValue() const {
 }
 
 ID3D12Fence* FrameSynchronizer::GetFence() const {
-  return nullptr;  // FenceManager doesn't expose the fence directly
+  return fence_manager_.GetFence();
 }
 
 bool FrameSynchronizer::IsValid() const {

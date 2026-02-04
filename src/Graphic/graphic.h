@@ -10,6 +10,7 @@
 #include "Core/types.h"
 #include "Debug/debug_line_renderer.h"
 #include "Descriptor/descriptor_heap_manager.h"
+#include "Command/command_context.h"
 #include "Device/device_context.h"
 #include "Device/fence_manager.h"
 #include "Device/frame_synchronizer.h"
@@ -85,7 +86,7 @@ class Graphic {
   }
 
   FenceManager& GetFenceManager() {
-    return fence_manager_;
+    return frame_synchronizer_->GetFenceManager();
   }
 
   Font::SpriteFontManager& GetSpriteFontManager() {
@@ -119,6 +120,7 @@ class Graphic {
  private:
   // New modular subsystems
   std::unique_ptr<gfx::DeviceContext> device_context_;
+  std::unique_ptr<gfx::CommandContext> command_context_;
   std::unique_ptr<gfx::PresentationContext> presentation_context_;
   std::unique_ptr<gfx::FrameSynchronizer> frame_synchronizer_;
 
@@ -126,16 +128,12 @@ class Graphic {
   ComPtr<ID3D12Device5> device_ = nullptr;  /// @note D3D Device, RTX graphic card required
   ComPtr<IDXGIFactory6> dxgi_factory_ = nullptr;
 
-  ComPtr<ID3D12CommandAllocator> utility_command_allocator_ = nullptr;                 // for ExecuteSync
-  std::array<ComPtr<ID3D12CommandAllocator>, FRAME_BUFFER_COUNT> command_allocators_;  // for frame in flight
-  ComPtr<ID3D12GraphicsCommandList> command_list_ = nullptr;
-  ComPtr<ID3D12CommandQueue> command_queue_ = nullptr;
+  ComPtr<ID3D12CommandQueue> command_queue_ = nullptr;  // Reference from CommandContext for SwapChainManager
 
   // descriptor management
   DescriptorHeapManager descriptor_heap_manager_;
   SwapChainManager swap_chain_manager_;
   DepthBuffer depth_buffer_;
-  FenceManager fence_manager_;
 
   // HDR rendering
   std::unique_ptr<HdrRenderTarget> hdr_render_target_;
@@ -153,8 +151,6 @@ class Graphic {
   ConstantBuffer<FrameCB> frameCB_;
   ConstantBuffer<ObjectCB> objectCB_;
 
-  std::array<uint64_t, FRAME_BUFFER_COUNT> frame_fence_values_ = {};
-
   PerFrameConstantBuffer<FrameCB> frame_cb_storage_;
   std::vector<std::unique_ptr<DynamicUploadBuffer>> object_cb_allocators_;
 
@@ -171,14 +167,10 @@ class Graphic {
 
   std::unique_ptr<DebugLineRenderer> debug_line_renderer_;
 
-  // Initialization
+  // Initialization (legacy - kept for reference, implementations moved to subsystems)
   bool EnableDebugLayer();
   bool CreateFactory();
   bool CreateDevice();
-  bool CreateCommandQueue();
-
-  bool CreateCommandList();
-  bool CreateCommandAllocators();
 
   HWND hwnd_ = nullptr;
   bool enable_vsync_ = true;

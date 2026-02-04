@@ -36,6 +36,10 @@ class FenceManager {
     return fence_ != nullptr && fence_event_ != nullptr;
   }
 
+  ID3D12Fence* GetFence() const {
+    return fence_.Get();
+  }
+
  private:
   std::mutex fence_mutex_;  // only for signal fence
   ComPtr<ID3D12Fence> fence_ = nullptr;

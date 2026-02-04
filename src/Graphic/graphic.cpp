@@ -66,21 +66,16 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
     return false;
   }
 
-  if (!CreateCommandQueue()) {
-    Logger::LogFormat(LogLevel::Fatal, LogCategory::Graphic, Logger::Here(), "Failed to create command queue");
-    MessageBoxW(nullptr, L"Graphic: Failed to create command queue", init_error_caption.c_str(), MB_OK | MB_ICONERROR);
+  // Create CommandContext: Command List, Command Allocator, Command Queue
+  command_context_ = gfx::CommandContext::Create(device_.Get());
+  if (!command_context_) {
+    Logger::LogFormat(LogLevel::Fatal, LogCategory::Graphic, Logger::Here(), "Failed to create CommandContext");
+    MessageBoxW(nullptr, L"Graphic: Failed to create CommandContext", init_error_caption.c_str(), MB_OK | MB_ICONERROR);
     return false;
   }
-  if (!CreateCommandAllocators()) {
-    Logger::LogFormat(LogLevel::Fatal, LogCategory::Graphic, Logger::Here(), "Failed to create command allocators");
-    MessageBoxW(nullptr, L"Graphic: Failed to create command allocators", init_error_caption.c_str(), MB_OK | MB_ICONERROR);
-    return false;
-  }
-  if (!CreateCommandList()) {
-    Logger::LogFormat(LogLevel::Fatal, LogCategory::Graphic, Logger::Here(), "Failed to create command list");
-    MessageBoxW(nullptr, L"Graphic: Failed to create command list", init_error_caption.c_str(), MB_OK | MB_ICONERROR);
-    return false;
-  }
+
+  // Copy reference for backward compatibility (SwapChainManager needs command_queue_)
+  command_queue_ = command_context_->GetQueue();
 
   if (!swap_chain_manager_.Initialize(device_.Get(),
         dxgi_factory_.Get(),
@@ -94,11 +89,8 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
   if (!depth_buffer_.Initialize(device_.Get(), frame_buffer_width, frame_buffer_height, descriptor_heap_manager_)) {
     return false;
   }
-  if (!fence_manager_.Initialize(device_.Get())) {
-    return false;
-  }
 
-  // Create FrameSynchronizer (new modular subsystem)
+  // Create FrameSynchronizer
   frame_synchronizer_ = gfx::FrameSynchronizer::Create(device_.Get());
   if (!frame_synchronizer_) {
     Logger::LogFormat(LogLevel::Fatal, LogCategory::Graphic, Logger::Here(), "Failed to create FrameSynchronizer");
@@ -207,7 +199,7 @@ bool Graphic::ResizeBuffers(UINT width, UINT height) {
     return true;  // Already at target size
   }
 
-  fence_manager_.WaitForGpu(command_queue_.Get());
+  frame_synchronizer_->WaitForGpuIdle(command_queue_.Get());
   depth_buffer_.SafeRelease();
 
   // Release HDR RT (CRITICAL: pass descriptor_manager to free SRV)
@@ -242,8 +234,8 @@ bool Graphic::ResizeBuffers(UINT width, UINT height) {
 }
 
 void Graphic::WaitForGpuIdle() {
-  if (command_queue_ && fence_manager_.IsValid()) {
-    fence_manager_.WaitForGpu(command_queue_.Get());
+  if (command_queue_ && frame_synchronizer_ && frame_synchronizer_->IsValid()) {
+    frame_synchronizer_->WaitForGpuIdle(command_queue_.Get());
   }
 }
 
@@ -256,11 +248,11 @@ void Graphic::Shutdown() {
   bool gpu_synced = false;
 
   try {
-    if (command_queue_ && fence_manager_.IsValid()) {
-      fence_manager_.WaitForGpu(command_queue_.Get());
+    if (command_queue_ && frame_synchronizer_ && frame_synchronizer_->IsValid()) {
+      frame_synchronizer_->WaitForGpuIdle(command_queue_.Get());
       gpu_synced = true;
 
-      uint64_t completed = fence_manager_.GetCompletedFenceValue();
+      uint64_t completed = frame_synchronizer_->GetCompletedValue();
       texture_manager_.ProcessDeferredFrees(completed);
       texture_manager_.CleanUploadBuffers();
     }
@@ -291,41 +283,36 @@ RenderFrameContext Graphic::BeginFrame() {
     debug_line_renderer_->Clear();
   }
 
-  // Wait for resource
-  uint64_t fence_value = frame_fence_values_[frame_index];
-  if (fence_value != 0) {
-    fence_manager_.WaitForFenceValue(fence_value);
-  }
-
-  uint64_t completed_fence = fence_manager_.GetCompletedFenceValue();
+  // Wait for previous frame using this buffer to complete
+  frame_synchronizer_->WaitForFrame(frame_index);
+  uint64_t completed_fence = frame_synchronizer_->GetCompletedValue();
   texture_manager_.ProcessDeferredFrees(completed_fence);
 
   object_cb_allocators_[frame_index]->Reset();  // manually reset for dynamic allocation
 
-  auto* current_allocator = command_allocators_[frame_index].Get();
-  (void)current_allocator->Reset();
-  (void)command_list_->Reset(current_allocator, nullptr);
+  command_context_->BeginFrame(frame_index);
+  auto* cmd = command_context_->GetCommandList();
 
   descriptor_heap_manager_.BeginFrame(frame_index);
-  descriptor_heap_manager_.SetDescriptorHeaps(command_list_.Get());  // Bind Global Heap
+  descriptor_heap_manager_.SetDescriptorHeaps(cmd);  // Bind Global Heap
 
   // HDR workflow: Transition HDR RT to RENDER_TARGET and clear to black
-  hdr_render_target_->TransitionTo(command_list_.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET);
-  hdr_render_target_->Clear(command_list_.Get());
+  hdr_render_target_->TransitionTo(cmd, D3D12_RESOURCE_STATE_RENDER_TARGET);
+  hdr_render_target_->Clear(cmd);
 
   // Clear depth buffer (unchanged)
-  depth_buffer_.Clear(command_list_.Get(), 1.0, 0);
+  depth_buffer_.Clear(cmd, 1.0, 0);
 
   // Set HDR RT as render target (swapchain remains in PRESENT state)
   D3D12_CPU_DESCRIPTOR_HANDLE hdr_rtv = hdr_render_target_->GetRTV();
   D3D12_CPU_DESCRIPTOR_HANDLE dsv = depth_buffer_.GetDSV();
-  command_list_->OMSetRenderTargets(1, &hdr_rtv, FALSE, &dsv);
+  cmd->OMSetRenderTargets(1, &hdr_rtv, FALSE, &dsv);
 
-  command_list_->RSSetViewports(1, &viewport_);
-  command_list_->RSSetScissorRects(1, &scissor_rect_);
+  cmd->RSSetViewports(1, &viewport_);
+  cmd->RSSetScissorRects(1, &scissor_rect_);
 
   return RenderFrameContext{.frame_index = frame_index,
-    .command_list = command_list_.Get(),
+    .command_list = cmd,
 
     // Pass the pointer to the specific ConstantBuffer instance
     .frame_cb = &frame_cb_storage_.GetBuffer(frame_index),
@@ -341,12 +328,9 @@ RenderFrameContext Graphic::BeginFrame() {
 void Graphic::EndFrame(const RenderFrameContext& frame) {
   swap_chain_manager_.TransitionToPresent(frame.command_list);
 
-  (void)frame.command_list->Close();
-  ID3D12CommandList* command_lists[] = {frame.command_list};
-  command_queue_->ExecuteCommandLists(1, command_lists);
+  command_context_->Execute();
 
-  uint64_t fence_value = fence_manager_.SignalFence(command_queue_.Get());
-  frame_fence_values_[frame.frame_index] = fence_value;
+  uint64_t fence_value = frame_synchronizer_->SignalFrame(command_queue_.Get(), frame.frame_index);
   frame_cb_storage_.MarkFrameSubmitted(frame.frame_index, fence_value);
 
   texture_manager_.CleanUploadBuffers();
@@ -442,68 +426,6 @@ bool Graphic::CreateDevice() {
   return false;
 }
 
-bool Graphic::CreateCommandQueue() {
-  D3D12_COMMAND_QUEUE_DESC command_queue_desc = {};
-  command_queue_desc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-  command_queue_desc.NodeMask = 0;
-  command_queue_desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
-  command_queue_desc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-
-  auto hr = device_->CreateCommandQueue(&command_queue_desc, IID_PPV_ARGS(&command_queue_));
-  if (FAILED(hr) || command_queue_ == nullptr) {
-    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "Failed to create command queue");
-    return false;
-  }
-  return true;
-}
-
-bool Graphic::CreateCommandList() {
-  auto hr =
-    device_->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, utility_command_allocator_.Get(), nullptr, IID_PPV_ARGS(&command_list_));
-  command_list_->SetName(L"Main_Graphics_CommandList");
-
-  if (FAILED(hr) || command_list_ == nullptr) {
-    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "Failed to create command list");
-    return false;
-  }
-
-  command_list_->Close();
-  return true;
-}
-
-bool Graphic::CreateCommandAllocators() {
-  auto hr = device_->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&utility_command_allocator_));
-
-  if (FAILED(hr) || utility_command_allocator_ == nullptr) {
-    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "Failed to create utility command allocator");
-    return false;
-  }
-  utility_command_allocator_->SetName(L"UtilityCommandAllocator");
-
-  for (int i = 0; i < FRAME_BUFFER_COUNT; ++i) {
-    hr = device_->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&command_allocators_[i]));
-
-    if (FAILED(hr) || command_allocators_[i] == nullptr) {
-      Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "Failed to create command allocator {}", i);
-      return false;
-    }
-
-    std::wstring name = L"CommandAllocator_Frame" + std::to_wstring(i);
-    command_allocators_[i]->SetName(name.c_str());
-  }
-
-  return true;
-}
-
 void Graphic::ExecuteSync(std::function<void(ID3D12GraphicsCommandList*)> cb) {
-  utility_command_allocator_->Reset();
-  command_list_->Reset(utility_command_allocator_.Get(), nullptr);
-
-  cb(command_list_.Get());
-
-  command_list_->Close();
-  ID3D12CommandList* lists[] = {command_list_.Get()};
-  command_queue_->ExecuteCommandLists(1, lists);
-
-  fence_manager_.WaitForGpu(command_queue_.Get());
+  command_context_->ExecuteSync(frame_synchronizer_->GetFence(), cb);
 }
