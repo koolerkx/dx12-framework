@@ -1031,17 +1031,17 @@ void Quaternion::ToAxisAngle(Vector3& outAxis, float& outAngle) const {
 }
 
 Vector3 Quaternion::ToEulerAngles() const {
-  // Extract pitch, yaw, roll from quaternion
-  float sinr_cosp = 2.0f * (w * x + y * z);
-  float cosr_cosp = 1.0f - 2.0f * (x * x + y * y);
-  float roll = Atan2(sinr_cosp, cosr_cosp);
-
-  float sinp = 2.0f * (w * y - z * x);
+  // Decompose for intrinsic ZXY convention matching XMQuaternionRotationRollPitchYaw
+  // R = Ry(yaw) * Rx(pitch) * Rz(roll)
+  // R[1][2] = -sin(pitch) → pitch = asin(2(wx - yz))
+  float sinp = 2.0f * (w * x - y * z);
   float pitch = (Abs(sinp) >= 1.0f) ? std::copysign(PiOver2, sinp) : Asin(sinp);
 
-  float siny_cosp = 2.0f * (w * z + x * y);
-  float cosy_cosp = 1.0f - 2.0f * (y * y + z * z);
-  float yaw = Atan2(siny_cosp, cosy_cosp);
+  // R[0][2] / R[2][2] → yaw = atan2(2(xz + wy), 1 - 2(x² + y²))
+  float yaw = Atan2(2.0f * (x * z + w * y), 1.0f - 2.0f * (x * x + y * y));
+
+  // R[1][0] / R[1][1] → roll = atan2(2(xy + wz), 1 - 2(x² + z²))
+  float roll = Atan2(2.0f * (x * y + w * z), 1.0f - 2.0f * (x * x + z * z));
 
   return Vector3(pitch, yaw, roll);
 }
