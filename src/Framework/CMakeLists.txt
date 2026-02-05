@@ -48,6 +48,10 @@ add_library(framework STATIC
   Logging/sinks/console_sink.cpp
   Logging/sinks/debug_sink.cpp
   Logging/sinks/file_sink.cpp
+
+  # Math
+  Math/Math.h
+  Math/Math.cpp
 )
 
 target_link_libraries(framework PUBLIC
