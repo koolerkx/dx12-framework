@@ -15,31 +15,57 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - generator: Ninja
+          # - generator: Ninja
+          #   config: Debug
+          #   arch: x64
+          #   configure_preset: x64-debug
+          #   build_dir: out/build/x64-debug
+
+          # - generator: Ninja
+          #   config: Release
+          #   arch: x64
+          #   configure_preset: x64-release
+          #   build_dir: out/build/x64-release
+
+          # - generator: Visual Studio
+          #   config: Debug
+          #   arch: x64
+          #   configure_preset: vs-x64
+          #   build_preset: vs-x64-debug
+          #   build_dir: out/build/vs-x64
+
+          # - generator: Visual Studio
+          #   config: Release
+          #   arch: x64
+          #   configure_preset: vs-x64
+          #   build_preset: vs-x64-release
+          #   build_dir: out/build/vs-x64
+
+          - generator: Ninja (Editor)
             config: Debug
             arch: x64
-            configure_preset: x64-debug
-            build_dir: out/build/x64-debug
+            configure_preset: x64-debug-editor
+            build_dir: out/build/x64-debug-editor
 
-          - generator: Ninja
+          - generator: Ninja (Editor)
             config: Release
             arch: x64
-            configure_preset: x64-release
-            build_dir: out/build/x64-release
+            configure_preset: x64-release-editor
+            build_dir: out/build/x64-release-editor
 
-          - generator: Visual Studio
+          - generator: Visual Studio (Editor)
             config: Debug
             arch: x64
-            configure_preset: vs-x64
-            build_preset: vs-x64-debug
-            build_dir: out/build/vs-x64
+            configure_preset: vs-x64-editor
+            build_preset: vs-x64-editor-debug
+            build_dir: out/build/vs-x64-editor
 
-          - generator: Visual Studio
+          - generator: Visual Studio (Editor)
             config: Release
             arch: x64
-            configure_preset: vs-x64
-            build_preset: vs-x64-release
-            build_dir: out/build/vs-x64
+            configure_preset: vs-x64-editor
+            build_preset: vs-x64-editor-release
+            build_dir: out/build/vs-x64-editor
 
     steps:
       - uses: actions/checkout@v4
