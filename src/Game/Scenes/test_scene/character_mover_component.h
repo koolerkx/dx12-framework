@@ -1,11 +1,11 @@
 #pragma once
 #include <DirectXMath.h>
 
-#include "Component/component.h"
+#include "Component/behavior_component.h"
 
-class CharacterMover : public Component<CharacterMover> {
+class CharacterMover : public BehaviorComponent<CharacterMover> {
  public:
-  using Component::Component;
+  using BehaviorComponent::BehaviorComponent;
 
   void OnUpdate(float dt) override;  // Game logic here!
 

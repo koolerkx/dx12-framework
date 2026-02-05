@@ -1,11 +1,11 @@
 #pragma once
-#include "Component/component.h"
+#include "Component/behavior_component.h"
 
 class InputSystem;
 
-class FreeCameraController : public Component<FreeCameraController> {
+class FreeCameraController : public BehaviorComponent<FreeCameraController> {
  public:
-  using Component::Component;
+  using BehaviorComponent::BehaviorComponent;
 
   void OnUpdate(float dt) override;
 
