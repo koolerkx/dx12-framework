@@ -12,24 +12,38 @@ GameObject::GameObject(IScene* scene, const std::string& name) : name_(name), sc
 }
 
 GameObject::~GameObject() {
+  if (is_started_) {
+    OnDestroy();
+  }
+  for (auto& comp : components_) {
+    if (comp->is_started_) {
+      comp->OnDestroy();
+    }
+  }
 }
 
 GameContext* GameObject::GetContext() const {
   return scene_ ? scene_->GetContext() : nullptr;
 }
 
+void GameObject::Init() {
+  OnInit();
+}
+
 void GameObject::Start() {
   is_started_ = true;
-  const size_t count = components_.size();
-  for (size_t i = 0; i < count; ++i) {
-    components_[i]->OnStart();
-  }
+  OnStart();
+  FlushPendingStarts();
 }
 
 void GameObject::Update(float dt) {
+  FlushPendingStarts();
+
   const size_t count = components_.size();
   for (size_t i = 0; i < count; ++i) {
-    components_[i]->OnUpdate(dt);
+    if (components_[i]->is_started_ && components_[i]->IsEnabled()) {
+      components_[i]->OnUpdate(dt);
+    }
   }
   for (auto* child : children_) {
     child->Update(dt);
@@ -39,7 +53,9 @@ void GameObject::Update(float dt) {
 void GameObject::FixedUpdate(float dt) {
   const size_t count = components_.size();
   for (size_t i = 0; i < count; ++i) {
-    components_[i]->OnFixedUpdate(dt);
+    if (components_[i]->is_started_ && components_[i]->IsEnabled()) {
+      components_[i]->OnFixedUpdate(dt);
+    }
   }
   for (auto* child : children_) {
     child->FixedUpdate(dt);
@@ -49,10 +65,22 @@ void GameObject::FixedUpdate(float dt) {
 void GameObject::Render(FramePacket& packet) {
   const size_t count = components_.size();
   for (size_t i = 0; i < count; ++i) {
-    components_[i]->OnRender(packet);
+    if (components_[i]->is_started_ && components_[i]->IsEnabled()) {
+      components_[i]->OnRender(packet);
+    }
   }
   for (auto* child : children_) {
     child->Render(packet);
+  }
+}
+
+void GameObject::FlushPendingStarts() {
+  const size_t count = components_.size();
+  for (size_t i = 0; i < count; ++i) {
+    if (!components_[i]->is_started_) {
+      components_[i]->is_started_ = true;
+      components_[i]->OnStart();
+    }
   }
 }
 

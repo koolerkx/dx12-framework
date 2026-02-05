@@ -13,13 +13,17 @@ class GameContext;
 class GameObject {
  public:
   explicit GameObject(IScene* scene, const std::string& name = "GameObject");
-  ~GameObject();
+  virtual ~GameObject();
 
-  // Lifecycle
+  void Init();
   void Start();
   void Update(float dt);
   void FixedUpdate(float dt);
   void Render(FramePacket& packet);
+
+  bool IsStarted() const {
+    return is_started_;
+  }
 
   TransformComponent* GetTransform();
 
@@ -50,10 +54,7 @@ class GameObject {
     T* ptr = component.get();
     components_.push_back(std::move(component));
 
-    // If game already started, catch up lifecycle
-    if (is_started_) {
-      ptr->OnStart();
-    }
+    ptr->OnInit();
 
     return ptr;
   }
@@ -91,7 +92,20 @@ class GameObject {
 
   void DetachFromHierarchy();
 
+ protected:
+  // Immediately after creation in Scene::CreateGameObject
+  virtual void OnInit() {
+  }
+  // Deferred to next FlushPendingStarts (first Update or StartAllObjects)
+  virtual void OnStart() {
+  }
+  // In destructor, before component destruction, only if started
+  virtual void OnDestroy() {
+  }
+
  private:
+  void FlushPendingStarts();
+
   void AddChild(GameObject* child);
   void RemoveChild(GameObject* child);
 

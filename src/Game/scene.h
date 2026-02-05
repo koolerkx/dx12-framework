@@ -67,6 +67,7 @@ class IScene {
 
   GameContext* context_ = nullptr;
 
+  void FlushPendingStarts();
   void CleanupDestroyedObjects();
   void UpdateRootObjects(float dt);
   void FixedUpdateRootObjects(float dt);

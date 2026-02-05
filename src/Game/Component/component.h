@@ -27,14 +27,28 @@ class IComponentBase {
   }
   virtual ~IComponentBase() = default;
 
+  // Immediately on AddComponent, before Start
+  virtual void OnInit() {
+  }
+  // Deferred to next FlushPendingStarts (first Update or StartAllObjects)
   virtual void OnStart() {
   }
+  // Manual only — never auto-called by the system
+  virtual void OnReset() {
+  }
+  // Every frame, gated by enabled and started
   virtual void OnUpdate(float /*dt*/) {
   }
+  // Every fixed timestep, gated by enabled and started
   virtual void OnFixedUpdate(float /*dt*/) {
   }
+  // Every frame render pass, gated by enabled and started
   virtual void OnRender(FramePacket& /*packet*/) {
   }
+  // In ~GameObject, after GameObject::OnDestroy, only if started
+  virtual void OnDestroy() {
+  }
+  // When owning GameObject's parent changes via SetParent
   virtual void OnParentChanged() {
   }
 
@@ -43,11 +57,26 @@ class IComponentBase {
   GameObject* GetOwner() const {
     return owner_;
   }
-
   GameContext* GetContext() const;
+
+  bool IsEnabled() const {
+    return enabled_;
+  }
+  void SetEnabled(bool enabled) {
+    enabled_ = enabled;
+  }
+  bool IsStarted() const {
+    return is_started_;
+  }
 
  protected:
   GameObject* owner_;
+
+ private:
+  bool enabled_ = true;
+  bool is_started_ = false;
+
+  friend class GameObject;
 };
 
 // CTRP for Component GetTypeID

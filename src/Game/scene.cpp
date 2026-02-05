@@ -12,18 +12,22 @@ GameObject* IScene::CreateGameObject(const std::string& name) {
   GameObject* ptr = obj.get();
   game_objects_.push_back(std::move(obj));
 
-  if (is_started_) {
-    ptr->Start();
-  }
+  ptr->Init();
 
   return ptr;
 }
 
 void IScene::StartAllObjects() {
-  for (auto& obj : game_objects_) {
-    obj->Start();
-  }
+  FlushPendingStarts();
   is_started_ = true;
+}
+
+void IScene::FlushPendingStarts() {
+  for (auto& obj : game_objects_) {
+    if (!obj->IsStarted()) {
+      obj->Start();
+    }
+  }
 }
 
 void IScene::Enter(AssetManager& asset_manager) {
@@ -44,6 +48,7 @@ void IScene::Exit() {
 }
 
 void IScene::Update(float dt) {
+  FlushPendingStarts();
   OnPreUpdate(dt);
   UpdateRootObjects(dt);
   OnPostUpdate(dt);
