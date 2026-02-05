@@ -10,7 +10,7 @@
 #include "Graphic/Frame/frame_packet.h"
 #include "Graphic/Resource/Texture/texture.h"
 #include "game_object.h"
-#include "transform_component.h"
+#include "Component/transform_component.h"
 
 class SpriteRenderer : public Component<SpriteRenderer> {
  public:

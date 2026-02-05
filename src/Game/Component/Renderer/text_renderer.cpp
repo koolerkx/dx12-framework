@@ -7,7 +7,7 @@
 #include "Game/Asset/asset_manager.h"
 #include "Graphic/Pipeline/shader_descriptors.h"
 #include "game_context.h"
-#include "transform_component.h"
+#include "Component/transform_component.h"
 
 void TextRenderer::SetRenderLayer(RenderLayer layer) {
   switch (layer) {

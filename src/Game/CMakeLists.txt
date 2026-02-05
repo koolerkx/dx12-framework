@@ -21,22 +21,28 @@ add_library(game STATIC
     Component/transform_component.cpp
     Component/camera_component.h
     Component/camera_component.cpp
-    Component/free_camera_controller.h
-    Component/free_camera_controller.cpp
-    Component/text_renderer.h
-    Component/text_renderer.cpp
-    Component/sprite_renderer.h
-    Component/sprite_renderer.cpp
-    Component/ui_sprite_renderer.h
-    Component/ui_sprite_renderer.cpp
-    Component/ui_text_renderer.h
-    Component/ui_text_renderer.cpp
+    Component/behavior_component.h
+    Component/billboard_helper.h
+    Component/billboard_type.h
+    Component/render_settings.h
     Component/sprite_sheet_animator.h
     Component/sprite_sheet_animator.cpp
     Component/pivot_type.h
     Component/pivot_type.cpp
     Component/sprite_sheet_helper.h
     Component/sprite_sheet_helper.cpp
+    Component/Renderer/mesh_renderer.h
+    Component/Renderer/sprite_renderer.h
+    Component/Renderer/sprite_renderer.cpp
+    Component/Renderer/text_renderer.h
+    Component/Renderer/text_renderer.cpp
+    Component/Renderer/ui_sprite_renderer.h
+    Component/Renderer/ui_sprite_renderer.cpp
+    Component/Renderer/ui_text_renderer.h
+    Component/Renderer/ui_text_renderer.cpp
+
+    Scripts/free_camera_controller.h
+    Scripts/free_camera_controller.cpp
 
     Debug/debug_drawer.h
     Debug/debug_drawer.cpp

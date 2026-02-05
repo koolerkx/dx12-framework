@@ -9,7 +9,7 @@
 #include "Graphic/Resource/mesh.h"
 #include "game_context.h"
 #include "game_object.h"
-#include "transform_component.h"
+#include "Component/transform_component.h"
 
 class MeshRenderer : public Component<MeshRenderer> {
  public:
