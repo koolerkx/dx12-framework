@@ -9,7 +9,8 @@
 
 #include "Application/Application.h"
 #include "Core/utils.h"
-#include "Framework/Event/event_system.h"
+#include "Framework/Event/event_bus.hpp"
+#include "Framework/Event/thread_pool.hpp"
 #include "Framework/Event/input_event_generator.h"
 #include "Framework/Input/input.h"
 #include "Framework/Logging/logger.h"
@@ -17,6 +18,7 @@
 #include "Game/game.h"
 #include "Game/game_context.h"
 #include "Graphic/graphic.h"
+
 
 template <typename T>
 using ComPtr = Microsoft::WRL::ComPtr<T>;
@@ -54,24 +56,23 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
     throw std::runtime_error("Failed to initialize input system");
   }
 
-  EventSystem event_system;
+  ThreadPool thread_pool;
+  auto event_bus = std::make_shared<EventBus>(thread_pool);
 
   GameContext context;
   context.SetGraphic(&graphic);
   context.SetInputSystem(&inputSystem);
-  context.SetEventSystem(&event_system);
+  context.SetEventBus(event_bus);
 
   Game game;
   game.SetContext(&context);
   game.Initialize();
 
-  InputEventGenerator event_generator(inputSystem);
+  InputEventGenerator event_generator(inputSystem, *event_bus);
 
   const std::function<void(float dt)> OnUpdate = [&]([[maybe_unused]] float dt) {
     inputSystem.Update();
     event_generator.Update();
-
-    Event::EventBus::Flush();
 
     game.OnUpdate(dt);
     game.OnRender();
@@ -81,8 +82,6 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
 
   app.Run(OnUpdate, OnFixedUpdate);
 
-  // Cleanup should be call explicitly
-  Event::EventBus::Clear();
   inputSystem.Shutdown();
   game.Shutdown();
   graphic.Shutdown();

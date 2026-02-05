@@ -11,11 +11,19 @@ add_library(framework STATIC
   Input/gamepad.h
   Input/gamepad_handler.h
 
-  # Event
-  Event/event_system.h
-  Event/event_types.h
-
-  # Custom Event
+  # Event System
+  Event/event_bus.cpp
+  Event/event_bus.hpp
+  Event/event.hpp
+  Event/event_scope.hpp
+  Event/cancellation_token.hpp
+  Event/subject_id.hpp
+  Event/task.hpp
+  Event/task_awaiter.hpp
+  Event/task_extensions.hpp
+  Event/thread_pool.hpp
+  Event/timeout_guard.hpp
+  Event/coro_task.hpp
   Event/input_events.h
   Event/input_event_generator.h
 

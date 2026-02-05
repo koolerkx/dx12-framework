@@ -1,32 +1,25 @@
-/**
- * @file input_events.h
- * @brief Input-specific events for the universal event system
- * @author Kooler Fan
- */
-
 #pragma once
 
 #include <string>
 
+#include "Event/event.hpp"
 #include "Input/gamepad.h"
 #include "Input/keyboard.h"
 #include "Input/mouse.h"
 
-namespace Event {
-
-// Keyboard Events
-struct KeyDownEvent {
+struct KeyDownEvent : Event<KeyDownEvent> {
+  static constexpr std::string_view EventName = "input.key_down";
   Keyboard::KeyCode key;
   int virtual_key;
   bool is_repeat;
 
-  // Modifiers state at the time of event
   bool shift_pressed;
   bool ctrl_pressed;
   bool alt_pressed;
 };
 
-struct KeyUpEvent {
+struct KeyUpEvent : Event<KeyUpEvent> {
+  static constexpr std::string_view EventName = "input.key_up";
   Keyboard::KeyCode key;
   int virtual_key;
 
@@ -35,95 +28,75 @@ struct KeyUpEvent {
   bool alt_pressed;
 };
 
-// struct TextInputEvent {
-//   char32_t codepoint;
-//   char utf8[5];  // UTF-8 encoded character + null terminator
-// };
-
-// Mouse Events
-struct MouseButtonDownEvent {
+struct MouseButtonDownEvent : Event<MouseButtonDownEvent> {
+  static constexpr std::string_view EventName = "input.mouse_button_down";
   Mouse::Button button;
-  float x, y;       // Screen position
-  int click_count;  // 1 = single, 2 = double click
+  float x, y;
+  int click_count;
 };
 
-struct MouseButtonUpEvent {
+struct MouseButtonUpEvent : Event<MouseButtonUpEvent> {
+  static constexpr std::string_view EventName = "input.mouse_button_up";
   Mouse::Button button;
   float x, y;
 };
 
-struct MouseMoveEvent {
-  float x, y;                // Absolute position
-  float dx, dy;              // Delta from last frame
-  float screen_x, screen_y;  // Screen space position
+struct MouseMoveEvent : Event<MouseMoveEvent> {
+  static constexpr std::string_view EventName = "input.mouse_move";
+  float x, y;
+  float dx, dy;
+  float screen_x, screen_y;
 };
 
-struct MouseWheelEvent {
-  float delta;    // Vertical scroll
-  float delta_x;  // Horizontal scroll (for touchpad and featured mouse like logitech mx3)
-  float x, y;     // Mouse position at scroll time
+struct MouseWheelEvent : Event<MouseWheelEvent> {
+  static constexpr std::string_view EventName = "input.mouse_wheel";
+  float delta;
+  float delta_x;
+  float x, y;
 };
 
-struct MouseEnterEvent {
-  // Mouse entered window
+struct MouseEnterEvent : Event<MouseEnterEvent> {
+  static constexpr std::string_view EventName = "input.mouse_enter";
 };
 
-struct MouseLeaveEvent {
-  // Mouse left window
+struct MouseLeaveEvent : Event<MouseLeaveEvent> {
+  static constexpr std::string_view EventName = "input.mouse_leave";
 };
 
-// Gamepad Events
-struct GamepadButtonDownEvent {
-  int player_index;  // 0-3
-  Gamepad::Button button;
-};
-
-struct GamepadButtonUpEvent {
+struct GamepadButtonDownEvent : Event<GamepadButtonDownEvent> {
+  static constexpr std::string_view EventName = "input.gamepad_button_down";
   int player_index;
   Gamepad::Button button;
 };
 
-struct GamepadAxisEvent {
+struct GamepadButtonUpEvent : Event<GamepadButtonUpEvent> {
+  static constexpr std::string_view EventName = "input.gamepad_button_up";
+  int player_index;
+  Gamepad::Button button;
+};
+
+struct GamepadAxisEvent : Event<GamepadAxisEvent> {
+  static constexpr std::string_view EventName = "input.gamepad_axis";
   int player_index;
   enum class Axis { LeftStickX, LeftStickY, RightStickX, RightStickY };
   Axis axis;
-  float value;  // -1.0 to 1.0
+  float value;
 };
 
-struct GamepadTriggerEvent {
+struct GamepadTriggerEvent : Event<GamepadTriggerEvent> {
+  static constexpr std::string_view EventName = "input.gamepad_trigger";
   int player_index;
   Gamepad::Trigger trigger;
-  float value;  // 0.0 to 1.0
+  float value;
 };
 
-struct GamepadConnectEvent {
+struct GamepadConnectEvent : Event<GamepadConnectEvent> {
+  static constexpr std::string_view EventName = "input.gamepad_connect";
   int player_index;
   std::string device_name;
 };
 
-struct GamepadDisconnectEvent {
+struct GamepadDisconnectEvent : Event<GamepadDisconnectEvent> {
+  static constexpr std::string_view EventName = "input.gamepad_disconnect";
   int player_index;
 };
-
-// Action Events (High-level input abstraction)
-
-// /**
-//  * ActionEvent - High-level gameplay action
-//  * Maps multiple inputs to semantic game actions
-//  * Example: "Jump" can be triggered by Space, Gamepad A, or Touch
-//  */
-// struct ActionEvent {
-//   enum class Phase { Started, Performed, Canceled };
-
-//   uint32_t action_id;       // Hash of action name
-//   std::string action_name;  // "Jump", "Attack", "Pause", etc.
-//   Phase phase;
-//   float value;  // For analog inputs (0.0 - 1.0)
-
-//   // Source info
-//   enum class Source { Keyboard, Mouse, Gamepad, Touch, Unknown };
-//   Source source;
-//   int device_index;  // Which gamepad (0-3) or touch finger
-// };
-
-}  // namespace Event

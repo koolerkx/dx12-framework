@@ -1,7 +1,7 @@
 #pragma once
 #include "Asset/asset_manager.h"
 #include "Debug/debug_drawer.h"
-#include "Framework/Event/event_system.h"
+#include "Framework/Event/event_bus.hpp"
 #include "Framework/Input/input.h"
 #include "Graphic/graphic.h"
 
@@ -23,11 +23,11 @@ class GameContext {
     graphic_ = graphic;
   }
 
-  EventSystem* GetEventSystem() const {
-    return event_system_;
+  std::shared_ptr<EventBus> GetEventBus() const {
+    return event_bus_;
   }
-  void SetEventSystem(EventSystem* event_system) {
-    event_system_ = event_system;
+  void SetEventBus(std::shared_ptr<EventBus> bus) {
+    event_bus_ = std::move(bus);
   }
 
   AssetManager& GetAssetManager() const {
@@ -47,7 +47,7 @@ class GameContext {
  private:
   InputSystem* input_ = nullptr;
   Graphic* graphic_ = nullptr;
-  EventSystem* event_system_ = nullptr;
+  std::shared_ptr<EventBus> event_bus_;
   AssetManager* asset_manager_ = nullptr;
   DebugDrawer* debug_drawer_ = nullptr;
 };
