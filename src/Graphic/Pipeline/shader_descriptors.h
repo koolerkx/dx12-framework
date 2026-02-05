@@ -1,11 +1,10 @@
 /**
  * @file shader_descriptors.h
- * @brief Self-contained shader definitions with auto-registration.
+ * @brief shader definitions
  *
  * @note To add a new shader:
- *       1. Define a new shader struct with ID, VertexType, RS_PRESET, NAME, VS_PATH, PS_PATH, HINTS
+ *       1. Define a new shader struct
  *       2. Add the struct to AllShaders tuple
- *       That's it - no switch statements or other files to update!
  *
  * @warning Each shader must have a unique ID. Duplicate IDs will cause undefined behavior.
  *
@@ -147,7 +146,7 @@ struct PostProcessToneMapShader {
   }
 };
 
-// Shader Registration - THE ONLY PLACE TO ADD NEW SHADERS
+// Shader Registration
 using AllShaders = std::tuple<SpriteShader,
   SpriteInstancedUIShader,
   SpriteInstancedWorldShader,
@@ -156,6 +155,6 @@ using AllShaders = std::tuple<SpriteShader,
   DebugLineShader,
   PostProcessToneMapShader>;
 
-constexpr size_t SHADER_COUNT = std::tuple_size_v<AllShaders>;
+[[maybe_unused]] constexpr size_t SHADER_COUNT = std::tuple_size_v<AllShaders>;
 
 }  // namespace Graphics

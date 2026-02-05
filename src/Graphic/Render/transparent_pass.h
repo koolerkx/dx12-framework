@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 
+#include "Frame/draw_command.h"
 #include "Frame/frame_packet.h"
 #include "Frame/render_frame_context.h"
 #include "material_renderer.h"
@@ -16,7 +17,11 @@ class TransparentPass : public IRenderPass {
     return "Transparent Pass";
   }
 
+  RenderPassFilter GetFilter() const override {
+    return RenderPassFilter{.target_layer = RenderLayer::Transparent, .required_tags = 0, .excluded_tags = 0};
+  }
+
  private:
   TransparentRenderer* transparent_renderer_;
-  std::vector<DrawCommandVariant> packet_cache_;
+  std::vector<RenderCommand> command_cache_;
 };

@@ -1,9 +1,6 @@
 /**
  * @file shader_registry.h
- * @brief Auto-generated shader metadata table and lookup API.
- *
- * @note The metadata table is generated at compile time from AllShaders tuple.
- *       No manual switch statements required - just add shaders to the tuple.
+ * @brief Shader metadata table and lookup API
  *
  * @code
  * // Get metadata by shader type
@@ -23,6 +20,7 @@
  * }
  * @endcode
  */
+
 #pragma once
 #include <d3d12.h>
 
@@ -48,41 +46,52 @@ struct ShaderMetadata {
   std::wstring_view ps_path;
   std::span<const D3D12_INPUT_ELEMENT_DESC> input_layout;
   ShaderRenderHints render_hints;
+  bool supports_instancing;
 };
 
-// Auto-generated metadata table from AllShaders tuple
 namespace detail {
 
+inline bool HasInstanceElements(std::span<const D3D12_INPUT_ELEMENT_DESC> layout) {
+  for (const auto& elem : layout) {
+    if (elem.InputSlotClass == D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA) {
+      return true;
+    }
+  }
+  return false;
+}
+
 template <typename ShaderType>
-constexpr ShaderMetadata MakeMetadata() {
+ShaderMetadata MakeMetadata() {
+  auto layout = ShaderType::GetInputLayout();
   return {
     ShaderType::ID,
     ShaderType::RS_PRESET,
     ShaderType::NAME,
     ShaderType::VS_PATH,
     ShaderType::PS_PATH,
-    ShaderType::GetInputLayout(),
+    layout,
     ShaderType::HINTS,
+    HasInstanceElements(layout),
   };
 }
 
 template <typename Tuple, size_t... Is>
-constexpr auto MakeMetadataArray(std::index_sequence<Is...>) {
+auto MakeMetadataArray(std::index_sequence<Is...>) {
   return std::array<ShaderMetadata, sizeof...(Is)>{MakeMetadata<std::tuple_element_t<Is, Tuple>>()...};
 }
 
-inline const auto kMetadataTable = MakeMetadataArray<Graphics::AllShaders>(std::make_index_sequence<Graphics::SHADER_COUNT>{});
+inline const auto METADATA_TABLE = MakeMetadataArray<Graphics::AllShaders>(std::make_index_sequence<Graphics::SHADER_COUNT>{});
 
 }  // namespace detail
 
 // Public API
 inline const ShaderMetadata& GetMetadata(ShaderId id) {
-  for (const auto& meta : detail::kMetadataTable) {
+  for (const auto& meta : detail::METADATA_TABLE) {
     if (meta.id == id) {
       return meta;
     }
   }
-  return detail::kMetadataTable[0];
+  return detail::METADATA_TABLE[0];
 }
 
 template <typename ShaderType>
@@ -103,7 +112,7 @@ inline constexpr size_t GetShaderCount() {
 }
 
 inline const auto& GetAllMetadata() {
-  return detail::kMetadataTable;
+  return detail::METADATA_TABLE;
 }
 
 }  // namespace ShaderRegistry

@@ -6,8 +6,8 @@ TransparentPass::TransparentPass(TransparentRenderer* renderer) : transparent_re
 }
 
 void TransparentPass::Execute(const RenderFrameContext& frame, const FramePacket& packet) {
-  packet_cache_.clear();
-
-  transparent_renderer_->Build(packet, packet_cache_);
-  transparent_renderer_->Record(frame, packet_cache_, packet.main_camera, frame.screen_width, frame.screen_height);
+  // Use new unified command system
+  command_cache_.clear();
+  transparent_renderer_->Build(packet, GetFilter(), command_cache_);
+  transparent_renderer_->Record(frame, command_cache_, packet.main_camera, frame.screen_width, frame.screen_height);
 }

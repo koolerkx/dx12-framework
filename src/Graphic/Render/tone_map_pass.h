@@ -1,6 +1,7 @@
 #pragma once
 #include <d3d12.h>
 
+#include "Frame/draw_command.h"
 #include "Frame/frame_packet.h"
 #include "Frame/render_frame_context.h"
 #include "Presentation/presentation_context.h"
@@ -25,6 +26,11 @@ class ToneMapPass : public IRenderPass {
 
   const char* GetName() const override {
     return "Tone Mapping Pass";
+  }
+
+  RenderPassFilter GetFilter() const override {
+    // ToneMapPass is a post-process pass, doesn't use the unified command system
+    return RenderPassFilter{.target_layer = RenderLayer::Debug, .required_tags = UINT32_MAX, .excluded_tags = 0};
   }
 
   // Standard IRenderPass interface - called by RenderPassManager

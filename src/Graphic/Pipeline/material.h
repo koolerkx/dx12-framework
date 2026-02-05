@@ -57,11 +57,20 @@ class Material {
     return root_signature_ != nullptr && pipeline_state_ != nullptr;
   }
 
+  void SetInstancingSupport(bool supports) {
+    supports_instancing_ = supports;
+  }
+
+  [[nodiscard]] bool SupportsInstancing() const {
+    return supports_instancing_;
+  }
+
  private:
   std::string name_;
   ComPtr<ID3D12RootSignature> root_signature_;
   ComPtr<ID3D12PipelineState> pipeline_state_;
   uint64_t sort_key_ = 0;  // 64-bit: [32-bit RS hash | 32-bit PSO hash]
+  bool supports_instancing_ = false;
 };
 
 // Material instance with per-instance data

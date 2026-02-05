@@ -59,10 +59,12 @@ void TextRenderer::OnRender(FramePacket& packet) {
 
   // === UI PASS: Use Instanced Rendering (1 draw call per TextRenderer) ===
   if (pass_tag_ == RenderPassTag::Ui) {
-    InstanceDrawCommand cmd;
+    // Sync render_layer_ with pass_tag_
+    render_layer_ = RenderLayer::UI;
+
+    DrawCommand cmd;
     cmd.mesh = quad_mesh;
     cmd.material = material;
-    cmd.layer_id = layer_id_;
     cmd.depth = static_cast<float>(layer_id_);
 
     // Setup material instance (shared across all glyphs)
@@ -111,15 +113,28 @@ void TextRenderer::OnRender(FramePacket& packet) {
       cmd.instances.push_back(instance);
     }
 
-    // Push single command containing all glyph instances (1 draw call!)
+    // Push to new unified command system
     if (!cmd.instances.empty()) {
-      packet.ui_pass.emplace_back(cmd);
+      packet.AddCommand(render_layer_, std::move(cmd), render_tags_);
+
+      // DEPRECATED: Also push to old system for backward compatibility
+      InstanceDrawCommand old_cmd;
+      old_cmd.mesh = cmd.mesh;
+      old_cmd.material = cmd.material;
+      old_cmd.material_instance = cmd.material_instance;
+      old_cmd.depth = cmd.depth;
+      old_cmd.layer_id = layer_id_;
+      old_cmd.instances = cmd.instances;
+      packet.ui_pass.emplace_back(old_cmd);
     }
 
   }
   // === WORLD PASS: Use Instanced Rendering (1 draw call per TextRenderer) ===
   else if (pass_tag_ == RenderPassTag::WorldOpaque || pass_tag_ == RenderPassTag::WorldTransparent) {
-    InstanceDrawCommand cmd;
+    // Sync render_layer_ with pass_tag_
+    render_layer_ = (pass_tag_ == RenderPassTag::WorldOpaque) ? RenderLayer::Opaque : RenderLayer::Transparent;
+
+    DrawCommand cmd;
     cmd.mesh = quad_mesh;
     cmd.material = material;
 
@@ -180,12 +195,21 @@ void TextRenderer::OnRender(FramePacket& packet) {
       cmd.instances.push_back(instance);
     }
 
-    // Push single command containing all glyph instances (1 draw call!)
+    // Push to new unified command system
     if (!cmd.instances.empty()) {
+      packet.AddCommand(render_layer_, std::move(cmd), render_tags_);
+
+      // DEPRECATED: Also push to old system for backward compatibility
+      InstanceDrawCommand old_cmd;
+      old_cmd.mesh = cmd.mesh;
+      old_cmd.material = cmd.material;
+      old_cmd.material_instance = cmd.material_instance;
+      old_cmd.depth = cmd.depth;
+      old_cmd.instances = cmd.instances;
       if (pass_tag_ == RenderPassTag::WorldTransparent) {
-        packet.transparent_pass.emplace_back(cmd);
+        packet.transparent_pass.emplace_back(old_cmd);
       } else {
-        packet.opaque_pass.emplace_back(cmd);
+        packet.opaque_pass.emplace_back(old_cmd);
       }
     }
   }

@@ -8,6 +8,7 @@
 #include "Pipeline/material.h"
 #include "Pipeline/vertex_types.h"
 #include "camera_data.h"
+#include "draw_command.h"
 
 struct Texture;
 class Mesh;
@@ -93,14 +94,22 @@ using DrawCommandVariant = std::variant<SingleDrawCommand, InstanceDrawCommand>;
 struct FramePacket {
   CameraData main_camera;
 
-  // New unified command vectors for global sorting
+  // NEW: Unified command storage
+  std::vector<RenderCommand> commands;
+
+  // DEPRECATED: Keep for backward compatibility during migration
   std::vector<DrawCommandVariant> opaque_pass;
   std::vector<DrawCommandVariant> transparent_pass;
   std::vector<DrawCommandVariant> ui_pass;
 
   void Clear() {
+    commands.clear();
     opaque_pass.clear();
     transparent_pass.clear();
     ui_pass.clear();
+  }
+
+  void AddCommand(RenderLayer layer, DrawCommand cmd, RenderTagMask tags = 0) {
+    commands.emplace_back(RenderCommand{std::move(cmd), layer, tags});
   }
 };

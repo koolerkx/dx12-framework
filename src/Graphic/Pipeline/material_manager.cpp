@@ -4,6 +4,7 @@
 
 #include "Framework/Logging/logger.h"
 #include "Game/Component/render_settings.h"
+#include "Pipeline/pipeline_state_builder.h"
 #include "Pipeline/shader_registry.h"
 
 bool MaterialManager::Initialize(ID3D12Device* device, ShaderManager* shader_manager) {
@@ -203,7 +204,12 @@ Material MaterialManager::CreateMaterialInternal(Graphics::ShaderId shader_id, c
   // Generate sort key
   uint64_t sort_key = GenerateSortKey(rs, pso.Get());
 
-  return Material(name, rs, pso.Get(), sort_key);
+  // Create material
+  Material material(name, rs, pso.Get(), sort_key);
+
+  material.SetInstancingSupport(metadata.supports_instancing);
+
+  return material;
 }
 
 // ============================================================================

@@ -61,6 +61,9 @@ add_library(graphic STATIC
     Frame/render_frame_context.h
     Frame/constant_buffers.h
     Frame/camera_data.h
+    Frame/render_layer.h
+    Frame/draw_command.h
+    Frame/draw_command.cpp
 
     Command/buffer.h
     Command/command_context.h
@@ -73,6 +76,8 @@ add_library(graphic STATIC
     Render/render_pass.h
     Render/material_renderer.h
     Render/material_renderer.cpp
+    Render/draw_command_aggregator.h
+    Render/draw_command_aggregator.cpp
 
     Render/ui_pass.h
     Render/ui_pass.cpp

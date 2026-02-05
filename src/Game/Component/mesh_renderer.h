@@ -40,6 +40,17 @@ class MeshRenderer : public Component<MeshRenderer> {
     shader_id_ = ShaderType::ID;
   }
 
+  // Layer/Tag API
+  void SetRenderLayer(RenderLayer layer) {
+    render_layer_ = layer;
+  }
+  void SetRenderTags(RenderTagMask tags) {
+    render_tags_ = tags;
+  }
+  void AddRenderTag(RenderTag tag) {
+    render_tags_ |= static_cast<uint32_t>(tag);
+  }
+
   const Mesh* GetMesh() const {
     return mesh_;
   }
@@ -53,7 +64,7 @@ class MeshRenderer : public Component<MeshRenderer> {
     auto* context = GetOwner()->GetContext();
     auto& material_mgr = context->GetGraphic()->GetMaterialManager();
 
-    SingleDrawCommand cmd;
+    DrawCommand cmd;
     DirectX::XMStoreFloat4x4(&cmd.world_matrix, transform->GetWorldMatrix());
     cmd.color = color_;
     cmd.mesh = mesh_;
@@ -69,7 +80,18 @@ class MeshRenderer : public Component<MeshRenderer> {
     DirectX::XMVECTOR camVec = XMLoadFloat3(&camPos);
     cmd.depth = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(DirectX::XMVectorSubtract(worldVec, camVec)));
 
-    packet.opaque_pass.emplace_back(cmd);
+    // Use new unified command system
+    packet.AddCommand(render_layer_, std::move(cmd), render_tags_);
+
+    // DEPRECATED: Also push to old system for backward compatibility
+    SingleDrawCommand old_cmd;
+    old_cmd.mesh = cmd.mesh;
+    old_cmd.material = cmd.material;
+    old_cmd.material_instance = cmd.material_instance;
+    old_cmd.world_matrix = cmd.world_matrix;
+    old_cmd.color = cmd.color;
+    old_cmd.depth = cmd.depth;
+    packet.opaque_pass.emplace_back(old_cmd);
   }
 
  private:
@@ -78,4 +100,8 @@ class MeshRenderer : public Component<MeshRenderer> {
   Graphics::ShaderId shader_id_ = Graphics::Basic3DShader::ID;
   Rendering::RenderSettings render_settings_ = Rendering::RenderSettings::Opaque();
   DirectX::XMFLOAT4 color_ = {1.0f, 1.0f, 1.0f, 1.0f};
+
+  // New layer/tag system
+  RenderLayer render_layer_ = RenderLayer::Opaque;
+  RenderTagMask render_tags_ = 0;
 };

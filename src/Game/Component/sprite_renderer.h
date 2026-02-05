@@ -45,6 +45,17 @@ class SpriteRenderer : public Component<SpriteRenderer> {
     layer_id_ = id;
   }
 
+  // Layer/Tag API
+  void SetRenderLayer(RenderLayer layer) {
+    render_layer_ = layer;
+  }
+  void SetRenderTags(RenderTagMask tags) {
+    render_tags_ = tags;
+  }
+  void AddRenderTag(RenderTag tag) {
+    render_tags_ |= static_cast<uint32_t>(tag);
+  }
+
   // Render settings API
   void SetBlendMode(Rendering::BlendMode mode) {
     render_settings_.blend_mode = mode;
@@ -112,4 +123,8 @@ class SpriteRenderer : public Component<SpriteRenderer> {
   Rendering::RenderSettings render_settings_ = Rendering::RenderSettings::UI();
   Billboard::Mode billboard_mode_ = Billboard::Mode::None;
   Pivot::Config pivot_;
+
+  // New layer/tag system
+  RenderLayer render_layer_ = RenderLayer::UI;
+  RenderTagMask render_tags_ = 0;
 };

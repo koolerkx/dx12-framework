@@ -6,11 +6,9 @@ UiPass::UiPass(UiRenderer* renderer) : ui_renderer_(renderer) {
 }
 
 void UiPass::Execute(const RenderFrameContext& frame, const FramePacket& packet) {
-  // Clear cache for safety, though Build usually clears it
-  packet_cache_.clear();
-
-  // Extract and Sort UI commands from the FramePacket
-  ui_renderer_->Build(packet, packet_cache_);
+  // Use new unified command system
+  command_cache_.clear();
+  ui_renderer_->Build(packet, GetFilter(), command_cache_);
 
   // Create UI camera with orthographic projection for this frame
   using namespace DirectX;
@@ -33,5 +31,5 @@ void UiPass::Execute(const RenderFrameContext& frame, const FramePacket& packet)
   ui_camera.up = XMFLOAT3(0, 1, 0);
 
   // Execute Draw Calls using UI camera (orthographic projection)
-  ui_renderer_->Record(frame, packet_cache_, ui_camera, frame.screen_width, frame.screen_height);
+  ui_renderer_->Record(frame, command_cache_, ui_camera, frame.screen_width, frame.screen_height);
 }

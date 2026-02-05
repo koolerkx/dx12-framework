@@ -66,67 +66,114 @@ void SpriteRenderer::OnRender(FramePacket& packet) {
   auto& material_mgr = context->GetGraphic()->GetMaterialManager();
   auto* transform = GetOwner()->GetTransform();
 
+  DrawCommand cmd;
+  cmd.mesh = context->GetAssetManager().GetDefaultMesh(DefaultMesh::Quad);
+  cmd.material = material_mgr.GetOrCreateMaterial(Graphics::SpriteShader::ID, render_settings_);
+  cmd.material_instance.material = cmd.material;
+  cmd.material_instance.albedo_texture_index = texture_->GetBindlessIndex();
+  cmd.material_instance.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
+  cmd.color = color_;
+  cmd.uv_offset = uv_offset_;
+  cmd.uv_scale = uv_scale_;
+
+  // Sync render_layer_ with pass_tag_ for backward compatibility
   switch (pass_tag_) {
-    case RenderPassTag::Ui: {
-      SingleDrawCommand cmd;
-      cmd.mesh = context->GetAssetManager().GetDefaultMesh(DefaultMesh::Quad);
-      cmd.material = material_mgr.GetOrCreateMaterial(Graphics::SpriteShader::ID, render_settings_);
+    case RenderPassTag::Ui:
+      render_layer_ = RenderLayer::UI;
       cmd.depth = static_cast<float>(layer_id_);
 
-      cmd.material_instance.material = cmd.material;
-      cmd.material_instance.albedo_texture_index = texture_->GetBindlessIndex();
-      cmd.material_instance.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
-
-      XMMATRIX offset_mat = XMMatrixTranslation(0.5f, 0.5f, 0.0f);  // Move quad origin to top-left
-      XMMATRIX size_scale = XMMatrixScaling(size_.x, size_.y, 1.0f);
-      XMMATRIX world = offset_mat * size_scale * transform->GetWorldMatrix();
-
-      XMStoreFloat4x4(&cmd.world_matrix, world);
-      cmd.color = color_;
-      cmd.uv_offset = uv_offset_;
-      cmd.uv_scale = uv_scale_;
-
-      packet.ui_pass.emplace_back(cmd);
-    } break;
+      {
+        XMMATRIX offset_mat = XMMatrixTranslation(0.5f, 0.5f, 0.0f);
+        XMMATRIX size_scale = XMMatrixScaling(size_.x, size_.y, 1.0f);
+        XMMATRIX world = offset_mat * size_scale * transform->GetWorldMatrix();
+        XMStoreFloat4x4(&cmd.world_matrix, world);
+      }
+      break;
 
     case RenderPassTag::WorldOpaque:
-    case RenderPassTag::WorldTransparent: {
-      // World pass: use pivot system
-      // Calculate pivot offset based on preset
-      XMFLOAT2 normalized_pivot = pivot_.GetNormalized();  // (0.5, 0.5) for Center, (0.5, 1.0) for Bottom
-      // Convert to quad-local offset: we want to move the quad so the pivot point is at origin
-      // Quad vertex range is [-0.5, 0.5], so offset = normalized_pivot - 0.5
-      float pivot_offset_x = (normalized_pivot.x - 0.5f);
-      float pivot_offset_y = (normalized_pivot.y - 0.5f);
+      render_layer_ = RenderLayer::Opaque;
+      {
+        XMFLOAT2 normalized_pivot = pivot_.GetNormalized();
+        float pivot_offset_x = (normalized_pivot.x - 0.5f);
+        float pivot_offset_y = (normalized_pivot.y - 0.5f);
 
-      XMMATRIX pivot_mat = XMMatrixTranslation(pivot_offset_x, pivot_offset_y, 0.0f);
-      XMMATRIX size_scale = XMMatrixScaling(size_.x, size_.y, 1.0f);
-      XMMATRIX base_world = CalculateWorldMatrix(transform, packet.main_camera);
-      XMMATRIX world = size_scale * pivot_mat * base_world;
+        XMMATRIX pivot_mat = XMMatrixTranslation(pivot_offset_x, pivot_offset_y, 0.0f);
+        XMMATRIX size_scale = XMMatrixScaling(size_.x, size_.y, 1.0f);
+        XMMATRIX base_world = CalculateWorldMatrix(transform, packet.main_camera);
+        XMMATRIX world = size_scale * pivot_mat * base_world;
+        XMStoreFloat4x4(&cmd.world_matrix, world);
 
-      SingleDrawCommand cmd;
-      cmd.mesh = context->GetAssetManager().GetDefaultMesh(DefaultMesh::Quad);
-      cmd.material = material_mgr.GetOrCreateMaterial(Graphics::SpriteShader::ID, render_settings_);
-
-      // Calculate depth from object position for sorting
-      XMFLOAT3 worldPos = transform->GetWorldPosition();
-      XMFLOAT3 camPos = packet.main_camera.position;
-      cmd.depth = XMVectorGetX(XMVector3LengthSq(XMLoadFloat3(&worldPos) - XMLoadFloat3(&camPos)));
-
-      cmd.material_instance.material = cmd.material;
-      cmd.material_instance.albedo_texture_index = texture_->GetBindlessIndex();
-      cmd.material_instance.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
-
-      XMStoreFloat4x4(&cmd.world_matrix, world);
-      cmd.color = color_;
-      cmd.uv_offset = uv_offset_;
-      cmd.uv_scale = uv_scale_;
-
-      if (pass_tag_ == RenderPassTag::WorldOpaque) {
-        packet.opaque_pass.emplace_back(cmd);
-      } else {
-        packet.transparent_pass.emplace_back(cmd);
+        XMFLOAT3 worldPos = transform->GetWorldPosition();
+        XMFLOAT3 camPos = packet.main_camera.position;
+        cmd.depth = XMVectorGetX(XMVector3LengthSq(XMLoadFloat3(&worldPos) - XMLoadFloat3(&camPos)));
       }
+      break;
+
+    case RenderPassTag::WorldTransparent:
+      render_layer_ = RenderLayer::Transparent;
+      {
+        XMFLOAT2 normalized_pivot = pivot_.GetNormalized();
+        float pivot_offset_x = (normalized_pivot.x - 0.5f);
+        float pivot_offset_y = (normalized_pivot.y - 0.5f);
+
+        XMMATRIX pivot_mat = XMMatrixTranslation(pivot_offset_x, pivot_offset_y, 0.0f);
+        XMMATRIX size_scale = XMMatrixScaling(size_.x, size_.y, 1.0f);
+        XMMATRIX base_world = CalculateWorldMatrix(transform, packet.main_camera);
+        XMMATRIX world = size_scale * pivot_mat * base_world;
+        XMStoreFloat4x4(&cmd.world_matrix, world);
+
+        XMFLOAT3 worldPos = transform->GetWorldPosition();
+        XMFLOAT3 camPos = packet.main_camera.position;
+        cmd.depth = XMVectorGetX(XMVector3LengthSq(XMLoadFloat3(&worldPos) - XMLoadFloat3(&camPos)));
+      }
+      break;
+
+    default:
+      break;
+  }
+
+  // Use new unified command system
+  packet.AddCommand(render_layer_, std::move(cmd), render_tags_);
+
+  // DEPRECATED: Keep old system for backward compatibility
+  switch (pass_tag_) {
+    case RenderPassTag::Ui: {
+      SingleDrawCommand old_cmd;
+      old_cmd.mesh = cmd.mesh;
+      old_cmd.material = cmd.material;
+      old_cmd.material_instance = cmd.material_instance;
+      old_cmd.world_matrix = cmd.world_matrix;
+      old_cmd.color = cmd.color;
+      old_cmd.depth = cmd.depth;
+      old_cmd.uv_offset = cmd.uv_offset;
+      old_cmd.uv_scale = cmd.uv_scale;
+      packet.ui_pass.emplace_back(old_cmd);
+    } break;
+
+    case RenderPassTag::WorldOpaque: {
+      SingleDrawCommand old_cmd;
+      old_cmd.mesh = cmd.mesh;
+      old_cmd.material = cmd.material;
+      old_cmd.material_instance = cmd.material_instance;
+      old_cmd.world_matrix = cmd.world_matrix;
+      old_cmd.color = cmd.color;
+      old_cmd.depth = cmd.depth;
+      old_cmd.uv_offset = cmd.uv_offset;
+      old_cmd.uv_scale = cmd.uv_scale;
+      packet.opaque_pass.emplace_back(old_cmd);
+    } break;
+
+    case RenderPassTag::WorldTransparent: {
+      SingleDrawCommand old_cmd;
+      old_cmd.mesh = cmd.mesh;
+      old_cmd.material = cmd.material;
+      old_cmd.material_instance = cmd.material_instance;
+      old_cmd.world_matrix = cmd.world_matrix;
+      old_cmd.color = cmd.color;
+      old_cmd.depth = cmd.depth;
+      old_cmd.uv_offset = cmd.uv_offset;
+      old_cmd.uv_scale = cmd.uv_scale;
+      packet.transparent_pass.emplace_back(old_cmd);
     } break;
 
     default:
