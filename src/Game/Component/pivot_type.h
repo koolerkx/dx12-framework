@@ -10,11 +10,8 @@ enum class Preset : uint8_t {
   Bottom,
 };
 
-struct Config {
-  Preset preset = Preset::Center;
-
-  Vector2 GetNormalized() const;
-  Vector2 CalculateOffset(const Vector2& content_size) const;
-};
+Vector2 ToSpriteNormalized(Preset preset);
+Vector2 ToUISpriteNormalized(Preset preset);
+Vector2 ToTextNormalized(Preset preset);
 
 }  // namespace Pivot

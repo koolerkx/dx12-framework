@@ -2,6 +2,7 @@
 #include <optional>
 
 #include "Component/component.h"
+#include "Component/pivot_type.h"
 #include "Component/render_settings.h"
 #include "Component/sprite_sheet_animator.h"
 #include "Framework/Math/Math.h"
@@ -60,6 +61,12 @@ class UISpriteRenderer : public Component<UISpriteRenderer> {
     return uv_scale_;
   }
 
+  void SetPivot(Pivot::Preset preset);
+  void SetPivot(const Vector2& normalized_pivot);
+  const Vector2& GetPivot() const {
+    return ui_pivot_;
+  }
+
   SpriteSheetAnimator& GetAnimator();
 
   void OnUpdate(float dt) override;
@@ -74,6 +81,7 @@ class UISpriteRenderer : public Component<UISpriteRenderer> {
   int layer_id_ = 0;
 
   Rendering::RenderSettings render_settings_ = Rendering::RenderSettings::UI();
+  Vector2 ui_pivot_ = {0.0f, 0.0f};
   RenderTagMask render_tags_ = 0;
 
   std::optional<SpriteSheetAnimator> animator_;

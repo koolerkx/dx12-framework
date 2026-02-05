@@ -105,9 +105,9 @@ class UITextRenderer : public Component<UITextRenderer> {
   }
 
   void SetPivot(Pivot::Preset preset);
-  void SetPivot(const Pivot::Config& config);
-  const Pivot::Config& GetPivot() const {
-    return pivot_;
+  void SetPivot(const Vector2& normalized_pivot);
+  const Vector2& GetPivot() const {
+    return text_pivot_;
   }
 
   Vector2 GetSize() const {
@@ -137,6 +137,6 @@ class UITextRenderer : public Component<UITextRenderer> {
   bool dirty_ = true;
   TextMeshHandle text_mesh_handle_;
 
-  Pivot::Config pivot_;
+  Vector2 text_pivot_ = {0.5f, 0.0f};
   RenderTagMask render_tags_ = 0;
 };

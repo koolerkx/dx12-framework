@@ -122,9 +122,9 @@ class TextRenderer : public Component<TextRenderer> {
   }
 
   void SetPivot(Pivot::Preset preset);
-  void SetPivot(const Pivot::Config& config);
-  const Pivot::Config& GetPivot() const {
-    return pivot_;
+  void SetPivot(const Vector2& normalized_pivot);
+  const Vector2& GetPivot() const {
+    return text_pivot_;
   }
 
   Vector2 GetSize() const {
@@ -157,7 +157,7 @@ class TextRenderer : public Component<TextRenderer> {
   TextMeshHandle text_mesh_handle_;
 
   Billboard::Mode billboard_mode_ = Billboard::Mode::None;
-  Pivot::Config pivot_;
+  Vector2 text_pivot_ = {0.5f, 0.0f};
 
   RenderLayer render_layer_ = RenderLayer::Transparent;
   Graphics::ShaderId shader_id_ = Graphics::SpriteInstancedWorldTransparentShader::ID;

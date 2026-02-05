@@ -29,11 +29,11 @@ void TextRenderer::SetRenderLayer(RenderLayer layer) {
 }
 
 void TextRenderer::SetPivot(Pivot::Preset preset) {
-  pivot_.preset = preset;
+  text_pivot_ = Pivot::ToTextNormalized(preset);
 }
 
-void TextRenderer::SetPivot(const Pivot::Config& config) {
-  pivot_ = config;
+void TextRenderer::SetPivot(const Vector2& normalized_pivot) {
+  text_pivot_ = normalized_pivot;
 }
 
 void TextRenderer::OnRender(FramePacket& packet) {
@@ -77,7 +77,7 @@ void TextRenderer::OnRender(FramePacket& packet) {
   cmd.instances.reserve(text_mesh_handle_.GetGlyphCount());
 
   Vector2 text_size = {text_mesh_handle_.GetWidth(), text_mesh_handle_.GetHeight()};
-  Vector2 pivot_offset = pivot_.CalculateOffset(text_size);
+  Vector2 pivot_offset(text_pivot_.x * text_size.x, text_pivot_.y * text_size.y);
 
   for (size_t i = 0; i < text_mesh_handle_.GetGlyphCount(); ++i) {
     const GlyphLayoutData* glyph = text_mesh_handle_.GetGlyph(i);

@@ -23,6 +23,11 @@ class TransformComponent : public Component<TransformComponent> {
   void SetRotationEulerDegree(float pitch, float yaw, float roll);
   void SetRotationEulerDegree(const Vector3& euler);
 
+  void SetPivot(const Vector3& pivot);
+  Vector3 GetPivot() const {
+    return local_pivot_;
+  }
+
   Vector3 GetPosition() const {
     return local_pos_;
   }
@@ -43,6 +48,7 @@ class TransformComponent : public Component<TransformComponent> {
   Vector3 local_pos_ = Vector3::Zero;
   Vector3 local_scale_ = Vector3::One;
   Quaternion local_rot_ = Quaternion::Identity;
+  Vector3 local_pivot_ = Vector3::Zero;
 
   Matrix4 local_matrix_;
   Matrix4 world_matrix_;

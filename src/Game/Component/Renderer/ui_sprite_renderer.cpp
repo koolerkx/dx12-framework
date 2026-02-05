@@ -1,13 +1,21 @@
 #include "ui_sprite_renderer.h"
 
+#include "Component/pivot_type.h"
 #include "Component/transform_component.h"
 #include "Game/Asset/asset_manager.h"
 #include "Graphic/Pipeline/shader_descriptors.h"
 #include "game_context.h"
 
-
 using Math::Matrix4;
 using Math::Vector3;
+
+void UISpriteRenderer::SetPivot(Pivot::Preset preset) {
+  ui_pivot_ = Pivot::ToUISpriteNormalized(preset);
+}
+
+void UISpriteRenderer::SetPivot(const Vector2& normalized_pivot) {
+  ui_pivot_ = normalized_pivot;
+}
 
 SpriteSheetAnimator& UISpriteRenderer::GetAnimator() {
   if (!animator_) {
@@ -43,9 +51,10 @@ void UISpriteRenderer::OnRender(FramePacket& packet) {
 
   cmd.depth = static_cast<float>(layer_id_);
 
-  Matrix4 offset_mat = Matrix4::CreateTranslation(Vector3(0.5f, 0.5f, 0.0f));
+  Vector2 pivot_offset(0.5f - ui_pivot_.x, 0.5f - ui_pivot_.y);
+  Matrix4 pivot_mat = Matrix4::CreateTranslation(Vector3(pivot_offset.x, pivot_offset.y, 0.0f));
   Matrix4 size_scale = Matrix4::CreateScale(Vector3(size_.x, size_.y, 1.0f));
-  cmd.world_matrix = offset_mat * size_scale * transform->GetWorldMatrix();
+  cmd.world_matrix = pivot_mat * size_scale * transform->GetWorldMatrix();
 
   cmd.layer = RenderLayer::UI;
   cmd.tags = render_tags_;

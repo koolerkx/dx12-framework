@@ -27,6 +27,7 @@ class TestScene : public IScene {
   GameObject* text_obj2_ = nullptr;
   GameObject* animated_bg_object_ = nullptr;
   GameObject* additive_ = nullptr;
+  GameObject* pivot_cube_ = nullptr;
 
   void SetupCamera();
 };

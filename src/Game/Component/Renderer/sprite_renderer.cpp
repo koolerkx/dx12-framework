@@ -21,11 +21,11 @@ void SpriteRenderer::SetRenderLayer(RenderLayer layer) {
 }
 
 void SpriteRenderer::SetPivot(Pivot::Preset preset) {
-  pivot_.preset = preset;
+  sprite_pivot_ = Pivot::ToSpriteNormalized(preset);
 }
 
-void SpriteRenderer::SetPivot(const Pivot::Config& config) {
-  pivot_ = config;
+void SpriteRenderer::SetPivot(const Vector2& normalized_pivot) {
+  sprite_pivot_ = normalized_pivot;
 }
 
 SpriteSheetAnimator& SpriteRenderer::GetAnimator() {
@@ -82,14 +82,11 @@ void SpriteRenderer::OnRender(FramePacket& packet) {
   cmd.uv_offset = uv_offset_;
   cmd.uv_scale = uv_scale_;
 
-  Vector2 normalized_pivot = pivot_.GetNormalized();
-  float pivot_offset_x = (normalized_pivot.x - 0.5f);
-  float pivot_offset_y = (normalized_pivot.y - 0.5f);
-
-  Matrix4 pivot_mat = Matrix4::CreateTranslation(Vector3(pivot_offset_x, pivot_offset_y, 0.0f));
+  Vector2 pivot_offset(0.5f - sprite_pivot_.x, sprite_pivot_.y - 0.5f);
+  Matrix4 pivot_mat = Matrix4::CreateTranslation(Vector3(pivot_offset.x, pivot_offset.y, 0.0f));
   Matrix4 size_scale = Matrix4::CreateScale(Vector3(size_.x, size_.y, 1.0f));
   Matrix4 base_world = CalculateWorldMatrix(transform, packet.main_camera);
-  cmd.world_matrix = size_scale * pivot_mat * base_world;
+  cmd.world_matrix = pivot_mat * size_scale * base_world;
 
   Vector3 worldPos = transform->GetWorldPosition();
   Vector3 camPos = packet.main_camera.position;

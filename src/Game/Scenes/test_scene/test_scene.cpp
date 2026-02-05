@@ -99,6 +99,17 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   bg_renderer->SetBillboardMode(Billboard::Mode::None);
   bg_renderer->SetColor({1.0f, 0.0f, 0.0f, 0.5f});
 
+  pivot_cube_ = CreateGameObject("PivotCube");
+  auto* pivot_transform = pivot_cube_->GetComponent<TransformComponent>();
+  pivot_transform->SetPosition({5.0f, 0.0f, 5.0f});
+  pivot_transform->SetScale({1.0f, 1.0f, 1.0f});
+  pivot_transform->SetPivot({0.5f, 0.0f, 0.0f});
+
+  auto* pivot_mesh = pivot_cube_->AddComponent<MeshRenderer>();
+  pivot_mesh->SetMesh(asset_manager.GetDefaultMesh(DefaultMesh::Cube));
+  pivot_mesh->SetTexture(texture_background_.Get());
+  pivot_mesh->SetColor({1.0f, 1.0f, 1.0f, 1.0f});
+
   SpriteSheet::FrameConfig bg_sheet_config;
   bg_sheet_config.sheet_size = {1024, 1024};
   bg_sheet_config.frame_size = {128, 128};
@@ -151,6 +162,7 @@ void TestScene::OnPostUpdate(float dt) {
 
   cube_object_->GetComponent<TransformComponent>()->SetRotationEulerDegree({0.0f, rotation_angle_, 0.0f});
   cube_object2_->GetComponent<TransformComponent>()->SetRotationEulerDegree({0.0f, rotation_angle_, 0.0f});
+  pivot_cube_->GetComponent<TransformComponent>()->SetRotationEulerDegree({0.0f, rotation_angle_, 0.0f});
 }
 
 void TestScene::OnRender(FramePacket& /* packet */) {
@@ -172,6 +184,15 @@ void TestScene::OnRender(FramePacket& /* packet */) {
   debug_drawer->DrawBox({-5, 2, -5}, {1, 1, 1}, {1, 0, 0, 1});
 
   debug_drawer->DrawSphere({-5, 2, -5}, 3, {1, 0, 0, 1}, 32);
+
+  DebugDrawer::AxisGizmoConfig pivot_axis;
+  pivot_axis.position = {5.0f, 0.0f, 5.0f};
+  pivot_axis.length = 1.0f;
+  debug_drawer->DrawAxisGizmo(pivot_axis);
+
+  auto pivot_world = pivot_cube_->GetComponent<TransformComponent>()->GetWorldMatrix()
+                         .TransformPoint({0.5f, 0.0f, 0.0f});
+  debug_drawer->DrawSphere(pivot_world, 0.1f, {1, 1, 0, 1}, 16);
 }
 
 void TestScene::OnExit() {
@@ -185,6 +206,7 @@ void TestScene::OnExit() {
   text_obj2_ = nullptr;
   animated_bg_object_ = nullptr;
   additive_ = nullptr;
+  pivot_cube_ = nullptr;
 }
 
 void TestScene::SetupCamera() {

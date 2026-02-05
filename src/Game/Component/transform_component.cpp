@@ -51,8 +51,24 @@ void TransformComponent::SetRotationEulerDegree(const Vector3& euler) {
   SetRotationEulerDegree(euler.x, euler.y, euler.z);
 }
 
+void TransformComponent::SetPivot(const Vector3& pivot) {
+  local_pivot_ = pivot;
+  is_dirty_ = true;
+}
+
 void TransformComponent::UpdateLocalMatrix() {
-  local_matrix_ = Matrix4::CreateFromTRS(local_pos_, local_rot_, local_scale_);
+  if (local_pivot_ == Vector3::Zero) {
+    local_matrix_ = Matrix4::CreateFromTRS(local_pos_, local_rot_, local_scale_);
+    return;
+  }
+
+  // M = T(-pivot) * S * R * T(pivot + pos)
+  Matrix4 neg_pivot = Matrix4::CreateTranslation(-local_pivot_);
+  Matrix4 scale = Matrix4::CreateScale(local_scale_);
+  Matrix4 rotation = Matrix4::CreateFromQuaternion(local_rot_);
+  Matrix4 pos = Matrix4::CreateTranslation(local_pivot_ + local_pos_);
+
+  local_matrix_ = neg_pivot * scale * rotation * pos;
 }
 
 Matrix4 TransformComponent::GetWorldMatrix() {

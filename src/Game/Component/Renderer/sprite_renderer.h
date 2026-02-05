@@ -69,9 +69,9 @@ class SpriteRenderer : public Component<SpriteRenderer> {
   }
 
   void SetPivot(Pivot::Preset preset);
-  void SetPivot(const Pivot::Config& config);
-  const Pivot::Config& GetPivot() const {
-    return pivot_;
+  void SetPivot(const Vector2& normalized_pivot);
+  const Vector2& GetPivot() const {
+    return sprite_pivot_;
   }
 
   void SetUVOffset(const Vector2& offset) {
@@ -104,7 +104,7 @@ class SpriteRenderer : public Component<SpriteRenderer> {
 
   Rendering::RenderSettings render_settings_ = Rendering::RenderSettings::Transparent();
   Billboard::Mode billboard_mode_ = Billboard::Mode::None;
-  Pivot::Config pivot_;
+  Vector2 sprite_pivot_ = {0.5f, 0.5f};
 
   RenderLayer render_layer_ = RenderLayer::Transparent;
   RenderTagMask render_tags_ = 0;
