@@ -32,6 +32,14 @@ class TransformComponent : public Component<TransformComponent> {
     return local_pos_;
   }
 
+  Vector3 GetScale() const {
+    return local_scale_;
+  }
+
+  Quaternion GetRotation() const {
+    return local_rot_;
+  }
+
   Matrix4 GetWorldMatrix();
 
   Vector3 GetForward();

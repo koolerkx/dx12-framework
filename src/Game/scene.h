@@ -64,6 +64,8 @@ class IScene {
   GameObject* CreateGameObject(const std::string& name = "GameObject");
 
  public:
+  const std::vector<std::unique_ptr<GameObject>>& GetGameObjects() const { return game_objects_; }
+
   void DestroyGameObject(GameObject* obj);
 
  private:

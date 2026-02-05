@@ -58,8 +58,6 @@ void RenderPassManager::Execute(const RenderFrameContext& frame, const FramePack
       pass->Execute(frame, packet);
     });
   }
-
-  FinalizeFrame(frame.command_list);
 }
 
 void RenderPassManager::ApplyPassSetup(ID3D12GraphicsCommandList* cmd, const PassSetup& setup) {

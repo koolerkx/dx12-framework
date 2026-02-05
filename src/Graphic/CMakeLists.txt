@@ -92,7 +92,7 @@ add_library(graphic STATIC
     Render/tone_map_pass.cpp
 )
 
-target_link_libraries(app PRIVATE framework)
+target_link_libraries(graphic PUBLIC framework)
 
 target_include_directories(graphic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
 target_include_directories(graphic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../Framework)

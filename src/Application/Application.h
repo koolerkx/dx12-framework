@@ -54,6 +54,9 @@ class Application {
     resize_callback_ = callback;
   }
 
+  using WndProcHook = std::function<bool(HWND, UINT, WPARAM, LPARAM)>;
+  void SetWndProcHook(WndProcHook hook) { wndproc_hook_ = std::move(hook); }
+
  private:
   static LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -74,6 +77,8 @@ class Application {
 
   // Resize callback
   ResizeCallback resize_callback_;
+
+  WndProcHook wndproc_hook_;
 
   std::unique_ptr<TimerUpdater> timer_updater_ = nullptr;
 };

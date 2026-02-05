@@ -195,6 +195,11 @@ LRESULT CALLBACK Application::WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPA
     app = reinterpret_cast<Application*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
   }
 
+  if (app && app->wndproc_hook_) {
+    if (app->wndproc_hook_(hwnd, msg, wParam, lParam))
+      return true;
+  }
+
   switch (msg) {
     case WM_DESTROY:
       if (app) {

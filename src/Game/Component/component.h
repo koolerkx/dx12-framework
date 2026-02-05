@@ -53,6 +53,7 @@ class IComponentBase {
   }
 
   virtual ComponentTypeID GetTypeID() const = 0;
+  virtual const char* GetTypeName() const { return "Unknown"; }
 
   GameObject* GetOwner() const {
     return owner_;
@@ -85,8 +86,9 @@ class Component : public IComponentBase {
  public:
   using IComponentBase::IComponentBase;
 
-  // Automatically implemented - user never writes this!
   ComponentTypeID GetTypeID() const final override {
     return ComponentType<Derived>::GetID();
   }
+
+  const char* GetTypeName() const override { return typeid(Derived).name(); }
 };

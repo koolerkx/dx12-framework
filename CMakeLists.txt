@@ -8,6 +8,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
+option(ENABLE_EDITOR "Enable ImGui editor overlay" OFF)
+
 if(MSVC)
   add_compile_options(/wd4324)
 

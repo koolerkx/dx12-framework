@@ -37,6 +37,24 @@
             }
         },
         {
+            "name": "x64-debug-editor",
+            "displayName": "x64 Debug (Editor)",
+            "inherits": "windows-base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "ENABLE_EDITOR": "ON"
+            }
+        },
+        {
+            "name": "x64-release-editor",
+            "displayName": "x64 Release (Editor)",
+            "inherits": "windows-base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "ENABLE_EDITOR": "ON"
+            }
+        },
+        {
             "name": "visual-studio",
             "hidden": true,
             "generator": "Visual Studio 17 2022",
@@ -55,6 +73,18 @@
             "architecture": {
                 "value": "x64",
                 "strategy": "external"
+            }
+        },
+        {
+            "name": "vs-x64-editor",
+            "displayName": "VS x64 (Editor)",
+            "inherits": "visual-studio",
+            "architecture": {
+                "value": "x64",
+                "strategy": "external"
+            },
+            "cacheVariables": {
+                "ENABLE_EDITOR": "ON"
             }
         }
     ],
@@ -80,6 +110,24 @@
             "name": "vs-x64-release",
             "displayName": "VS x64 Release Build",
             "configurePreset": "vs-x64",
+            "configuration": "Release",
+            "targets": [
+                "ALL_BUILD"
+            ]
+        },
+        {
+            "name": "vs-x64-editor-debug",
+            "displayName": "VS x64 Editor Debug Build",
+            "configurePreset": "vs-x64-editor",
+            "configuration": "Debug",
+            "targets": [
+                "ALL_BUILD"
+            ]
+        },
+        {
+            "name": "vs-x64-editor-release",
+            "displayName": "VS x64 Editor Release Build",
+            "configurePreset": "vs-x64-editor",
             "configuration": "Release",
             "targets": [
                 "ALL_BUILD"

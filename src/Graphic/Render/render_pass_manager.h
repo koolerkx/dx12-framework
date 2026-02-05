@@ -31,9 +31,10 @@ class RenderPassManager {
   void Resize(ID3D12Device* device, uint32_t width, uint32_t height);
   void Shutdown();
 
+  void FinalizeFrame(ID3D12GraphicsCommandList* cmd);
+
  private:
   void ApplyPassSetup(ID3D12GraphicsCommandList* cmd, const PassSetup& setup);
-  void FinalizeFrame(ID3D12GraphicsCommandList* cmd);
 
   std::vector<std::unique_ptr<IRenderPass>> passes_;
   std::vector<std::unique_ptr<RenderTexture>> render_textures_;

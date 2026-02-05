@@ -85,6 +85,10 @@ class Graphic {
     return device_context_ ? device_context_->GetDevice() : nullptr;
   }
 
+  ID3D12CommandQueue* GetCommandQueue() const {
+    return command_queue_.Get();
+  }
+
   void SetVSync(bool enable) {
     enable_vsync_ = enable;
     if (presentation_context_) {
@@ -113,6 +117,11 @@ class Graphic {
 
   DescriptorHeapManager& GetDescriptorHeapManager() {
     return descriptor_heap_manager_;
+  }
+
+  using OverlayRenderFunc = std::function<void(ID3D12GraphicsCommandList*)>;
+  void SetOverlayRenderer(OverlayRenderFunc renderer) {
+    overlay_renderer_ = std::move(renderer);
   }
 
  private:
@@ -151,6 +160,8 @@ class Graphic {
   HWND hwnd_ = nullptr;
   bool enable_vsync_ = true;
   bool use_bindless_sampler_ = false;
+
+  OverlayRenderFunc overlay_renderer_;
 
   bool is_initialized_ = false;
   std::atomic<bool> is_shutting_down_{false};

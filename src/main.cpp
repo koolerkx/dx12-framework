@@ -7,6 +7,9 @@
 #include <exception>
 
 #include "Application/Application.h"
+#ifdef ENABLE_EDITOR
+#include "Editor/editor_layer.h"
+#endif
 #include "Core/utils.h"
 #include "Framework/Event/event_bus.hpp"
 #include "Framework/Event/input_event_generator.h"
@@ -47,6 +50,15 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
 
   app.SetResizeCallback([&graphic](UINT width, UINT height) -> bool { return graphic.ResizeBuffers(width, height); });
 
+#ifdef ENABLE_EDITOR
+  EditorLayer editor;
+  editor.Initialize(app.GetHwnd(), graphic);
+  app.SetWndProcHook([&editor](HWND h, UINT m, WPARAM w, LPARAM l) {
+    return editor.WndProcHandler(h, m, w, l);
+  });
+  graphic.SetOverlayRenderer([&editor](ID3D12GraphicsCommandList* cmd) { editor.Render(cmd); });
+#endif
+
   InputSystem inputSystem;
   if (!inputSystem.Initialize(app.GetHwnd())) {
     throw std::runtime_error("Failed to initialize input system");
@@ -64,11 +76,19 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
   game.SetContext(&context);
   game.Initialize();
 
+#ifdef ENABLE_EDITOR
+  editor.SetScene(game.GetCurrentScene());
+#endif
+
   InputEventGenerator event_generator(inputSystem, *event_bus);
 
   const std::function<void(float dt)> OnUpdate = [&]([[maybe_unused]] float dt) {
     inputSystem.Update();
     event_generator.Update();
+
+#ifdef ENABLE_EDITOR
+    editor.BeginFrame();
+#endif
 
     game.OnUpdate(dt);
     game.OnRender();
@@ -77,6 +97,11 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
   const std::function<void(float fdt)> OnFixedUpdate = [&]([[maybe_unused]] float fdt) { game.OnFixedUpdate(fdt); };
 
   app.Run(OnUpdate, OnFixedUpdate);
+
+#ifdef ENABLE_EDITOR
+  graphic.SetOverlayRenderer(nullptr);
+  editor.Shutdown(graphic);
+#endif
 
   inputSystem.Shutdown();
   game.Shutdown();

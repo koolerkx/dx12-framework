@@ -12,6 +12,7 @@
 #include "Frame/frame_packet.h"
 #include "Framework/Logging/logger.h"
 #include "Framework/Math/Math.h"
+#include "Presentation/swapchain_manager.h"
 #include "Render/debug_pass.h"
 #include "Render/material_pass.h"
 #include "Render/tone_map_pass.h"
@@ -265,6 +266,15 @@ RenderFrameContext Graphic::BeginFrame() {
 }
 
 void Graphic::EndFrame(const RenderFrameContext& frame) {
+  if (overlay_renderer_) {
+    auto& swapchain = presentation_context_->GetSwapChainManager();
+    auto rtv = swapchain.GetCurrentRTV();
+    frame.command_list->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
+    descriptor_heap_manager_.SetDescriptorHeaps(frame.command_list);
+    overlay_renderer_(frame.command_list);
+  }
+
+  render_pass_manager_->FinalizeFrame(frame.command_list);
   command_context_->Execute();
 
   uint64_t fence_value = frame_synchronizer_->SignalFrame(command_queue_.Get(), frame.frame_index);

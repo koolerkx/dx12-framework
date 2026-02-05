@@ -20,6 +20,8 @@ class Game {
   void Initialize();
   void Shutdown();
 
+  IScene* GetCurrentScene() const { return current_scene_.get(); }
+
   void OnUpdate(float dt);
   void OnFixedUpdate(float dt);
   void OnRender();
