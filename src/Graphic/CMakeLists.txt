@@ -23,8 +23,6 @@ add_library(graphic STATIC
     Presentation/swapchain_manager.cpp
     Presentation/depth_buffer.h
     Presentation/depth_buffer.cpp
-    Presentation/hdr_render_target.h
-    Presentation/hdr_render_target.cpp
     Presentation/presentation_context.h
     Presentation/presentation_context.cpp
 
@@ -78,14 +76,11 @@ add_library(graphic STATIC
     Render/draw_command_aggregator.h
     Render/draw_command_aggregator.cpp
 
-    Render/ui_pass.h
-    Render/ui_pass.cpp
+    Render/render_texture.h
+    Render/render_texture.cpp
 
-    Render/opaque_pass.h
-    Render/opaque_pass.cpp
-
-    Render/transparent_pass.h
-    Render/transparent_pass.cpp
+    Render/material_pass.h
+    Render/material_pass.cpp
 
     Debug/debug_line_renderer.h
     Debug/debug_line_renderer.cpp

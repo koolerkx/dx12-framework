@@ -23,6 +23,10 @@ class DepthBuffer : public GpuResource {
 
   void Clear(ID3D12GraphicsCommandList* command_list, float depth = 1.0f, UINT8 stencil = 0);
 
+  void ResetFrameState() { cleared_this_frame_ = false; }
+  bool NeedsClear() const { return !cleared_this_frame_; }
+  void MarkCleared() { cleared_this_frame_ = true; }
+
   void SafeRelease();
 
   UINT GetWidth() const {
@@ -41,4 +45,5 @@ class DepthBuffer : public GpuResource {
   UINT width_ = 0;
   UINT height_ = 0;
   DXGI_FORMAT format_ = DXGI_FORMAT_D32_FLOAT;
+  bool cleared_this_frame_ = false;
 };

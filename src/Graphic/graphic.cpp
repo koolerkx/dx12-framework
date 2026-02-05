@@ -13,25 +13,25 @@
 #include "Frame/frame_packet.h"
 #include "Framework/Logging/logger.h"
 #include "Render/debug_pass.h"
-#include "Render/opaque_pass.h"
-#include "Render/transparent_pass.h"
-#include "Render/ui_pass.h"
+#include "Render/material_pass.h"
+#include "Render/tone_map_pass.h"
 
 using namespace DirectX;
 
-constexpr std::array<float, 4> CLEAR_COLOR = {1.0f, 1.0f, 0.0f, 1.0f};
-
-struct Vertex {
-  XMFLOAT3 pos;
-  XMFLOAT2 uv;
-};
-
-struct TexRGBA {
-  unsigned char R, G, B, A;
-};
+// TODO: Move to game
+static CameraData MakeOrthographicCamera(const RenderFrameContext& frame, const FramePacket& /*packet*/) {
+  CameraData camera;
+  XMMATRIX view = XMMatrixIdentity();
+  XMMATRIX proj = XMMatrixOrthographicOffCenterLH(
+    0.0f, static_cast<float>(frame.screen_width), static_cast<float>(frame.screen_height), 0.0f, -10.0f, 100.0f);
+  StoreMatrixToCameraData(camera, view, proj);
+  camera.position = XMFLOAT3(0, 0, 0);
+  camera.forward = XMFLOAT3(0, 0, 1);
+  camera.up = XMFLOAT3(0, 1, 0);
+  return camera;
+}
 
 bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_height, const Graphic::GraphicInitProps& props) {
-  // Cleanup
   Shutdown();
   is_shutting_down_ = false;
 
@@ -42,7 +42,6 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
 
   std::wstring init_error_caption = L"Graphic Initialization Error";
 
-  // Create DeviceContext (new modular subsystem)
   gfx::DeviceContext::CreateInfo device_info{};
 #if defined(DEBUG) || defined(_DEBUG)
   device_info.enable_debug_layer = true;
@@ -54,7 +53,6 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
     return false;
   }
 
-  // Copy references for backward compatibility
   device_ = device_context_->GetDevice();
   dxgi_factory_ = device_context_->GetFactory();
   use_bindless_sampler_ = device_context_->SupportsBindlessSamplers();
@@ -66,7 +64,6 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
     return false;
   }
 
-  // Create CommandContext: Command List, Command Allocator, Command Queue
   command_context_ = gfx::CommandContext::Create(device_.Get());
   if (!command_context_) {
     Logger::LogFormat(LogLevel::Fatal, LogCategory::Graphic, Logger::Here(), "Failed to create CommandContext");
@@ -74,17 +71,14 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
     return false;
   }
 
-  // Copy reference for backward compatibility (SwapChainManager needs command_queue_)
   command_queue_ = command_context_->GetQueue();
 
-  // Create FrameSynchronizer
   frame_synchronizer_ = gfx::FrameSynchronizer::Create(device_.Get());
   if (!frame_synchronizer_) {
     Logger::LogFormat(LogLevel::Fatal, LogCategory::Graphic, Logger::Here(), "Failed to create FrameSynchronizer");
     return false;
   }
 
-  // Create RenderServices (owns all resource managers)
   gfx::RenderServices::CreateInfo services_info{};
   services_info.device = device_.Get();
   services_info.heap_manager = &descriptor_heap_manager_;
@@ -100,7 +94,7 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
 
   if (!frame_cb_storage_.Initialize(device_.Get(), FRAME_BUFFER_COUNT)) return false;
 
-  size_t object_buffer_page_size = 1024 * 1024;  // 1mb per page
+  size_t object_buffer_page_size = 1024 * 1024;
 
   object_cb_allocators_.resize(FRAME_BUFFER_COUNT);
   for (int i = 0; i < FRAME_BUFFER_COUNT; ++i) {
@@ -121,13 +115,7 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
     return false;
   }
 
-  render_pass_manager_ = std::make_unique<RenderPassManager>();
-
-  render_pass_manager_->AddPass(std::make_unique<OpaquePass>(opaque_renderer_.get()));
-  render_pass_manager_->AddPass(std::make_unique<TransparentPass>(transparent_renderer_.get()));
-  render_pass_manager_->AddPass(std::make_unique<DebugPass>(debug_line_renderer_.get(), &render_services_->GetMaterialManager()));
-
-  // Create PresentationContext
+  // Create PresentationContext (swapchain only)
   gfx::PresentationContext::CreateInfo presentation_info{};
   presentation_info.hwnd = hwnd;
   presentation_info.width = frame_buffer_width;
@@ -141,13 +129,40 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
     return false;
   }
 
-  // Create tone mapping pass and set up dependencies
-  tone_map_pass_ =
-    std::make_unique<ToneMapPass>(device_.Get(), &render_services_->GetMaterialManager(), &render_services_->GetShaderManager());
-  tone_map_pass_->SetDependencies(presentation_context_.get(), &hdr_config_, &hdr_debug_);
-  render_pass_manager_->AddPass(std::move(tone_map_pass_));
+  // Build render graph
+  render_pass_manager_ = std::make_unique<RenderPassManager>();
+  render_pass_manager_->SetSwapChain(&presentation_context_->GetSwapChainManager());
+  render_pass_manager_->SetHeapManager(&descriptor_heap_manager_);
 
-  render_pass_manager_->AddPass(std::make_unique<UiPass>(ui_renderer_.get()));
+  auto* scene_rt =
+    render_pass_manager_->CreateRenderTexture(DXGI_FORMAT_R16G16B16A16_FLOAT, frame_buffer_width, frame_buffer_height, device_.Get());
+  auto* depth = render_pass_manager_->CreateDepthBuffer(frame_buffer_width, frame_buffer_height, device_.Get());
+
+  PassSetup scene_setup;
+  scene_setup.color_targets = {{scene_rt}};
+  scene_setup.depth = {depth};
+
+  PassSetup backbuffer_setup;
+  backbuffer_setup.color_targets = {{nullptr}};
+
+  PassSetup tonemap_setup;
+  tonemap_setup.color_targets = {{nullptr}};
+  tonemap_setup.shader_inputs = {scene_rt};
+
+  render_pass_manager_->AddPass(std::make_unique<MaterialPass>("Opaque Pass", opaque_renderer_.get(), RenderLayer::Opaque, scene_setup));
+  render_pass_manager_->AddPass(
+    std::make_unique<MaterialPass>("Transparent Pass", transparent_renderer_.get(), RenderLayer::Transparent, scene_setup));
+  render_pass_manager_->AddPass(
+    std::make_unique<DebugPass>(debug_line_renderer_.get(), &render_services_->GetMaterialManager(), scene_setup));
+  render_pass_manager_->AddPass(std::make_unique<ToneMapPass>(device_.Get(),
+    &render_services_->GetMaterialManager(),
+    &render_services_->GetShaderManager(),
+    tonemap_setup,
+    scene_rt,
+    &hdr_config_,
+    &hdr_debug_));
+  render_pass_manager_->AddPass(
+    std::make_unique<MaterialPass>("UI Pass", ui_renderer_.get(), RenderLayer::UI, backbuffer_setup, MakeOrthographicCamera));
 
   is_initialized_ = true;
   return true;
@@ -159,7 +174,7 @@ bool Graphic::ResizeBuffers(UINT width, UINT height) {
   }
 
   if (width == frame_buffer_width_ && height == frame_buffer_height_) {
-    return true;  // Already at target size
+    return true;
   }
 
   frame_synchronizer_->WaitForGpuIdle(command_queue_.Get());
@@ -168,6 +183,8 @@ bool Graphic::ResizeBuffers(UINT width, UINT height) {
     Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "PresentationContext resize failed");
     return false;
   }
+
+  render_pass_manager_->Resize(device_.Get(), width, height);
 
   frame_buffer_width_ = width;
   frame_buffer_height_ = height;
@@ -195,7 +212,6 @@ void Graphic::Shutdown() {
       frame_synchronizer_->WaitForGpuIdle(command_queue_.Get());
       gpu_synced = true;
 
-      // Flush RenderServices resources before destruction
       if (render_services_) {
         uint64_t completed = frame_synchronizer_->GetCompletedValue();
         render_services_->OnFrameBegin(0, completed);
@@ -216,12 +232,14 @@ void Graphic::Shutdown() {
       LogLevel::Warn, LogCategory::Graphic, Logger::Here(), "[Graphic::Shutdown] WARNING: GPU sync failed, potential resource leak");
   }
 
-  // Explicitly release subsystems that depend on descriptor_heap_manager_
-  // Must happen before descriptor_heap_manager_ is destroyed (reverse declaration order)
+  // RenderPassManager owns RTs with SRV allocations — must release before heap manager
+  if (render_pass_manager_) {
+    render_pass_manager_->Shutdown();
+  }
+
   render_services_.reset();
   presentation_context_.reset();
 
-  // Resources released by ComPtr destructors
   is_initialized_ = false;
   is_shutting_down_.store(false, std::memory_order_release);
 }
@@ -229,44 +247,35 @@ void Graphic::Shutdown() {
 RenderFrameContext Graphic::BeginFrame() {
   uint32_t frame_index = presentation_context_->GetCurrentBackBufferIndex();
 
-  // Clear debug lines at start of frame
   if (debug_line_renderer_) {
     debug_line_renderer_->Clear();
   }
 
-  // Wait for previous frame using this buffer to complete
   frame_synchronizer_->WaitForFrame(frame_index);
   uint64_t completed_fence = frame_synchronizer_->GetCompletedValue();
   render_services_->OnFrameBegin(frame_index, completed_fence);
 
-  object_cb_allocators_[frame_index]->Reset();  // manually reset for dynamic allocation
+  object_cb_allocators_[frame_index]->Reset();
 
   command_context_->BeginFrame(frame_index);
   auto* cmd = command_context_->GetCommandList();
 
   descriptor_heap_manager_.BeginFrame(frame_index);
-  descriptor_heap_manager_.SetDescriptorHeaps(cmd);  // Bind Global Heap
+  descriptor_heap_manager_.SetDescriptorHeaps(cmd);
 
-  // Delegate HDR RT, depth buffer, viewport setup to PresentationContext
-  presentation_context_->BeginFrame(cmd);
+  render_pass_manager_->BeginFrame();
 
   return RenderFrameContext{.frame_index = frame_index,
     .command_list = cmd,
-
-    // Pass the pointer to the specific ConstantBuffer instance
     .frame_cb = &frame_cb_storage_.GetBuffer(frame_index),
     .object_cb_allocator = object_cb_allocators_[frame_index].get(),
-
     .dynamic_allocator = &descriptor_heap_manager_.GetSrvDynamicAllocator(frame_index),
     .global_heap_manager = &descriptor_heap_manager_,
-
     .screen_width = frame_buffer_width_,
     .screen_height = frame_buffer_height_};
 }
 
 void Graphic::EndFrame(const RenderFrameContext& frame) {
-  presentation_context_->EndFrame(frame.command_list);
-
   command_context_->Execute();
 
   uint64_t fence_value = frame_synchronizer_->SignalFrame(command_queue_.Get(), frame.frame_index);
@@ -278,7 +287,6 @@ void Graphic::EndFrame(const RenderFrameContext& frame) {
 }
 
 void Graphic::RenderScene(const RenderFrameContext& frame, const FramePacket& world) {
-  // All passes managed uniformly through RenderPassManager
   render_pass_manager_->Execute(frame, world);
 }
 

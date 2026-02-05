@@ -1,23 +1,37 @@
 #pragma once
-#include "Frame/draw_command.h"
+
+#include <vector>
+
 #include "Frame/frame_packet.h"
 #include "Frame/render_frame_context.h"
+
+class RenderTexture;
+class DepthBuffer;
+
+struct PassSetup {
+  struct ColorTarget {
+    RenderTexture* texture = nullptr;  // nullptr = backbuffer
+  };
+  struct DepthTarget {
+    DepthBuffer* buffer = nullptr;  // nullptr = no depth
+  };
+
+  std::vector<ColorTarget> color_targets;
+  DepthTarget depth;
+  std::vector<RenderTexture*> shader_inputs;
+};
 
 class IRenderPass {
  public:
   virtual ~IRenderPass() = default;
 
   virtual void Execute(const RenderFrameContext& frame, const FramePacket& packet) = 0;
-
   virtual const char* GetName() const = 0;
 
-  virtual void PreExecute(const RenderFrameContext& frame, const FramePacket& packet) {
-    (void)frame;
-    (void)packet;
+  const PassSetup& GetPassSetup() const {
+    return setup_;
   }
 
-  virtual void PostExecute(const RenderFrameContext& frame, const FramePacket& packet) {
-    (void)frame;
-    (void)packet;
-  }
+ protected:
+  PassSetup setup_;
 };

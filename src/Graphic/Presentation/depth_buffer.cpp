@@ -63,6 +63,7 @@ void DepthBuffer::Clear(ID3D12GraphicsCommandList* command_list, float depth, UI
   if (!IsValid()) return;
 
   command_list->ClearDepthStencilView(dsv_allocation_.cpu, D3D12_CLEAR_FLAG_DEPTH, depth, stencil, 0, nullptr);
+  cleared_this_frame_ = true;
 }
 
 void DepthBuffer::SafeRelease() {

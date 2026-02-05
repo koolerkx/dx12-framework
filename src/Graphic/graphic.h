@@ -24,7 +24,6 @@
 #include "Presentation/presentation_context.h"
 #include "Render/material_renderer.h"
 #include "Render/render_pass_manager.h"
-#include "Render/tone_map_pass.h"
 #include "Rendering/hdr_config.h"
 #include "Resource/Font/sprite_font_manager.h"
 #include "Resource/Texture/texture_manager.h"
@@ -32,7 +31,6 @@
 
 class Graphic {
  public:
-  // Simplified initialization
   struct GraphicInitProps {
     bool enable_vsync = true;
   };
@@ -47,24 +45,16 @@ class Graphic {
 
   void WaitForGpuIdle();
 
-  // Resize graphics resources
   bool ResizeBuffers(UINT width, UINT height);
 
-  // helper
-  /**
-   * @brief This function will execute a command list, the command list will record by caller in cb
-   * @param cb
-   */
   void ExecuteSync(std::function<void(ID3D12GraphicsCommandList*)> cb);
 
   RenderFrameContext BeginFrame();
   void EndFrame(const RenderFrameContext& frame);
   void RenderScene(const RenderFrameContext& frame, const FramePacket& world);
 
-  // Debug rendering API - LOW LEVEL ONLY
   void AddDebugLine(const DirectX::XMFLOAT3& start, const DirectX::XMFLOAT3& end, const DirectX::XMFLOAT4& color = {1, 1, 1, 1});
 
-  // Get debug line renderer for advanced use
   DebugLineRenderer* GetDebugLineRenderer() {
     return debug_line_renderer_.get();
   }
@@ -119,22 +109,17 @@ class Graphic {
   }
 
  private:
-  // New modular subsystems
   std::unique_ptr<gfx::DeviceContext> device_context_;
   std::unique_ptr<gfx::CommandContext> command_context_;
   std::unique_ptr<gfx::PresentationContext> presentation_context_;
   std::unique_ptr<gfx::FrameSynchronizer> frame_synchronizer_;
 
-  // Backward compatibility references (copied from subsystems)
   ComPtr<ID3D12Device5> device_ = nullptr;
   ComPtr<IDXGIFactory6> dxgi_factory_ = nullptr;
   ComPtr<ID3D12CommandQueue> command_queue_ = nullptr;
 
-  // descriptor management
   DescriptorHeapManager descriptor_heap_manager_;
 
-  // HDR rendering
-  std::unique_ptr<ToneMapPass> tone_map_pass_;
   HdrConfig hdr_config_;
   HdrDebug hdr_debug_;
 
@@ -147,7 +132,6 @@ class Graphic {
   PerFrameConstantBuffer<FrameCB> frame_cb_storage_;
   std::vector<std::unique_ptr<DynamicUploadBuffer>> object_cb_allocators_;
 
-  // render services (owns all resource managers)
   std::unique_ptr<gfx::RenderServices> render_services_;
 
   std::unique_ptr<UiRenderer> ui_renderer_;
