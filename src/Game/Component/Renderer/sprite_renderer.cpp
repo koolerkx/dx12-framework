@@ -1,6 +1,5 @@
 #include "sprite_renderer.h"
 
-#include "Component/billboard_helper.h"
 #include "Component/pivot_type.h"
 #include "Component/transform_component.h"
 #include "Game/Asset/asset_manager.h"
@@ -54,12 +53,11 @@ Matrix4 SpriteRenderer::CalculateWorldMatrix(TransformComponent* transform, cons
   Vector3 scale = world.GetScale();
   Vector3 translation = world.GetTranslation();
 
-  Matrix4 billboardRot;
+  Vector3 target = camera.position;
   if (billboard_mode_ == Billboard::Mode::Cylindrical) {
-    billboardRot = Billboard::CreateCylindricalBillboardMatrix(translation, camera.position);
-  } else {
-    billboardRot = Billboard::CreateSphericalBillboardMatrix(translation, camera.position);
+    target.y = translation.y;
   }
+  Matrix4 billboardRot = Matrix4::FaceTo(translation, target, Vector3::Up);
 
   Matrix4 scaleMat = Matrix4::CreateScale(scale);
   Matrix4 transMat = Matrix4::CreateTranslation(translation);
