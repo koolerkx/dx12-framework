@@ -4,7 +4,6 @@
 
 #include "Asset/asset_manager.h"
 #include "Scenes/test_scene/character_mover_component.h"
-#include "Component/animated_sprite.h"
 #include "Component/free_camera_controller.h"
 #include "Component/mesh_renderer.h"
 #include "Component/pivot_type.h"
@@ -12,6 +11,8 @@
 #include "Component/sprite_sheet_helper.h"
 #include "Component/text_renderer.h"
 #include "Component/transform_component.h"
+#include "Component/ui_sprite_renderer.h"
+#include "Component/ui_text_renderer.h"
 #include "Debug/debug_drawer.h"
 #include "Frame/frame_packet.h"
 #include "Framework/Logging/logger.h"
@@ -47,31 +48,24 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
 
   auto* mesh_renderer = cube_object_->AddComponent<MeshRenderer>();
   mesh_renderer->SetMesh(asset_manager.GetDefaultMesh(DefaultMesh::Cube));
-  mesh_renderer->SetTexture(texture_background_.Get());  // Use ship texture for testing
+  mesh_renderer->SetTexture(texture_background_.Get());
   mesh_renderer->SetColor({1.0f, 1.0f, 1.0f, 1.0f});
 
   cube_object2_ = CreateGameObject("Cube");
   cube_object2_->SetParent(cube_object_);
 
   auto* cube_transform2 = cube_object2_->GetComponent<TransformComponent>();
-  cube_transform2->SetPosition({1.0f, 1.0f, 1.0f});  // At origin
-  cube_transform2->SetScale({1.0f, 1.0f, 1.0f});     // Scale to 2x2x2
+  cube_transform2->SetPosition({1.0f, 1.0f, 1.0f});
+  cube_transform2->SetScale({1.0f, 1.0f, 1.0f});
 
   auto* mesh_renderer2 = cube_object2_->AddComponent<MeshRenderer>();
   mesh_renderer2->SetMesh(asset_manager.GetDefaultMesh(DefaultMesh::Cube));
-  mesh_renderer2->SetTexture(texture_background_.Get());  // Use ship texture for testing
+  mesh_renderer2->SetTexture(texture_background_.Get());
   mesh_renderer2->SetColor({1.0f, 1.0f, 1.0f, 1.0f});
 
-  // auto* background = CreateGameObject("Background");
-  // background->GetComponent<TransformComponent>()->SetPosition({500, 500, 0});
-  // auto* bg_sprite = background->AddComponent<SpriteRenderer>();
-  // bg_sprite->SetTexture(texture_background_.Get());
-  // bg_sprite->SetSize({1920, 1080});
-
   character_object_ = CreateGameObject("Character");
-  // character_object_->SetParent(background);
   character_object_->GetComponent<TransformComponent>()->SetPosition({500, 500, 0});
-  auto* char_sprite = character_object_->AddComponent<SpriteRenderer>();
+  auto* char_sprite = character_object_->AddComponent<UISpriteRenderer>();
   char_sprite->SetTexture(texture_character_.Get());
   char_sprite->SetSize({150, 150});
 
@@ -80,7 +74,7 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   character_object2_ = CreateGameObject("Character");
   character_object2_->SetParent(character_object_);
   character_object2_->GetComponent<TransformComponent>()->SetPosition({150, 150, 0});
-  auto* char_sprite2 = character_object2_->AddComponent<SpriteRenderer>();
+  auto* char_sprite2 = character_object2_->AddComponent<UISpriteRenderer>();
   char_sprite2->SetTexture(texture_character_.Get());
   char_sprite2->SetSize({150, 150});
   character_object2_->AddComponent<CharacterMover>();
@@ -90,30 +84,21 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   auto* additive_sprite = additive_->AddComponent<SpriteRenderer>();
   additive_sprite->SetTexture(texture_additive_.Get());
   additive_sprite->SetSize({1.0f, 1.0f});
-  additive_sprite->SetRenderLayer(RenderLayer::Transparent);
   additive_sprite->SetBillboardMode(Billboard::Mode::Spherical);
   additive_sprite->SetBlendMode(Rendering::BlendMode::Additive);
   additive_sprite->SetColor({0.0f, 1.0f, 0.0f, 0.5f});
 
-  // Animated Background Sprite Example
-  // Using texture_background_ (576x324) as a sprite sheet with mock animation frames
-  // Assume 9 frames arranged in a 3x3 grid (each frame ~192x108 with padding)
   animated_bg_object_ = CreateGameObject("AnimatedBackground");
-  // Position in screen space (UI pass uses screen coordinates)
   animated_bg_object_->GetComponent<TransformComponent>()->SetPosition({0.0f, -3.0f, 0.0f});
 
   auto* bg_renderer = animated_bg_object_->AddComponent<SpriteRenderer>();
   bg_renderer->SetTexture(texture_ao_.Get());
-  bg_renderer->SetSize({15.0f, 15.0f});  // Full frame size
-  bg_renderer->SetRenderLayer(RenderLayer::Transparent);
+  bg_renderer->SetSize({15.0f, 15.0f});
   bg_renderer->SetPivot(Pivot::Preset::Bottom);
   bg_renderer->SetDoubleSided(true);
   bg_renderer->SetBillboardMode(Billboard::Mode::None);
   bg_renderer->SetColor({1.0f, 0.0f, 0.0f, 0.5f});
 
-  auto* bg_anim = animated_bg_object_->AddComponent<AnimatedSprite>();
-
-  // Configure sprite sheet: treat the 576x324 texture as a 3x3 grid of animation frames
   SpriteSheet::FrameConfig bg_sheet_config;
   bg_sheet_config.sheet_size = {1024, 1024};
   bg_sheet_config.frame_size = {128, 128};
@@ -121,23 +106,19 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   bg_sheet_config.padding = {0, 0};
   bg_sheet_config.margin = {0, 0};
 
-  bg_anim->SetSpriteSheetConfig(bg_sheet_config);
-  bg_anim->SetFrameCount(64);          // 3x3 = 9 frames
-  bg_anim->SetFramesPerSecond(30.0f);  // 10 FPS animation
-  bg_anim->SetLoopEnabled(true);
-  bg_anim->SetPlayOnStart(true);
+  auto& animator = bg_renderer->GetAnimator();
+  animator.SetSpriteSheetConfig(bg_sheet_config);
+  animator.SetFrameCount(64);
+  animator.SetFramesPerSecond(30.0f);
+  animator.SetLoopEnabled(true);
+  animator.Play();
 
-  // Text
+  // UI Text
   {
     auto text_obj = CreateGameObject("Basic UI Text");
-
-    // Position in screen space - center of screen (1920x1080 -> 960x540)
     text_obj->GetTransform()->SetPosition(DirectX::XMFLOAT3(960.0f, 540.0f, 0.0f));
 
-    // Add TextRenderer Component
-    auto* text = text_obj->AddComponent<TextRenderer>();
-
-    // Configure text
+    auto* text = text_obj->AddComponent<UITextRenderer>();
     text->SetText(L"Hello, World!Hello, World!Hello, World!\nこんにちは！");
     text->SetFont(Font::FontFamily::ZenOldMincho);
     text->SetPixelSize(48.0f);
@@ -145,36 +126,23 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
     text->SetHorizontalAlign(Text::HorizontalAlign::Left);
     text->SetVerticalAlign(Text::VerticalAlign::Center);
     text->SetPivot(Pivot::Preset::Center);
-
-    // Set as UI element
-    text->SetRenderLayer(RenderLayer::UI);
-    text->SetLayerId(100);  // Higher layer = rendered later
+    text->SetLayerId(100);
     Logger::LogFormat(LogLevel::Info, LogCategory::Game, Logger::Here(), "UI Text size: {} x {}", text->GetSize().x, text->GetSize().y);
   }
 
-  // Text
+  // World Text
   text_obj2_ = CreateGameObject("Basic Text 2");
-  // text_obj2_->SetParent(cube_object_);
-  // Position in screen space
   text_obj2_->GetTransform()->SetPosition(DirectX::XMFLOAT3(0.0f, -3.0f, 1.0f));
 
-  // Add TextRenderer Component
   auto* text2 = text_obj2_->AddComponent<TextRenderer>();
-
-  // Configure text
   text2->SetText(L"Hello, World!\n Bye");
   text2->SetFont(Font::FontFamily::ZenOldMincho);
   text2->SetPixelSize(1.0f);
   text2->SetColor({1.0f, 1.0f, 1.0f, 1.0f});
-  text2->SetRenderLayer(RenderLayer::Transparent);  // Use transparent for alpha blending
   text2->SetBillboardMode(Billboard::Mode::None);
-  // text2->SetBlendMode(Rendering::BlendMode::AlphaBlend);
-
   text2->SetHorizontalAlign(Text::HorizontalAlign::Center);
   text2->SetVerticalAlign(Text::VerticalAlign::Center);
   text2->SetPivot(Pivot::Preset::Center);
-  // text2->SetDepthTest(true);
-  // text2->SetDepthWrite(true);
   text2->SetDoubleSided(true);
 }
 

@@ -1,7 +1,5 @@
 #include "sprite_renderer.h"
 
-#include <cassert>
-
 #include "Component/billboard_helper.h"
 #include "Component/pivot_type.h"
 #include "Game/Asset/asset_manager.h"
@@ -11,16 +9,41 @@
 
 using namespace DirectX;
 
-void SpriteRenderer::SetPivot(Pivot::Preset preset) {
-  if (render_layer_ == RenderLayer::UI) {
-    assert(true && "UI layer does not support set pivot");
-    return;
+void SpriteRenderer::SetRenderLayer(RenderLayer layer) {
+  switch (layer) {
+    case RenderLayer::Opaque:
+      render_settings_ = Rendering::RenderSettings::Opaque();
+      break;
+    case RenderLayer::Transparent:
+      render_settings_ = Rendering::RenderSettings::Transparent();
+      break;
+    default:
+      return;
   }
+  render_layer_ = layer;
+}
+
+void SpriteRenderer::SetPivot(Pivot::Preset preset) {
   pivot_.preset = preset;
 }
 
 void SpriteRenderer::SetPivot(const Pivot::Config& config) {
   pivot_ = config;
+}
+
+SpriteSheetAnimator& SpriteRenderer::GetAnimator() {
+  if (!animator_) {
+    animator_.emplace();
+  }
+  return *animator_;
+}
+
+void SpriteRenderer::OnUpdate(float dt) {
+  if (animator_ && animator_->Update(dt)) {
+    auto uv = animator_->GetCurrentUV();
+    uv_offset_ = uv.uv_offset;
+    uv_scale_ = uv.uv_scale;
+  }
 }
 
 DirectX::XMMATRIX SpriteRenderer::CalculateWorldMatrix(TransformComponent* transform, const CameraData& camera) const {
@@ -66,37 +89,19 @@ void SpriteRenderer::OnRender(FramePacket& packet) {
   cmd.uv_offset = uv_offset_;
   cmd.uv_scale = uv_scale_;
 
-  switch (render_layer_) {
-    case RenderLayer::UI:
-      cmd.depth = static_cast<float>(layer_id_);
-      {
-        XMMATRIX offset_mat = XMMatrixTranslation(0.5f, 0.5f, 0.0f);
-        XMMATRIX size_scale = XMMatrixScaling(size_.x, size_.y, 1.0f);
-        XMMATRIX world = offset_mat * size_scale * transform->GetWorldMatrix();
-        XMStoreFloat4x4(&cmd.world_matrix, world);
-      }
-      break;
+  XMFLOAT2 normalized_pivot = pivot_.GetNormalized();
+  float pivot_offset_x = (normalized_pivot.x - 0.5f);
+  float pivot_offset_y = (normalized_pivot.y - 0.5f);
 
-    case RenderLayer::Opaque:
-    case RenderLayer::Transparent: {
-      XMFLOAT2 normalized_pivot = pivot_.GetNormalized();
-      float pivot_offset_x = (normalized_pivot.x - 0.5f);
-      float pivot_offset_y = (normalized_pivot.y - 0.5f);
+  XMMATRIX pivot_mat = XMMatrixTranslation(pivot_offset_x, pivot_offset_y, 0.0f);
+  XMMATRIX size_scale = XMMatrixScaling(size_.x, size_.y, 1.0f);
+  XMMATRIX base_world = CalculateWorldMatrix(transform, packet.main_camera);
+  XMMATRIX world = size_scale * pivot_mat * base_world;
+  XMStoreFloat4x4(&cmd.world_matrix, world);
 
-      XMMATRIX pivot_mat = XMMatrixTranslation(pivot_offset_x, pivot_offset_y, 0.0f);
-      XMMATRIX size_scale = XMMatrixScaling(size_.x, size_.y, 1.0f);
-      XMMATRIX base_world = CalculateWorldMatrix(transform, packet.main_camera);
-      XMMATRIX world = size_scale * pivot_mat * base_world;
-      XMStoreFloat4x4(&cmd.world_matrix, world);
-
-      XMFLOAT3 worldPos = transform->GetWorldPosition();
-      XMFLOAT3 camPos = packet.main_camera.position;
-      cmd.depth = XMVectorGetX(XMVector3LengthSq(XMLoadFloat3(&worldPos) - XMLoadFloat3(&camPos)));
-    } break;
-
-    default:
-      break;
-  }
+  XMFLOAT3 worldPos = transform->GetWorldPosition();
+  XMFLOAT3 camPos = packet.main_camera.position;
+  cmd.depth = XMVectorGetX(XMVector3LengthSq(XMLoadFloat3(&worldPos) - XMLoadFloat3(&camPos)));
 
   cmd.layer = render_layer_;
   cmd.tags = render_tags_;

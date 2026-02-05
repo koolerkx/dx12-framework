@@ -1,20 +1,16 @@
 #pragma once
 #include <optional>
 
-#include "Component/billboard_type.h"
 #include "Component/component.h"
-#include "Component/pivot_type.h"
 #include "Component/render_settings.h"
 #include "Component/sprite_sheet_animator.h"
-#include "Game/Asset/asset_manager.h"
 #include "Graphic/Frame/frame_packet.h"
 #include "Graphic/Resource/Texture/texture.h"
 #include "game_object.h"
-#include "transform_component.h"
 
-class SpriteRenderer : public Component<SpriteRenderer> {
+class UISpriteRenderer : public Component<UISpriteRenderer> {
  public:
-  SpriteRenderer(GameObject* owner) : Component(owner) {
+  UISpriteRenderer(GameObject* owner) : Component(owner) {
   }
 
   void SetTexture(Texture* tex) {
@@ -26,8 +22,9 @@ class SpriteRenderer : public Component<SpriteRenderer> {
   void SetSize(const DirectX::XMFLOAT2& size) {
     size_ = size;
   }
-
-  void SetRenderLayer(RenderLayer layer);
+  void SetLayerId(int id) {
+    layer_id_ = id;
+  }
 
   void SetRenderTags(RenderTagMask tags) {
     render_tags_ = tags;
@@ -42,30 +39,8 @@ class SpriteRenderer : public Component<SpriteRenderer> {
   void SetSampler(Rendering::SamplerType type) {
     render_settings_.sampler_type = type;
   }
-  void SetDepthTest(bool enabled) {
-    render_settings_.depth_test = enabled;
-  }
-  void SetDepthWrite(bool enabled) {
-    render_settings_.depth_write = enabled;
-  }
-  void SetDoubleSided(bool enabled) {
-    render_settings_.double_sided = enabled;
-  }
   const Rendering::RenderSettings& GetRenderSettings() const {
     return render_settings_;
-  }
-
-  void SetBillboardMode(Billboard::Mode mode) {
-    billboard_mode_ = mode;
-  }
-  Billboard::Mode GetBillboardMode() const {
-    return billboard_mode_;
-  }
-
-  void SetPivot(Pivot::Preset preset);
-  void SetPivot(const Pivot::Config& config);
-  const Pivot::Config& GetPivot() const {
-    return pivot_;
   }
 
   void SetUVOffset(const DirectX::XMFLOAT2& offset) {
@@ -87,20 +62,14 @@ class SpriteRenderer : public Component<SpriteRenderer> {
   void OnRender(FramePacket& packet) override;
 
  private:
-  DirectX::XMMATRIX CalculateWorldMatrix(TransformComponent* transform, const CameraData& camera) const;
-
- private:
   Texture* texture_ = nullptr;
   DirectX::XMFLOAT4 color_ = {1, 1, 1, 1};
   DirectX::XMFLOAT2 size_ = {100, 100};
   DirectX::XMFLOAT2 uv_offset_ = {0.0f, 0.0f};
   DirectX::XMFLOAT2 uv_scale_ = {1.0f, 1.0f};
+  int layer_id_ = 0;
 
-  Rendering::RenderSettings render_settings_ = Rendering::RenderSettings::Transparent();
-  Billboard::Mode billboard_mode_ = Billboard::Mode::None;
-  Pivot::Config pivot_;
-
-  RenderLayer render_layer_ = RenderLayer::Transparent;
+  Rendering::RenderSettings render_settings_ = Rendering::RenderSettings::UI();
   RenderTagMask render_tags_ = 0;
 
   std::optional<SpriteSheetAnimator> animator_;

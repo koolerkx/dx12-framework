@@ -27,12 +27,16 @@ add_library(game STATIC
     Component/text_renderer.cpp
     Component/sprite_renderer.h
     Component/sprite_renderer.cpp
+    Component/ui_sprite_renderer.h
+    Component/ui_sprite_renderer.cpp
+    Component/ui_text_renderer.h
+    Component/ui_text_renderer.cpp
+    Component/sprite_sheet_animator.h
+    Component/sprite_sheet_animator.cpp
     Component/pivot_type.h
     Component/pivot_type.cpp
     Component/sprite_sheet_helper.h
     Component/sprite_sheet_helper.cpp
-    Component/animated_sprite.h
-    Component/animated_sprite.cpp
 
     Debug/debug_drawer.h
     Debug/debug_drawer.cpp

@@ -3,20 +3,18 @@
 
 #include <string>
 
-#include "Component/billboard_type.h"
 #include "Component/component.h"
 #include "Component/pivot_type.h"
 #include "Component/render_settings.h"
 #include "Framework/Font/text_layout.h"
 #include "Game/Asset/asset_manager.h"
 #include "Graphic/Frame/frame_packet.h"
-#include "Graphic/Pipeline/shader_descriptors.h"
 #include "Graphic/Resource/Font/sprite_font_manager.h"
 #include "game_object.h"
 
-class TextRenderer : public Component<TextRenderer> {
+class UITextRenderer : public Component<UITextRenderer> {
  public:
-  TextRenderer(GameObject* owner) : Component(owner) {
+  UITextRenderer(GameObject* owner) : Component(owner) {
   }
 
   void SetText(const std::wstring& text) {
@@ -83,7 +81,9 @@ class TextRenderer : public Component<TextRenderer> {
     }
   }
 
-  void SetRenderLayer(RenderLayer layer);
+  void SetLayerId(int id) {
+    layer_id_ = id;
+  }
 
   void SetRenderTags(RenderTagMask tags) {
     render_tags_ = tags;
@@ -98,24 +98,8 @@ class TextRenderer : public Component<TextRenderer> {
   void SetSampler(Rendering::SamplerType type) {
     render_settings_.sampler_type = type;
   }
-  void SetDepthTest(bool enabled) {
-    render_settings_.depth_test = enabled;
-  }
-  void SetDepthWrite(bool enabled) {
-    render_settings_.depth_write = enabled;
-  }
-  void SetDoubleSided(bool enabled) {
-    render_settings_.double_sided = enabled;
-  }
   const Rendering::RenderSettings& GetRenderSettings() const {
     return render_settings_;
-  }
-
-  void SetBillboardMode(Billboard::Mode mode) {
-    billboard_mode_ = mode;
-  }
-  Billboard::Mode GetBillboardMode() const {
-    return billboard_mode_;
   }
 
   void SetPivot(Pivot::Preset preset);
@@ -128,13 +112,10 @@ class TextRenderer : public Component<TextRenderer> {
     return DirectX::XMFLOAT2(text_mesh_handle_.GetWidth(), text_mesh_handle_.GetHeight());
   }
 
-  DirectX::XMMATRIX GetBillboardWorldMatrix(const CameraData& camera) const;
-
   void OnRender(FramePacket& packet) override;
 
  private:
   void RebuildTextMesh(AssetManager& asset_manager);
-  DirectX::XMMATRIX CalculateBaseWorldMatrix(TransformComponent* transform, const CameraData& camera) const;
 
  private:
   std::wstring text_;
@@ -148,15 +129,12 @@ class TextRenderer : public Component<TextRenderer> {
   float letter_spacing_ = 0.0f;
   bool use_kerning_ = true;
 
-  Rendering::RenderSettings render_settings_ = Rendering::RenderSettings::Transparent();
+  int layer_id_ = 0;
+  Rendering::RenderSettings render_settings_ = Rendering::RenderSettings::UI();
 
   bool dirty_ = true;
   TextMeshHandle text_mesh_handle_;
 
-  Billboard::Mode billboard_mode_ = Billboard::Mode::None;
   Pivot::Config pivot_;
-
-  RenderLayer render_layer_ = RenderLayer::Transparent;
-  Graphics::ShaderId shader_id_ = Graphics::SpriteInstancedWorldTransparentShader::ID;
   RenderTagMask render_tags_ = 0;
 };

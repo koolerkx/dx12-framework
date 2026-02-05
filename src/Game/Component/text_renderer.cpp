@@ -9,6 +9,24 @@
 #include "game_context.h"
 #include "transform_component.h"
 
+void TextRenderer::SetRenderLayer(RenderLayer layer) {
+  switch (layer) {
+    case RenderLayer::Opaque:
+      render_settings_ = Rendering::RenderSettings::Opaque();
+      shader_id_ = Graphics::SpriteInstancedWorldShader::ID;
+      break;
+    case RenderLayer::Transparent:
+      render_settings_ = Rendering::RenderSettings::Transparent();
+      shader_id_ = Graphics::SpriteInstancedWorldTransparentShader::ID;
+      break;
+    default:
+      return;
+  }
+  render_layer_ = layer;
+  SetDoubleSided(true);
+  SetSampler(Rendering::SamplerType::LinearWrap);
+}
+
 void TextRenderer::SetPivot(Pivot::Preset preset) {
   pivot_.preset = preset;
 }
@@ -33,18 +51,7 @@ void TextRenderer::OnRender(FramePacket& packet) {
   }
 
   auto& material_mgr = context->GetGraphic()->GetMaterialManager();
-
-  Graphics::ShaderId shader_id;
-  if (render_layer_ == RenderLayer::UI) {
-    shader_id = Graphics::SpriteInstancedUIShader::ID;
-  } else if (render_layer_ == RenderLayer::Transparent) {
-    shader_id = Graphics::SpriteInstancedWorldTransparentShader::ID;
-  } else {
-    shader_id = Graphics::SpriteInstancedWorldShader::ID;
-  }
-
-  const Material* material = material_mgr.GetOrCreateMaterial(shader_id, render_settings_);
-
+  const Material* material = material_mgr.GetOrCreateMaterial(shader_id_, render_settings_);
   if (!material) return;
 
   auto* transform = GetOwner()->GetTransform();
@@ -54,114 +61,61 @@ void TextRenderer::OnRender(FramePacket& packet) {
   const Mesh* quad_mesh = context->GetAssetManager().GetDefaultMesh(DefaultMesh::Quad);
   if (!quad_mesh) return;
 
-  if (render_layer_ == RenderLayer::UI) {
-    DrawCommand cmd;
-    cmd.mesh = quad_mesh;
-    cmd.material = material;
-    cmd.depth = static_cast<float>(layer_id_);
+  DrawCommand cmd;
+  cmd.mesh = quad_mesh;
+  cmd.material = material;
 
-    cmd.material_instance.material = cmd.material;
-    cmd.material_instance.albedo_texture_index = texture->GetBindlessIndex();
-    cmd.material_instance.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
+  DirectX::XMFLOAT3 worldPos = transform->GetWorldPosition();
+  DirectX::XMFLOAT3 camPos = packet.main_camera.position;
+  DirectX::XMVECTOR worldVec = XMLoadFloat3(&worldPos);
+  DirectX::XMVECTOR camVec = XMLoadFloat3(&camPos);
+  cmd.depth = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(DirectX::XMVectorSubtract(worldVec, camVec)));
 
-    cmd.instances.reserve(text_mesh_handle_.GetGlyphCount());
+  cmd.material_instance.material = cmd.material;
+  cmd.material_instance.albedo_texture_index = texture->GetBindlessIndex();
+  cmd.material_instance.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
 
-    DirectX::XMFLOAT2 text_size = {text_mesh_handle_.GetWidth(), text_mesh_handle_.GetHeight()};
-    DirectX::XMFLOAT2 pivot_offset = pivot_.CalculateOffset(text_size);
+  cmd.instances.reserve(text_mesh_handle_.GetGlyphCount());
 
-    for (size_t i = 0; i < text_mesh_handle_.GetGlyphCount(); ++i) {
-      const GlyphLayoutData* glyph = text_mesh_handle_.GetGlyph(i);
-      if (!glyph || glyph->width <= 0.0f || glyph->height <= 0.0f) {
-        continue;
-      }
+  DirectX::XMFLOAT2 text_size = {text_mesh_handle_.GetWidth(), text_mesh_handle_.GetHeight()};
+  DirectX::XMFLOAT2 pivot_offset = pivot_.CalculateOffset(text_size);
 
-      SpriteInstanceData instance{};
-
-      float glyph_x_relative = glyph->x - pivot_offset.x;
-      float glyph_y_relative = glyph->y - pivot_offset.y;
-
-      DirectX::XMVECTOR glyph_center =
-        DirectX::XMVectorSet(glyph_x_relative + glyph->width * 0.5f, glyph_y_relative + glyph->height * 0.5f, 0.0f, 0.0f);
-
-      DirectX::XMMATRIX glyph_translation = DirectX::XMMatrixTranslationFromVector(glyph_center);
-      DirectX::XMMATRIX size_scale = DirectX::XMMatrixScaling(glyph->width, glyph->height, 1.0f);
-
-      DirectX::XMMATRIX world = size_scale * glyph_translation * transform->GetWorldMatrix();
-      DirectX::XMStoreFloat4x4(&instance.world_matrix, world);
-
-      instance.color = color_;
-
-      // UI uses Y-down coord system, flip UV: offset' = offset + scale, scale' = -scale
-      instance.uv_offset = DirectX::XMFLOAT2(glyph->uv_offset.x, glyph->uv_offset.y + glyph->uv_scale.y);
-      instance.uv_scale = DirectX::XMFLOAT2(glyph->uv_scale.x, -glyph->uv_scale.y);
-
-      cmd.instances.push_back(instance);
+  for (size_t i = 0; i < text_mesh_handle_.GetGlyphCount(); ++i) {
+    const GlyphLayoutData* glyph = text_mesh_handle_.GetGlyph(i);
+    if (!glyph || glyph->width <= 0.0f || glyph->height <= 0.0f) {
+      continue;
     }
 
-    if (!cmd.instances.empty()) {
-      cmd.layer = render_layer_;
-      cmd.tags = render_tags_;
-      packet.AddCommand(std::move(cmd));
-    }
+    SpriteInstanceData instance{};
 
-  } else {
-    DrawCommand cmd;
-    cmd.mesh = quad_mesh;
-    cmd.material = material;
+    // Y-coordinate is negated for world space text (Y-up coordinate system)
+    float glyph_x_relative = glyph->x - pivot_offset.x;
+    float glyph_y_relative = glyph->y - pivot_offset.y;
 
-    DirectX::XMFLOAT3 worldPos = transform->GetWorldPosition();
-    DirectX::XMFLOAT3 camPos = packet.main_camera.position;
-    DirectX::XMVECTOR worldVec = XMLoadFloat3(&worldPos);
-    DirectX::XMVECTOR camVec = XMLoadFloat3(&camPos);
-    cmd.depth = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(DirectX::XMVectorSubtract(worldVec, camVec)));
+    DirectX::XMVECTOR glyph_center = DirectX::XMVectorSet(glyph_x_relative + glyph->width * 0.5f,
+      -(glyph_y_relative + glyph->height * 0.5f),  // Negate Y for world space
+      0.01f,                                       // Small Z offset to avoid z-fighting
+      0.0f);
 
-    cmd.material_instance.material = cmd.material;
-    cmd.material_instance.albedo_texture_index = texture->GetBindlessIndex();
-    cmd.material_instance.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
+    DirectX::XMMATRIX glyph_translation = DirectX::XMMatrixTranslationFromVector(glyph_center);
+    DirectX::XMMATRIX size_scale = DirectX::XMMatrixScaling(glyph->width, glyph->height, 1.0f);
 
-    cmd.instances.reserve(text_mesh_handle_.GetGlyphCount());
+    DirectX::XMMATRIX base_world = CalculateBaseWorldMatrix(transform, packet.main_camera);
+    DirectX::XMMATRIX world = size_scale * glyph_translation * base_world;
+    DirectX::XMStoreFloat4x4(&instance.world_matrix, world);
 
-    // For World Space, Y is negated (Y-up coordinate system)
-    DirectX::XMFLOAT2 text_size = {text_mesh_handle_.GetWidth(), text_mesh_handle_.GetHeight()};
-    DirectX::XMFLOAT2 pivot_offset = pivot_.CalculateOffset(text_size);
+    instance.color = color_;
 
-    for (size_t i = 0; i < text_mesh_handle_.GetGlyphCount(); ++i) {
-      const GlyphLayoutData* glyph = text_mesh_handle_.GetGlyph(i);
-      if (!glyph || glyph->width <= 0.0f || glyph->height <= 0.0f) {
-        continue;
-      }
+    instance.uv_offset = glyph->uv_offset;
+    instance.uv_scale = glyph->uv_scale;
 
-      SpriteInstanceData instance{};
+    cmd.instances.push_back(instance);
+  }
 
-      // Y-coordinate is negated for world space text (Y-up coordinate system)
-      float glyph_x_relative = glyph->x - pivot_offset.x;
-      float glyph_y_relative = glyph->y - pivot_offset.y;
-
-      DirectX::XMVECTOR glyph_center = DirectX::XMVectorSet(glyph_x_relative + glyph->width * 0.5f,
-        -(glyph_y_relative + glyph->height * 0.5f),  // Negate Y for world space
-        0.01f,                                       // Small Z offset to avoid z-fighting
-        0.0f);
-
-      DirectX::XMMATRIX glyph_translation = DirectX::XMMatrixTranslationFromVector(glyph_center);
-      DirectX::XMMATRIX size_scale = DirectX::XMMatrixScaling(glyph->width, glyph->height, 1.0f);
-
-      DirectX::XMMATRIX base_world = CalculateBaseWorldMatrix(transform, packet.main_camera);
-      DirectX::XMMATRIX world = size_scale * glyph_translation * base_world;
-      DirectX::XMStoreFloat4x4(&instance.world_matrix, world);
-
-      instance.color = color_;
-
-      instance.uv_offset = glyph->uv_offset;
-      instance.uv_scale = glyph->uv_scale;
-
-      cmd.instances.push_back(instance);
-    }
-
-    if (!cmd.instances.empty()) {
-      cmd.layer = render_layer_;
-      cmd.tags = render_tags_;
-      packet.AddCommand(std::move(cmd));
-    }
+  if (!cmd.instances.empty()) {
+    cmd.layer = render_layer_;
+    cmd.tags = render_tags_;
+    packet.AddCommand(std::move(cmd));
   }
 }
 
