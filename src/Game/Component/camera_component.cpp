@@ -56,8 +56,8 @@ CameraData CameraComponent::GetCameraData() const {
   Matrix4 world = transform->GetWorldMatrix();
 
   data.position = world.GetTranslation();
-  data.forward = Vector3(world._31, world._32, world._33).Normalized();
-  data.up = Vector3(world._21, world._22, world._23).Normalized();
+  data.forward = world.GetRow(2).xyz().Normalized();
+  data.up = world.GetRow(1).xyz().Normalized();
 
   Vector3 target = data.position + data.forward;
   Matrix4 view = Matrix4::CreateLookAt(data.position, target, data.up);

@@ -432,6 +432,30 @@ Vector3 Vector3::Max(const Vector3& a, const Vector3& b) {
   return Vector3(XMVectorMax(a, b));
 }
 
+Vector2 Vector3::xy() const {
+  return Vector2(x, y);
+}
+
+Vector2 Vector3::xz() const {
+  return Vector2(x, z);
+}
+
+Vector2 Vector3::yz() const {
+  return Vector2(y, z);
+}
+
+Vector3 Vector3::xxx() const {
+  return Vector3(x, x, x);
+}
+
+Vector3 Vector3::yyy() const {
+  return Vector3(y, y, y);
+}
+
+Vector3 Vector3::zzz() const {
+  return Vector3(z, z, z);
+}
+
 void Vector3::CreateOrthonormalBasis(const Vector3& normal, Vector3& outTangent, Vector3& outBitangent) {
   Vector3 n = normal.Normalized();
 
@@ -564,8 +588,36 @@ Vector4 Vector4::Normalized() const {
   return Vector4(XMVector4Normalize(*this));
 }
 
-Vector3 Vector4::ToVector3() const {
+Vector3 Vector4::xyz() const {
   return Vector3(x, y, z);
+}
+
+Vector2 Vector4::xy() const {
+  return Vector2(x, y);
+}
+
+Vector2 Vector4::xz() const {
+  return Vector2(x, z);
+}
+
+Vector2 Vector4::yz() const {
+  return Vector2(y, z);
+}
+
+Vector4 Vector4::xxxx() const {
+  return Vector4(x, x, x, x);
+}
+
+Vector4 Vector4::yyyy() const {
+  return Vector4(y, y, y, y);
+}
+
+Vector4 Vector4::zzzz() const {
+  return Vector4(z, z, z, z);
+}
+
+Vector4 Vector4::wwww() const {
+  return Vector4(w, w, w, w);
 }
 
 // t is not clamped; values outside [0,1] extrapolate
@@ -801,15 +853,23 @@ float Matrix4::Determinant() const {
   return XMVectorGetX(XMMatrixDeterminant(*this));
 }
 
+Vector4 Matrix4::GetRow(int row) const {
+  const float* m = &_11;
+  int i = row * 4;
+  return Vector4(m[i], m[i + 1], m[i + 2], m[i + 3]);
+}
+
+Vector4 Matrix4::GetColumn(int col) const {
+  const float* m = &_11;
+  return Vector4(m[col], m[col + 4], m[col + 8], m[col + 12]);
+}
+
 Vector3 Matrix4::GetTranslation() const {
-  return Vector3(_41, _42, _43);
+  return GetRow(3).xyz();
 }
 
 Vector3 Matrix4::GetScale() const {
-  Vector3 row0(_11, _12, _13);
-  Vector3 row1(_21, _22, _23);
-  Vector3 row2(_31, _32, _33);
-  return Vector3(row0.Length(), row1.Length(), row2.Length());
+  return Vector3(GetRow(0).xyz().Length(), GetRow(1).xyz().Length(), GetRow(2).xyz().Length());
 }
 
 Quaternion Matrix4::GetRotation() const {
@@ -880,10 +940,22 @@ Matrix4 Matrix4::FaceTo(const Vector3& from, const Vector3& to, const Vector3& u
   Vector3 correctedUp = forward.Cross(right);
 
   Matrix4 m;
-  m._11 = right.x;       m._12 = right.y;       m._13 = right.z;       m._14 = 0.0f;
-  m._21 = correctedUp.x; m._22 = correctedUp.y; m._23 = correctedUp.z; m._24 = 0.0f;
-  m._31 = forward.x;     m._32 = forward.y;     m._33 = forward.z;     m._34 = 0.0f;
-  m._41 = 0.0f;          m._42 = 0.0f;          m._43 = 0.0f;          m._44 = 1.0f;
+  m._11 = right.x;
+  m._12 = right.y;
+  m._13 = right.z;
+  m._14 = 0.0f;
+  m._21 = correctedUp.x;
+  m._22 = correctedUp.y;
+  m._23 = correctedUp.z;
+  m._24 = 0.0f;
+  m._31 = forward.x;
+  m._32 = forward.y;
+  m._33 = forward.z;
+  m._34 = 0.0f;
+  m._41 = 0.0f;
+  m._42 = 0.0f;
+  m._43 = 0.0f;
+  m._44 = 1.0f;
   return m;
 }
 

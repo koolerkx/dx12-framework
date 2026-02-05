@@ -171,6 +171,14 @@ struct Vector3 : public DirectX::XMFLOAT3 {
   // Returns NaN if zero-length
   Vector3 Normalized() const;
 
+  // Swizzle accessors
+  Vector2 xy() const;
+  Vector2 xz() const;
+  Vector2 yz() const;
+  Vector3 xxx() const;
+  Vector3 yyy() const;
+  Vector3 zzz() const;
+
   // Projection & Reflection
   Vector3 ProjectOnto(const Vector3& v) const;
   Vector3 Reflect(const Vector3& normal) const;
@@ -240,8 +248,15 @@ struct Vector4 : public DirectX::XMFLOAT4 {
   // Returns NaN if zero-length
   Vector4 Normalized() const;
 
-  // Convert to Vector3 (drop w)
-  Vector3 ToVector3() const;
+  // Swizzle accessors
+  Vector3 xyz() const;
+  Vector2 xy() const;
+  Vector2 xz() const;
+  Vector2 yz() const;
+  Vector4 xxxx() const;
+  Vector4 yyyy() const;
+  Vector4 zzzz() const;
+  Vector4 wwww() const;
 
   // Static utilities
   // t is not clamped; values outside [0,1] extrapolate
@@ -328,6 +343,10 @@ struct Matrix4 : public DirectX::XMFLOAT4X4 {
   // Returns NaN matrix if singular (det == 0)
   Matrix4 Inverted() const;
   float Determinant() const;
+
+  // Row/Column access
+  Vector4 GetRow(int row) const;
+  Vector4 GetColumn(int col) const;
 
   // Extract components
   Vector3 GetTranslation() const;

@@ -73,18 +73,15 @@ Matrix4 TransformComponent::GetWorldMatrix() {
 }
 
 Vector3 TransformComponent::GetForward() {
-  Matrix4 w = GetWorldMatrix();
-  return Vector3(w._31, w._32, w._33).Normalized();
+  return GetWorldMatrix().GetRow(2).xyz().Normalized();
 }
 
 Vector3 TransformComponent::GetRight() {
-  Matrix4 w = GetWorldMatrix();
-  return Vector3(w._11, w._12, w._13).Normalized();
+  return GetWorldMatrix().GetRow(0).xyz().Normalized();
 }
 
 Vector3 TransformComponent::GetUp() {
-  Matrix4 w = GetWorldMatrix();
-  return Vector3(w._21, w._22, w._23).Normalized();
+  return GetWorldMatrix().GetRow(1).xyz().Normalized();
 }
 
 Vector3 TransformComponent::GetWorldPosition() const {
