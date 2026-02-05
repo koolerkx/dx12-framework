@@ -1,10 +1,6 @@
 #include "transform_component.h"
 
-#include <DirectXMath.h>
-
 #include "game_object.h"
-
-using namespace DirectX;
 
 void TransformComponent::OnStart() {
   UpdateLocalMatrix();
@@ -77,27 +73,24 @@ Matrix4 TransformComponent::GetWorldMatrix() {
 }
 
 Vector3 TransformComponent::GetForward() {
-  XMMATRIX world = XMMATRIX(GetWorldMatrix());
-  return Vector3(XMVector3Normalize(world.r[2]));
+  Matrix4 w = GetWorldMatrix();
+  return Vector3(w._31, w._32, w._33).Normalized();
 }
 
 Vector3 TransformComponent::GetRight() {
-  XMMATRIX world = XMMATRIX(GetWorldMatrix());
-  return Vector3(XMVector3Normalize(world.r[0]));
+  Matrix4 w = GetWorldMatrix();
+  return Vector3(w._11, w._12, w._13).Normalized();
 }
 
 Vector3 TransformComponent::GetUp() {
-  XMMATRIX world = XMMATRIX(GetWorldMatrix());
-  return Vector3(XMVector3Normalize(world.r[1]));
+  Matrix4 w = GetWorldMatrix();
+  return Vector3(w._21, w._22, w._23).Normalized();
 }
 
 Vector3 TransformComponent::GetWorldPosition() const {
-  XMMATRIX world = XMMATRIX(world_matrix_);
-  return Vector3(world.r[3]);
+  return world_matrix_.GetTranslation();
 }
 
 Vector3 TransformComponent::GetWorldScale() const {
-  XMMATRIX world = XMMATRIX(world_matrix_);
-  return Vector3(
-    XMVectorGetX(XMVector3Length(world.r[0])), XMVectorGetX(XMVector3Length(world.r[1])), XMVectorGetX(XMVector3Length(world.r[2])));
+  return world_matrix_.GetScale();
 }

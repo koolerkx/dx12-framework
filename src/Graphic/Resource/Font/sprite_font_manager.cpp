@@ -1,7 +1,5 @@
 #include "sprite_font_manager.h"
 
-#include <DirectXMath.h>
-
 #include "Framework/Font/text_layout.h"
 #include "Framework/Logging/logger.h"
 #include "Resource/Texture/texture_manager.h"

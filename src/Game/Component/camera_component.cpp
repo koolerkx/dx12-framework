@@ -1,11 +1,8 @@
 #include "camera_component.h"
 
-#include <DirectXMath.h>
-
 #include "game_object.h"
 #include "transform_component.h"
 
-using namespace DirectX;
 using Math::Matrix4;
 using Math::Vector3;
 
@@ -49,27 +46,22 @@ CameraData CameraComponent::GetCameraData() const {
 
   auto* transform = owner_->GetComponent<TransformComponent>();
   if (!transform) {
-    StoreMatrixToCameraData(data, XMMatrixIdentity(), XMMATRIX(projection_matrix_));
+    StoreMatrixToCameraData(data, Matrix4::Identity, projection_matrix_);
     data.position = Vector3::Zero;
     data.forward = Vector3::Forward;
     data.up = Vector3::Up;
     return data;
   }
 
-  XMMATRIX world = XMMATRIX(transform->GetWorldMatrix());
+  Matrix4 world = transform->GetWorldMatrix();
 
-  XMVECTOR pos = world.r[3];
-  data.position = Vector3(pos);
+  data.position = world.GetTranslation();
+  data.forward = Vector3(world._31, world._32, world._33).Normalized();
+  data.up = Vector3(world._21, world._22, world._23).Normalized();
 
-  XMVECTOR forward = XMVector3Normalize(world.r[2]);
-  XMVECTOR up = XMVector3Normalize(world.r[1]);
-  data.forward = Vector3(forward);
-  data.up = Vector3(up);
-
-  XMVECTOR target = XMVectorAdd(pos, forward);
-
-  XMMATRIX view = XMMatrixLookAtLH(pos, target, up);
-  StoreMatrixToCameraData(data, view, XMMATRIX(projection_matrix_));
+  Vector3 target = data.position + data.forward;
+  Matrix4 view = Matrix4::CreateLookAt(data.position, target, data.up);
+  StoreMatrixToCameraData(data, view, projection_matrix_);
 
   return data;
 }

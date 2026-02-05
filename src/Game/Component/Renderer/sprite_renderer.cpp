@@ -1,15 +1,11 @@
 #include "sprite_renderer.h"
 
-#include <DirectXMath.h>
-
 #include "Component/billboard_helper.h"
 #include "Component/pivot_type.h"
 #include "Component/transform_component.h"
 #include "Game/Asset/asset_manager.h"
 #include "Graphic/Pipeline/shader_descriptors.h"
 #include "game_context.h"
-
-using namespace DirectX;
 
 void SpriteRenderer::SetRenderLayer(RenderLayer layer) {
   switch (layer) {
@@ -49,28 +45,26 @@ void SpriteRenderer::OnUpdate(float dt) {
 }
 
 Matrix4 SpriteRenderer::CalculateWorldMatrix(TransformComponent* transform, const CameraData& camera) const {
-  XMMATRIX world = XMMATRIX(transform->GetWorldMatrix());
+  Matrix4 world = transform->GetWorldMatrix();
 
   if (billboard_mode_ == Billboard::Mode::None) {
-    return Matrix4(world);
+    return world;
   }
 
-  XMVECTOR scale, rotation, translation;
-  XMMatrixDecompose(&scale, &rotation, &translation, world);
+  Vector3 scale = world.GetScale();
+  Vector3 translation = world.GetTranslation();
 
-  Vector3 objPos(translation);
-
-  XMMATRIX billboardRot;
+  Matrix4 billboardRot;
   if (billboard_mode_ == Billboard::Mode::Cylindrical) {
-    billboardRot = XMMATRIX(Billboard::CreateCylindricalBillboardMatrix(objPos, camera.position));
+    billboardRot = Billboard::CreateCylindricalBillboardMatrix(translation, camera.position);
   } else {
-    billboardRot = XMMATRIX(Billboard::CreateSphericalBillboardMatrix(objPos, camera.position));
+    billboardRot = Billboard::CreateSphericalBillboardMatrix(translation, camera.position);
   }
 
-  XMMATRIX scaleMat = XMMatrixScalingFromVector(scale);
-  XMMATRIX transMat = XMMatrixTranslationFromVector(translation);
+  Matrix4 scaleMat = Matrix4::CreateScale(scale);
+  Matrix4 transMat = Matrix4::CreateTranslation(translation);
 
-  return Matrix4(scaleMat * billboardRot * transMat);
+  return scaleMat * billboardRot * transMat;
 }
 
 void SpriteRenderer::OnRender(FramePacket& packet) {

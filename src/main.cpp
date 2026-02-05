@@ -1,5 +1,4 @@
 ﻿#define WIN32_LEAN_AND_MEAN
-#include <DirectXMath.h>
 #include <Windows.h>
 #include <d3d12.h>
 #include <dxgi1_6.h>
@@ -10,8 +9,8 @@
 #include "Application/Application.h"
 #include "Core/utils.h"
 #include "Framework/Event/event_bus.hpp"
-#include "Framework/Event/thread_pool.hpp"
 #include "Framework/Event/input_event_generator.h"
+#include "Framework/Event/thread_pool.hpp"
 #include "Framework/Input/input.h"
 #include "Framework/Logging/logger.h"
 #include "Framework/Logging/sinks.h"
@@ -19,11 +18,8 @@
 #include "Game/game_context.h"
 #include "Graphic/graphic.h"
 
-
 template <typename T>
 using ComPtr = Microsoft::WRL::ComPtr<T>;
-
-using namespace DirectX;
 
 constexpr int window_width = 1920;
 constexpr int window_height = 1080;

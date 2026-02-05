@@ -72,9 +72,8 @@ void IScene::Render(FramePacket& packet) {
     Logger::LogFormat(LogLevel::Warn, LogCategory::Game, Logger::Here(), "[IScene::Render] No active camera, using default setting");
 
     CameraData default_camera;
-    using namespace DirectX;
     StoreMatrixToCameraData(
-      default_camera, XMMatrixIdentity(), XMMATRIX(Math::Matrix4::CreatePerspectiveFOV(Math::PiOver4, 16.0f / 9.0f, 0.1f, 1000.0f)));
+      default_camera, Math::Matrix4::Identity, Math::Matrix4::CreatePerspectiveFOV(Math::PiOver4, 16.0f / 9.0f, 0.1f, 1000.0f));
 
     default_camera.position = Math::Vector3(0, 0, -5);
     default_camera.forward = Math::Vector3::Forward;

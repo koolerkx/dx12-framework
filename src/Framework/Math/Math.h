@@ -352,6 +352,9 @@ struct Matrix4 : public DirectX::XMFLOAT4X4 {
   // Projection matrices
   static Matrix4 CreatePerspectiveFOV(float fovY, float aspectRatio, float nearZ, float farZ);
   static Matrix4 CreateOrthographic(float width, float height, float nearZ, float farZ);
+  static Matrix4 CreateOrthographicOffCenter(float left, float right, float bottom, float top, float nearZ, float farZ);
+
+  static Matrix4 FaceTo(const Vector3& from, const Vector3& to, const Vector3& upHint);
 };
 
 // Quaternion - Rotation representation

@@ -1,6 +1,4 @@
 #pragma once
-#include <DirectXMath.h>
-
 #include "Framework/Math/Math.h"
 
 using Math::Matrix4;
@@ -15,17 +13,16 @@ struct CameraData {
   Vector3 up;
 };
 
-inline void StoreMatrixToCameraData(CameraData& data, DirectX::XMMATRIX view, DirectX::XMMATRIX proj) {
-  data.view = Matrix4(view);
-  data.proj = Matrix4(proj);
-  data.view_proj = Matrix4(view * proj);
+inline void StoreMatrixToCameraData(CameraData& data, const Matrix4& view, const Matrix4& proj) {
+  data.view = view;
+  data.proj = proj;
+  data.view_proj = view * proj;
 }
 
 inline CameraData MakeScreenSpaceCamera(float width, float height) {
   CameraData camera;
-  DirectX::XMMATRIX view = DirectX::XMMatrixIdentity();
-  DirectX::XMMATRIX proj = DirectX::XMMatrixOrthographicOffCenterLH(0.0f, width, height, 0.0f, -10.0f, 100.0f);
-  StoreMatrixToCameraData(camera, view, proj);
+  Matrix4 proj = Matrix4::CreateOrthographicOffCenter(0.0f, width, height, 0.0f, -10.0f, 100.0f);
+  StoreMatrixToCameraData(camera, Matrix4::Identity, proj);
   camera.position = Vector3::Zero;
   camera.forward = Vector3::Forward;
   camera.up = Vector3::Up;

@@ -863,6 +863,30 @@ Matrix4 Matrix4::CreateOrthographic(float width, float height, float nearZ, floa
   return Matrix4(XMMatrixOrthographicLH(width, height, nearZ, farZ));
 }
 
+Matrix4 Matrix4::CreateOrthographicOffCenter(float left, float right, float bottom, float top, float nearZ, float farZ) {
+  return Matrix4(XMMatrixOrthographicOffCenterLH(left, right, bottom, top, nearZ, farZ));
+}
+
+Matrix4 Matrix4::FaceTo(const Vector3& from, const Vector3& to, const Vector3& upHint) {
+  Vector3 diff = to - from;
+  if (diff.LengthSquared() < 0.0001f) return Identity;
+
+  Vector3 forward = diff.Normalized();
+  Vector3 up = upHint;
+  if (Abs(forward.Dot(up)) > 0.999f) {
+    up = Vector3(0.0f, 0.0f, 1.0f);
+  }
+  Vector3 right = up.Cross(forward).Normalized();
+  Vector3 correctedUp = forward.Cross(right);
+
+  Matrix4 m;
+  m._11 = right.x;       m._12 = right.y;       m._13 = right.z;       m._14 = 0.0f;
+  m._21 = correctedUp.x; m._22 = correctedUp.y; m._23 = correctedUp.z; m._24 = 0.0f;
+  m._31 = forward.x;     m._32 = forward.y;     m._33 = forward.z;     m._34 = 0.0f;
+  m._41 = 0.0f;          m._42 = 0.0f;          m._43 = 0.0f;          m._44 = 1.0f;
+  return m;
+}
+
 // Quaternion Implementation
 const Quaternion Quaternion::Identity = Quaternion(0.0f, 0.0f, 0.0f, 1.0f);
 

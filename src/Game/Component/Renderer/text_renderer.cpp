@@ -1,7 +1,5 @@
 #include "text_renderer.h"
 
-#include <DirectXMath.h>
-
 #include "Component/billboard_helper.h"
 #include "Component/pivot_type.h"
 #include "Component/transform_component.h"
@@ -9,7 +7,6 @@
 #include "Graphic/Pipeline/shader_descriptors.h"
 #include "game_context.h"
 
-using namespace DirectX;
 using Math::Matrix4;
 using Math::Vector2;
 using Math::Vector3;
@@ -94,14 +91,13 @@ void TextRenderer::OnRender(FramePacket& packet) {
     float glyph_x_relative = glyph->x - pivot_offset.x;
     float glyph_y_relative = glyph->y - pivot_offset.y;
 
-    XMVECTOR glyph_center = XMVectorSet(glyph_x_relative + glyph->width * 0.5f, -(glyph_y_relative + glyph->height * 0.5f), 0.01f, 0.0f);
+    Vector3 glyph_center(glyph_x_relative + glyph->width * 0.5f, -(glyph_y_relative + glyph->height * 0.5f), 0.01f);
 
-    XMMATRIX glyph_translation = XMMatrixTranslationFromVector(glyph_center);
-    XMMATRIX size_scale = XMMatrixScaling(glyph->width, glyph->height, 1.0f);
+    Matrix4 glyph_translation = Matrix4::CreateTranslation(glyph_center);
+    Matrix4 size_scale = Matrix4::CreateScale(Vector3(glyph->width, glyph->height, 1.0f));
 
-    XMMATRIX base_world = XMMATRIX(CalculateBaseWorldMatrix(transform, packet.main_camera));
-    XMMATRIX world = size_scale * glyph_translation * base_world;
-    instance.world_matrix = Matrix4(world);
+    Matrix4 base_world = CalculateBaseWorldMatrix(transform, packet.main_camera);
+    instance.world_matrix = size_scale * glyph_translation * base_world;
 
     instance.color = color_;
 
@@ -131,30 +127,28 @@ void TextRenderer::RebuildTextMesh(AssetManager& asset_manager) {
 }
 
 Matrix4 TextRenderer::CalculateBaseWorldMatrix(TransformComponent* transform, const CameraData& camera) const {
-  XMMATRIX world = XMMATRIX(transform->GetWorldMatrix());
+  Matrix4 world = transform->GetWorldMatrix();
 
   if (billboard_mode_ == Billboard::Mode::None) {
-    return Matrix4(world);
+    return world;
   }
 
-  XMVECTOR scale, rotation, translation;
-  XMMatrixDecompose(&scale, &rotation, &translation, world);
+  Vector3 scale = world.GetScale();
+  Vector3 translation = world.GetTranslation();
 
-  Vector3 objPos(translation);
-
-  XMMATRIX billboardRot;
+  Matrix4 billboardRot;
   if (billboard_mode_ == Billboard::Mode::Cylindrical) {
-    billboardRot = XMMATRIX(Billboard::CreateCylindricalBillboardMatrix(objPos, camera.position));
+    billboardRot = Billboard::CreateCylindricalBillboardMatrix(translation, camera.position);
   } else {
-    billboardRot = XMMATRIX(Billboard::CreateSphericalBillboardMatrix(objPos, camera.position, camera.up));
+    billboardRot = Billboard::CreateSphericalBillboardMatrix(translation, camera.position, camera.up);
   }
 
-  XMMATRIX flipX = XMMatrixScaling(-1.0f, 1.0f, 1.0f);
+  Matrix4 flipX = Matrix4::CreateScale(Vector3(-1.0f, 1.0f, 1.0f));
 
-  XMMATRIX scaleMat = XMMatrixScalingFromVector(scale);
-  XMMATRIX transMat = XMMatrixTranslationFromVector(translation);
+  Matrix4 scaleMat = Matrix4::CreateScale(scale);
+  Matrix4 transMat = Matrix4::CreateTranslation(translation);
 
-  return Matrix4(scaleMat * flipX * billboardRot * transMat);
+  return scaleMat * flipX * billboardRot * transMat;
 }
 
 Matrix4 TextRenderer::GetBillboardWorldMatrix(const CameraData& camera) const {

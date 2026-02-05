@@ -139,7 +139,7 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   text2->SetFont(Font::FontFamily::ZenOldMincho);
   text2->SetPixelSize(1.0f);
   text2->SetColor({1.0f, 1.0f, 1.0f, 1.0f});
-  text2->SetBillboardMode(Billboard::Mode::None);
+  text2->SetBillboardMode(Billboard::Mode::Cylindrical);
   text2->SetHorizontalAlign(Text::HorizontalAlign::Center);
   text2->SetVerticalAlign(Text::VerticalAlign::Center);
   text2->SetPivot(Pivot::Preset::Center);

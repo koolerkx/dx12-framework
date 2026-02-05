@@ -1,16 +1,14 @@
 #include "ui_text_renderer.h"
 
-#include <DirectXMath.h>
-
 #include "Component/pivot_type.h"
 #include "Component/transform_component.h"
 #include "Game/Asset/asset_manager.h"
 #include "Graphic/Pipeline/shader_descriptors.h"
 #include "game_context.h"
 
-using namespace DirectX;
 using Math::Matrix4;
 using Math::Vector2;
+using Math::Vector3;
 
 void UITextRenderer::SetPivot(Pivot::Preset preset) {
   pivot_.preset = preset;
@@ -72,13 +70,13 @@ void UITextRenderer::OnRender(FramePacket& packet) {
     float glyph_x_relative = glyph->x - pivot_offset.x;
     float glyph_y_relative = glyph->y - pivot_offset.y;
 
-    XMVECTOR glyph_center = XMVectorSet(glyph_x_relative + glyph->width * 0.5f, glyph_y_relative + glyph->height * 0.5f, 0.0f, 0.0f);
+    Vector3 glyph_center(glyph_x_relative + glyph->width * 0.5f, glyph_y_relative + glyph->height * 0.5f, 0.0f);
 
-    XMMATRIX glyph_translation = XMMatrixTranslationFromVector(glyph_center);
-    XMMATRIX size_scale = XMMatrixScaling(glyph->width, glyph->height, 1.0f);
+    Matrix4 glyph_translation = Matrix4::CreateTranslation(glyph_center);
+    Matrix4 size_scale = Matrix4::CreateScale(Vector3(glyph->width, glyph->height, 1.0f));
 
-    XMMATRIX world = size_scale * glyph_translation * XMMATRIX(transform->GetWorldMatrix());
-    instance.world_matrix = Matrix4(world);
+    Matrix4 world = size_scale * glyph_translation * transform->GetWorldMatrix();
+    instance.world_matrix = world;
 
     instance.color = color_;
 

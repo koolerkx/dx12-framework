@@ -1,6 +1,4 @@
 #pragma once
-#include <DirectXMath.h>
-
 #include "Framework/Math/Math.h"
 
 using Math::Vector2;

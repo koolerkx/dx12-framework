@@ -1,7 +1,5 @@
 #include "free_camera_controller.h"
 
-#include <DirectXMath.h>
-
 #include <algorithm>
 
 #include "Component/transform_component.h"
@@ -10,7 +8,7 @@
 #include "game_context.h"
 #include "game_object.h"
 
-using namespace DirectX;
+using Math::Vector3;
 
 void FreeCameraController::OnUpdate(float dt) {
   GameContext* context = GetContext();
@@ -61,12 +59,8 @@ void FreeCameraController::ApplyMovement(const InputState& input, float dt) {
   Vector3 fwd = transform->GetForward();
   Vector3 rgt = transform->GetRight();
 
-  XMVECTOR pos = XMVECTOR(position);
-  XMVECTOR fwd_v = XMVECTOR(fwd);
-  XMVECTOR rgt_v = XMVECTOR(rgt);
-
-  XMVECTOR forward_xz = XMVector3Normalize(fwd_v * XMVectorSet(1.0f, 0.0f, 1.0f, 0.0f));
-  XMVECTOR right_xz = XMVector3Normalize(rgt_v * XMVectorSet(1.0f, 0.0f, 1.0f, 0.0f));
+  Vector3 forward_xz = Vector3(fwd.x, 0.0f, fwd.z).Normalized();
+  Vector3 right_xz = Vector3(rgt.x, 0.0f, rgt.z).Normalized();
 
   float target_horizontal = input.move_input.x;
   float target_forward = input.move_input.y;
@@ -77,14 +71,14 @@ void FreeCameraController::ApplyMovement(const InputState& input, float dt) {
   velocity_.y += (target_forward - velocity_.y) * lerp_factor;
   vertical_velocity_ += (target_vertical - vertical_velocity_) * lerp_factor;
 
-  XMVECTOR movement = XMVectorZero();
-  movement += forward_xz * velocity_.y;
-  movement += right_xz * velocity_.x;
-  movement += XMVectorSet(0.0f, vertical_velocity_, 0.0f, 0.0f);
+  Vector3 movement = Vector3::Zero;
+  movement = movement + forward_xz * velocity_.y;
+  movement = movement + right_xz * velocity_.x;
+  movement = movement + Vector3(0.0f, vertical_velocity_, 0.0f);
 
-  pos += movement * movement_speed_ * dt;
+  position = position + movement * movement_speed_ * dt;
 
-  transform->SetPosition(Vector3(pos));
+  transform->SetPosition(position);
 }
 
 void FreeCameraController::ApplyRotation(const InputState& input, float dt) {
