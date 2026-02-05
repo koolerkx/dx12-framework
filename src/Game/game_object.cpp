@@ -20,14 +20,16 @@ GameContext* GameObject::GetContext() const {
 
 void GameObject::Start() {
   is_started_ = true;
-  for (auto& comp : components_) {
-    comp->OnStart();
+  const size_t count = components_.size();
+  for (size_t i = 0; i < count; ++i) {
+    components_[i]->OnStart();
   }
 }
 
 void GameObject::Update(float dt) {
-  for (auto& comp : components_) {
-    comp->OnUpdate(dt);
+  const size_t count = components_.size();
+  for (size_t i = 0; i < count; ++i) {
+    components_[i]->OnUpdate(dt);
   }
   for (auto* child : children_) {
     child->Update(dt);
@@ -35,8 +37,9 @@ void GameObject::Update(float dt) {
 }
 
 void GameObject::FixedUpdate(float dt) {
-  for (auto& component : components_) {
-    component->OnFixedUpdate(dt);
+  const size_t count = components_.size();
+  for (size_t i = 0; i < count; ++i) {
+    components_[i]->OnFixedUpdate(dt);
   }
   for (auto* child : children_) {
     child->FixedUpdate(dt);
@@ -44,8 +47,9 @@ void GameObject::FixedUpdate(float dt) {
 }
 
 void GameObject::Render(FramePacket& packet) {
-  for (auto& comp : components_) {
-    comp->OnRender(packet);
+  const size_t count = components_.size();
+  for (size_t i = 0; i < count; ++i) {
+    components_[i]->OnRender(packet);
   }
   for (auto* child : children_) {
     child->Render(packet);
@@ -105,6 +109,20 @@ bool GameObject::IsDescendantOf(const GameObject* node, const GameObject* possib
     if (p == possible_ancestor) return true;
   }
   return false;
+}
+
+void GameObject::DetachFromHierarchy() {
+  if (parent_) {
+    parent_->RemoveChild(this);
+    parent_ = nullptr;
+  }
+
+  for (auto* child : children_) {
+    if (child) {
+      child->parent_ = nullptr;
+    }
+  }
+  children_.clear();
 }
 
 void GameObject::Destroy() {

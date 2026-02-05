@@ -33,6 +33,12 @@ void IScene::Enter(AssetManager& asset_manager) {
 
 void IScene::Exit() {
   OnExit();
+
+  for (auto& obj : game_objects_) {
+    obj->DetachFromHierarchy();
+  }
+  active_camera_ = nullptr;
+
   game_objects_.clear();
   is_started_ = false;
 }
@@ -103,20 +109,23 @@ void IScene::DestroyGameObject(GameObject* obj) {
 }
 
 void IScene::CleanupDestroyedObjects() {
-  // Loop until no more objects are marked for destruction
-  // This handles cases where object destruction cascades to other objects
   while (true) {
     size_t count_before = game_objects_.size();
 
-    auto it = std::remove_if(game_objects_.begin(), game_objects_.end(),
-      [](const std::unique_ptr<GameObject>& obj) {
-        return obj->IsPendingDestroy();
-      });
+    // Detach pending-destroy objects while all are still alive
+    for (auto& obj : game_objects_) {
+      if (obj->IsPendingDestroy()) {
+        if (active_camera_ && active_camera_->GetOwner() == obj.get()) {
+          active_camera_ = nullptr;
+        }
+        obj->DetachFromHierarchy();
+      }
+    }
 
+    auto it = std::remove_if(
+      game_objects_.begin(), game_objects_.end(), [](const std::unique_ptr<GameObject>& obj) { return obj->IsPendingDestroy(); });
     game_objects_.erase(it, game_objects_.end());
 
-    if (game_objects_.size() == count_before) {
-      break;  // No objects removed, cleanup complete
-    }
+    if (game_objects_.size() == count_before) break;
   }
 }

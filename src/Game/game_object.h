@@ -89,6 +89,8 @@ class GameObject {
   void Destroy();
   bool IsPendingDestroy() const;
 
+  void DetachFromHierarchy();
+
  private:
   void AddChild(GameObject* child);
   void RemoveChild(GameObject* child);

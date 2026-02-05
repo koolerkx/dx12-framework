@@ -3,7 +3,7 @@
 #include <DirectXMath.h>
 
 #include "Asset/asset_manager.h"
-#include "Framework/Logging/logger.h"
+#include "Scenes/test_scene/character_mover_component.h"
 #include "Component/animated_sprite.h"
 #include "Component/free_camera_controller.h"
 #include "Component/mesh_renderer.h"
@@ -14,8 +14,9 @@
 #include "Component/transform_component.h"
 #include "Debug/debug_drawer.h"
 #include "Frame/frame_packet.h"
-#include "character_mover_component.h"
+#include "Framework/Logging/logger.h"
 #include "test_scene.h"
+
 
 static float rotation_angle_ = 0.0f;
 static float rotation_speed_ = 15.0f;
@@ -210,6 +211,15 @@ void TestScene::OnRender(FramePacket& /* packet */) {
 
 void TestScene::OnExit() {
   character_object_ = nullptr;
+  character_object2_ = nullptr;
+  camera_object_ = nullptr;
+  cube_object_ = nullptr;
+  cube_object2_ = nullptr;
+  terrain_plane_ = nullptr;
+  text_obj_ = nullptr;
+  text_obj2_ = nullptr;
+  animated_bg_object_ = nullptr;
+  additive_ = nullptr;
 }
 
 void TestScene::SetupCamera() {
