@@ -1,6 +1,5 @@
 #include "graphic.h"
 
-#include <DirectXMath.h>
 #include <d3d12.h>
 #include <d3dcommon.h>
 #include <d3dcompiler.h>
@@ -12,11 +11,13 @@
 #include "Core/types.h"
 #include "Frame/frame_packet.h"
 #include "Framework/Logging/logger.h"
+#include "Framework/Math/Math.h"
 #include "Render/debug_pass.h"
 #include "Render/material_pass.h"
 #include "Render/tone_map_pass.h"
 
-using namespace DirectX;
+using Math::Vector3;
+using Math::Vector4;
 
 bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_height, const Graphic::GraphicInitProps& props) {
   Shutdown();
@@ -278,7 +279,7 @@ void Graphic::RenderScene(const RenderFrameContext& frame, const FramePacket& wo
   render_pass_manager_->Execute(frame, world);
 }
 
-void Graphic::AddDebugLine(const DirectX::XMFLOAT3& start, const DirectX::XMFLOAT3& end, const DirectX::XMFLOAT4& color) {
+void Graphic::AddDebugLine(const Vector3& start, const Vector3& end, const Vector4& color) {
   if (debug_line_renderer_) {
     debug_line_renderer_->AddLine(start, end, color);
   }

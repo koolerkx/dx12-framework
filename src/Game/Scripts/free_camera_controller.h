@@ -1,5 +1,9 @@
 #pragma once
 #include "Component/behavior_component.h"
+#include "Framework/Math/Math.h"
+
+using Math::Vector2;
+using Math::Vector3;
 
 class InputSystem;
 
@@ -28,9 +32,9 @@ class FreeCameraController : public BehaviorComponent<FreeCameraController> {
 
  private:
   struct InputState {
-    DirectX::XMFLOAT2 move_input = {0.0f, 0.0f};
+    Vector2 move_input = {0.0f, 0.0f};
     float vertical_input = 0.0f;
-    DirectX::XMFLOAT2 look_input = {0.0f, 0.0f};
+    Vector2 look_input = {0.0f, 0.0f};
   };
 
   InputState GatherInput(InputSystem* input) const;
@@ -42,7 +46,7 @@ class FreeCameraController : public BehaviorComponent<FreeCameraController> {
   float rotation_speed_ = 2.0f;
   float smoothness_ = 10.0f;
 
-  DirectX::XMFLOAT3 current_euler_ = {0.0f, 0.0f, 0.0f};
-  DirectX::XMFLOAT2 velocity_ = {0.0f, 0.0f};
+  Vector3 current_euler_ = Vector3::Zero;
+  Vector2 velocity_ = Vector2::Zero;
   float vertical_velocity_ = 0.0f;
 };

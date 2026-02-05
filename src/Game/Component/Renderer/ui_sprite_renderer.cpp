@@ -1,11 +1,13 @@
 #include "ui_sprite_renderer.h"
 
+#include "Component/transform_component.h"
 #include "Game/Asset/asset_manager.h"
 #include "Graphic/Pipeline/shader_descriptors.h"
 #include "game_context.h"
-#include "Component/transform_component.h"
 
-using namespace DirectX;
+
+using Math::Matrix4;
+using Math::Vector3;
 
 SpriteSheetAnimator& UISpriteRenderer::GetAnimator() {
   if (!animator_) {
@@ -41,10 +43,9 @@ void UISpriteRenderer::OnRender(FramePacket& packet) {
 
   cmd.depth = static_cast<float>(layer_id_);
 
-  XMMATRIX offset_mat = XMMatrixTranslation(0.5f, 0.5f, 0.0f);
-  XMMATRIX size_scale = XMMatrixScaling(size_.x, size_.y, 1.0f);
-  XMMATRIX world = offset_mat * size_scale * transform->GetWorldMatrix();
-  XMStoreFloat4x4(&cmd.world_matrix, world);
+  Matrix4 offset_mat = Matrix4::CreateTranslation(Vector3(0.5f, 0.5f, 0.0f));
+  Matrix4 size_scale = Matrix4::CreateScale(Vector3(size_.x, size_.y, 1.0f));
+  cmd.world_matrix = offset_mat * size_scale * transform->GetWorldMatrix();
 
   cmd.layer = RenderLayer::UI;
   cmd.tags = render_tags_;

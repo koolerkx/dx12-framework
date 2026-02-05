@@ -3,10 +3,14 @@
 #include <DirectXMath.h>
 
 #include "Component/pivot_type.h"
+#include "Component/transform_component.h"
 #include "Game/Asset/asset_manager.h"
 #include "Graphic/Pipeline/shader_descriptors.h"
 #include "game_context.h"
-#include "Component/transform_component.h"
+
+using namespace DirectX;
+using Math::Matrix4;
+using Math::Vector2;
 
 void UITextRenderer::SetPivot(Pivot::Preset preset) {
   pivot_.preset = preset;
@@ -54,8 +58,8 @@ void UITextRenderer::OnRender(FramePacket& packet) {
 
   cmd.instances.reserve(text_mesh_handle_.GetGlyphCount());
 
-  DirectX::XMFLOAT2 text_size = {text_mesh_handle_.GetWidth(), text_mesh_handle_.GetHeight()};
-  DirectX::XMFLOAT2 pivot_offset = pivot_.CalculateOffset(text_size);
+  Vector2 text_size = {text_mesh_handle_.GetWidth(), text_mesh_handle_.GetHeight()};
+  Vector2 pivot_offset = pivot_.CalculateOffset(text_size);
 
   for (size_t i = 0; i < text_mesh_handle_.GetGlyphCount(); ++i) {
     const GlyphLayoutData* glyph = text_mesh_handle_.GetGlyph(i);
@@ -68,20 +72,18 @@ void UITextRenderer::OnRender(FramePacket& packet) {
     float glyph_x_relative = glyph->x - pivot_offset.x;
     float glyph_y_relative = glyph->y - pivot_offset.y;
 
-    DirectX::XMVECTOR glyph_center =
-      DirectX::XMVectorSet(glyph_x_relative + glyph->width * 0.5f, glyph_y_relative + glyph->height * 0.5f, 0.0f, 0.0f);
+    XMVECTOR glyph_center = XMVectorSet(glyph_x_relative + glyph->width * 0.5f, glyph_y_relative + glyph->height * 0.5f, 0.0f, 0.0f);
 
-    DirectX::XMMATRIX glyph_translation = DirectX::XMMatrixTranslationFromVector(glyph_center);
-    DirectX::XMMATRIX size_scale = DirectX::XMMatrixScaling(glyph->width, glyph->height, 1.0f);
+    XMMATRIX glyph_translation = XMMatrixTranslationFromVector(glyph_center);
+    XMMATRIX size_scale = XMMatrixScaling(glyph->width, glyph->height, 1.0f);
 
-    DirectX::XMMATRIX world = size_scale * glyph_translation * transform->GetWorldMatrix();
-    DirectX::XMStoreFloat4x4(&instance.world_matrix, world);
+    XMMATRIX world = size_scale * glyph_translation * XMMATRIX(transform->GetWorldMatrix());
+    instance.world_matrix = Matrix4(world);
 
     instance.color = color_;
 
-    // UI uses Y-down coord system, flip UV: offset' = offset + scale, scale' = -scale
-    instance.uv_offset = DirectX::XMFLOAT2(glyph->uv_offset.x, glyph->uv_offset.y + glyph->uv_scale.y);
-    instance.uv_scale = DirectX::XMFLOAT2(glyph->uv_scale.x, -glyph->uv_scale.y);
+    instance.uv_offset = Vector2(glyph->uv_offset.x, glyph->uv_offset.y + glyph->uv_scale.y);
+    instance.uv_scale = Vector2(glyph->uv_scale.x, -glyph->uv_scale.y);
 
     cmd.instances.push_back(instance);
   }

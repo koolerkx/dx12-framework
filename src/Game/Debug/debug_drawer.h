@@ -20,11 +20,12 @@
  * // debug_drawer->DrawBox({0, 0, 0}, {1, 1, 1}, {1, 1, 0, 1});
  * @endcode
  */
-
 #pragma once
-#include <DirectXMath.h>
+#include "Framework/Math/Math.h"
 
-// Forward declaration
+using Math::Vector3;
+using Math::Vector4;
+
 class Graphic;
 
 class DebugDrawer {
@@ -36,8 +37,8 @@ class DebugDrawer {
     float size;       // Total grid size
     float cell_size;  // Size of each cell
     float y_level;    // Height level
-    DirectX::XMFLOAT4 color;
-    DirectX::XMFLOAT4 axis_color;  // Color for X/Z axes
+    Vector4 color;
+    Vector4 axis_color;  // Color for X/Z axes
 
     GridConfig() : size(20.0f), cell_size(1.0f), y_level(0.0f), color(0.5f, 0.5f, 0.5f, 1.0f), axis_color(0.7f, 0.7f, 0.7f, 1.0f) {
     }
@@ -47,21 +48,21 @@ class DebugDrawer {
 
   // Axis gizmo drawing
   struct AxisGizmoConfig {
-    DirectX::XMFLOAT3 position;
+    Vector3 position;
     float length;
-    float thickness;  // For future thick line support
+    float thickness;
 
-    AxisGizmoConfig() : position(0.0f, 0.0f, 0.0f), length(2.0f), thickness(2.0f) {
+    AxisGizmoConfig() : position(Vector3::Zero), length(2.0f), thickness(2.0f) {
     }
   };
 
   void DrawAxisGizmo(const AxisGizmoConfig& config = AxisGizmoConfig());
 
   // Box drawing (useful for bounds visualization)
-  void DrawBox(const DirectX::XMFLOAT3& center, const DirectX::XMFLOAT3& extents, const DirectX::XMFLOAT4& color = {1, 1, 0, 1});
+  void DrawBox(const Vector3& center, const Vector3& extents, const Vector4& color = {1, 1, 0, 1});
 
   // Sphere drawing (approximated with lines)
-  void DrawSphere(const DirectX::XMFLOAT3& center, float radius, const DirectX::XMFLOAT4& color = {0, 1, 1, 1}, int segments = 16);
+  void DrawSphere(const Vector3& center, float radius, const Vector4& color = {0, 1, 1, 1}, int segments = 16);
 
  private:
   Graphic* graphic_;

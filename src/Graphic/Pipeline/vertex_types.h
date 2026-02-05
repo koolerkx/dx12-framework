@@ -18,18 +18,23 @@
  * @endcode
  */
 #pragma once
-#include <DirectXMath.h>
 #include <d3d12.h>
 
 #include <array>
 #include <span>
 
+#include "Framework/Math/Math.h"
+
+using Math::Matrix4;
+using Math::Vector2;
+using Math::Vector3;
+using Math::Vector4;
+
 namespace Graphics::Vertex {
 
-// PositionColor - Used for debug lines and simple colored geometry
 struct PositionColor {
-  DirectX::XMFLOAT3 position;
-  DirectX::XMFLOAT4 color;
+  Vector3 position;
+  Vector4 color;
 
   static constexpr std::array kInputLayout = {
     D3D12_INPUT_ELEMENT_DESC{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
@@ -42,11 +47,10 @@ struct PositionColor {
 };
 static_assert(sizeof(PositionColor) == 28);
 
-// PositionTexCoordColor - Used for sprites and basic 3D geometry
 struct PositionTexCoordColor {
-  DirectX::XMFLOAT3 position;
-  DirectX::XMFLOAT2 tex_coord;
-  DirectX::XMFLOAT4 color;
+  Vector3 position;
+  Vector2 tex_coord;
+  Vector4 color;
 
   static constexpr std::array kInputLayout = {
     D3D12_INPUT_ELEMENT_DESC{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
@@ -60,12 +64,11 @@ struct PositionTexCoordColor {
 };
 static_assert(sizeof(PositionTexCoordColor) == 36);
 
-// SpriteInstance - Per-instance data for instanced sprite rendering
 struct SpriteInstance {
-  DirectX::XMFLOAT4X4 world_matrix;  // 64 bytes
-  DirectX::XMFLOAT4 color;           // 16 bytes
-  DirectX::XMFLOAT2 uv_offset;       //  8 bytes
-  DirectX::XMFLOAT2 uv_scale;        //  8 bytes
+  Matrix4 world_matrix;
+  Vector4 color;
+  Vector2 uv_offset;
+  Vector2 uv_scale;
 
   static constexpr std::array kInstanceLayout = {
     D3D12_INPUT_ELEMENT_DESC{"INSTANCE_WORLD", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1},
@@ -83,7 +86,6 @@ struct SpriteInstance {
 };
 static_assert(sizeof(SpriteInstance) == 96);
 
-// SpriteInstanced - Combined layout for instanced rendering (Slot 0: Vertex + Slot 1: Instance)
 namespace detail {
 inline constexpr auto MakeSpriteInstancedLayout() {
   std::array<D3D12_INPUT_ELEMENT_DESC, PositionTexCoordColor::kInputLayout.size() + SpriteInstance::kInstanceLayout.size()> result{};
@@ -106,14 +108,12 @@ struct SpriteInstanced {
   }
 };
 
-// Empty - Used for full-screen triangle (no vertex input)
 struct Empty {
   static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
     return {};
   }
 };
 
-// Type aliases for semantic clarity
 using LineVertex = PositionColor;
 using SpriteVertex = PositionTexCoordColor;
 using Basic3DVertex = PositionTexCoordColor;

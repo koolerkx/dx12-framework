@@ -1,5 +1,7 @@
 #include "free_camera_controller.h"
 
+#include <DirectXMath.h>
+
 #include <algorithm>
 
 #include "Component/transform_component.h"
@@ -55,16 +57,16 @@ void FreeCameraController::ApplyMovement(const InputState& input, float dt) {
   auto* transform = owner_->GetComponent<TransformComponent>();
   if (!transform) return;
 
-  XMFLOAT3 position = transform->GetPosition();
-  XMFLOAT3 forward = transform->GetForward();
-  XMFLOAT3 right = transform->GetRight();
+  Vector3 position = transform->GetPosition();
+  Vector3 fwd = transform->GetForward();
+  Vector3 rgt = transform->GetRight();
 
-  XMVECTOR pos = XMLoadFloat3(&position);
-  XMVECTOR fwd = XMLoadFloat3(&forward);
-  XMVECTOR rgt = XMLoadFloat3(&right);
+  XMVECTOR pos = XMVECTOR(position);
+  XMVECTOR fwd_v = XMVECTOR(fwd);
+  XMVECTOR rgt_v = XMVECTOR(rgt);
 
-  XMVECTOR forward_xz = XMVector3Normalize(fwd * XMVectorSet(1.0f, 0.0f, 1.0f, 0.0f));
-  XMVECTOR right_xz = XMVector3Normalize(rgt * XMVectorSet(1.0f, 0.0f, 1.0f, 0.0f));
+  XMVECTOR forward_xz = XMVector3Normalize(fwd_v * XMVectorSet(1.0f, 0.0f, 1.0f, 0.0f));
+  XMVECTOR right_xz = XMVector3Normalize(rgt_v * XMVectorSet(1.0f, 0.0f, 1.0f, 0.0f));
 
   float target_horizontal = input.move_input.x;
   float target_forward = input.move_input.y;
@@ -82,9 +84,7 @@ void FreeCameraController::ApplyMovement(const InputState& input, float dt) {
 
   pos += movement * movement_speed_ * dt;
 
-  XMFLOAT3 new_position;
-  XMStoreFloat3(&new_position, pos);
-  transform->SetPosition(new_position);
+  transform->SetPosition(Vector3(pos));
 }
 
 void FreeCameraController::ApplyRotation(const InputState& input, float dt) {
@@ -94,7 +94,7 @@ void FreeCameraController::ApplyRotation(const InputState& input, float dt) {
   current_euler_.x += input.look_input.x * rotation_speed_ * dt;
   current_euler_.y += input.look_input.y * rotation_speed_ * dt;
 
-  constexpr float max_pitch = XM_PIDIV2 - 0.01f;
+  constexpr float max_pitch = Math::PiOver2 - 0.01f;
   current_euler_.x = std::clamp(current_euler_.x, -max_pitch, max_pitch);
 
   transform->SetRotationEuler(current_euler_.x, current_euler_.y, 0.0f);

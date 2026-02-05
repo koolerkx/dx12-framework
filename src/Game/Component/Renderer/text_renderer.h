@@ -1,6 +1,4 @@
 #pragma once
-#include <DirectXMath.h>
-
 #include <string>
 
 #include "Component/billboard_type.h"
@@ -8,11 +6,16 @@
 #include "Component/pivot_type.h"
 #include "Component/render_settings.h"
 #include "Framework/Font/text_layout.h"
+#include "Framework/Math/Math.h"
 #include "Game/Asset/asset_manager.h"
 #include "Graphic/Frame/frame_packet.h"
 #include "Graphic/Pipeline/shader_descriptors.h"
 #include "Graphic/Resource/Font/sprite_font_manager.h"
 #include "game_object.h"
+
+using Math::Matrix4;
+using Math::Vector2;
+using Math::Vector4;
 
 class TextRenderer : public Component<TextRenderer> {
  public:
@@ -44,7 +47,7 @@ class TextRenderer : public Component<TextRenderer> {
     }
   }
 
-  void SetColor(const DirectX::XMFLOAT4& color) {
+  void SetColor(const Vector4& color) {
     color_ = color;
   }
 
@@ -124,23 +127,23 @@ class TextRenderer : public Component<TextRenderer> {
     return pivot_;
   }
 
-  DirectX::XMFLOAT2 GetSize() const {
-    return DirectX::XMFLOAT2(text_mesh_handle_.GetWidth(), text_mesh_handle_.GetHeight());
+  Vector2 GetSize() const {
+    return Vector2(text_mesh_handle_.GetWidth(), text_mesh_handle_.GetHeight());
   }
 
-  DirectX::XMMATRIX GetBillboardWorldMatrix(const CameraData& camera) const;
+  Matrix4 GetBillboardWorldMatrix(const CameraData& camera) const;
 
   void OnRender(FramePacket& packet) override;
 
  private:
   void RebuildTextMesh(AssetManager& asset_manager);
-  DirectX::XMMATRIX CalculateBaseWorldMatrix(TransformComponent* transform, const CameraData& camera) const;
+  Matrix4 CalculateBaseWorldMatrix(TransformComponent* transform, const CameraData& camera) const;
 
  private:
   std::wstring text_;
   Font::FontFamily font_family_ = Font::FontFamily::ZenOldMincho;
   float pixel_size_ = 16.0f;
-  DirectX::XMFLOAT4 color_ = {1.0f, 1.0f, 1.0f, 1.0f};
+  Vector4 color_ = {1.0f, 1.0f, 1.0f, 1.0f};
 
   Text::HorizontalAlign h_align_ = Text::HorizontalAlign::Left;
   Text::VerticalAlign v_align_ = Text::VerticalAlign::Baseline;

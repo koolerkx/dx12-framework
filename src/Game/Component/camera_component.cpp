@@ -1,9 +1,13 @@
 #include "camera_component.h"
 
+#include <DirectXMath.h>
+
 #include "game_object.h"
 #include "transform_component.h"
 
 using namespace DirectX;
+using Math::Matrix4;
+using Math::Vector3;
 
 void CameraComponent::OnStart() {
   UpdateProjectionMatrix();
@@ -28,15 +32,11 @@ void CameraComponent::SetOrthographic(float width, float height, float near_plan
 }
 
 void CameraComponent::UpdateProjectionMatrix() {
-  XMMATRIX proj;
-
   if (projection_type_ == ProjectionType::Perspective) {
-    proj = XMMatrixPerspectiveFovLH(fov_, aspect_ratio_, near_plane_, far_plane_);
+    projection_matrix_ = Matrix4::CreatePerspectiveFOV(fov_, aspect_ratio_, near_plane_, far_plane_);
   } else {
-    proj = XMMatrixOrthographicLH(ortho_width_, ortho_height_, near_plane_, far_plane_);
+    projection_matrix_ = Matrix4::CreateOrthographic(ortho_width_, ortho_height_, near_plane_, far_plane_);
   }
-
-  XMStoreFloat4x4(&projection_matrix_, proj);
   is_dirty_ = false;
 }
 
@@ -47,37 +47,29 @@ CameraData CameraComponent::GetCameraData() const {
 
   CameraData data;
 
-  // Get transform from owner GameObject
   auto* transform = owner_->GetComponent<TransformComponent>();
   if (!transform) {
-    // Fallback to identity
-    StoreMatrixToCameraData(data, XMMatrixIdentity(), XMLoadFloat4x4(&projection_matrix_));
-
-    data.position = XMFLOAT3(0, 0, 0);
-    data.forward = XMFLOAT3(0, 0, 1);
-    data.up = XMFLOAT3(0, 1, 0);
+    StoreMatrixToCameraData(data, XMMatrixIdentity(), XMMATRIX(projection_matrix_));
+    data.position = Vector3::Zero;
+    data.forward = Vector3::Forward;
+    data.up = Vector3::Up;
     return data;
   }
 
-  // Build view matrix from transform
-  XMMATRIX world = transform->GetWorldMatrix();
+  XMMATRIX world = XMMATRIX(transform->GetWorldMatrix());
 
-  // Extract position from world matrix
   XMVECTOR pos = world.r[3];
-  XMStoreFloat3(&data.position, pos);
+  data.position = Vector3(pos);
 
-  // Extract forward and up from world matrix
-  XMVECTOR forward = XMVector3Normalize(world.r[2]);  // Z-axis
-  XMVECTOR up = XMVector3Normalize(world.r[1]);       // Y-axis
-  XMStoreFloat3(&data.forward, forward);
-  XMStoreFloat3(&data.up, up);
+  XMVECTOR forward = XMVector3Normalize(world.r[2]);
+  XMVECTOR up = XMVector3Normalize(world.r[1]);
+  data.forward = Vector3(forward);
+  data.up = Vector3(up);
 
-  // Calculate target point (position + forward)
   XMVECTOR target = XMVectorAdd(pos, forward);
 
-  // Build view matrix (inverse of world transform)
   XMMATRIX view = XMMatrixLookAtLH(pos, target, up);
-  StoreMatrixToCameraData(data, view, XMLoadFloat4x4(&projection_matrix_));
+  StoreMatrixToCameraData(data, view, XMMATRIX(projection_matrix_));
 
   return data;
 }

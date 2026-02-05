@@ -1,16 +1,18 @@
 #pragma once
-#include <DirectXMath.h>
-
 #include <string>
 
 #include "Component/component.h"
 #include "Component/pivot_type.h"
 #include "Component/render_settings.h"
 #include "Framework/Font/text_layout.h"
+#include "Framework/Math/Math.h"
 #include "Game/Asset/asset_manager.h"
 #include "Graphic/Frame/frame_packet.h"
 #include "Graphic/Resource/Font/sprite_font_manager.h"
 #include "game_object.h"
+
+using Math::Vector2;
+using Math::Vector4;
 
 class UITextRenderer : public Component<UITextRenderer> {
  public:
@@ -42,7 +44,7 @@ class UITextRenderer : public Component<UITextRenderer> {
     }
   }
 
-  void SetColor(const DirectX::XMFLOAT4& color) {
+  void SetColor(const Vector4& color) {
     color_ = color;
   }
 
@@ -108,8 +110,8 @@ class UITextRenderer : public Component<UITextRenderer> {
     return pivot_;
   }
 
-  DirectX::XMFLOAT2 GetSize() const {
-    return DirectX::XMFLOAT2(text_mesh_handle_.GetWidth(), text_mesh_handle_.GetHeight());
+  Vector2 GetSize() const {
+    return Vector2(text_mesh_handle_.GetWidth(), text_mesh_handle_.GetHeight());
   }
 
   void OnRender(FramePacket& packet) override;
@@ -121,7 +123,7 @@ class UITextRenderer : public Component<UITextRenderer> {
   std::wstring text_;
   Font::FontFamily font_family_ = Font::FontFamily::ZenOldMincho;
   float pixel_size_ = 16.0f;
-  DirectX::XMFLOAT4 color_ = {1.0f, 1.0f, 1.0f, 1.0f};
+  Vector4 color_ = {1.0f, 1.0f, 1.0f, 1.0f};
 
   Text::HorizontalAlign h_align_ = Text::HorizontalAlign::Left;
   Text::VerticalAlign v_align_ = Text::VerticalAlign::Baseline;

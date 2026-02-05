@@ -1,14 +1,10 @@
 #include "material_renderer.h"
 
-#include <DirectXMath.h>
-
 #include <bit>
 
 #include "Command/render_command_list.h"
 #include "Frame/constant_buffers.h"
 #include "Pipeline/material.h"
-
-using namespace DirectX;
 
 namespace SortKey {
 
@@ -77,18 +73,15 @@ void MaterialRenderer::Record(const RenderFrameContext& frame,
   cmd.BindGlobalSRVTable(frame.global_heap_manager);
   cmd.BindSamplerTable(frame.global_heap_manager);
 
-  XMMATRIX view = XMLoadFloat4x4(&camera.view);
-  XMMATRIX proj = XMLoadFloat4x4(&camera.proj);
-  XMMATRIX view_proj = XMLoadFloat4x4(&camera.view_proj);
-
   FrameCB frame_cb_data = {};
-  XMStoreFloat4x4(&frame_cb_data.view, view);
-  XMStoreFloat4x4(&frame_cb_data.proj, proj);
-  XMStoreFloat4x4(&frame_cb_data.viewProj, view_proj);
+  frame_cb_data.view = camera.view;
+  frame_cb_data.proj = camera.proj;
+  frame_cb_data.viewProj = camera.view_proj;
   frame_cb_data.cameraPos = camera.position;
-  frame_cb_data.screenSize = XMFLOAT2(static_cast<float>(screen_width), static_cast<float>(screen_height));
+  frame_cb_data.screenSize = Vector2(static_cast<float>(screen_width), static_cast<float>(screen_height));
   cmd.SetFrameConstants(frame_cb_data);
 
+  Matrix4 view_proj = camera.view_proj;
   const Material* current_material = first_material;
 
   for (const auto& draw_cmd : commands) {
@@ -112,14 +105,14 @@ void MaterialRenderer::Record(const RenderFrameContext& frame,
   }
 }
 
-void MaterialRenderer::RecordSingle(RenderCommandList& cmd, const DrawCommand& draw_cmd, const XMMATRIX& view_proj) {
+void MaterialRenderer::RecordSingle(RenderCommandList& cmd, const DrawCommand& draw_cmd, const Matrix4& view_proj) {
   cmd.SetMaterialData(draw_cmd.material_instance);
 
   ObjectCB obj_data = {};
-  XMMATRIX world = XMLoadFloat4x4(&draw_cmd.world_matrix);
-  XMMATRIX wvp = world * view_proj;
-  XMStoreFloat4x4(&obj_data.world, world);
-  XMStoreFloat4x4(&obj_data.worldViewProj, wvp);
+  Matrix4 world = draw_cmd.world_matrix;
+  Matrix4 wvp = world * view_proj;
+  obj_data.world = world;
+  obj_data.worldViewProj = wvp;
   obj_data.color = draw_cmd.color;
   obj_data.uvOffset = draw_cmd.uv_offset;
   obj_data.uvScale = draw_cmd.uv_scale;
@@ -132,7 +125,6 @@ void MaterialRenderer::RecordSingle(RenderCommandList& cmd, const DrawCommand& d
 void MaterialRenderer::RecordInstanced(RenderCommandList& cmd, const DrawCommand& draw_cmd) {
   cmd.SetMaterialData(draw_cmd.material_instance);
 
-  // Instanced rendering gets per-instance data from vertex buffer
   ObjectCB obj_data = {};
   obj_data.samplerIndex = draw_cmd.material_instance.sampler_index;
   cmd.SetObjectConstants(obj_data);

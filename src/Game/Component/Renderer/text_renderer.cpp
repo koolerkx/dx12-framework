@@ -4,10 +4,15 @@
 
 #include "Component/billboard_helper.h"
 #include "Component/pivot_type.h"
+#include "Component/transform_component.h"
 #include "Game/Asset/asset_manager.h"
 #include "Graphic/Pipeline/shader_descriptors.h"
 #include "game_context.h"
-#include "Component/transform_component.h"
+
+using namespace DirectX;
+using Math::Matrix4;
+using Math::Vector2;
+using Math::Vector3;
 
 void TextRenderer::SetRenderLayer(RenderLayer layer) {
   switch (layer) {
@@ -65,11 +70,9 @@ void TextRenderer::OnRender(FramePacket& packet) {
   cmd.mesh = quad_mesh;
   cmd.material = material;
 
-  DirectX::XMFLOAT3 worldPos = transform->GetWorldPosition();
-  DirectX::XMFLOAT3 camPos = packet.main_camera.position;
-  DirectX::XMVECTOR worldVec = XMLoadFloat3(&worldPos);
-  DirectX::XMVECTOR camVec = XMLoadFloat3(&camPos);
-  cmd.depth = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(DirectX::XMVectorSubtract(worldVec, camVec)));
+  Vector3 worldPos = transform->GetWorldPosition();
+  Vector3 camPos = packet.main_camera.position;
+  cmd.depth = Vector3::DistanceSquared(worldPos, camPos);
 
   cmd.material_instance.material = cmd.material;
   cmd.material_instance.albedo_texture_index = texture->GetBindlessIndex();
@@ -77,8 +80,8 @@ void TextRenderer::OnRender(FramePacket& packet) {
 
   cmd.instances.reserve(text_mesh_handle_.GetGlyphCount());
 
-  DirectX::XMFLOAT2 text_size = {text_mesh_handle_.GetWidth(), text_mesh_handle_.GetHeight()};
-  DirectX::XMFLOAT2 pivot_offset = pivot_.CalculateOffset(text_size);
+  Vector2 text_size = {text_mesh_handle_.GetWidth(), text_mesh_handle_.GetHeight()};
+  Vector2 pivot_offset = pivot_.CalculateOffset(text_size);
 
   for (size_t i = 0; i < text_mesh_handle_.GetGlyphCount(); ++i) {
     const GlyphLayoutData* glyph = text_mesh_handle_.GetGlyph(i);
@@ -88,21 +91,17 @@ void TextRenderer::OnRender(FramePacket& packet) {
 
     SpriteInstanceData instance{};
 
-    // Y-coordinate is negated for world space text (Y-up coordinate system)
     float glyph_x_relative = glyph->x - pivot_offset.x;
     float glyph_y_relative = glyph->y - pivot_offset.y;
 
-    DirectX::XMVECTOR glyph_center = DirectX::XMVectorSet(glyph_x_relative + glyph->width * 0.5f,
-      -(glyph_y_relative + glyph->height * 0.5f),  // Negate Y for world space
-      0.01f,                                       // Small Z offset to avoid z-fighting
-      0.0f);
+    XMVECTOR glyph_center = XMVectorSet(glyph_x_relative + glyph->width * 0.5f, -(glyph_y_relative + glyph->height * 0.5f), 0.01f, 0.0f);
 
-    DirectX::XMMATRIX glyph_translation = DirectX::XMMatrixTranslationFromVector(glyph_center);
-    DirectX::XMMATRIX size_scale = DirectX::XMMatrixScaling(glyph->width, glyph->height, 1.0f);
+    XMMATRIX glyph_translation = XMMatrixTranslationFromVector(glyph_center);
+    XMMATRIX size_scale = XMMatrixScaling(glyph->width, glyph->height, 1.0f);
 
-    DirectX::XMMATRIX base_world = CalculateBaseWorldMatrix(transform, packet.main_camera);
-    DirectX::XMMATRIX world = size_scale * glyph_translation * base_world;
-    DirectX::XMStoreFloat4x4(&instance.world_matrix, world);
+    XMMATRIX base_world = XMMATRIX(CalculateBaseWorldMatrix(transform, packet.main_camera));
+    XMMATRIX world = size_scale * glyph_translation * base_world;
+    instance.world_matrix = Matrix4(world);
 
     instance.color = color_;
 
@@ -131,39 +130,35 @@ void TextRenderer::RebuildTextMesh(AssetManager& asset_manager) {
   text_mesh_handle_ = asset_manager.CreateTextMesh(text_, font_family_, pixel_size_, props);
 }
 
-DirectX::XMMATRIX TextRenderer::CalculateBaseWorldMatrix(TransformComponent* transform, const CameraData& camera) const {
-  using namespace DirectX;
-  XMMATRIX world = transform->GetWorldMatrix();
+Matrix4 TextRenderer::CalculateBaseWorldMatrix(TransformComponent* transform, const CameraData& camera) const {
+  XMMATRIX world = XMMATRIX(transform->GetWorldMatrix());
 
   if (billboard_mode_ == Billboard::Mode::None) {
-    return world;
+    return Matrix4(world);
   }
 
   XMVECTOR scale, rotation, translation;
   XMMatrixDecompose(&scale, &rotation, &translation, world);
 
-  XMFLOAT3 objPos;
-  XMStoreFloat3(&objPos, translation);
+  Vector3 objPos(translation);
 
   XMMATRIX billboardRot;
   if (billboard_mode_ == Billboard::Mode::Cylindrical) {
-    billboardRot = Billboard::CreateCylindricalBillboardMatrix(objPos, camera.position);
+    billboardRot = XMMATRIX(Billboard::CreateCylindricalBillboardMatrix(objPos, camera.position));
   } else {
-    billboardRot = Billboard::CreateSphericalBillboardMatrix(objPos, camera.position, camera.up);
+    billboardRot = XMMATRIX(Billboard::CreateSphericalBillboardMatrix(objPos, camera.position, camera.up));
   }
 
-  // Fix text mirror issue: flip X axis for text with billboard
-  // The UV system has negative Y scale which combines with billboard rotation to cause mirroring
   XMMATRIX flipX = XMMatrixScaling(-1.0f, 1.0f, 1.0f);
 
   XMMATRIX scaleMat = XMMatrixScalingFromVector(scale);
   XMMATRIX transMat = XMMatrixTranslationFromVector(translation);
 
-  return scaleMat * flipX * billboardRot * transMat;
+  return Matrix4(scaleMat * flipX * billboardRot * transMat);
 }
 
-DirectX::XMMATRIX TextRenderer::GetBillboardWorldMatrix(const CameraData& camera) const {
+Matrix4 TextRenderer::GetBillboardWorldMatrix(const CameraData& camera) const {
   auto* transform = GetOwner()->GetTransform();
-  if (!transform) return DirectX::XMMatrixIdentity();
+  if (!transform) return Matrix4::Identity;
   return CalculateBaseWorldMatrix(transform, camera);
 }

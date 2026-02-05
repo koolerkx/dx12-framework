@@ -1,15 +1,17 @@
 #pragma once
-#include <DirectXMath.h>
-
 #include "Component/component.h"
 #include "Component/render_settings.h"
+#include "Component/transform_component.h"
+#include "Framework/Math/Math.h"
 #include "Graphic/Frame/frame_packet.h"
 #include "Graphic/Pipeline/shader_descriptors.h"
 #include "Graphic/Resource/Texture/texture.h"
 #include "Graphic/Resource/mesh.h"
 #include "game_context.h"
 #include "game_object.h"
-#include "Component/transform_component.h"
+
+using Math::Vector3;
+using Math::Vector4;
 
 class MeshRenderer : public Component<MeshRenderer> {
  public:
@@ -23,7 +25,7 @@ class MeshRenderer : public Component<MeshRenderer> {
     texture_ = texture;
   }
 
-  void SetColor(const DirectX::XMFLOAT4& color) {
+  void SetColor(const Vector4& color) {
     color_ = color;
   }
 
@@ -64,7 +66,7 @@ class MeshRenderer : public Component<MeshRenderer> {
     auto& material_mgr = context->GetGraphic()->GetMaterialManager();
 
     DrawCommand cmd;
-    DirectX::XMStoreFloat4x4(&cmd.world_matrix, transform->GetWorldMatrix());
+    cmd.world_matrix = transform->GetWorldMatrix();
     cmd.color = color_;
     cmd.mesh = mesh_;
 
@@ -73,11 +75,9 @@ class MeshRenderer : public Component<MeshRenderer> {
     cmd.material_instance.albedo_texture_index = texture_ ? texture_->GetBindlessIndex() : 0;
     cmd.material_instance.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
 
-    DirectX::XMFLOAT3 worldPos = transform->GetWorldPosition();
-    DirectX::XMFLOAT3 camPos = packet.main_camera.position;
-    DirectX::XMVECTOR worldVec = XMLoadFloat3(&worldPos);
-    DirectX::XMVECTOR camVec = XMLoadFloat3(&camPos);
-    cmd.depth = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(DirectX::XMVectorSubtract(worldVec, camVec)));
+    Vector3 worldPos = transform->GetWorldPosition();
+    Vector3 camPos = packet.main_camera.position;
+    cmd.depth = Vector3::DistanceSquared(worldPos, camPos);
 
     cmd.layer = render_layer_;
     cmd.tags = render_tags_;
@@ -89,7 +89,7 @@ class MeshRenderer : public Component<MeshRenderer> {
   Texture* texture_ = nullptr;
   Graphics::ShaderId shader_id_ = Graphics::Basic3DShader::ID;
   Rendering::RenderSettings render_settings_ = Rendering::RenderSettings::Opaque();
-  DirectX::XMFLOAT4 color_ = {1.0f, 1.0f, 1.0f, 1.0f};
+  Vector4 color_ = {1.0f, 1.0f, 1.0f, 1.0f};
 
   RenderLayer render_layer_ = RenderLayer::Opaque;
   RenderTagMask render_tags_ = 0;

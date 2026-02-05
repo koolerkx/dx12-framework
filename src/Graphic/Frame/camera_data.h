@@ -1,19 +1,24 @@
 #pragma once
 #include <DirectXMath.h>
 
+#include "Framework/Math/Math.h"
+
+using Math::Matrix4;
+using Math::Vector3;
+
 struct CameraData {
-  DirectX::XMFLOAT4X4 view;
-  DirectX::XMFLOAT4X4 proj;
-  DirectX::XMFLOAT4X4 view_proj;
-  DirectX::XMFLOAT3 position;
-  DirectX::XMFLOAT3 forward;
-  DirectX::XMFLOAT3 up;
+  Matrix4 view;
+  Matrix4 proj;
+  Matrix4 view_proj;
+  Vector3 position;
+  Vector3 forward;
+  Vector3 up;
 };
 
 inline void StoreMatrixToCameraData(CameraData& data, DirectX::XMMATRIX view, DirectX::XMMATRIX proj) {
-  DirectX::XMStoreFloat4x4(&data.view, view);
-  DirectX::XMStoreFloat4x4(&data.proj, proj);
-  DirectX::XMStoreFloat4x4(&data.view_proj, view * proj);
+  data.view = Matrix4(view);
+  data.proj = Matrix4(proj);
+  data.view_proj = Matrix4(view * proj);
 }
 
 inline CameraData MakeScreenSpaceCamera(float width, float height) {
@@ -21,8 +26,8 @@ inline CameraData MakeScreenSpaceCamera(float width, float height) {
   DirectX::XMMATRIX view = DirectX::XMMatrixIdentity();
   DirectX::XMMATRIX proj = DirectX::XMMatrixOrthographicOffCenterLH(0.0f, width, height, 0.0f, -10.0f, 100.0f);
   StoreMatrixToCameraData(camera, view, proj);
-  camera.position = {0, 0, 0};
-  camera.forward = {0, 0, 1};
-  camera.up = {0, 1, 0};
+  camera.position = Vector3::Zero;
+  camera.forward = Vector3::Forward;
+  camera.up = Vector3::Up;
   return camera;
 }

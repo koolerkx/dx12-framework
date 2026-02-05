@@ -1,24 +1,24 @@
 #include "test_scene.h"
 
-#include <DirectXMath.h>
-
 #include "Asset/asset_manager.h"
-#include "Component/camera_component.h"
-#include "Scenes/test_scene/character_mover_component.h"
-#include "Scripts/free_camera_controller.h"
-#include "Component/pivot_type.h"
 #include "Component/Renderer/mesh_renderer.h"
 #include "Component/Renderer/sprite_renderer.h"
 #include "Component/Renderer/text_renderer.h"
 #include "Component/Renderer/ui_sprite_renderer.h"
 #include "Component/Renderer/ui_text_renderer.h"
+#include "Component/camera_component.h"
+#include "Component/pivot_type.h"
 #include "Component/sprite_sheet_helper.h"
 #include "Component/transform_component.h"
 #include "Debug/debug_drawer.h"
 #include "Frame/frame_packet.h"
 #include "Framework/Logging/logger.h"
+#include "Framework/Math/Math.h"
+#include "Scenes/test_scene/character_mover_component.h"
+#include "Scripts/free_camera_controller.h"
 #include "test_scene.h"
 
+using Math::Vector3;
 
 static float rotation_angle_ = 0.0f;
 static float rotation_speed_ = 15.0f;
@@ -31,11 +31,10 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
 
   SetupCamera();
 
-  // Create terrain plane
   terrain_plane_ = CreateGameObject("TerrainPlane");
   auto* plane_transform = terrain_plane_->GetComponent<TransformComponent>();
   plane_transform->SetPosition({0.0f, -5.0f, 0.0f});
-  plane_transform->SetScale({20.0f, 1.0f, 20.0f});  // 20x20 size
+  plane_transform->SetScale({20.0f, 1.0f, 20.0f});
 
   auto* plane_renderer = terrain_plane_->AddComponent<MeshRenderer>();
   plane_renderer->SetMesh(asset_manager.GetDefaultMesh(DefaultMesh::Plane));
@@ -44,8 +43,8 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
 
   cube_object_ = CreateGameObject("Cube");
   auto* cube_transform = cube_object_->GetComponent<TransformComponent>();
-  cube_transform->SetPosition({0.0f, 0.0f, 0.0f});  // At origin
-  cube_transform->SetScale({2.0f, 2.0f, 2.0f});     // Scale to 2x2x2
+  cube_transform->SetPosition({0.0f, 0.0f, 0.0f});
+  cube_transform->SetScale({2.0f, 2.0f, 2.0f});
 
   auto* mesh_renderer = cube_object_->AddComponent<MeshRenderer>();
   mesh_renderer->SetMesh(asset_manager.GetDefaultMesh(DefaultMesh::Cube));
@@ -117,7 +116,7 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   // UI Text
   {
     auto text_obj = CreateGameObject("Basic UI Text");
-    text_obj->GetTransform()->SetPosition(DirectX::XMFLOAT3(960.0f, 540.0f, 0.0f));
+    text_obj->GetTransform()->SetPosition(Vector3(960.0f, 540.0f, 0.0f));
 
     auto* text = text_obj->AddComponent<UITextRenderer>();
     text->SetText(L"Hello, World!Hello, World!Hello, World!\nこんにちは！");
@@ -133,7 +132,7 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
 
   // World Text
   text_obj2_ = CreateGameObject("Basic Text 2");
-  text_obj2_->GetTransform()->SetPosition(DirectX::XMFLOAT3(0.0f, -3.0f, 1.0f));
+  text_obj2_->GetTransform()->SetPosition(Vector3(0.0f, -3.0f, 1.0f));
 
   auto* text2 = text_obj2_->AddComponent<TextRenderer>();
   text2->SetText(L"Hello, World!\n Bye");
@@ -158,7 +157,6 @@ void TestScene::OnRender(FramePacket& /* packet */) {
   auto* debug_drawer = GetContext()->GetDebugDrawer();
   if (!debug_drawer) return;
 
-  // Draw grid
   DebugDrawer::GridConfig grid_config;
   grid_config.size = 20.0f;
   grid_config.cell_size = 1.0f;
@@ -166,13 +164,11 @@ void TestScene::OnRender(FramePacket& /* packet */) {
   grid_config.color = {0.5f, 0.5f, 0.5f, 1.0f};
   debug_drawer->DrawGrid(grid_config);
 
-  // Draw axis gizmo at world origin
   DebugDrawer::AxisGizmoConfig axis_config;
-  axis_config.position = {0.0f, 0.0f, 0.0f};
+  axis_config.position = Vector3::Zero;
   axis_config.length = 2.0f;
   debug_drawer->DrawAxisGizmo(axis_config);
 
-  // Optional: Draw bounding box around cube
   debug_drawer->DrawBox({-5, 2, -5}, {1, 1, 1}, {1, 0, 0, 1});
 
   debug_drawer->DrawSphere({-5, 2, -5}, 3, {1, 0, 0, 1}, 32);
@@ -194,10 +190,10 @@ void TestScene::OnExit() {
 void TestScene::SetupCamera() {
   camera_object_ = CreateGameObject("MainCamera");
   auto* camera_transform = camera_object_->GetComponent<TransformComponent>();
-  camera_transform->SetPosition({0.0f, 0.0f, -10.0f});  // Move camera back
+  camera_transform->SetPosition({0.0f, 0.0f, -10.0f});
 
   auto* camera = camera_object_->AddComponent<CameraComponent>();
-  camera->SetPerspective(DirectX::XM_PIDIV4, 16.0f / 9.0f, 0.1f, 1000.0f);
+  camera->SetPerspective(Math::PiOver4, 16.0f / 9.0f, 0.1f, 1000.0f);
 
   auto* controller = camera_object_->AddComponent<FreeCameraController>();
   controller->SetMovementSpeed(15.0f);

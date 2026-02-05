@@ -4,9 +4,13 @@
 #include "Component/component.h"
 #include "Component/render_settings.h"
 #include "Component/sprite_sheet_animator.h"
+#include "Framework/Math/Math.h"
 #include "Graphic/Frame/frame_packet.h"
 #include "Graphic/Resource/Texture/texture.h"
 #include "game_object.h"
+
+using Math::Vector2;
+using Math::Vector4;
 
 class UISpriteRenderer : public Component<UISpriteRenderer> {
  public:
@@ -16,10 +20,10 @@ class UISpriteRenderer : public Component<UISpriteRenderer> {
   void SetTexture(Texture* tex) {
     texture_ = tex;
   }
-  void SetColor(const DirectX::XMFLOAT4& color) {
+  void SetColor(const Vector4& color) {
     color_ = color;
   }
-  void SetSize(const DirectX::XMFLOAT2& size) {
+  void SetSize(const Vector2& size) {
     size_ = size;
   }
   void SetLayerId(int id) {
@@ -43,16 +47,16 @@ class UISpriteRenderer : public Component<UISpriteRenderer> {
     return render_settings_;
   }
 
-  void SetUVOffset(const DirectX::XMFLOAT2& offset) {
+  void SetUVOffset(const Vector2& offset) {
     uv_offset_ = offset;
   }
-  void SetUVScale(const DirectX::XMFLOAT2& scale) {
+  void SetUVScale(const Vector2& scale) {
     uv_scale_ = scale;
   }
-  const DirectX::XMFLOAT2& GetUVOffset() const {
+  const Vector2& GetUVOffset() const {
     return uv_offset_;
   }
-  const DirectX::XMFLOAT2& GetUVScale() const {
+  const Vector2& GetUVScale() const {
     return uv_scale_;
   }
 
@@ -63,10 +67,10 @@ class UISpriteRenderer : public Component<UISpriteRenderer> {
 
  private:
   Texture* texture_ = nullptr;
-  DirectX::XMFLOAT4 color_ = {1, 1, 1, 1};
-  DirectX::XMFLOAT2 size_ = {100, 100};
-  DirectX::XMFLOAT2 uv_offset_ = {0.0f, 0.0f};
-  DirectX::XMFLOAT2 uv_scale_ = {1.0f, 1.0f};
+  Vector4 color_ = {1, 1, 1, 1};
+  Vector2 size_ = {100, 100};
+  Vector2 uv_offset_ = {0.0f, 0.0f};
+  Vector2 uv_scale_ = {1.0f, 1.0f};
   int layer_id_ = 0;
 
   Rendering::RenderSettings render_settings_ = Rendering::RenderSettings::UI();

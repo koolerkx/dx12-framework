@@ -1,7 +1,9 @@
 #pragma once
-#include <DirectXMath.h>
-
 #include <vector>
+
+#include "Framework/Math/Math.h"
+
+using Math::Vector2;
 
 struct Texture;
 
@@ -9,14 +11,13 @@ namespace Font {
 enum class FontFamily : uint16_t;
 }  // namespace Font
 
-// Glyph layout data
 struct GlyphLayoutData {
-  float x = 0.0f;                              // Position X in layout space (pixels)
-  float y = 0.0f;                              // Position Y in layout space (pixels)
-  float width = 0.0f;                          // Glyph width (pixels)
-  float height = 0.0f;                         // Glyph height (pixels)
-  DirectX::XMFLOAT2 uv_offset = {0.0f, 0.0f};  // UV offset in atlas
-  DirectX::XMFLOAT2 uv_scale = {1.0f, 1.0f};   // UV scale in atlas
+  float x = 0.0f;                    // Position X in layout space (pixels)
+  float y = 0.0f;                    // Position Y in layout space (pixels)
+  float width = 0.0f;                // Glyph width (pixels)
+  float height = 0.0f;               // Glyph height (pixels)
+  Vector2 uv_offset = {0.0f, 0.0f};  // UV offset in atlas
+  Vector2 uv_scale = {1.0f, 1.0f};   // UV scale in atlas
 };
 
 // Text layout handle - pure CPU data structure
@@ -67,7 +68,7 @@ class TextMeshHandle {
 
  private:
   std::vector<GlyphLayoutData> glyphs_;
-  Texture* texture_ = nullptr;  // Non-owning pointer to font atlas
+  Texture* texture_ = nullptr;
   float width_ = 0.0f;
   float height_ = 0.0f;
 };

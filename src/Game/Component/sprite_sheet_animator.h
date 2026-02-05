@@ -1,10 +1,11 @@
 #pragma once
-#include <DirectXMath.h>
-
 #include <cstdint>
 #include <functional>
 
 #include "Component/sprite_sheet_helper.h"
+#include "Framework/Math/Math.h"
+
+using Math::Vector2;
 
 enum class PlayDirection : uint8_t { Forward, Backward };
 
@@ -13,8 +14,8 @@ class SpriteSheetAnimator {
   using AnimationEndCallback = std::function<void()>;
 
   struct UVResult {
-    DirectX::XMFLOAT2 uv_offset = {0.0f, 0.0f};
-    DirectX::XMFLOAT2 uv_scale = {1.0f, 1.0f};
+    Vector2 uv_offset = {0.0f, 0.0f};
+    Vector2 uv_scale = {1.0f, 1.0f};
   };
 
   bool Update(float dt);

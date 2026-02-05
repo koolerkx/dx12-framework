@@ -40,7 +40,7 @@ class MaterialRenderer {
   }
 
  private:
-  void RecordSingle(RenderCommandList& cmd, const DrawCommand& draw_cmd, const DirectX::XMMATRIX& view_proj);
+  void RecordSingle(RenderCommandList& cmd, const DrawCommand& draw_cmd, const Matrix4& view_proj);
   void RecordInstanced(RenderCommandList& cmd, const DrawCommand& draw_cmd);
 };
 
