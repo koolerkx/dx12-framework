@@ -92,6 +92,13 @@ class Graphic {
     }
   }
 
+  UINT GetFrameBufferWidth() const {
+    return frame_buffer_width_;
+  }
+  UINT GetFrameBufferHeight() const {
+    return frame_buffer_height_;
+  }
+
   gfx::DeviceContext* GetDeviceContext() const {
     return device_context_.get();
   }

@@ -41,6 +41,11 @@ add_library(game STATIC
     Component/Renderer/ui_text_renderer.h
     Component/Renderer/ui_text_renderer.cpp
 
+    SceneSetting/active_camera_setting.h
+    SceneSetting/active_camera_setting.cpp
+    SceneSetting/active_ui_camera_setting.h
+    SceneSetting/active_ui_camera_setting.cpp
+
     Scripts/free_camera_controller.h
     Scripts/free_camera_controller.cpp
 

@@ -2,8 +2,9 @@
 #include <memory>
 #include <vector>
 
-#include "Component/camera_component.h"
 #include "Graphic/Frame/frame_packet.h"
+#include "SceneSetting/active_camera_setting.h"
+#include "SceneSetting/active_ui_camera_setting.h"
 #include "game_context.h"
 #include "game_object.h"
 
@@ -46,12 +47,17 @@ class IScene {
     return context_;
   }
 
-  void SetActiveCamera(CameraComponent* camera) {
-    active_camera_ = camera;
+  ActiveCameraSetting& GetCameraSetting() {
+    return camera_setting_;
   }
-
-  CameraComponent* GetActiveCamera() const {
-    return active_camera_;
+  const ActiveCameraSetting& GetCameraSetting() const {
+    return camera_setting_;
+  }
+  ActiveUICameraSetting& GetUICameraSetting() {
+    return ui_camera_setting_;
+  }
+  const ActiveUICameraSetting& GetUICameraSetting() const {
+    return ui_camera_setting_;
   }
 
  protected:
@@ -62,7 +68,8 @@ class IScene {
 
  private:
   std::vector<std::unique_ptr<GameObject>> game_objects_;
-  CameraComponent* active_camera_ = nullptr;
+  ActiveCameraSetting camera_setting_;
+  ActiveUICameraSetting ui_camera_setting_;
   bool is_started_ = false;
 
   GameContext* context_ = nullptr;

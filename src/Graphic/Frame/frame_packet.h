@@ -6,6 +6,7 @@
 
 struct FramePacket {
   CameraData main_camera;
+  CameraData ui_camera;
   std::vector<DrawCommand> commands;
 
   void Clear() {

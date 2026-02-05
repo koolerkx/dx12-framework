@@ -15,3 +15,14 @@ inline void StoreMatrixToCameraData(CameraData& data, DirectX::XMMATRIX view, Di
   DirectX::XMStoreFloat4x4(&data.proj, proj);
   DirectX::XMStoreFloat4x4(&data.view_proj, view * proj);
 }
+
+inline CameraData MakeScreenSpaceCamera(float width, float height) {
+  CameraData camera;
+  DirectX::XMMATRIX view = DirectX::XMMatrixIdentity();
+  DirectX::XMMATRIX proj = DirectX::XMMatrixOrthographicOffCenterLH(0.0f, width, height, 0.0f, -10.0f, 100.0f);
+  StoreMatrixToCameraData(camera, view, proj);
+  camera.position = {0, 0, 0};
+  camera.forward = {0, 0, 1};
+  camera.up = {0, 1, 0};
+  return camera;
+}

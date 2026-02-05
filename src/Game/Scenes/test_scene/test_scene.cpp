@@ -3,6 +3,7 @@
 #include <DirectXMath.h>
 
 #include "Asset/asset_manager.h"
+#include "Component/camera_component.h"
 #include "Scenes/test_scene/character_mover_component.h"
 #include "Scripts/free_camera_controller.h"
 #include "Component/pivot_type.h"
@@ -203,5 +204,5 @@ void TestScene::SetupCamera() {
   controller->SetRotationSpeed(1.5f);
   controller->SetSmoothness(8.0f);
 
-  SetActiveCamera(camera);
+  GetCameraSetting().Register(camera);
 }

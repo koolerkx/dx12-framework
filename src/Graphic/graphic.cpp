@@ -18,19 +18,6 @@
 
 using namespace DirectX;
 
-// TODO: Move to game
-static CameraData MakeOrthographicCamera(const RenderFrameContext& frame, const FramePacket& /*packet*/) {
-  CameraData camera;
-  XMMATRIX view = XMMatrixIdentity();
-  XMMATRIX proj = XMMatrixOrthographicOffCenterLH(
-    0.0f, static_cast<float>(frame.screen_width), static_cast<float>(frame.screen_height), 0.0f, -10.0f, 100.0f);
-  StoreMatrixToCameraData(camera, view, proj);
-  camera.position = XMFLOAT3(0, 0, 0);
-  camera.forward = XMFLOAT3(0, 0, 1);
-  camera.up = XMFLOAT3(0, 1, 0);
-  return camera;
-}
-
 bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_height, const Graphic::GraphicInitProps& props) {
   Shutdown();
   is_shutting_down_ = false;
@@ -161,8 +148,9 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
     scene_rt,
     &hdr_config_,
     &hdr_debug_));
+  auto ui_camera_from_packet = [](const RenderFrameContext&, const FramePacket& packet) { return packet.ui_camera; };
   render_pass_manager_->AddPass(
-    std::make_unique<MaterialPass>("UI Pass", ui_renderer_.get(), RenderLayer::UI, backbuffer_setup, MakeOrthographicCamera));
+    std::make_unique<MaterialPass>("UI Pass", ui_renderer_.get(), RenderLayer::UI, backbuffer_setup, ui_camera_from_packet));
 
   is_initialized_ = true;
   return true;

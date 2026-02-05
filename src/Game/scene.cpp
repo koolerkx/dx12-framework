@@ -1,7 +1,9 @@
 // scene.cpp
 #include "scene.h"
 
+#include "Component/camera_component.h"
 #include "Framework/Logging/logger.h"
+#include "Graphic/graphic.h"
 #include "game_object.h"
 
 IScene::IScene() = default;
@@ -41,7 +43,8 @@ void IScene::Exit() {
   for (auto& obj : game_objects_) {
     obj->DetachFromHierarchy();
   }
-  active_camera_ = nullptr;
+  camera_setting_.Clear();
+  ui_camera_setting_.Clear();
 
   game_objects_.clear();
   is_started_ = false;
@@ -62,8 +65,9 @@ void IScene::FixedUpdate(float dt) {
 }
 
 void IScene::Render(FramePacket& packet) {
-  if (active_camera_) {
-    packet.main_camera = active_camera_->GetCameraData();
+  auto* active_camera = camera_setting_.GetActive();
+  if (active_camera) {
+    packet.main_camera = active_camera->GetCameraData();
   } else {
     Logger::LogFormat(LogLevel::Warn, LogCategory::Game, Logger::Here(), "[IScene::Render] No active camera, using default setting");
 
@@ -76,6 +80,15 @@ void IScene::Render(FramePacket& packet) {
     default_camera.forward = XMFLOAT3(0, 0, 1);
     default_camera.up = XMFLOAT3(0, 1, 0);
     packet.main_camera = default_camera;
+  }
+
+  auto* ui_camera = ui_camera_setting_.GetActive();
+  if (ui_camera) {
+    packet.ui_camera = ui_camera->GetCameraData();
+  } else if (context_ && context_->GetGraphic()) {
+    auto* gfx = context_->GetGraphic();
+    packet.ui_camera =
+      MakeScreenSpaceCamera(static_cast<float>(gfx->GetFrameBufferWidth()), static_cast<float>(gfx->GetFrameBufferHeight()));
   }
 
   RenderRootObjects(packet);
@@ -120,9 +133,8 @@ void IScene::CleanupDestroyedObjects() {
     // Detach pending-destroy objects while all are still alive
     for (auto& obj : game_objects_) {
       if (obj->IsPendingDestroy()) {
-        if (active_camera_ && active_camera_->GetOwner() == obj.get()) {
-          active_camera_ = nullptr;
-        }
+        camera_setting_.RemoveCamerasOwnedBy(obj.get());
+        ui_camera_setting_.RemoveCamerasOwnedBy(obj.get());
         obj->DetachFromHierarchy();
       }
     }
