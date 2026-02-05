@@ -1,5 +1,4 @@
 #pragma once
-#include "Frame/draw_command.h"
 #include "Frame/frame_packet.h"
 #include "Frame/render_frame_context.h"
 #include "render_pass.h"
@@ -15,10 +14,6 @@ class DebugPass : public IRenderPass {
 
   const char* GetName() const override {
     return "Debug Pass";
-  }
-
-  RenderPassFilter GetFilter() const override {
-    return RenderPassFilter{.target_layer = RenderLayer::Debug, .required_tags = 0, .excluded_tags = 0};
   }
 
  private:

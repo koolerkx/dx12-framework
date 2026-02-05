@@ -2,21 +2,13 @@
 #include <cstdint>
 
 // Mutually exclusive rendering layer
-enum class RenderLayer : uint8_t {
-  Opaque = 0,
-  Transparent = 1,
-  UI = 2,
-  Debug = 3,
-  COUNT
-};
+enum class RenderLayer : uint8_t { Opaque = 0, Transparent = 1, UI = 2, Debug = 3, COUNT };
 
 // Combinable render tags (bitmask)
 enum class RenderTag : uint32_t {
   None = 0,
   CastShadow = 1 << 0,
   ReceiveShadow = 1 << 1,
-  Outline = 1 << 2,
-  Glow = 1 << 3,
 };
 
 using RenderTagMask = uint32_t;

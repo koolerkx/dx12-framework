@@ -17,11 +17,7 @@ class UiPass : public IRenderPass {
     return "UI Pass";
   }
 
-  RenderPassFilter GetFilter() const override {
-    return RenderPassFilter{.target_layer = RenderLayer::UI, .required_tags = 0, .excluded_tags = 0};
-  }
-
  private:
   UiRenderer* ui_renderer_;
-  std::vector<RenderCommand> command_cache_;
+  std::vector<DrawCommand> command_cache_;
 };

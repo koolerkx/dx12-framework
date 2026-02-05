@@ -94,8 +94,7 @@ using DrawCommandVariant = std::variant<SingleDrawCommand, InstanceDrawCommand>;
 struct FramePacket {
   CameraData main_camera;
 
-  // NEW: Unified command storage
-  std::vector<RenderCommand> commands;
+  std::vector<DrawCommand> commands;
 
   // DEPRECATED: Keep for backward compatibility during migration
   std::vector<DrawCommandVariant> opaque_pass;
@@ -109,7 +108,7 @@ struct FramePacket {
     ui_pass.clear();
   }
 
-  void AddCommand(RenderLayer layer, DrawCommand cmd, RenderTagMask tags = 0) {
-    commands.emplace_back(RenderCommand{std::move(cmd), layer, tags});
+  void AddCommand(DrawCommand cmd) {
+    commands.emplace_back(std::move(cmd));
   }
 };

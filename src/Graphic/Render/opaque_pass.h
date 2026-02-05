@@ -17,12 +17,8 @@ class OpaquePass : public IRenderPass {
     return "Opaque Pass";
   }
 
-  RenderPassFilter GetFilter() const override {
-    return RenderPassFilter{.target_layer = RenderLayer::Opaque, .required_tags = 0, .excluded_tags = 0};
-  }
-
  private:
   OpaqueRenderer* opaque_renderer_;
-  std::vector<RenderCommand> command_cache_;
+  std::vector<DrawCommand> command_cache_;
   std::vector<DrawCommandVariant> legacy_cache_;
 };

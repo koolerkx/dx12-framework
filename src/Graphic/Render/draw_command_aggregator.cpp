@@ -2,58 +2,44 @@
 
 #include <unordered_map>
 
-std::vector<RenderCommand> DrawCommandAggregator::Aggregate(const std::vector<RenderCommand>& input) {
-  std::vector<RenderCommand> output;
+std::vector<DrawCommand> DrawCommandAggregator::Aggregate(const std::vector<DrawCommand>& input) {
+  std::vector<DrawCommand> output;
   output.reserve(input.size());
 
-  // Group commands by aggregation key
-  std::unordered_map<AggregationKey, std::vector<const RenderCommand*>, AggregationKeyHash> groups;
+  std::unordered_map<AggregationKey, std::vector<const DrawCommand*>, AggregationKeyHash> groups;
 
-  for (const auto& render_cmd : input) {
-    const DrawCommand& cmd = render_cmd.command;
-
-    // Pass through if already instanced or doesn't support instancing
+  for (const auto& cmd : input) {
     if (cmd.IsInstanced() || !SupportsInstancing(cmd.material)) {
-      output.push_back(render_cmd);
+      output.push_back(cmd);
       continue;
     }
 
-    // Group by material + mesh + sampler
     AggregationKey key{.material = cmd.material, .mesh = cmd.mesh, .sampler_index = cmd.material_instance.sampler_index};
-
-    groups[key].push_back(&render_cmd);
+    groups[key].push_back(&cmd);
   }
 
-  // Convert groups to instanced commands
   for (const auto& [key, commands] : groups) {
     if (commands.size() == 1) {
-      // Single command, no need to aggregate
       output.push_back(*commands[0]);
       continue;
     }
 
-    // Create instanced command
-    RenderCommand instanced_cmd;
+    DrawCommand instanced_cmd;
+    instanced_cmd.material = key.material;
+    instanced_cmd.mesh = key.mesh;
+    instanced_cmd.material_instance = commands[0]->material_instance;
     instanced_cmd.layer = commands[0]->layer;
     instanced_cmd.tags = commands[0]->tags;
+    instanced_cmd.instances.reserve(commands.size());
 
-    DrawCommand& draw = instanced_cmd.command;
-    draw.material = key.material;
-    draw.mesh = key.mesh;
-    draw.material_instance = commands[0]->command.material_instance;
-    draw.instances.reserve(commands.size());
-
-    // Aggregate depth (use minimum for front-to-back sorting)
-    float min_depth = commands[0]->command.depth;
+    float min_depth = commands[0]->depth;
 
     for (const auto* cmd_ptr : commands) {
-      const DrawCommand& cmd = cmd_ptr->command;
-      draw.instances.push_back(ConvertToInstance(cmd));
-      min_depth = (std::min)(min_depth, cmd.depth);
+      instanced_cmd.instances.push_back(ConvertToInstance(*cmd_ptr));
+      min_depth = (std::min)(min_depth, cmd_ptr->depth);
     }
 
-    draw.depth = min_depth;
-
+    instanced_cmd.depth = min_depth;
     output.push_back(std::move(instanced_cmd));
   }
 

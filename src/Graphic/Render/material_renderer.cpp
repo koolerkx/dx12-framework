@@ -2,6 +2,7 @@
 
 #include <DirectXMath.h>
 
+#include <bit>
 #include <type_traits>
 
 #include "Command/render_command_list.h"
@@ -11,11 +12,53 @@
 using namespace DirectX;
 
 // ============================================================================
-// NEW: Unified Command Recording
+// Sort Key
+// ============================================================================
+
+namespace SortKey {
+
+uint64_t MaterialFirst(const DrawCommand& cmd, bool front_to_back) {
+  if (!cmd.material) {
+    return UINT64_MAX;
+  }
+
+  uint32_t rs_key = cmd.material->GetRootSignatureKey() & 0xFFFF;
+  uint32_t pso_key = cmd.material->GetPSOKey() & 0xFFFF;
+  uint64_t compressed_material = (static_cast<uint64_t>(rs_key) << 48) | (static_cast<uint64_t>(pso_key) << 32);
+
+  uint32_t depth_key = std::bit_cast<uint32_t>(cmd.depth);
+  if (!front_to_back) {
+    depth_key = ~depth_key;
+  }
+
+  return compressed_material | depth_key;
+}
+
+uint64_t DepthFirst(const DrawCommand& cmd, bool front_to_back) {
+  if (!cmd.material) {
+    return UINT64_MAX;
+  }
+
+  uint32_t depth_key = std::bit_cast<uint32_t>(cmd.depth);
+  if (!front_to_back) {
+    depth_key = ~depth_key;
+  }
+
+  uint32_t rs_key = cmd.material->GetRootSignatureKey() & 0xFFFF;
+  uint32_t pso_key = cmd.material->GetPSOKey() & 0xFFFF;
+  uint64_t material_key = (static_cast<uint64_t>(rs_key) << 16) | static_cast<uint64_t>(pso_key);
+
+  return (static_cast<uint64_t>(depth_key) << 32) | material_key;
+}
+
+}  // namespace SortKey
+
+// ============================================================================
+// Unified Command Recording
 // ============================================================================
 
 void MaterialRenderer::Record(const RenderFrameContext& frame,
-  const std::vector<RenderCommand>& commands,
+  const std::vector<DrawCommand>& commands,
   const CameraData& camera,
   uint32_t screen_width,
   uint32_t screen_height) {
@@ -25,10 +68,9 @@ void MaterialRenderer::Record(const RenderFrameContext& frame,
 
   // Find first valid material to initialize the root signature
   const Material* first_material = nullptr;
-  for (const auto& render_cmd : commands) {
-    const Material* mat = render_cmd.command.material;
-    if (mat && mat->IsValid()) {
-      first_material = mat;
+  for (const auto& draw_cmd : commands) {
+    if (draw_cmd.material && draw_cmd.material->IsValid()) {
+      first_material = draw_cmd.material;
       break;
     }
   }
@@ -67,10 +109,7 @@ void MaterialRenderer::Record(const RenderFrameContext& frame,
   // Track current material to minimize PSO switches
   const Material* current_material = first_material;
 
-  // Render commands with material batching
-  for (const auto& render_cmd : commands) {
-    const DrawCommand& draw_cmd = render_cmd.command;
-
+  for (const auto& draw_cmd : commands) {
     if (!draw_cmd.material || !draw_cmd.material->IsValid()) {
       continue;
     }
@@ -78,13 +117,11 @@ void MaterialRenderer::Record(const RenderFrameContext& frame,
       continue;
     }
 
-    // Only switch material if it changed (PSO switch optimization)
     if (current_material != draw_cmd.material) {
       cmd.SetMaterial(draw_cmd.material);
       current_material = draw_cmd.material;
     }
 
-    // Dispatch based on IsInstanced()
     if (draw_cmd.IsInstanced()) {
       RecordInstanced(cmd, draw_cmd);
     } else {

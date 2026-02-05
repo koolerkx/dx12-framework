@@ -5,8 +5,7 @@
 
 class DrawCommandAggregator {
  public:
-  // Aggregate compatible commands into instanced batches
-  static std::vector<RenderCommand> Aggregate(const std::vector<RenderCommand>& input);
+  static std::vector<DrawCommand> Aggregate(const std::vector<DrawCommand>& input);
 
  private:
   struct AggregationKey {

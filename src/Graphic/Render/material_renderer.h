@@ -14,6 +14,13 @@
 // Forward declarations
 class RenderCommandList;
 
+namespace SortKey {
+// Key: [RS hash 16-bit | PSO hash 16-bit | Depth 32-bit]
+[[nodiscard]] uint64_t MaterialFirst(const DrawCommand& cmd, bool front_to_back);
+// Key: [Depth 32-bit | RS hash 16-bit | PSO hash 16-bit]
+[[nodiscard]] uint64_t DepthFirst(const DrawCommand& cmd, bool front_to_back);
+}  // namespace SortKey
+
 // Helper for extracting sort key from DrawCommandVariant (DEPRECATED)
 struct DrawCommandVariantSorter {
   static uint64_t GetSortKey(const DrawCommandVariant& variant, bool front_to_back, bool depth_first = false) {
@@ -22,18 +29,15 @@ struct DrawCommandVariantSorter {
   }
 };
 
-// Base renderer with material-based sorting
 class MaterialRenderer {
  public:
   MaterialRenderer() = default;
   virtual ~MaterialRenderer() = default;
 
-  // NEW: Build with filter from unified commands
-  virtual void Build(const FramePacket& packet, const RenderPassFilter& filter, std::vector<RenderCommand>& out_commands) = 0;
+  virtual void Build(const FramePacket& packet, RenderLayer target_layer, std::vector<DrawCommand>& out_commands) = 0;
 
-  // NEW: Record with unified commands
   virtual void Record(const RenderFrameContext& frame,
-    const std::vector<RenderCommand>& commands,
+    const std::vector<DrawCommand>& commands,
     const CameraData& camera,
     uint32_t screen_width,
     uint32_t screen_height);
@@ -49,13 +53,10 @@ class MaterialRenderer {
     uint32_t screen_height);
 
  protected:
-  // NEW: Sort RenderCommand list
-  void SortCommands(std::vector<RenderCommand>& commands, bool front_to_back = true, bool depth_first = false) {
-    std::sort(commands.begin(), commands.end(), [&](const RenderCommand& a, const RenderCommand& b) -> bool {
-      uint64_t a_key = a.command.GetSortKey(front_to_back, depth_first);
-      uint64_t b_key = b.command.GetSortKey(front_to_back, depth_first);
-      return a_key < b_key;
-    });
+  static void FilterCommands(const FramePacket& packet, RenderLayer target_layer, std::vector<DrawCommand>& out) {
+    for (const auto& cmd : packet.commands) {
+      if (cmd.layer == target_layer) out.push_back(cmd);
+    }
   }
 
   // DEPRECATED: Sort DrawCommandVariant list
@@ -68,7 +69,6 @@ class MaterialRenderer {
   }
 
  private:
-  // NEW: Recording methods for unified DrawCommand
   void RecordSingle(RenderCommandList& cmd, const DrawCommand& draw_cmd, const DirectX::XMMATRIX& view_proj);
   void RecordInstanced(RenderCommandList& cmd, const DrawCommand& draw_cmd);
 
@@ -77,26 +77,17 @@ class MaterialRenderer {
   void RecordInstanceLegacy(RenderCommandList& cmd, const InstanceDrawCommand& draw_cmd);
 };
 
-// Opaque renderer (for solid 3D objects)
 class OpaqueRenderer : public MaterialRenderer {
  public:
   OpaqueRenderer() = default;
 
-  void Build(const FramePacket& packet, const RenderPassFilter& filter, std::vector<RenderCommand>& out_commands) override {
+  void Build(const FramePacket& packet, RenderLayer target_layer, std::vector<DrawCommand>& out_commands) override {
     out_commands.clear();
-
-    // Filter commands by layer/tag
-    for (const auto& cmd : packet.commands) {
-      if (filter.Matches(cmd)) {
-        out_commands.push_back(cmd);
-      }
-    }
-
-    // Aggregate compatible commands
+    FilterCommands(packet, target_layer, out_commands);
     out_commands = DrawCommandAggregator::Aggregate(out_commands);
-
-    // Sort front-to-back for better depth testing
-    SortCommands(out_commands, true);
+    std::sort(out_commands.begin(), out_commands.end(), [](const DrawCommand& a, const DrawCommand& b) {
+      return SortKey::MaterialFirst(a, true) < SortKey::MaterialFirst(b, true);
+    });
   }
 
   void BuildLegacy(const FramePacket& packet, std::vector<DrawCommandVariant>& out_commands) override {
@@ -106,24 +97,16 @@ class OpaqueRenderer : public MaterialRenderer {
   }
 };
 
-// Transparent renderer (for alpha-blended objects)
 class TransparentRenderer : public MaterialRenderer {
  public:
   TransparentRenderer() = default;
 
-  void Build(const FramePacket& packet, const RenderPassFilter& filter, std::vector<RenderCommand>& out_commands) override {
+  void Build(const FramePacket& packet, RenderLayer target_layer, std::vector<DrawCommand>& out_commands) override {
     out_commands.clear();
-
-    // Filter commands by layer/tag
-    for (const auto& cmd : packet.commands) {
-      if (filter.Matches(cmd)) {
-        out_commands.push_back(cmd);
-      }
-    }
-
-    // Skip aggregation for transparent pass (depth order matters)
-    // Sort back-to-front for correct alpha blending
-    SortCommands(out_commands, false, true);
+    FilterCommands(packet, target_layer, out_commands);
+    std::sort(out_commands.begin(), out_commands.end(), [](const DrawCommand& a, const DrawCommand& b) {
+      return SortKey::DepthFirst(a, false) < SortKey::DepthFirst(b, false);
+    });
   }
 
   void BuildLegacy(const FramePacket& packet, std::vector<DrawCommandVariant>& out_commands) override {
@@ -133,26 +116,17 @@ class TransparentRenderer : public MaterialRenderer {
   }
 };
 
-// UI renderer (for sprites, 2D elements)
 class UiRenderer : public MaterialRenderer {
  public:
   UiRenderer() = default;
 
-  void Build(const FramePacket& packet, const RenderPassFilter& filter, std::vector<RenderCommand>& out_commands) override {
+  void Build(const FramePacket& packet, RenderLayer target_layer, std::vector<DrawCommand>& out_commands) override {
     out_commands.clear();
-
-    // Filter commands by layer/tag
-    for (const auto& cmd : packet.commands) {
-      if (filter.Matches(cmd)) {
-        out_commands.push_back(cmd);
-      }
-    }
-
-    // Aggregate compatible commands for UI (same layer_id can batch)
+    FilterCommands(packet, target_layer, out_commands);
     out_commands = DrawCommandAggregator::Aggregate(out_commands);
-
-    // Sort back-to-front for correct UI layering
-    SortCommands(out_commands, false);
+    std::sort(out_commands.begin(), out_commands.end(), [](const DrawCommand& a, const DrawCommand& b) {
+      return SortKey::MaterialFirst(a, false) < SortKey::MaterialFirst(b, false);
+    });
   }
 
   void BuildLegacy(const FramePacket& packet, std::vector<DrawCommandVariant>& out_commands) override {

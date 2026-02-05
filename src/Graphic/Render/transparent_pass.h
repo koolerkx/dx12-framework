@@ -17,11 +17,7 @@ class TransparentPass : public IRenderPass {
     return "Transparent Pass";
   }
 
-  RenderPassFilter GetFilter() const override {
-    return RenderPassFilter{.target_layer = RenderLayer::Transparent, .required_tags = 0, .excluded_tags = 0};
-  }
-
  private:
   TransparentRenderer* transparent_renderer_;
-  std::vector<RenderCommand> command_cache_;
+  std::vector<DrawCommand> command_cache_;
 };

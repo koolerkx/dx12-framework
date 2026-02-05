@@ -11,10 +11,6 @@ class IRenderPass {
 
   virtual const char* GetName() const = 0;
 
-  // Get filter for this pass (used by unified command system)
-  virtual RenderPassFilter GetFilter() const = 0;
-
-  // Optional callbacks for state transitions before/after pass execution
   virtual void PreExecute(const RenderFrameContext& frame, const FramePacket& packet) {
     (void)frame;
     (void)packet;

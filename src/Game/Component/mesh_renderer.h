@@ -80,8 +80,9 @@ class MeshRenderer : public Component<MeshRenderer> {
     DirectX::XMVECTOR camVec = XMLoadFloat3(&camPos);
     cmd.depth = DirectX::XMVectorGetX(DirectX::XMVector3LengthSq(DirectX::XMVectorSubtract(worldVec, camVec)));
 
-    // Use new unified command system
-    packet.AddCommand(render_layer_, std::move(cmd), render_tags_);
+    cmd.layer = render_layer_;
+    cmd.tags = render_tags_;
+    packet.AddCommand(std::move(cmd));
 
     // DEPRECATED: Also push to old system for backward compatibility
     SingleDrawCommand old_cmd;

@@ -113,9 +113,10 @@ void TextRenderer::OnRender(FramePacket& packet) {
       cmd.instances.push_back(instance);
     }
 
-    // Push to new unified command system
     if (!cmd.instances.empty()) {
-      packet.AddCommand(render_layer_, std::move(cmd), render_tags_);
+      cmd.layer = render_layer_;
+      cmd.tags = render_tags_;
+      packet.AddCommand(std::move(cmd));
 
       // DEPRECATED: Also push to old system for backward compatibility
       InstanceDrawCommand old_cmd;
@@ -195,9 +196,10 @@ void TextRenderer::OnRender(FramePacket& packet) {
       cmd.instances.push_back(instance);
     }
 
-    // Push to new unified command system
     if (!cmd.instances.empty()) {
-      packet.AddCommand(render_layer_, std::move(cmd), render_tags_);
+      cmd.layer = render_layer_;
+      cmd.tags = render_tags_;
+      packet.AddCommand(std::move(cmd));
 
       // DEPRECATED: Also push to old system for backward compatibility
       InstanceDrawCommand old_cmd;

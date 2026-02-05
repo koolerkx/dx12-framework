@@ -63,7 +63,6 @@ add_library(graphic STATIC
     Frame/camera_data.h
     Frame/render_layer.h
     Frame/draw_command.h
-    Frame/draw_command.cpp
 
     Command/buffer.h
     Command/command_context.h
