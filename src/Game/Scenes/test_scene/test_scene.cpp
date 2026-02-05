@@ -89,7 +89,7 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   auto* additive_sprite = additive_->AddComponent<SpriteRenderer>();
   additive_sprite->SetTexture(texture_additive_.Get());
   additive_sprite->SetSize({1.0f, 1.0f});
-  additive_sprite->SetRenderPassTag(RenderPassTag::WorldTransparent);
+  additive_sprite->SetRenderLayer(RenderLayer::Transparent);
   additive_sprite->SetBillboardMode(Billboard::Mode::Spherical);
   additive_sprite->SetBlendMode(Rendering::BlendMode::Additive);
   additive_sprite->SetColor({0.0f, 1.0f, 0.0f, 0.5f});
@@ -104,7 +104,7 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   auto* bg_renderer = animated_bg_object_->AddComponent<SpriteRenderer>();
   bg_renderer->SetTexture(texture_ao_.Get());
   bg_renderer->SetSize({15.0f, 15.0f});  // Full frame size
-  bg_renderer->SetRenderPassTag(RenderPassTag::WorldTransparent);
+  bg_renderer->SetRenderLayer(RenderLayer::Transparent);
   bg_renderer->SetPivot(Pivot::Preset::Bottom);
   bg_renderer->SetDoubleSided(true);
   bg_renderer->SetBillboardMode(Billboard::Mode::None);
@@ -146,7 +146,7 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
     text->SetPivot(Pivot::Preset::Center);
 
     // Set as UI element
-    text->SetRenderPassTag(RenderPassTag::Ui);
+    text->SetRenderLayer(RenderLayer::UI);
     text->SetLayerId(100);  // Higher layer = rendered later
     Logger::LogFormat(LogLevel::Info, LogCategory::Game, Logger::Here(), "UI Text size: {} x {}", text->GetSize().x, text->GetSize().y);
   }
@@ -165,7 +165,7 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   text2->SetFont(Font::FontFamily::ZenOldMincho);
   text2->SetPixelSize(1.0f);
   text2->SetColor({1.0f, 1.0f, 1.0f, 1.0f});
-  text2->SetRenderPassTag(RenderPassTag::WorldTransparent);  // Use transparent for alpha blending
+  text2->SetRenderLayer(RenderLayer::Transparent);  // Use transparent for alpha blending
   text2->SetBillboardMode(Billboard::Mode::None);
   // text2->SetBlendMode(Rendering::BlendMode::AlphaBlend);
 

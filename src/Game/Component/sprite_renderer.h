@@ -14,24 +14,6 @@ class SpriteRenderer : public Component<SpriteRenderer> {
   SpriteRenderer(GameObject* owner) : Component(owner) {
   }
 
-  void SetRenderPassTag(RenderPassTag tag) {
-    pass_tag_ = tag;
-
-    switch (tag) {
-      case RenderPassTag::Ui:
-        render_settings_ = Rendering::RenderSettings::UI();
-        break;
-      case RenderPassTag::WorldOpaque:
-        render_settings_ = Rendering::RenderSettings::Opaque();
-        break;
-      case RenderPassTag::WorldTransparent:
-        render_settings_ = Rendering::RenderSettings::Transparent();
-        break;
-      default:
-        break;
-    }
-  }
-
   void SetTexture(Texture* tex) {
     texture_ = tex;
   }
@@ -45,10 +27,24 @@ class SpriteRenderer : public Component<SpriteRenderer> {
     layer_id_ = id;
   }
 
-  // Layer/Tag API
   void SetRenderLayer(RenderLayer layer) {
     render_layer_ = layer;
+
+    switch (layer) {
+      case RenderLayer::UI:
+        render_settings_ = Rendering::RenderSettings::UI();
+        break;
+      case RenderLayer::Opaque:
+        render_settings_ = Rendering::RenderSettings::Opaque();
+        break;
+      case RenderLayer::Transparent:
+        render_settings_ = Rendering::RenderSettings::Transparent();
+        break;
+      default:
+        break;
+    }
   }
+
   void SetRenderTags(RenderTagMask tags) {
     render_tags_ = tags;
   }
@@ -56,7 +52,6 @@ class SpriteRenderer : public Component<SpriteRenderer> {
     render_tags_ |= static_cast<uint32_t>(tag);
   }
 
-  // Render settings API
   void SetBlendMode(Rendering::BlendMode mode) {
     render_settings_.blend_mode = mode;
   }
@@ -76,7 +71,6 @@ class SpriteRenderer : public Component<SpriteRenderer> {
     return render_settings_;
   }
 
-  // Billboard mode API
   void SetBillboardMode(Billboard::Mode mode) {
     billboard_mode_ = mode;
   }
@@ -84,15 +78,13 @@ class SpriteRenderer : public Component<SpriteRenderer> {
     return billboard_mode_;
   }
 
-  // Pivot API
-  // UI Must start from top-left, this not support UI Pass
+  // UI must start from top-left, pivot not supported for UI layer
   void SetPivot(Pivot::Preset preset);
   void SetPivot(const Pivot::Config& config);
   const Pivot::Config& GetPivot() const {
     return pivot_;
   }
 
-  // UV API
   void SetUVOffset(const DirectX::XMFLOAT2& offset) {
     uv_offset_ = offset;
   }
@@ -119,12 +111,10 @@ class SpriteRenderer : public Component<SpriteRenderer> {
   DirectX::XMFLOAT2 uv_scale_ = {1.0f, 1.0f};
   int layer_id_ = 0;
 
-  RenderPassTag pass_tag_ = RenderPassTag::Ui;
   Rendering::RenderSettings render_settings_ = Rendering::RenderSettings::UI();
   Billboard::Mode billboard_mode_ = Billboard::Mode::None;
   Pivot::Config pivot_;
 
-  // New layer/tag system
   RenderLayer render_layer_ = RenderLayer::UI;
   RenderTagMask render_tags_ = 0;
 };

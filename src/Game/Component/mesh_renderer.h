@@ -40,7 +40,6 @@ class MeshRenderer : public Component<MeshRenderer> {
     shader_id_ = ShaderType::ID;
   }
 
-  // Layer/Tag API
   void SetRenderLayer(RenderLayer layer) {
     render_layer_ = layer;
   }
@@ -83,16 +82,6 @@ class MeshRenderer : public Component<MeshRenderer> {
     cmd.layer = render_layer_;
     cmd.tags = render_tags_;
     packet.AddCommand(std::move(cmd));
-
-    // DEPRECATED: Also push to old system for backward compatibility
-    SingleDrawCommand old_cmd;
-    old_cmd.mesh = cmd.mesh;
-    old_cmd.material = cmd.material;
-    old_cmd.material_instance = cmd.material_instance;
-    old_cmd.world_matrix = cmd.world_matrix;
-    old_cmd.color = cmd.color;
-    old_cmd.depth = cmd.depth;
-    packet.opaque_pass.emplace_back(old_cmd);
   }
 
  private:
@@ -102,7 +91,6 @@ class MeshRenderer : public Component<MeshRenderer> {
   Rendering::RenderSettings render_settings_ = Rendering::RenderSettings::Opaque();
   DirectX::XMFLOAT4 color_ = {1.0f, 1.0f, 1.0f, 1.0f};
 
-  // New layer/tag system
   RenderLayer render_layer_ = RenderLayer::Opaque;
   RenderTagMask render_tags_ = 0;
 };

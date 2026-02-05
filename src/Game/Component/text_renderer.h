@@ -14,13 +14,10 @@
 #include "game_object.h"
 
 class TextRenderer : public Component<TextRenderer> {
-  // Position using transform component, always at left side component
-
  public:
   TextRenderer(GameObject* owner) : Component(owner) {
   }
 
-  // Text Content
   void SetText(const std::wstring& text) {
     if (text_ != text) {
       text_ = text;
@@ -32,7 +29,6 @@ class TextRenderer : public Component<TextRenderer> {
     return text_;
   }
 
-  // Font Properties
   void SetFont(Font::FontFamily family) {
     if (font_family_ != family) {
       font_family_ = family;
@@ -51,8 +47,6 @@ class TextRenderer : public Component<TextRenderer> {
     color_ = color;
   }
 
-  // Layout Properties
-  // Text Layout
   void SetHorizontalAlign(Text::HorizontalAlign align) {
     if (h_align_ != align) {
       h_align_ = align;
@@ -60,7 +54,6 @@ class TextRenderer : public Component<TextRenderer> {
     }
   }
 
-  // Pivot point to transform component
   void SetVerticalAlign(Text::VerticalAlign align) {
     if (v_align_ != align) {
       v_align_ = align;
@@ -89,19 +82,17 @@ class TextRenderer : public Component<TextRenderer> {
     }
   }
 
-  // Render Properties
-  // This will override render settings
-  void SetRenderPassTag(RenderPassTag tag) {
-    pass_tag_ = tag;
+  void SetRenderLayer(RenderLayer layer) {
+    render_layer_ = layer;
 
-    switch (tag) {
-      case RenderPassTag::Ui:
+    switch (layer) {
+      case RenderLayer::UI:
         render_settings_ = Rendering::RenderSettings::UI();
         break;
-      case RenderPassTag::WorldOpaque:
+      case RenderLayer::Opaque:
         render_settings_ = Rendering::RenderSettings::Opaque();
         break;
-      case RenderPassTag::WorldTransparent:
+      case RenderLayer::Transparent:
         render_settings_ = Rendering::RenderSettings::Transparent();
         break;
       default:
@@ -116,10 +107,6 @@ class TextRenderer : public Component<TextRenderer> {
     layer_id_ = id;
   }
 
-  // Layer/Tag API
-  void SetRenderLayer(RenderLayer layer) {
-    render_layer_ = layer;
-  }
   void SetRenderTags(RenderTagMask tags) {
     render_tags_ = tags;
   }
@@ -127,7 +114,6 @@ class TextRenderer : public Component<TextRenderer> {
     render_tags_ |= static_cast<uint32_t>(tag);
   }
 
-  // Render Settings API
   void SetBlendMode(Rendering::BlendMode mode) {
     render_settings_.blend_mode = mode;
   }
@@ -147,7 +133,6 @@ class TextRenderer : public Component<TextRenderer> {
     return render_settings_;
   }
 
-  // Billboard mode API
   void SetBillboardMode(Billboard::Mode mode) {
     billboard_mode_ = mode;
   }
@@ -155,7 +140,6 @@ class TextRenderer : public Component<TextRenderer> {
     return billboard_mode_;
   }
 
-  // Pivot API
   // Note: SetHorizontalAlign controls multi-line text layout alignment (per-line)
   //       SetVerticalAlign controls text baseline position (entire block)
   //       SetPivot controls transform origin point (where the object rotates around)
@@ -165,14 +149,12 @@ class TextRenderer : public Component<TextRenderer> {
     return pivot_;
   }
 
-  // Query
   DirectX::XMFLOAT2 GetSize() const {
     return DirectX::XMFLOAT2(text_mesh_handle_.GetWidth(), text_mesh_handle_.GetHeight());
   }
 
   DirectX::XMMATRIX GetBillboardWorldMatrix(const CameraData& camera) const;
 
-  // Rendering
   void OnRender(FramePacket& packet) override;
 
  private:
@@ -180,32 +162,26 @@ class TextRenderer : public Component<TextRenderer> {
   DirectX::XMMATRIX CalculateBaseWorldMatrix(TransformComponent* transform, const CameraData& camera) const;
 
  private:
-  // Text properties
   std::wstring text_;
   Font::FontFamily font_family_ = Font::FontFamily::ZenOldMincho;
   float pixel_size_ = 16.0f;
   DirectX::XMFLOAT4 color_ = {1.0f, 1.0f, 1.0f, 1.0f};
 
-  // Layout properties
   Text::HorizontalAlign h_align_ = Text::HorizontalAlign::Left;
   Text::VerticalAlign v_align_ = Text::VerticalAlign::Baseline;
   float line_spacing_ = 0.0f;
   float letter_spacing_ = 0.0f;
   bool use_kerning_ = true;
 
-  // Render properties
-  RenderPassTag pass_tag_ = RenderPassTag::Ui;
   int layer_id_ = 0;
   Rendering::RenderSettings render_settings_ = Rendering::RenderSettings::UI();
 
-  // Cached text mesh (managed by AssetManager)
   bool dirty_ = true;
   TextMeshHandle text_mesh_handle_;
 
   Billboard::Mode billboard_mode_ = Billboard::Mode::None;
   Pivot::Config pivot_;
 
-  // New layer/tag system
   RenderLayer render_layer_ = RenderLayer::UI;
   RenderTagMask render_tags_ = 0;
 };

@@ -4,7 +4,6 @@
 #include "Render/ui_pass.h"
 
 void RenderPassManager::Execute(const RenderFrameContext& frame, const FramePacket& packet) {
-  // Legacy: Execute all passes for backward compatibility
   ExecuteScenePasses(frame, packet);
   ExecuteUiPass(frame, packet);
 }

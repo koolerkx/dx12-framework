@@ -20,5 +20,4 @@ class OpaquePass : public IRenderPass {
  private:
   OpaqueRenderer* opaque_renderer_;
   std::vector<DrawCommand> command_cache_;
-  std::vector<DrawCommandVariant> legacy_cache_;
 };
