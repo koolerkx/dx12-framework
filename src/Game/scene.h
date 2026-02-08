@@ -5,6 +5,7 @@
 #include "Graphic/Frame/frame_packet.h"
 #include "SceneSetting/active_camera_setting.h"
 #include "SceneSetting/active_ui_camera_setting.h"
+#include "SceneSetting/background_setting.h"
 #include "game_context.h"
 #include "game_object.h"
 
@@ -59,12 +60,20 @@ class IScene {
   const ActiveUICameraSetting& GetUICameraSetting() const {
     return ui_camera_setting_;
   }
+  BackgroundSetting& GetBackgroundSetting() {
+    return background_setting_;
+  }
+  const BackgroundSetting& GetBackgroundSetting() const {
+    return background_setting_;
+  }
 
  protected:
   GameObject* CreateGameObject(const std::string& name = "GameObject");
 
  public:
-  const std::vector<std::unique_ptr<GameObject>>& GetGameObjects() const { return game_objects_; }
+  const std::vector<std::unique_ptr<GameObject>>& GetGameObjects() const {
+    return game_objects_;
+  }
 
   void DestroyGameObject(GameObject* obj);
 
@@ -72,6 +81,7 @@ class IScene {
   std::vector<std::unique_ptr<GameObject>> game_objects_;
   ActiveCameraSetting camera_setting_;
   ActiveUICameraSetting ui_camera_setting_;
+  BackgroundSetting background_setting_;
   bool is_started_ = false;
 
   GameContext* context_ = nullptr;

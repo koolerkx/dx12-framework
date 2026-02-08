@@ -30,6 +30,8 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   texture_ao_ = asset_manager.LoadTexture("Content/textures/metal_plate_ao_1k.png");
   texture_additive_ = asset_manager.LoadTexture("Content/textures/sun_additive.png");
 
+  GetBackgroundSetting().SetSkybox("Content/skybox/sunflowers_puresky_standard_cubemap_4k.hdr", asset_manager);
+
   SetupCamera();
 
   terrain_plane_ = CreateGameObject("TerrainPlane");
@@ -191,8 +193,7 @@ void TestScene::OnRender(FramePacket& /* packet */) {
   pivot_axis.length = 1.0f;
   debug_drawer->DrawAxisGizmo(pivot_axis);
 
-  auto pivot_world = pivot_cube_->GetComponent<TransformComponent>()->GetWorldMatrix()
-                         .TransformPoint({0.5f, 0.0f, 0.0f});
+  auto pivot_world = pivot_cube_->GetComponent<TransformComponent>()->GetWorldMatrix().TransformPoint({0.5f, 0.0f, 0.0f});
   debug_drawer->DrawSphere(pivot_world, 0.1f, colors::Yellow, 16);
 }
 

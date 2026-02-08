@@ -15,6 +15,7 @@
 #include "Presentation/swapchain_manager.h"
 #include "Render/debug_pass.h"
 #include "Render/material_pass.h"
+#include "Render/skybox_pass.h"
 #include "Render/tone_map_pass.h"
 
 using Math::Vector3;
@@ -138,6 +139,7 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
   tonemap_setup.color_targets = {{nullptr}};
   tonemap_setup.shader_inputs = {scene_rt};
 
+  render_pass_manager_->AddPass(std::make_unique<SkyboxPass>(device_.Get(), &render_services_->GetShaderManager(), scene_setup));
   render_pass_manager_->AddPass(std::make_unique<MaterialPass>("Opaque Pass", opaque_renderer_.get(), RenderLayer::Opaque, scene_setup));
   render_pass_manager_->AddPass(
     std::make_unique<MaterialPass>("Transparent Pass", transparent_renderer_.get(), RenderLayer::Transparent, scene_setup));

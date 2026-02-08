@@ -146,6 +146,21 @@ struct PostProcessToneMapShader {
   }
 };
 
+struct SkyboxShader {
+  static constexpr ShaderId ID = 7;
+  using VertexType = Vertex::SkyboxVertex;
+
+  static constexpr RSPreset RS_PRESET = RSPreset::Standard;
+  static constexpr std::string_view NAME = "Skybox";
+  static constexpr std::wstring_view VS_PATH = L"Content/shaders/skybox.vs.cso";
+  static constexpr std::wstring_view PS_PATH = L"Content/shaders/skybox.ps.cso";
+  static constexpr ShaderRenderHints HINTS = {};
+
+  static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
+    return VertexType::GetInputLayout();
+  }
+};
+
 // Shader Registration
 using AllShaders = std::tuple<SpriteShader,
   SpriteInstancedUIShader,
@@ -153,7 +168,8 @@ using AllShaders = std::tuple<SpriteShader,
   SpriteInstancedWorldTransparentShader,
   Basic3DShader,
   DebugLineShader,
-  PostProcessToneMapShader>;
+  PostProcessToneMapShader,
+  SkyboxShader>;
 
 [[maybe_unused]] constexpr size_t SHADER_COUNT = std::tuple_size_v<AllShaders>;
 

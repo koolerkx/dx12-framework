@@ -62,6 +62,11 @@ class TextureManager {
     return LoadTexture(utils::utf8_to_wstring(path), usage);
   }
 
+  std::shared_ptr<Texture> LoadCubemapFromCrossHDR(const std::wstring& path);
+  std::shared_ptr<Texture> LoadCubemapFromCrossHDR(const std::string& path) {
+    return LoadCubemapFromCrossHDR(utils::utf8_to_wstring(path));
+  }
+
   std::vector<std::shared_ptr<Texture>> LoadTextures(const std::vector<std::wstring>& paths);
   std::vector<std::shared_ptr<Texture>> LoadTextures(const std::vector<std::string>& paths) {
     return LoadTextures(paths | std::views::transform(utils::utf8_to_wstring) | std::ranges::to<std::vector>());
@@ -113,6 +118,7 @@ class TextureManager {
   bool PrepareUpload(const DirectX::ScratchImage& mipChain, ComPtr<ID3D12Resource> texture, UploadInfo& uploadInfo);
 
   uint32_t CreateSrv(ComPtr<ID3D12Resource> texture_buffer);
+  uint32_t CreateCubemapSrv(ComPtr<ID3D12Resource> texture_buffer, DXGI_FORMAT format, uint32_t mip_levels);
 
   struct PendingDelete {
     std::shared_ptr<Texture> texture;  // Keep texture alive

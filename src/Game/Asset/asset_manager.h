@@ -38,6 +38,7 @@ class AssetManager {
 
   // Texture management
   AssetHandle<Texture> LoadTexture(const std::string& path);
+  AssetHandle<Texture> LoadCubemap(const std::string& path);
   std::vector<AssetHandle<Texture>> LoadTextures(const std::vector<std::string>& paths);
 
   // Todo: Model management

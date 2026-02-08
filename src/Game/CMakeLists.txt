@@ -44,6 +44,8 @@ add_library(game STATIC
     SceneSetting/active_camera_setting.cpp
     SceneSetting/active_ui_camera_setting.h
     SceneSetting/active_ui_camera_setting.cpp
+    SceneSetting/background_setting.h
+    SceneSetting/background_setting.cpp
 
     Scripts/free_camera_controller.h
     Scripts/free_camera_controller.cpp

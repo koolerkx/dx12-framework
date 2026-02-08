@@ -40,6 +40,11 @@ AssetHandle<Texture> AssetManager::LoadTexture(const std::string& path) {
   return AssetHandle<Texture>(texture, path);
 }
 
+AssetHandle<Texture> AssetManager::LoadCubemap(const std::string& path) {
+  auto texture = impl_->texture_manager->LoadCubemapFromCrossHDR(path);
+  return AssetHandle<Texture>(texture, path);
+}
+
 std::vector<AssetHandle<Texture>> AssetManager::LoadTextures(const std::vector<std::string>& paths) {
   auto textures = impl_->texture_manager->LoadTextures(paths);
 
@@ -96,7 +101,8 @@ const Mesh* AssetManager::GetDefaultMesh(DefaultMesh type) const {
     return it->second;
   }
 
-  Logger::LogFormat(LogLevel::Error, LogCategory::Game, Logger::Here(), "[AssetManager] Default mesh not found: {}", static_cast<int>(type));
+  Logger::LogFormat(
+    LogLevel::Error, LogCategory::Game, Logger::Here(), "[AssetManager] Default mesh not found: {}", static_cast<int>(type));
   return nullptr;
 }
 

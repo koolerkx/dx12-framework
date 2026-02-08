@@ -90,6 +90,9 @@ add_library(graphic STATIC
 
     Render/tone_map_pass.h
     Render/tone_map_pass.cpp
+
+    Render/skybox_pass.h
+    Render/skybox_pass.cpp
 )
 
 target_link_libraries(graphic PUBLIC framework)
@@ -115,6 +118,8 @@ target_add_hlsl_auto(graphic "6.6"
     "${CMAKE_SOURCE_DIR}/shaders/debug_line.ps.hlsl"
     "${CMAKE_SOURCE_DIR}/shaders/tonemap.vs.hlsl"
     "${CMAKE_SOURCE_DIR}/shaders/tonemap.ps.hlsl"
+    "${CMAKE_SOURCE_DIR}/shaders/skybox.vs.hlsl"
+    "${CMAKE_SOURCE_DIR}/shaders/skybox.ps.hlsl"
 )
 
 # manually add shaders files
