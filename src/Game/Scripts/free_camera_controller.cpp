@@ -81,9 +81,18 @@ void FreeCameraController::ApplyMovement(const InputState& input, float dt) {
   transform->SetPosition(position);
 }
 
+void FreeCameraController::SyncEulerFromTransform(TransformComponent* transform) {
+  Vector3 euler = transform->GetRotation().ToEulerAngles();
+  current_euler_ = {euler.x, euler.y, euler.z};
+}
+
 void FreeCameraController::ApplyRotation(const InputState& input, float dt) {
+  if (input.look_input.x == 0.0f && input.look_input.y == 0.0f) return;
+
   auto* transform = owner_->GetComponent<TransformComponent>();
   if (!transform) return;
+
+  SyncEulerFromTransform(transform);
 
   current_euler_.x += input.look_input.x * rotation_speed_ * dt;
   current_euler_.y += input.look_input.y * rotation_speed_ * dt;

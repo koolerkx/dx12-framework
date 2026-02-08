@@ -6,6 +6,7 @@ using Math::Vector2;
 using Math::Vector3;
 
 class InputSystem;
+class TransformComponent;
 
 class FreeCameraController : public BehaviorComponent<FreeCameraController> {
  public:
@@ -40,6 +41,7 @@ class FreeCameraController : public BehaviorComponent<FreeCameraController> {
   InputState GatherInput(InputSystem* input) const;
   void ApplyMovement(const InputState& input, float dt);
   void ApplyRotation(const InputState& input, float dt);
+  void SyncEulerFromTransform(TransformComponent* transform);
 
  private:
   float movement_speed_ = 10.0f;
