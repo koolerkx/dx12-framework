@@ -8,6 +8,8 @@
 
 [Ll]og
 
+tmp
+
 # shader
 *.cso
 
