@@ -67,6 +67,20 @@ class UISpriteRenderer : public Component<UISpriteRenderer> {
     return ui_pivot_;
   }
 
+  struct EditorData {
+    Vector4 color;
+    Vector2 size;
+    Vector2 pivot;
+    Vector2 uv_offset;
+    Vector2 uv_scale;
+    int layer_id;
+    Rendering::RenderSettings render_settings;
+    RenderTagMask render_tags;
+  };
+
+  EditorData GetEditorData() const;
+  void ApplyEditorData(const EditorData& data);
+
   SpriteSheetAnimator& GetAnimator();
 
   void OnUpdate(float dt) override;

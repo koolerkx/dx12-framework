@@ -94,7 +94,7 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   auto* bg_renderer = animated_bg_object_->AddComponent<SpriteRenderer>();
   bg_renderer->SetTexture(texture_ao_.Get());
   bg_renderer->SetSize({15.0f, 15.0f});
-  bg_renderer->SetPivot(Pivot::Preset::Bottom);
+  bg_renderer->SetPivot(Pivot::Preset::Center);
   bg_renderer->SetDoubleSided(true);
   bg_renderer->SetBillboardMode(Billboard::Mode::None);
   bg_renderer->SetColor({1.0f, 0.0f, 0.0f, 0.5f});

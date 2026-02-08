@@ -87,6 +87,21 @@ class SpriteRenderer : public Component<SpriteRenderer> {
     return uv_scale_;
   }
 
+  struct EditorData {
+    Vector4 color;
+    Vector2 size;
+    Vector2 pivot;
+    Vector2 uv_offset;
+    Vector2 uv_scale;
+    Billboard::Mode billboard_mode;
+    Rendering::RenderSettings render_settings;
+    RenderLayer render_layer;
+    RenderTagMask render_tags;
+  };
+
+  EditorData GetEditorData() const;
+  void ApplyEditorData(const EditorData& data);
+
   SpriteSheetAnimator& GetAnimator();
 
   void OnUpdate(float dt) override;

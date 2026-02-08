@@ -114,6 +114,25 @@ class UITextRenderer : public Component<UITextRenderer> {
     return Vector2(text_mesh_handle_.GetWidth(), text_mesh_handle_.GetHeight());
   }
 
+  struct EditorData {
+    std::wstring text;
+    Font::FontFamily font_family;
+    float pixel_size;
+    Vector4 color;
+    Text::HorizontalAlign h_align;
+    Text::VerticalAlign v_align;
+    float line_spacing;
+    float letter_spacing;
+    bool use_kerning;
+    int layer_id;
+    Vector2 pivot;
+    Rendering::RenderSettings render_settings;
+    RenderTagMask render_tags;
+  };
+
+  EditorData GetEditorData() const;
+  void ApplyEditorData(const EditorData& data);
+
   void OnRender(FramePacket& packet) override;
 
  private:

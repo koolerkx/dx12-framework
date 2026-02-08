@@ -10,6 +10,11 @@ class Graphic;
 class IScene;
 class GameObject;
 class TransformComponent;
+class SpriteRenderer;
+class UISpriteRenderer;
+class TextRenderer;
+class UITextRenderer;
+class MeshRenderer;
 
 class EditorLayer {
  public:
@@ -26,6 +31,11 @@ class EditorLayer {
   void DrawHierarchy();
   void DrawInspector();
   void DrawTransformInspector(TransformComponent* transform);
+  void DrawSpriteRendererInspector(SpriteRenderer* renderer);
+  void DrawUISpriteRendererInspector(UISpriteRenderer* renderer);
+  void DrawTextRendererInspector(TextRenderer* renderer);
+  void DrawUITextRendererInspector(UITextRenderer* renderer);
+  void DrawMeshRendererInspector(MeshRenderer* renderer);
   void DrawGameObjectNode(GameObject* go);
 
   IScene* scene_ = nullptr;

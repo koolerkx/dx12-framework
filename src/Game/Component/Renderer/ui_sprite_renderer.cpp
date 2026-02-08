@@ -17,6 +17,23 @@ void UISpriteRenderer::SetPivot(const Vector2& normalized_pivot) {
   ui_pivot_ = normalized_pivot;
 }
 
+UISpriteRenderer::EditorData UISpriteRenderer::GetEditorData() const {
+  return {color_, size_, ui_pivot_, uv_offset_, uv_scale_,
+          layer_id_, render_settings_, render_tags_};
+}
+
+void UISpriteRenderer::ApplyEditorData(const EditorData& data) {
+  SetColor(data.color);
+  SetSize(data.size);
+  SetPivot(data.pivot);
+  SetUVOffset(data.uv_offset);
+  SetUVScale(data.uv_scale);
+  SetLayerId(data.layer_id);
+  SetBlendMode(data.render_settings.blend_mode);
+  SetSampler(data.render_settings.sampler_type);
+  SetRenderTags(data.render_tags);
+}
+
 SpriteSheetAnimator& UISpriteRenderer::GetAnimator() {
   if (!animator_) {
     animator_.emplace();

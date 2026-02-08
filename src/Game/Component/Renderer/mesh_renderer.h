@@ -56,6 +56,32 @@ class MeshRenderer : public Component<MeshRenderer> {
     return mesh_;
   }
 
+  Texture* GetTexture() const {
+    return texture_;
+  }
+
+  Graphics::ShaderId GetShaderId() const {
+    return shader_id_;
+  }
+
+  struct EditorData {
+    Vector4 color;
+    Rendering::RenderSettings render_settings;
+    RenderLayer render_layer;
+    RenderTagMask render_tags;
+  };
+
+  EditorData GetEditorData() const {
+    return {color_, render_settings_, render_layer_, render_tags_};
+  }
+
+  void ApplyEditorData(const EditorData& data) {
+    color_ = data.color;
+    render_settings_ = data.render_settings;
+    render_layer_ = data.render_layer;
+    render_tags_ = data.render_tags;
+  }
+
   void OnRender(FramePacket& packet) override {
     if (!mesh_) return;
 

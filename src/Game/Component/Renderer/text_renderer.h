@@ -131,6 +131,26 @@ class TextRenderer : public Component<TextRenderer> {
     return Vector2(text_mesh_handle_.GetWidth(), text_mesh_handle_.GetHeight());
   }
 
+  struct EditorData {
+    std::wstring text;
+    Font::FontFamily font_family;
+    float pixel_size;
+    Vector4 color;
+    Text::HorizontalAlign h_align;
+    Text::VerticalAlign v_align;
+    float line_spacing;
+    float letter_spacing;
+    bool use_kerning;
+    Billboard::Mode billboard_mode;
+    Vector2 pivot;
+    Rendering::RenderSettings render_settings;
+    RenderLayer render_layer;
+    RenderTagMask render_tags;
+  };
+
+  EditorData GetEditorData() const;
+  void ApplyEditorData(const EditorData& data);
+
   Matrix4 GetBillboardWorldMatrix(const CameraData& camera) const;
 
   void OnRender(FramePacket& packet) override;

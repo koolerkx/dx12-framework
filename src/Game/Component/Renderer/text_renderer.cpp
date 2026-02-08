@@ -36,6 +36,33 @@ void TextRenderer::SetPivot(const Vector2& normalized_pivot) {
   text_pivot_ = normalized_pivot;
 }
 
+TextRenderer::EditorData TextRenderer::GetEditorData() const {
+  return {text_, font_family_, pixel_size_, color_, h_align_, v_align_,
+          line_spacing_, letter_spacing_, use_kerning_, billboard_mode_,
+          text_pivot_, render_settings_, render_layer_, render_tags_};
+}
+
+void TextRenderer::ApplyEditorData(const EditorData& data) {
+  SetText(data.text);
+  SetFont(data.font_family);
+  SetPixelSize(data.pixel_size);
+  SetColor(data.color);
+  SetHorizontalAlign(data.h_align);
+  SetVerticalAlign(data.v_align);
+  SetLineSpacing(data.line_spacing);
+  SetLetterSpacing(data.letter_spacing);
+  SetUseKerning(data.use_kerning);
+  SetBillboardMode(data.billboard_mode);
+  SetPivot(data.pivot);
+  SetRenderLayer(data.render_layer);
+  SetBlendMode(data.render_settings.blend_mode);
+  SetSampler(data.render_settings.sampler_type);
+  SetDepthTest(data.render_settings.depth_test);
+  SetDepthWrite(data.render_settings.depth_write);
+  SetDoubleSided(data.render_settings.double_sided);
+  SetRenderTags(data.render_tags);
+}
+
 void TextRenderer::OnRender(FramePacket& packet) {
   if (text_.empty()) return;
 

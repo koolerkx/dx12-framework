@@ -28,6 +28,27 @@ void SpriteRenderer::SetPivot(const Vector2& normalized_pivot) {
   sprite_pivot_ = normalized_pivot;
 }
 
+SpriteRenderer::EditorData SpriteRenderer::GetEditorData() const {
+  return {color_, size_, sprite_pivot_, uv_offset_, uv_scale_,
+          billboard_mode_, render_settings_, render_layer_, render_tags_};
+}
+
+void SpriteRenderer::ApplyEditorData(const EditorData& data) {
+  SetColor(data.color);
+  SetSize(data.size);
+  SetPivot(data.pivot);
+  SetUVOffset(data.uv_offset);
+  SetUVScale(data.uv_scale);
+  SetBillboardMode(data.billboard_mode);
+  SetRenderLayer(data.render_layer);
+  SetBlendMode(data.render_settings.blend_mode);
+  SetSampler(data.render_settings.sampler_type);
+  SetDepthTest(data.render_settings.depth_test);
+  SetDepthWrite(data.render_settings.depth_write);
+  SetDoubleSided(data.render_settings.double_sided);
+  SetRenderTags(data.render_tags);
+}
+
 SpriteSheetAnimator& SpriteRenderer::GetAnimator() {
   if (!animator_) {
     animator_.emplace();

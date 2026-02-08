@@ -18,6 +18,29 @@ void UITextRenderer::SetPivot(const Vector2& normalized_pivot) {
   text_pivot_ = normalized_pivot;
 }
 
+UITextRenderer::EditorData UITextRenderer::GetEditorData() const {
+  return {text_, font_family_, pixel_size_, color_, h_align_, v_align_,
+          line_spacing_, letter_spacing_, use_kerning_, layer_id_,
+          text_pivot_, render_settings_, render_tags_};
+}
+
+void UITextRenderer::ApplyEditorData(const EditorData& data) {
+  SetText(data.text);
+  SetFont(data.font_family);
+  SetPixelSize(data.pixel_size);
+  SetColor(data.color);
+  SetHorizontalAlign(data.h_align);
+  SetVerticalAlign(data.v_align);
+  SetLineSpacing(data.line_spacing);
+  SetLetterSpacing(data.letter_spacing);
+  SetUseKerning(data.use_kerning);
+  SetLayerId(data.layer_id);
+  SetPivot(data.pivot);
+  SetBlendMode(data.render_settings.blend_mode);
+  SetSampler(data.render_settings.sampler_type);
+  SetRenderTags(data.render_tags);
+}
+
 void UITextRenderer::OnRender(FramePacket& packet) {
   if (text_.empty()) return;
 
