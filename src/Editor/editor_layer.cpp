@@ -71,9 +71,11 @@ void EditorLayer::BeginFrame() {
 
 void EditorLayer::Render(ID3D12GraphicsCommandList* cmd) {
   DrawDockSpace();
-  DrawFpsCounter();
-  DrawHierarchy();
-  DrawInspector();
+  DrawMainMenu();
+  if (show_performance_) DrawFpsCounter();
+  if (show_hierarchy_) DrawHierarchy();
+  if (show_inspector_) DrawInspector();
+  if (show_scene_settings_) DrawSceneSettings();
 
   ImGui::Render();
   ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), cmd);
@@ -98,6 +100,19 @@ bool EditorLayer::WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 
 void EditorLayer::DrawDockSpace() {
   ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
+}
+
+void EditorLayer::DrawMainMenu() {
+  if (ImGui::BeginMainMenuBar()) {
+    if (ImGui::BeginMenu("Window")) {
+      ImGui::MenuItem("Performance", nullptr, &show_performance_);
+      ImGui::MenuItem("Hierarchy", nullptr, &show_hierarchy_);
+      ImGui::MenuItem("Inspector", nullptr, &show_inspector_);
+      ImGui::MenuItem("Scene Settings", nullptr, &show_scene_settings_);
+      ImGui::EndMenu();
+    }
+    ImGui::EndMainMenuBar();
+  }
 }
 
 void EditorLayer::DrawFpsCounter() {
@@ -332,6 +347,37 @@ void EditorLayer::DrawUITextRendererInspector(UITextRenderer* renderer) {
   ImGui::Text("Size: %.1f x %.1f", size.x, size.y);
 
   renderer->ApplyEditorData(data);
+}
+
+void EditorLayer::DrawSceneSettings() {
+  ImGui::Begin("Scene Settings");
+
+  if (!scene_) {
+    ImGui::TextDisabled("No scene loaded");
+    ImGui::End();
+    return;
+  }
+
+  auto& bg = scene_->GetBackgroundSetting();
+
+  if (ImGui::CollapsingHeader("Background", ImGuiTreeNodeFlags_DefaultOpen)) {
+    static const char* kModeNames[] = {"Clear Color", "Skybox"};
+    int mode = static_cast<int>(bg.GetMode());
+    if (ImGui::Combo("Mode", &mode, kModeNames, IM_ARRAYSIZE(kModeNames))) {
+      bg.SetMode(static_cast<BackgroundMode>(mode));
+    }
+
+    if (bg.GetMode() == BackgroundMode::ClearColor) {
+      Color color = bg.GetClearColor();
+      if (ImGui::ColorEdit4("Clear Color", &color.x)) {
+        bg.SetClearColorValue(color);
+      }
+    } else {
+      ImGui::Text("Skybox: %s", bg.HasSkybox() ? "Loaded" : "None");
+    }
+  }
+
+  ImGui::End();
 }
 
 void EditorLayer::DrawMeshRendererInspector(MeshRenderer* renderer) {

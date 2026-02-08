@@ -36,9 +36,16 @@ class EditorLayer {
   void DrawTextRendererInspector(TextRenderer* renderer);
   void DrawUITextRendererInspector(UITextRenderer* renderer);
   void DrawMeshRendererInspector(MeshRenderer* renderer);
+  void DrawMainMenu();
   void DrawGameObjectNode(GameObject* go);
+  void DrawSceneSettings();
 
   IScene* scene_ = nullptr;
   GameObject* selected_object_ = nullptr;
   DescriptorHeapAllocator::Allocation imgui_font_srv_;
+
+  bool show_performance_ = true;
+  bool show_hierarchy_ = true;
+  bool show_inspector_ = true;
+  bool show_scene_settings_ = true;
 };

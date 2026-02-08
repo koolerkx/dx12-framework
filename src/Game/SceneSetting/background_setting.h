@@ -17,7 +17,14 @@ class BackgroundSetting {
     cubemap_ = {};
   }
 
+  void SetMode(BackgroundMode mode) { mode_ = mode; }
+  void SetClearColorValue(Color color) { clear_color_ = color; }
+
   BackgroundConfig ToConfig() const;
+
+  BackgroundMode GetMode() const { return mode_; }
+  const Color& GetClearColor() const { return clear_color_; }
+  bool HasSkybox() const { return cubemap_.Get() != nullptr; }
 
  private:
   BackgroundMode mode_ = BackgroundMode::ClearColor;
