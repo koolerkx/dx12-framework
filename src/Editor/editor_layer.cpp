@@ -13,6 +13,7 @@
 #include "Game/Component/transform_component.h"
 #include "Game/game_object.h"
 #include "Game/scene.h"
+#include "Game/scene_events.h"
 #include "Graphic/Descriptor/descriptor_heap_manager.h"
 #include "Graphic/Pipeline/shader_registry.h"
 #include "Graphic/graphic.h"
@@ -82,8 +83,15 @@ void EditorLayer::Render(ID3D12GraphicsCommandList* cmd) {
 }
 
 void EditorLayer::SetScene(IScene* scene) {
+  if (scene_ == scene) return;
   scene_ = scene;
   selected_object_ = nullptr;
+}
+
+void EditorLayer::SubscribeEvents(EventBus& bus) {
+  event_scope_.Subscribe<SceneChangedEvent>(bus, [this](const SceneChangedEvent& e) {
+    SetScene(e.new_scene);
+  });
 }
 
 bool EditorLayer::WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -201,8 +209,12 @@ void DrawRenderLayerEditor(RenderLayer& layer) {
   }
 }
 
-void DrawTextProperties(std::wstring& text, Font::FontFamily& font_family, float& pixel_size,
-                         Text::HorizontalAlign& h_align, float& line_spacing, float& letter_spacing) {
+void DrawTextProperties(std::wstring& text,
+  Font::FontFamily& font_family,
+  float& pixel_size,
+  Text::HorizontalAlign& h_align,
+  float& line_spacing,
+  float& letter_spacing) {
   std::string utf8_text = utils::wstring_to_utf8(text);
   char buf[512];
   strncpy_s(buf, utf8_text.c_str(), sizeof(buf) - 1);
@@ -319,8 +331,7 @@ void EditorLayer::DrawUISpriteRendererInspector(UISpriteRenderer* renderer) {
 void EditorLayer::DrawTextRendererInspector(TextRenderer* renderer) {
   auto data = renderer->GetEditorData();
 
-  DrawTextProperties(data.text, data.font_family, data.pixel_size,
-                     data.h_align, data.line_spacing, data.letter_spacing);
+  DrawTextProperties(data.text, data.font_family, data.pixel_size, data.h_align, data.line_spacing, data.letter_spacing);
   DrawColorEditor("Color", data.color);
   DrawBillboardEditor(data.billboard_mode);
   ImGui::DragFloat2("Pivot", &data.pivot.x, 0.01f, 0.0f, 1.0f);
@@ -336,8 +347,7 @@ void EditorLayer::DrawTextRendererInspector(TextRenderer* renderer) {
 void EditorLayer::DrawUITextRendererInspector(UITextRenderer* renderer) {
   auto data = renderer->GetEditorData();
 
-  DrawTextProperties(data.text, data.font_family, data.pixel_size,
-                     data.h_align, data.line_spacing, data.letter_spacing);
+  DrawTextProperties(data.text, data.font_family, data.pixel_size, data.h_align, data.line_spacing, data.letter_spacing);
   DrawColorEditor("Color", data.color);
   ImGui::DragInt("Layer ID", &data.layer_id);
   ImGui::DragFloat2("Pivot", &data.pivot.x, 0.01f, 0.0f, 1.0f);

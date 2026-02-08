@@ -5,6 +5,8 @@
 #include "Framework/Input/input.h"
 #include "Graphic/graphic.h"
 
+class SceneManager;
+
 class GameContext {
  public:
   GameContext() = default;
@@ -44,10 +46,18 @@ class GameContext {
     debug_drawer_ = debug_drawer;
   }
 
+  SceneManager* GetSceneManager() const {
+    return scene_manager_;
+  }
+  void SetSceneManager(SceneManager* scene_manager) {
+    scene_manager_ = scene_manager;
+  }
+
  private:
   InputSystem* input_ = nullptr;
   Graphic* graphic_ = nullptr;
   std::shared_ptr<EventBus> event_bus_;
   AssetManager* asset_manager_ = nullptr;
   DebugDrawer* debug_drawer_ = nullptr;
+  SceneManager* scene_manager_ = nullptr;
 };

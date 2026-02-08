@@ -1,5 +1,7 @@
 #include "game.h"
 
+#include "Graphic/graphic.h"
+#include "Scenes/cube_scene/cube_scene.h"
 #include "Scenes/test_scene/test_scene.h"
 #include "game_context.h"
 
@@ -21,34 +23,35 @@ void Game::Initialize() {
     context_->SetDebugDrawer(debug_drawer_.get());
   }
 
-  current_scene_ = std::make_unique<TestScene>();
-  if (current_scene_) {
-    current_scene_->SetContext(context_);
-    current_scene_->Enter(asset_manager_);
-  }
+  context_->SetSceneManager(&scene_manager_);
+
+  scene_manager_.Register<TestScene>(SceneId::TEST_SCENE);
+  scene_manager_.Register<CubeScene>(SceneId::CUBE_SCENE);
+  scene_manager_.RequestLoad(SceneId::TEST_SCENE);
+  scene_manager_.ProcessPending(asset_manager_, context_, context_->GetGraphic());
 }
 
 void Game::Shutdown() {
   bool expected = false;
   if (!is_shutting_down_.compare_exchange_strong(expected, true)) {
-    return;  // Already shutting down
+    return;
   }
 
-  if (current_scene_) {
-    current_scene_->Exit();
-    current_scene_.reset();
-  }
+  scene_manager_.Shutdown(context_ ? context_->GetGraphic() : nullptr);
 }
 
 void Game::OnUpdate(float dt) {
-  if (current_scene_) {
-    current_scene_->Update(dt);
+  scene_manager_.ProcessPending(asset_manager_, context_, context_ ? context_->GetGraphic() : nullptr);
+  IScene* scene = scene_manager_.GetCurrentScene();
+  if (scene) {
+    scene->Update(dt);
   }
 }
 
 void Game::OnFixedUpdate(float dt) {
-  if (current_scene_) {
-    current_scene_->FixedUpdate(dt);
+  IScene* scene = scene_manager_.GetCurrentScene();
+  if (scene) {
+    scene->FixedUpdate(dt);
   }
 }
 
@@ -60,9 +63,10 @@ void Game::OnRender() {
 
   RenderFrameContext frame_context = graphic->BeginFrame();
 
-  if (current_scene_) {
-    current_scene_->Render(frame_packet_);
-    current_scene_->OnRender(frame_packet_);
+  IScene* scene = scene_manager_.GetCurrentScene();
+  if (scene) {
+    scene->Render(frame_packet_);
+    scene->OnRender(frame_packet_);
   }
 
   graphic->RenderScene(frame_context, frame_packet_);

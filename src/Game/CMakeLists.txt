@@ -4,6 +4,11 @@ add_library(game STATIC
 
     game_context.h
 
+    scene_id.h
+    scene_events.h
+    scene_manager.h
+    scene_manager.cpp
+
     scene.h
     scene.cpp
 
@@ -52,6 +57,9 @@ add_library(game STATIC
 
     Debug/debug_drawer.h
     Debug/debug_drawer.cpp
+
+    Scenes/cube_scene/cube_scene.h
+    Scenes/cube_scene/cube_scene.cpp
 
     Scenes/test_scene/test_scene.h
     Scenes/test_scene/test_scene.cpp

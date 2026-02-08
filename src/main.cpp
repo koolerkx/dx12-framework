@@ -53,9 +53,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
 #ifdef ENABLE_EDITOR
   EditorLayer editor;
   editor.Initialize(app.GetHwnd(), graphic);
-  app.SetWndProcHook([&editor](HWND h, UINT m, WPARAM w, LPARAM l) {
-    return editor.WndProcHandler(h, m, w, l);
-  });
+  app.SetWndProcHook([&editor](HWND h, UINT m, WPARAM w, LPARAM l) { return editor.WndProcHandler(h, m, w, l); });
   graphic.SetOverlayRenderer([&editor](ID3D12GraphicsCommandList* cmd) { editor.Render(cmd); });
 #endif
 
@@ -77,6 +75,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
   game.Initialize();
 
 #ifdef ENABLE_EDITOR
+  editor.SubscribeEvents(*event_bus);
   editor.SetScene(game.GetCurrentScene());
 #endif
 

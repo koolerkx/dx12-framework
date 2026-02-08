@@ -13,10 +13,13 @@
 #include "Debug/debug_drawer.h"
 #include "Frame/frame_packet.h"
 #include "Framework/Core/color.h"
+#include "Framework/Input/input.h"
 #include "Framework/Logging/logger.h"
 #include "Framework/Math/Math.h"
 #include "Scenes/test_scene/character_mover_component.h"
 #include "Scripts/free_camera_controller.h"
+#include "scene_id.h"
+#include "scene_manager.h"
 #include "test_scene.h"
 
 using Math::Vector3;
@@ -166,6 +169,11 @@ void TestScene::OnPostUpdate(float dt) {
   cube_object_->GetComponent<TransformComponent>()->SetRotationEulerDegree({0.0f, rotation_angle_, 0.0f});
   cube_object2_->GetComponent<TransformComponent>()->SetRotationEulerDegree({0.0f, rotation_angle_, 0.0f});
   pivot_cube_->GetComponent<TransformComponent>()->SetRotationEulerDegree({0.0f, rotation_angle_, 0.0f});
+
+  auto* input = GetContext()->GetInput();
+  if (input && input->GetKeyDown(Keyboard::KeyCode::F1)) {
+    GetContext()->GetSceneManager()->RequestLoad(SceneId::CUBE_SCENE);
+  }
 }
 
 void TestScene::OnRender(FramePacket& /* packet */) {
