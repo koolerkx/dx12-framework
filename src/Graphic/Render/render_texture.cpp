@@ -5,7 +5,7 @@
 #include "Framework/Logging/logger.h"
 #include "d3dx12.h"
 
-RenderTexture::RenderTexture(DXGI_FORMAT format, std::array<float, 4> clear_color) : format_(format), clear_color_(clear_color) {
+RenderTexture::RenderTexture(DXGI_FORMAT format, Color clear_color) : format_(format), clear_color_(clear_color) {
 }
 
 bool RenderTexture::Initialize(ID3D12Device* device, uint32_t width, uint32_t height, DescriptorHeapManager& heap_mgr) {
@@ -14,10 +14,10 @@ bool RenderTexture::Initialize(ID3D12Device* device, uint32_t width, uint32_t he
 
   D3D12_CLEAR_VALUE clear_value = {};
   clear_value.Format = format_;
-  clear_value.Color[0] = clear_color_[0];
-  clear_value.Color[1] = clear_color_[1];
-  clear_value.Color[2] = clear_color_[2];
-  clear_value.Color[3] = clear_color_[3];
+  clear_value.Color[0] = clear_color_.x;
+  clear_value.Color[1] = clear_color_.y;
+  clear_value.Color[2] = clear_color_.z;
+  clear_value.Color[3] = clear_color_.w;
 
   CD3DX12_RESOURCE_DESC resource_desc =
     CD3DX12_RESOURCE_DESC::Tex2D(format_, width, height, 1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
@@ -72,7 +72,7 @@ bool RenderTexture::Initialize(ID3D12Device* device, uint32_t width, uint32_t he
 
 void RenderTexture::Clear(ID3D12GraphicsCommandList* cmd) {
   if (!IsValid()) return;
-  cmd->ClearRenderTargetView(rtv_allocation_.cpu, clear_color_.data(), 0, nullptr);
+  cmd->ClearRenderTargetView(rtv_allocation_.cpu, &clear_color_.x, 0, nullptr);
   cleared_this_frame_ = true;
 }
 

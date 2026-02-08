@@ -12,6 +12,7 @@
 #include "Component/transform_component.h"
 #include "Debug/debug_drawer.h"
 #include "Frame/frame_packet.h"
+#include "Framework/Core/color.h"
 #include "Framework/Logging/logger.h"
 #include "Framework/Math/Math.h"
 #include "Scenes/test_scene/character_mover_component.h"
@@ -39,7 +40,7 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   auto* plane_renderer = terrain_plane_->AddComponent<MeshRenderer>();
   plane_renderer->SetMesh(asset_manager.GetDefaultMesh(DefaultMesh::Plane));
   plane_renderer->SetTexture(texture_background_.Get());
-  plane_renderer->SetColor({1.0f, 1.0f, 1.0f, 1.0f});
+  plane_renderer->SetColor(colors::White);
 
   cube_object_ = CreateGameObject("Cube");
   auto* cube_transform = cube_object_->GetComponent<TransformComponent>();
@@ -49,7 +50,7 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   auto* mesh_renderer = cube_object_->AddComponent<MeshRenderer>();
   mesh_renderer->SetMesh(asset_manager.GetDefaultMesh(DefaultMesh::Cube));
   mesh_renderer->SetTexture(texture_background_.Get());
-  mesh_renderer->SetColor({1.0f, 1.0f, 1.0f, 1.0f});
+  mesh_renderer->SetColor(colors::White);
 
   cube_object2_ = CreateGameObject("Cube");
   cube_object2_->SetParent(cube_object_);
@@ -61,7 +62,7 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   auto* mesh_renderer2 = cube_object2_->AddComponent<MeshRenderer>();
   mesh_renderer2->SetMesh(asset_manager.GetDefaultMesh(DefaultMesh::Cube));
   mesh_renderer2->SetTexture(texture_background_.Get());
-  mesh_renderer2->SetColor({1.0f, 1.0f, 1.0f, 1.0f});
+  mesh_renderer2->SetColor(colors::White);
 
   character_object_ = CreateGameObject("Character");
   character_object_->GetComponent<TransformComponent>()->SetPosition({500, 500, 0});
@@ -86,7 +87,7 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   additive_sprite->SetSize({1.0f, 1.0f});
   additive_sprite->SetBillboardMode(Billboard::Mode::Spherical);
   additive_sprite->SetBlendMode(Rendering::BlendMode::Additive);
-  additive_sprite->SetColor({0.0f, 1.0f, 0.0f, 0.5f});
+  additive_sprite->SetColor(colors::WithAlpha(colors::Lime, 0.5f));
 
   animated_bg_object_ = CreateGameObject("AnimatedBackground");
   animated_bg_object_->GetComponent<TransformComponent>()->SetPosition({0.0f, -3.0f, 0.0f});
@@ -97,7 +98,7 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   bg_renderer->SetPivot(Pivot::Preset::Center);
   bg_renderer->SetDoubleSided(true);
   bg_renderer->SetBillboardMode(Billboard::Mode::None);
-  bg_renderer->SetColor({1.0f, 0.0f, 0.0f, 0.5f});
+  bg_renderer->SetColor(colors::WithAlpha(colors::Red, 0.5f));
 
   pivot_cube_ = CreateGameObject("PivotCube");
   auto* pivot_transform = pivot_cube_->GetComponent<TransformComponent>();
@@ -108,7 +109,7 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   auto* pivot_mesh = pivot_cube_->AddComponent<MeshRenderer>();
   pivot_mesh->SetMesh(asset_manager.GetDefaultMesh(DefaultMesh::Cube));
   pivot_mesh->SetTexture(texture_background_.Get());
-  pivot_mesh->SetColor({1.0f, 1.0f, 1.0f, 1.0f});
+  pivot_mesh->SetColor(colors::White);
 
   SpriteSheet::FrameConfig bg_sheet_config;
   bg_sheet_config.sheet_size = {1024, 1024};
@@ -133,7 +134,7 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
     text->SetText(L"Hello, World!Hello, World!Hello, World!\nこんにちは！");
     text->SetFont(Font::FontFamily::ZenOldMincho);
     text->SetPixelSize(48.0f);
-    text->SetColor({0.0f, 1.0f, 0.0f, 1.0f});
+    text->SetColor(colors::Lime);
     text->SetHorizontalAlign(Text::HorizontalAlign::Left);
     text->SetVerticalAlign(Text::VerticalAlign::Center);
     text->SetPivot(Pivot::Preset::Center);
@@ -149,7 +150,7 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   text2->SetText(L"Hello, World!\n Bye");
   text2->SetFont(Font::FontFamily::ZenOldMincho);
   text2->SetPixelSize(1.0f);
-  text2->SetColor({1.0f, 1.0f, 1.0f, 1.0f});
+  text2->SetColor(colors::White);
   text2->SetBillboardMode(Billboard::Mode::Cylindrical);
   text2->SetHorizontalAlign(Text::HorizontalAlign::Center);
   text2->SetVerticalAlign(Text::VerticalAlign::Center);
@@ -173,7 +174,7 @@ void TestScene::OnRender(FramePacket& /* packet */) {
   grid_config.size = 20.0f;
   grid_config.cell_size = 1.0f;
   grid_config.y_level = 0.0f;
-  grid_config.color = {0.5f, 0.5f, 0.5f, 1.0f};
+  grid_config.color = colors::Gray;
   debug_drawer->DrawGrid(grid_config);
 
   DebugDrawer::AxisGizmoConfig axis_config;
@@ -181,9 +182,9 @@ void TestScene::OnRender(FramePacket& /* packet */) {
   axis_config.length = 2.0f;
   debug_drawer->DrawAxisGizmo(axis_config);
 
-  debug_drawer->DrawBox({-5, 2, -5}, {1, 1, 1}, {1, 0, 0, 1});
+  debug_drawer->DrawBox({-5, 2, -5}, {1, 1, 1}, colors::Red);
 
-  debug_drawer->DrawSphere({-5, 2, -5}, 3, {1, 0, 0, 1}, 32);
+  debug_drawer->DrawSphere({-5, 2, -5}, 3, colors::Red, 32);
 
   DebugDrawer::AxisGizmoConfig pivot_axis;
   pivot_axis.position = {5.0f, 0.0f, 5.0f};
@@ -192,7 +193,7 @@ void TestScene::OnRender(FramePacket& /* packet */) {
 
   auto pivot_world = pivot_cube_->GetComponent<TransformComponent>()->GetWorldMatrix()
                          .TransformPoint({0.5f, 0.0f, 0.0f});
-  debug_drawer->DrawSphere(pivot_world, 0.1f, {1, 1, 0, 1}, 16);
+  debug_drawer->DrawSphere(pivot_world, 0.1f, colors::Yellow, 16);
 }
 
 void TestScene::OnExit() {

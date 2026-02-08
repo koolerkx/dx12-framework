@@ -53,7 +53,7 @@ class Graphic {
   void EndFrame(const RenderFrameContext& frame);
   void RenderScene(const RenderFrameContext& frame, const FramePacket& world);
 
-  void AddDebugLine(const Math::Vector3& start, const Math::Vector3& end, const Math::Vector4& color = {1, 1, 1, 1});
+  void AddDebugLine(const Math::Vector3& start, const Math::Vector3& end, const Math::Vector4& color = colors::White);
 
   DebugLineRenderer* GetDebugLineRenderer() {
     return debug_line_renderer_.get();

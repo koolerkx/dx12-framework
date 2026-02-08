@@ -36,13 +36,13 @@ void DebugDrawer::DrawAxisGizmo(const AxisGizmoConfig& config) {
   Vector3 origin = config.position;
 
   Vector3 x_end(origin.x + config.length, origin.y, origin.z);
-  graphic_->AddDebugLine(origin, x_end, Vector4(0.0f, 0.0f, 1.0f, 1.0f));
+  graphic_->AddDebugLine(origin, x_end, colors::Blue);
 
   Vector3 y_end(origin.x, origin.y + config.length, origin.z);
-  graphic_->AddDebugLine(origin, y_end, Vector4(1.0f, 0.0f, 0.0f, 1.0f));
+  graphic_->AddDebugLine(origin, y_end, colors::Red);
 
   Vector3 z_end(origin.x, origin.y, origin.z + config.length);
-  graphic_->AddDebugLine(origin, z_end, Vector4(0.0f, 1.0f, 0.0f, 1.0f));
+  graphic_->AddDebugLine(origin, z_end, colors::Lime);
 }
 
 void DebugDrawer::DrawBox(const Vector3& center, const Vector3& extents, const Vector4& color) {

@@ -21,6 +21,7 @@
  * @endcode
  */
 #pragma once
+#include "Framework/Core/color.h"
 #include "Framework/Math/Math.h"
 
 using Math::Vector3;
@@ -40,7 +41,7 @@ class DebugDrawer {
     Vector4 color;
     Vector4 axis_color;  // Color for X/Z axes
 
-    GridConfig() : size(20.0f), cell_size(1.0f), y_level(0.0f), color(0.5f, 0.5f, 0.5f, 1.0f), axis_color(0.7f, 0.7f, 0.7f, 1.0f) {
+    GridConfig() : size(20.0f), cell_size(1.0f), y_level(0.0f), color(colors::Gray), axis_color(colors::Silver) {
     }
   };
 
@@ -59,10 +60,10 @@ class DebugDrawer {
   void DrawAxisGizmo(const AxisGizmoConfig& config = AxisGizmoConfig());
 
   // Box drawing (useful for bounds visualization)
-  void DrawBox(const Vector3& center, const Vector3& extents, const Vector4& color = {1, 1, 0, 1});
+  void DrawBox(const Vector3& center, const Vector3& extents, const Vector4& color = colors::Yellow);
 
   // Sphere drawing (approximated with lines)
-  void DrawSphere(const Vector3& center, float radius, const Vector4& color = {0, 1, 1, 1}, int segments = 16);
+  void DrawSphere(const Vector3& center, float radius, const Vector4& color = colors::Cyan, int segments = 16);
 
  private:
   Graphic* graphic_;

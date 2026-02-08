@@ -20,7 +20,7 @@ class RenderPassManager {
   void SetHeapManager(DescriptorHeapManager* heap_mgr);
 
   RenderTexture* CreateRenderTexture(
-    DXGI_FORMAT format, uint32_t width, uint32_t height, ID3D12Device* device, std::array<float, 4> clear_color = {0, 0, 0, 1});
+    DXGI_FORMAT format, uint32_t width, uint32_t height, ID3D12Device* device, Color clear_color = colors::Black);
   DepthBuffer* CreateDepthBuffer(uint32_t width, uint32_t height, ID3D12Device* device);
 
   void AddPass(std::unique_ptr<IRenderPass> pass);

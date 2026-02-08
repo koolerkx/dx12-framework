@@ -1,6 +1,7 @@
 #include "debug_line_renderer.h"
 
 #include "Frame/constant_buffers.h"
+#include "Framework/Core/color.h"
 #include "Framework/Logging/logger.h"
 
 bool DebugLineRenderer::Initialize(ID3D12Device* device) {
@@ -66,7 +67,7 @@ void DebugLineRenderer::Render(const RenderFrameContext& frame, const Material* 
   ObjectCB obj_cb;
   obj_cb.world = Matrix4::Identity;
   obj_cb.worldViewProj = view_proj;
-  obj_cb.color = Vector4(1, 1, 1, 1);
+  obj_cb.color = colors::White;
 
   auto obj_alloc = frame.object_cb_allocator->Allocate(sizeof(ObjectCB));
   memcpy(obj_alloc.cpu_ptr, &obj_cb, sizeof(ObjectCB));

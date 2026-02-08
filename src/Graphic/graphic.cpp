@@ -123,8 +123,8 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
   render_pass_manager_->SetSwapChain(&presentation_context_->GetSwapChainManager());
   render_pass_manager_->SetHeapManager(&descriptor_heap_manager_);
 
-  auto* scene_rt =
-    render_pass_manager_->CreateRenderTexture(DXGI_FORMAT_R16G16B16A16_FLOAT, frame_buffer_width, frame_buffer_height, device_.Get());
+  auto* scene_rt = render_pass_manager_->CreateRenderTexture(
+    DXGI_FORMAT_R16G16B16A16_FLOAT, frame_buffer_width, frame_buffer_height, device_.Get(), colors::DarkSlateGray);
   auto* depth = render_pass_manager_->CreateDepthBuffer(frame_buffer_width, frame_buffer_height, device_.Get());
 
   PassSetup scene_setup;

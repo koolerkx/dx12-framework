@@ -2,16 +2,16 @@
 
 #include <dxgiformat.h>
 
-#include <array>
 #include <cstdint>
 
 #include "Descriptor/descriptor_heap_allocator.h"
 #include "Descriptor/descriptor_heap_manager.h"
 #include "Device/gpu_resource.h"
+#include "Framework/Core/color.h"
 
 class RenderTexture : public GpuResource {
  public:
-  RenderTexture(DXGI_FORMAT format, std::array<float, 4> clear_color = {0, 0, 0, 1});
+  RenderTexture(DXGI_FORMAT format, Color clear_color = colors::Black);
   ~RenderTexture() = default;
 
   bool Initialize(ID3D12Device* device, uint32_t width, uint32_t height, DescriptorHeapManager& heap_mgr);
@@ -50,7 +50,7 @@ class RenderTexture : public GpuResource {
 
  private:
   DXGI_FORMAT format_;
-  std::array<float, 4> clear_color_;
+  Color clear_color_;
   DescriptorHeapAllocator::Allocation rtv_allocation_;
   uint32_t srv_index_ = 0;
   uint32_t width_ = 0;

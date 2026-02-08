@@ -14,7 +14,7 @@ void RenderPassManager::SetHeapManager(DescriptorHeapManager* heap_mgr) {
 }
 
 RenderTexture* RenderPassManager::CreateRenderTexture(
-  DXGI_FORMAT format, uint32_t width, uint32_t height, ID3D12Device* device, std::array<float, 4> clear_color) {
+  DXGI_FORMAT format, uint32_t width, uint32_t height, ID3D12Device* device, Color clear_color) {
   auto rt = std::make_unique<RenderTexture>(format, clear_color);
   if (!rt->Initialize(device, width, height, *heap_manager_)) {
     return nullptr;
@@ -82,8 +82,7 @@ void RenderPassManager::ApplyPassSetup(ID3D12GraphicsCommandList* cmd, const Pas
       }
       if (!backbuffer_cleared_) {
         D3D12_CPU_DESCRIPTOR_HANDLE rtv = swapchain_->GetCurrentRTV();
-        constexpr float clear_color[4] = {0.0f, 0.0f, 0.0f, 1.0f};
-        cmd->ClearRenderTargetView(rtv, clear_color, 0, nullptr);
+        cmd->ClearRenderTargetView(rtv, &colors::Black.x, 0, nullptr);
         backbuffer_cleared_ = true;
       }
       rtv_handles.push_back(swapchain_->GetCurrentRTV());
