@@ -16,7 +16,29 @@ using Math::Vector4;
 
 class UITextRenderer : public Component<UITextRenderer> {
  public:
+  struct Props {
+    std::wstring text;
+    Font::FontFamily font = Font::FontFamily::ZenOldMincho;
+    float pixel_size = 16.0f;
+    Vector4 color = {1, 1, 1, 1};
+    Text::HorizontalAlign h_align = Text::HorizontalAlign::Left;
+    Text::VerticalAlign v_align = Text::VerticalAlign::Baseline;
+    Vector2 pivot = {0.5f, 0.0f};
+    int layer_id = 0;
+  };
+
   UITextRenderer(GameObject* owner) : Component(owner) {
+  }
+
+  UITextRenderer(GameObject* owner, const Props& props) : Component(owner) {
+    if (!props.text.empty()) SetText(props.text);
+    SetFont(props.font);
+    SetPixelSize(props.pixel_size);
+    SetColor(props.color);
+    SetHorizontalAlign(props.h_align);
+    SetVerticalAlign(props.v_align);
+    SetPivot(props.pivot);
+    if (props.layer_id != 0) SetLayerId(props.layer_id);
   }
 
   void SetText(const std::wstring& text) {

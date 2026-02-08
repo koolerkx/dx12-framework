@@ -83,7 +83,9 @@ class GameObject {
     return name_;
   }
 
-  const std::vector<std::unique_ptr<IComponentBase>>& GetComponents() const { return components_; }
+  const std::vector<std::unique_ptr<IComponentBase>>& GetComponents() const {
+    return components_;
+  }
 
   // check if node is a descendant of possible_ancestor in order to prevent cyclic dependencies
   static bool IsDescendantOf(const GameObject* node, const GameObject* possible_ancestor);

@@ -37,84 +37,67 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
 
   SetupCamera();
 
-  auto* terrain_plane = CreateGameObject("TerrainPlane");
-  auto* plane_transform = terrain_plane->GetComponent<TransformComponent>();
-  plane_transform->SetPosition({0.0f, -5.0f, 0.0f});
-  plane_transform->SetScale({20.0f, 1.0f, 20.0f});
+  auto* terrain_plane = CreateGameObject("TerrainPlane", {.position = {0, -5, 0}, .scale = {20, 1, 20}});
+  terrain_plane->AddComponent<MeshRenderer>(MeshRenderer::Props{
+    .mesh = asset_manager.GetDefaultMesh(DefaultMesh::Plane),
+    .texture = texture_background_.Get(),
+    .color = colors::White,
+  });
 
-  auto* plane_renderer = terrain_plane->AddComponent<MeshRenderer>();
-  plane_renderer->SetMesh(asset_manager.GetDefaultMesh(DefaultMesh::Plane));
-  plane_renderer->SetTexture(texture_background_.Get());
-  plane_renderer->SetColor(colors::White);
+  cube_object_ = CreateGameObject("Cube", {.scale = {2, 2, 2}});
+  cube_object_->AddComponent<MeshRenderer>(MeshRenderer::Props{
+    .mesh = asset_manager.GetDefaultMesh(DefaultMesh::Cube),
+    .texture = texture_background_.Get(),
+    .color = colors::White,
+  });
 
-  cube_object_ = CreateGameObject("Cube");
-  auto* cube_transform = cube_object_->GetComponent<TransformComponent>();
-  cube_transform->SetPosition({0.0f, 0.0f, 0.0f});
-  cube_transform->SetScale({2.0f, 2.0f, 2.0f});
-
-  auto* mesh_renderer = cube_object_->AddComponent<MeshRenderer>();
-  mesh_renderer->SetMesh(asset_manager.GetDefaultMesh(DefaultMesh::Cube));
-  mesh_renderer->SetTexture(texture_background_.Get());
-  mesh_renderer->SetColor(colors::White);
-
-  cube_object2_ = CreateGameObject("Cube");
+  cube_object2_ = CreateGameObject("Cube2", {.position = {1, 1, 1}});
   cube_object2_->SetParent(cube_object_);
+  cube_object2_->AddComponent<MeshRenderer>(MeshRenderer::Props{
+    .mesh = asset_manager.GetDefaultMesh(DefaultMesh::Cube),
+    .texture = texture_background_.Get(),
+    .color = colors::White,
+  });
 
-  auto* cube_transform2 = cube_object2_->GetComponent<TransformComponent>();
-  cube_transform2->SetPosition({1.0f, 1.0f, 1.0f});
-  cube_transform2->SetScale({1.0f, 1.0f, 1.0f});
-
-  auto* mesh_renderer2 = cube_object2_->AddComponent<MeshRenderer>();
-  mesh_renderer2->SetMesh(asset_manager.GetDefaultMesh(DefaultMesh::Cube));
-  mesh_renderer2->SetTexture(texture_background_.Get());
-  mesh_renderer2->SetColor(colors::White);
-
-  auto* character_object = CreateGameObject("Character");
-  character_object->GetComponent<TransformComponent>()->SetPosition({500, 500, 0});
-  auto* char_sprite = character_object->AddComponent<UISpriteRenderer>();
-  char_sprite->SetTexture(texture_character_.Get());
-  char_sprite->SetSize({150, 150});
-
+  auto* character_object = CreateGameObject("Character", {.position = {500, 500, 0}});
+  character_object->AddComponent<UISpriteRenderer>(UISpriteRenderer::Props{
+    .texture = texture_character_.Get(),
+    .size = {150, 150},
+  });
   character_object->AddComponent<CharacterMover>();
 
-  auto* character_object2 = CreateGameObject("Character2");
+  auto* character_object2 = CreateGameObject("Character2", {.position = {150, 150, 0}});
   character_object2->SetParent(character_object);
-  character_object2->GetComponent<TransformComponent>()->SetPosition({150, 150, 0});
-  auto* char_sprite2 = character_object2->AddComponent<UISpriteRenderer>();
-  char_sprite2->SetTexture(texture_character_.Get());
-  char_sprite2->SetSize({150, 150});
+  character_object2->AddComponent<UISpriteRenderer>(UISpriteRenderer::Props{
+    .texture = texture_character_.Get(),
+    .size = {150, 150},
+  });
   character_object2->AddComponent<CharacterMover>();
 
-  auto* additive = CreateGameObject("Additive");
-  additive->GetComponent<TransformComponent>()->SetPosition({0, -3, -1.0f});
-  auto* additive_sprite = additive->AddComponent<SpriteRenderer>();
-  additive_sprite->SetTexture(texture_additive_.Get());
-  additive_sprite->SetSize({1.0f, 1.0f});
-  additive_sprite->SetBillboardMode(Billboard::Mode::Spherical);
-  additive_sprite->SetBlendMode(Rendering::BlendMode::Additive);
-  additive_sprite->SetColor(colors::WithAlpha(colors::Lime, 0.5f));
+  auto* additive = CreateGameObject("Additive", {.position = {0, -3, -1}});
+  additive->AddComponent<SpriteRenderer>(SpriteRenderer::Props{
+    .texture = texture_additive_.Get(),
+    .color = colors::WithAlpha(colors::Lime, 0.5f),
+    .size = {1, 1},
+    .billboard_mode = Billboard::Mode::Spherical,
+    .blend_mode = Rendering::BlendMode::Additive,
+  });
 
-  auto* animated_bg = CreateGameObject("AnimatedBackground");
-  animated_bg->GetComponent<TransformComponent>()->SetPosition({0.0f, -3.0f, 0.0f});
+  auto* animated_bg = CreateGameObject("AnimatedBackground", {.position = {0, -3, 0}});
+  auto* bg_renderer = animated_bg->AddComponent<SpriteRenderer>(SpriteRenderer::Props{
+    .texture = texture_ao_.Get(),
+    .color = colors::WithAlpha(colors::Red, 0.5f),
+    .size = {15, 15},
+    .pivot = {0.5f, 0.5f},
+    .double_sided = true,
+  });
 
-  auto* bg_renderer = animated_bg->AddComponent<SpriteRenderer>();
-  bg_renderer->SetTexture(texture_ao_.Get());
-  bg_renderer->SetSize({15.0f, 15.0f});
-  bg_renderer->SetPivot(Pivot::Preset::Center);
-  bg_renderer->SetDoubleSided(true);
-  bg_renderer->SetBillboardMode(Billboard::Mode::None);
-  bg_renderer->SetColor(colors::WithAlpha(colors::Red, 0.5f));
-
-  pivot_cube_ = CreateGameObject("PivotCube");
-  auto* pivot_transform = pivot_cube_->GetComponent<TransformComponent>();
-  pivot_transform->SetPosition({5.0f, 0.0f, 5.0f});
-  pivot_transform->SetScale({1.0f, 1.0f, 1.0f});
-  pivot_transform->SetPivot({0.5f, 0.0f, 0.0f});
-
-  auto* pivot_mesh = pivot_cube_->AddComponent<MeshRenderer>();
-  pivot_mesh->SetMesh(asset_manager.GetDefaultMesh(DefaultMesh::Cube));
-  pivot_mesh->SetTexture(texture_background_.Get());
-  pivot_mesh->SetColor(colors::White);
+  pivot_cube_ = CreateGameObject("PivotCube", {.position = {5, 0, 5}, .pivot = {0.5f, 0, 0}});
+  pivot_cube_->AddComponent<MeshRenderer>(MeshRenderer::Props{
+    .mesh = asset_manager.GetDefaultMesh(DefaultMesh::Cube),
+    .texture = texture_background_.Get(),
+    .color = colors::White,
+  });
 
   SpriteSheet::FrameConfig bg_sheet_config;
   bg_sheet_config.sheet_size = {1024, 1024};
@@ -130,37 +113,30 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   animator.SetLoopEnabled(true);
   animator.Play();
 
-  // UI Text
   {
-    auto text_obj = CreateGameObject("Basic UI Text");
-    text_obj->GetTransform()->SetPosition(Vector3(960.0f, 540.0f, 0.0f));
-
-    auto* text = text_obj->AddComponent<UITextRenderer>();
-    text->SetText(L"Hello, World!Hello, World!Hello, World!\nこんにちは！");
-    text->SetFont(Font::FontFamily::ZenOldMincho);
-    text->SetPixelSize(48.0f);
-    text->SetColor(colors::Lime);
-    text->SetHorizontalAlign(Text::HorizontalAlign::Left);
-    text->SetVerticalAlign(Text::VerticalAlign::Center);
-    text->SetPivot(Pivot::Preset::Center);
-    text->SetLayerId(100);
+    auto* text_obj = CreateGameObject("Basic UI Text", {.position = {960, 540, 0}});
+    auto* text = text_obj->AddComponent<UITextRenderer>(UITextRenderer::Props{
+      .text = L"Hello, World!Hello, World!Hello, World!\nこんにちは！",
+      .pixel_size = 48.0f,
+      .color = colors::Lime,
+      .v_align = Text::VerticalAlign::Center,
+      .pivot = {0.5f, 0.5f},
+      .layer_id = 100,
+    });
     Logger::LogFormat(LogLevel::Info, LogCategory::Game, Logger::Here(), "UI Text size: {} x {}", text->GetSize().x, text->GetSize().y);
   }
 
-  // World Text
-  auto* text_obj2 = CreateGameObject("Basic Text 2");
-  text_obj2->GetTransform()->SetPosition(Vector3(0.0f, -3.0f, 1.0f));
-
-  auto* text2 = text_obj2->AddComponent<TextRenderer>();
-  text2->SetText(L"Hello, World!\n Bye");
-  text2->SetFont(Font::FontFamily::ZenOldMincho);
-  text2->SetPixelSize(1.0f);
-  text2->SetColor(colors::White);
-  text2->SetBillboardMode(Billboard::Mode::Cylindrical);
-  text2->SetHorizontalAlign(Text::HorizontalAlign::Center);
-  text2->SetVerticalAlign(Text::VerticalAlign::Center);
-  text2->SetPivot(Pivot::Preset::Center);
-  text2->SetDoubleSided(true);
+  auto* text_obj2 = CreateGameObject("Basic Text 2", {.position = {0, -3, 1}});
+  text_obj2->AddComponent<TextRenderer>(TextRenderer::Props{
+    .text = L"Hello, World!\n Bye",
+    .pixel_size = 1.0f,
+    .color = colors::White,
+    .h_align = Text::HorizontalAlign::Center,
+    .v_align = Text::VerticalAlign::Center,
+    .billboard_mode = Billboard::Mode::Cylindrical,
+    .pivot = {0.5f, 0.5f},
+    .double_sided = true,
+  });
 }
 
 void TestScene::OnPostUpdate(float dt) {
@@ -212,17 +188,12 @@ void TestScene::OnExit() {
 }
 
 void TestScene::SetupCamera() {
-  auto* camera_obj = CreateGameObject("MainCamera");
-  auto* camera_transform = camera_obj->GetComponent<TransformComponent>();
-  camera_transform->SetPosition({0.0f, 0.0f, -10.0f});
-
+  auto* camera_obj = CreateGameObject("MainCamera", {.position = {0, 0, -10}});
   auto* camera = camera_obj->AddComponent<CameraComponent>();
-  camera->SetPerspective(Math::PiOver4, 16.0f / 9.0f, 0.1f, 1000.0f);
-
-  auto* controller = camera_obj->AddComponent<FreeCameraController>();
-  controller->SetMovementSpeed(15.0f);
-  controller->SetRotationSpeed(1.5f);
-  controller->SetSmoothness(8.0f);
-
+  camera_obj->AddComponent<FreeCameraController>(FreeCameraController::Props{
+    .movement_speed = 15.0f,
+    .rotation_speed = 1.5f,
+    .smoothness = 8.0f,
+  });
   GetCameraSetting().Register(camera);
 }

@@ -16,14 +16,12 @@ void CubeScene::OnEnter(AssetManager& asset_manager) {
 
   SetupCamera();
 
-  cube_ = CreateGameObject("Cube");
-  auto* transform = cube_->GetComponent<TransformComponent>();
-  transform->SetScale({2.0f, 2.0f, 2.0f});
-
-  auto* renderer = cube_->AddComponent<MeshRenderer>();
-  renderer->SetMesh(asset_manager.GetDefaultMesh(DefaultMesh::Cube));
-  renderer->SetTexture(texture_.Get());
-  renderer->SetColor(colors::White);
+  cube_ = CreateGameObject("Cube", {.scale = {2, 2, 2}});
+  cube_->AddComponent<MeshRenderer>(MeshRenderer::Props{
+    .mesh = asset_manager.GetDefaultMesh(DefaultMesh::Cube),
+    .texture = texture_.Get(),
+    .color = colors::White,
+  });
 }
 
 void CubeScene::OnPostUpdate(float dt) {
@@ -41,17 +39,12 @@ void CubeScene::OnExit() {
 }
 
 void CubeScene::SetupCamera() {
-  auto* camera_obj = CreateGameObject("MainCamera");
-  auto* camera_transform = camera_obj->GetComponent<TransformComponent>();
-  camera_transform->SetPosition({0.0f, 2.0f, -8.0f});
-
+  auto* camera_obj = CreateGameObject("MainCamera", {.position = {0, 2, -8}});
   auto* camera = camera_obj->AddComponent<CameraComponent>();
-  camera->SetPerspective(Math::PiOver4, 16.0f / 9.0f, 0.1f, 1000.0f);
-
-  auto* controller = camera_obj->AddComponent<FreeCameraController>();
-  controller->SetMovementSpeed(15.0f);
-  controller->SetRotationSpeed(1.5f);
-  controller->SetSmoothness(8.0f);
-
+  camera_obj->AddComponent<FreeCameraController>(FreeCameraController::Props{
+    .movement_speed = 15.0f,
+    .rotation_speed = 1.5f,
+    .smoothness = 8.0f,
+  });
   GetCameraSetting().Register(camera);
 }

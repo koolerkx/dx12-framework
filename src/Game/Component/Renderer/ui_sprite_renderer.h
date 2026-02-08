@@ -15,7 +15,23 @@ using Math::Vector4;
 
 class UISpriteRenderer : public Component<UISpriteRenderer> {
  public:
+  struct Props {
+    Texture* texture = nullptr;
+    Vector4 color = {1, 1, 1, 1};
+    Vector2 size = {100, 100};
+    int layer_id = 0;
+    Vector2 pivot = {0.0f, 0.0f};
+  };
+
   UISpriteRenderer(GameObject* owner) : Component(owner) {
+  }
+
+  UISpriteRenderer(GameObject* owner, const Props& props) : Component(owner) {
+    if (props.texture) SetTexture(props.texture);
+    SetColor(props.color);
+    SetSize(props.size);
+    if (props.layer_id != 0) SetLayerId(props.layer_id);
+    SetPivot(props.pivot);
   }
 
   void SetTexture(Texture* tex) {

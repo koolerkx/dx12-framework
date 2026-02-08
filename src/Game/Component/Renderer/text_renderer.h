@@ -19,7 +19,31 @@ using Math::Vector4;
 
 class TextRenderer : public Component<TextRenderer> {
  public:
+  struct Props {
+    std::wstring text;
+    Font::FontFamily font = Font::FontFamily::ZenOldMincho;
+    float pixel_size = 16.0f;
+    Vector4 color = {1, 1, 1, 1};
+    Text::HorizontalAlign h_align = Text::HorizontalAlign::Left;
+    Text::VerticalAlign v_align = Text::VerticalAlign::Baseline;
+    Billboard::Mode billboard_mode = Billboard::Mode::None;
+    Vector2 pivot = {0.5f, 0.0f};
+    bool double_sided = false;
+  };
+
   TextRenderer(GameObject* owner) : Component(owner) {
+  }
+
+  TextRenderer(GameObject* owner, const Props& props) : Component(owner) {
+    if (!props.text.empty()) SetText(props.text);
+    SetFont(props.font);
+    SetPixelSize(props.pixel_size);
+    SetColor(props.color);
+    SetHorizontalAlign(props.h_align);
+    SetVerticalAlign(props.v_align);
+    SetBillboardMode(props.billboard_mode);
+    SetPivot(props.pivot);
+    if (props.double_sided) SetDoubleSided(true);
   }
 
   void SetText(const std::wstring& text) {

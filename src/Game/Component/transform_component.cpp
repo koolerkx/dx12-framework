@@ -2,6 +2,13 @@
 
 #include "game_object.h"
 
+void TransformComponent::Apply(const Props& props) {
+  if (props.position != Vector3::Zero) SetPosition(props.position);
+  if (props.scale != Vector3::One) SetScale(props.scale);
+  if (props.rotation_degrees != Vector3::Zero) SetRotationEulerDegree(props.rotation_degrees);
+  if (props.pivot != Vector3::Zero) SetPivot(props.pivot);
+}
+
 void TransformComponent::OnStart() {
   UpdateLocalMatrix();
   OnParentChanged();

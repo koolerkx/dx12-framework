@@ -20,7 +20,27 @@ using Math::Vector4;
 
 class SpriteRenderer : public Component<SpriteRenderer> {
  public:
+  struct Props {
+    Texture* texture = nullptr;
+    Vector4 color = {1, 1, 1, 1};
+    Vector2 size = {100, 100};
+    Billboard::Mode billboard_mode = Billboard::Mode::None;
+    Rendering::BlendMode blend_mode = Rendering::BlendMode::AlphaBlend;
+    Vector2 pivot = {0.5f, 0.5f};
+    bool double_sided = false;
+  };
+
   SpriteRenderer(GameObject* owner) : Component(owner) {
+  }
+
+  SpriteRenderer(GameObject* owner, const Props& props) : Component(owner) {
+    if (props.texture) SetTexture(props.texture);
+    SetColor(props.color);
+    SetSize(props.size);
+    SetBillboardMode(props.billboard_mode);
+    SetBlendMode(props.blend_mode);
+    SetPivot(props.pivot);
+    if (props.double_sided) SetDoubleSided(true);
   }
 
   void SetTexture(Texture* tex) {

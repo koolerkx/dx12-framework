@@ -8,7 +8,16 @@ using Math::Vector3;
 
 class TransformComponent : public Component<TransformComponent> {
  public:
+  struct Props {
+    Vector3 position = Vector3::Zero;
+    Vector3 scale = Vector3::One;
+    Vector3 rotation_degrees = Vector3::Zero;
+    Vector3 pivot = Vector3::Zero;
+  };
+
   using Component::Component;
+
+  void Apply(const Props& props);
 
   void OnStart() override;
   void OnParentChanged() override;

@@ -69,7 +69,7 @@ class IScene {
   }
 
  protected:
-  GameObject* CreateGameObject(const std::string& name = "GameObject");
+  GameObject* CreateGameObject(const std::string& name = "GameObject", const TransformComponent::Props& transform = {});
   GameObject* FindGameObject(const std::string& name) const;
 
  public:

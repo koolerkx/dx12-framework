@@ -7,7 +7,18 @@ enum class ProjectionType { Perspective, Orthographic };
 
 class CameraComponent : public Component<CameraComponent> {
  public:
+  struct Props {
+    float fov = Math::PiOver4;
+    float aspect_ratio = 16.0f / 9.0f;
+    float near_plane = 0.1f;
+    float far_plane = 1000.0f;
+  };
+
   using Component::Component;
+
+  CameraComponent(GameObject* owner, const Props& props) : Component(owner) {
+    SetPerspective(props.fov, props.aspect_ratio, props.near_plane, props.far_plane);
+  }
 
   void OnStart() override;
 

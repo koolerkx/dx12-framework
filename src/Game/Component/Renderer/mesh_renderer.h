@@ -15,7 +15,23 @@ using Math::Vector4;
 
 class MeshRenderer : public Component<MeshRenderer> {
  public:
+  struct Props {
+    const Mesh* mesh = nullptr;
+    Texture* texture = nullptr;
+    Vector4 color = {1, 1, 1, 1};
+    Graphics::ShaderId shader_id = Graphics::Basic3DShader::ID;
+    RenderLayer render_layer = RenderLayer::Opaque;
+  };
+
   using Component::Component;
+
+  MeshRenderer(GameObject* owner, const Props& props) : Component(owner) {
+    if (props.mesh) SetMesh(props.mesh);
+    if (props.texture) SetTexture(props.texture);
+    SetColor(props.color);
+    SetShaderId(props.shader_id);
+    SetRenderLayer(props.render_layer);
+  }
 
   void SetMesh(const Mesh* mesh) {
     mesh_ = mesh;

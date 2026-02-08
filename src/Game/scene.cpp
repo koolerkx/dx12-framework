@@ -9,12 +9,17 @@
 IScene::IScene() = default;
 IScene::~IScene() = default;
 
-GameObject* IScene::CreateGameObject(const std::string& name) {
+GameObject* IScene::CreateGameObject(const std::string& name, const TransformComponent::Props& transform) {
+  if (FindGameObject(name)) {
+    Logger::LogFormat(LogLevel::Warn, LogCategory::Game, Logger::Here(), "GameObject with name '{}' already exists in scene", name);
+  }
+
   auto obj = std::make_unique<GameObject>(this, name);
   GameObject* ptr = obj.get();
   game_objects_.push_back(std::move(obj));
 
   ptr->Init();
+  ptr->GetTransform()->Apply(transform);
 
   return ptr;
 }

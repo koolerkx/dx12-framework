@@ -10,7 +10,19 @@ class TransformComponent;
 
 class FreeCameraController : public BehaviorComponent<FreeCameraController> {
  public:
+  struct Props {
+    float movement_speed = 10.0f;
+    float rotation_speed = 2.0f;
+    float smoothness = 10.0f;
+  };
+
   using BehaviorComponent::BehaviorComponent;
+
+  FreeCameraController(GameObject* owner, const Props& props) : BehaviorComponent(owner) {
+    SetMovementSpeed(props.movement_speed);
+    SetRotationSpeed(props.rotation_speed);
+    SetSmoothness(props.smoothness);
+  }
 
   void OnUpdate(float dt) override;
 
