@@ -123,9 +123,22 @@ void IScene::RenderRootObjects(FramePacket& packet) {
   }
 }
 
+GameObject* IScene::FindGameObject(const std::string& name) const {
+  for (auto& obj : game_objects_) {
+    if (obj->GetName() == name) return obj.get();
+  }
+  return nullptr;
+}
+
 void IScene::DestroyGameObject(GameObject* obj) {
   if (!obj) return;
   obj->Destroy();
+}
+
+void IScene::DestroyGameObject(const std::string& name) {
+  if (auto* obj = FindGameObject(name)) {
+    obj->Destroy();
+  }
 }
 
 void IScene::CleanupDestroyedObjects() {

@@ -38,18 +38,17 @@ void CubeScene::OnPostUpdate(float dt) {
 
 void CubeScene::OnExit() {
   cube_ = nullptr;
-  camera_object_ = nullptr;
 }
 
 void CubeScene::SetupCamera() {
-  camera_object_ = CreateGameObject("MainCamera");
-  auto* camera_transform = camera_object_->GetComponent<TransformComponent>();
+  auto* camera_obj = CreateGameObject("MainCamera");
+  auto* camera_transform = camera_obj->GetComponent<TransformComponent>();
   camera_transform->SetPosition({0.0f, 2.0f, -8.0f});
 
-  auto* camera = camera_object_->AddComponent<CameraComponent>();
+  auto* camera = camera_obj->AddComponent<CameraComponent>();
   camera->SetPerspective(Math::PiOver4, 16.0f / 9.0f, 0.1f, 1000.0f);
 
-  auto* controller = camera_object_->AddComponent<FreeCameraController>();
+  auto* controller = camera_obj->AddComponent<FreeCameraController>();
   controller->SetMovementSpeed(15.0f);
   controller->SetRotationSpeed(1.5f);
   controller->SetSmoothness(8.0f);

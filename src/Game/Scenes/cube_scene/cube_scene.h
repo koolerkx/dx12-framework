@@ -15,7 +15,6 @@ class CubeScene : public IScene {
  private:
   AssetHandle<Texture> texture_;
   GameObject* cube_ = nullptr;
-  GameObject* camera_object_ = nullptr;
   float rotation_angle_ = 0.0f;
 
   void SetupCamera();

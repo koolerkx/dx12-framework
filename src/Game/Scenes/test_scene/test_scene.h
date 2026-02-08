@@ -18,16 +18,8 @@ class TestScene : public IScene {
   AssetHandle<Texture> texture_character_;
   AssetHandle<Texture> texture_ao_;
   AssetHandle<Texture> texture_additive_;
-  GameObject* character_object_ = nullptr;
-  GameObject* character_object2_ = nullptr;
-  GameObject* camera_object_ = nullptr;
   GameObject* cube_object_ = nullptr;
   GameObject* cube_object2_ = nullptr;
-  GameObject* terrain_plane_ = nullptr;
-  GameObject* text_obj_ = nullptr;
-  GameObject* text_obj2_ = nullptr;
-  GameObject* animated_bg_object_ = nullptr;
-  GameObject* additive_ = nullptr;
   GameObject* pivot_cube_ = nullptr;
 
   void SetupCamera();

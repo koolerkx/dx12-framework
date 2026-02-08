@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "Graphic/Frame/frame_packet.h"
@@ -69,6 +70,7 @@ class IScene {
 
  protected:
   GameObject* CreateGameObject(const std::string& name = "GameObject");
+  GameObject* FindGameObject(const std::string& name) const;
 
  public:
   const std::vector<std::unique_ptr<GameObject>>& GetGameObjects() const {
@@ -76,6 +78,7 @@ class IScene {
   }
 
   void DestroyGameObject(GameObject* obj);
+  void DestroyGameObject(const std::string& name);
 
  private:
   std::vector<std::unique_ptr<GameObject>> game_objects_;

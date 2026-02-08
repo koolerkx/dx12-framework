@@ -37,12 +37,12 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
 
   SetupCamera();
 
-  terrain_plane_ = CreateGameObject("TerrainPlane");
-  auto* plane_transform = terrain_plane_->GetComponent<TransformComponent>();
+  auto* terrain_plane = CreateGameObject("TerrainPlane");
+  auto* plane_transform = terrain_plane->GetComponent<TransformComponent>();
   plane_transform->SetPosition({0.0f, -5.0f, 0.0f});
   plane_transform->SetScale({20.0f, 1.0f, 20.0f});
 
-  auto* plane_renderer = terrain_plane_->AddComponent<MeshRenderer>();
+  auto* plane_renderer = terrain_plane->AddComponent<MeshRenderer>();
   plane_renderer->SetMesh(asset_manager.GetDefaultMesh(DefaultMesh::Plane));
   plane_renderer->SetTexture(texture_background_.Get());
   plane_renderer->SetColor(colors::White);
@@ -69,35 +69,35 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   mesh_renderer2->SetTexture(texture_background_.Get());
   mesh_renderer2->SetColor(colors::White);
 
-  character_object_ = CreateGameObject("Character");
-  character_object_->GetComponent<TransformComponent>()->SetPosition({500, 500, 0});
-  auto* char_sprite = character_object_->AddComponent<UISpriteRenderer>();
+  auto* character_object = CreateGameObject("Character");
+  character_object->GetComponent<TransformComponent>()->SetPosition({500, 500, 0});
+  auto* char_sprite = character_object->AddComponent<UISpriteRenderer>();
   char_sprite->SetTexture(texture_character_.Get());
   char_sprite->SetSize({150, 150});
 
-  character_object_->AddComponent<CharacterMover>();
+  character_object->AddComponent<CharacterMover>();
 
-  character_object2_ = CreateGameObject("Character");
-  character_object2_->SetParent(character_object_);
-  character_object2_->GetComponent<TransformComponent>()->SetPosition({150, 150, 0});
-  auto* char_sprite2 = character_object2_->AddComponent<UISpriteRenderer>();
+  auto* character_object2 = CreateGameObject("Character2");
+  character_object2->SetParent(character_object);
+  character_object2->GetComponent<TransformComponent>()->SetPosition({150, 150, 0});
+  auto* char_sprite2 = character_object2->AddComponent<UISpriteRenderer>();
   char_sprite2->SetTexture(texture_character_.Get());
   char_sprite2->SetSize({150, 150});
-  character_object2_->AddComponent<CharacterMover>();
+  character_object2->AddComponent<CharacterMover>();
 
-  additive_ = CreateGameObject("Additive");
-  additive_->GetComponent<TransformComponent>()->SetPosition({0, -3, -1.0f});
-  auto* additive_sprite = additive_->AddComponent<SpriteRenderer>();
+  auto* additive = CreateGameObject("Additive");
+  additive->GetComponent<TransformComponent>()->SetPosition({0, -3, -1.0f});
+  auto* additive_sprite = additive->AddComponent<SpriteRenderer>();
   additive_sprite->SetTexture(texture_additive_.Get());
   additive_sprite->SetSize({1.0f, 1.0f});
   additive_sprite->SetBillboardMode(Billboard::Mode::Spherical);
   additive_sprite->SetBlendMode(Rendering::BlendMode::Additive);
   additive_sprite->SetColor(colors::WithAlpha(colors::Lime, 0.5f));
 
-  animated_bg_object_ = CreateGameObject("AnimatedBackground");
-  animated_bg_object_->GetComponent<TransformComponent>()->SetPosition({0.0f, -3.0f, 0.0f});
+  auto* animated_bg = CreateGameObject("AnimatedBackground");
+  animated_bg->GetComponent<TransformComponent>()->SetPosition({0.0f, -3.0f, 0.0f});
 
-  auto* bg_renderer = animated_bg_object_->AddComponent<SpriteRenderer>();
+  auto* bg_renderer = animated_bg->AddComponent<SpriteRenderer>();
   bg_renderer->SetTexture(texture_ao_.Get());
   bg_renderer->SetSize({15.0f, 15.0f});
   bg_renderer->SetPivot(Pivot::Preset::Center);
@@ -148,10 +148,10 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   }
 
   // World Text
-  text_obj2_ = CreateGameObject("Basic Text 2");
-  text_obj2_->GetTransform()->SetPosition(Vector3(0.0f, -3.0f, 1.0f));
+  auto* text_obj2 = CreateGameObject("Basic Text 2");
+  text_obj2->GetTransform()->SetPosition(Vector3(0.0f, -3.0f, 1.0f));
 
-  auto* text2 = text_obj2_->AddComponent<TextRenderer>();
+  auto* text2 = text_obj2->AddComponent<TextRenderer>();
   text2->SetText(L"Hello, World!\n Bye");
   text2->SetFont(Font::FontFamily::ZenOldMincho);
   text2->SetPixelSize(1.0f);
@@ -206,28 +206,20 @@ void TestScene::OnRender(FramePacket& /* packet */) {
 }
 
 void TestScene::OnExit() {
-  character_object_ = nullptr;
-  character_object2_ = nullptr;
-  camera_object_ = nullptr;
   cube_object_ = nullptr;
   cube_object2_ = nullptr;
-  terrain_plane_ = nullptr;
-  text_obj_ = nullptr;
-  text_obj2_ = nullptr;
-  animated_bg_object_ = nullptr;
-  additive_ = nullptr;
   pivot_cube_ = nullptr;
 }
 
 void TestScene::SetupCamera() {
-  camera_object_ = CreateGameObject("MainCamera");
-  auto* camera_transform = camera_object_->GetComponent<TransformComponent>();
+  auto* camera_obj = CreateGameObject("MainCamera");
+  auto* camera_transform = camera_obj->GetComponent<TransformComponent>();
   camera_transform->SetPosition({0.0f, 0.0f, -10.0f});
 
-  auto* camera = camera_object_->AddComponent<CameraComponent>();
+  auto* camera = camera_obj->AddComponent<CameraComponent>();
   camera->SetPerspective(Math::PiOver4, 16.0f / 9.0f, 0.1f, 1000.0f);
 
-  auto* controller = camera_object_->AddComponent<FreeCameraController>();
+  auto* controller = camera_obj->AddComponent<FreeCameraController>();
   controller->SetMovementSpeed(15.0f);
   controller->SetRotationSpeed(1.5f);
   controller->SetSmoothness(8.0f);
