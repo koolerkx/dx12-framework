@@ -6,7 +6,7 @@
  *       ensuring Single Source of Truth for CPU struct and GPU layout.
  *
  * @warning When modifying vertex structs, always update the corresponding
- *          kInputLayout offsets and add static_assert for size verification.
+ *          INPUT_LAYOUT offsets and add static_assert for size verification.
  *
  * @code
  * // Using vertex types directly
@@ -36,13 +36,13 @@ struct PositionColor {
   Vector3 position;
   Vector4 color;
 
-  static constexpr std::array kInputLayout = {
+  static constexpr std::array INPUT_LAYOUT = {
     D3D12_INPUT_ELEMENT_DESC{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
     D3D12_INPUT_ELEMENT_DESC{"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
   };
 
   static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
-    return {kInputLayout.data(), kInputLayout.size()};
+    return {INPUT_LAYOUT.data(), INPUT_LAYOUT.size()};
   }
 };
 static_assert(sizeof(PositionColor) == 28);
@@ -52,14 +52,14 @@ struct PositionTexCoordColor {
   Vector2 tex_coord;
   Vector4 color;
 
-  static constexpr std::array kInputLayout = {
+  static constexpr std::array INPUT_LAYOUT = {
     D3D12_INPUT_ELEMENT_DESC{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
     D3D12_INPUT_ELEMENT_DESC{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
     D3D12_INPUT_ELEMENT_DESC{"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 20, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
   };
 
   static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
-    return {kInputLayout.data(), kInputLayout.size()};
+    return {INPUT_LAYOUT.data(), INPUT_LAYOUT.size()};
   }
 };
 static_assert(sizeof(PositionTexCoordColor) == 36);
@@ -88,9 +88,9 @@ static_assert(sizeof(SpriteInstance) == 96);
 
 namespace detail {
 inline constexpr auto MakeSpriteInstancedLayout() {
-  std::array<D3D12_INPUT_ELEMENT_DESC, PositionTexCoordColor::kInputLayout.size() + SpriteInstance::kInstanceLayout.size()> result{};
+  std::array<D3D12_INPUT_ELEMENT_DESC, PositionTexCoordColor::INPUT_LAYOUT.size() + SpriteInstance::kInstanceLayout.size()> result{};
   size_t idx = 0;
-  for (const auto& elem : PositionTexCoordColor::kInputLayout) {
+  for (const auto& elem : PositionTexCoordColor::INPUT_LAYOUT) {
     result[idx++] = elem;
   }
   for (const auto& elem : SpriteInstance::kInstanceLayout) {
@@ -101,10 +101,10 @@ inline constexpr auto MakeSpriteInstancedLayout() {
 }  // namespace detail
 
 struct SpriteInstanced {
-  static constexpr auto kInputLayout = detail::MakeSpriteInstancedLayout();
+  static constexpr auto INPUT_LAYOUT = detail::MakeSpriteInstancedLayout();
 
   static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
-    return {kInputLayout.data(), kInputLayout.size()};
+    return {INPUT_LAYOUT.data(), INPUT_LAYOUT.size()};
   }
 };
 
@@ -117,12 +117,12 @@ struct Empty {
 struct SkyboxVertex {
   Vector3 position;
 
-  static constexpr std::array kInputLayout = {
+  static constexpr std::array INPUT_LAYOUT = {
     D3D12_INPUT_ELEMENT_DESC{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
   };
 
   static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
-    return {kInputLayout.data(), kInputLayout.size()};
+    return {INPUT_LAYOUT.data(), INPUT_LAYOUT.size()};
   }
 };
 static_assert(sizeof(SkyboxVertex) == 12);
