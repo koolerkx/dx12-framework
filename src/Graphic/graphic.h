@@ -23,7 +23,7 @@
 #include "Pipeline/shader_manager.h"
 #include "Presentation/presentation_context.h"
 #include "Render/material_renderer.h"
-#include "Render/render_pass_manager.h"
+#include "Render/render_graph.h"
 #include "Rendering/hdr_config.h"
 #include "Resource/Font/sprite_font_manager.h"
 #include "Resource/Texture/texture_manager.h"
@@ -138,6 +138,7 @@ class Graphic {
 
   HdrConfig hdr_config_;
   HdrDebug hdr_debug_;
+  DepthViewConfig depth_view_config_;
 
   UINT frame_buffer_width_ = 0;
   UINT frame_buffer_height_ = 0;
@@ -153,7 +154,7 @@ class Graphic {
   std::unique_ptr<UiRenderer> ui_renderer_;
   std::unique_ptr<OpaqueRenderer> opaque_renderer_;
   std::unique_ptr<TransparentRenderer> transparent_renderer_;
-  std::unique_ptr<RenderPassManager> render_pass_manager_;
+  std::unique_ptr<RenderGraph> render_graph_;
 
   std::unique_ptr<DebugLineRenderer> debug_line_renderer_;
 

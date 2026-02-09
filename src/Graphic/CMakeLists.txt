@@ -68,9 +68,10 @@ add_library(graphic STATIC
     Command/render_command_list.h
     Command/render_command_list.cpp
 
-    Render/render_pass_manager.h
-    Render/render_pass_manager.cpp
+    Render/render_graph.h
+    Render/render_graph.cpp
     Render/render_pass.h
+    Render/render_graph_handle.h
     Render/material_renderer.h
     Render/material_renderer.cpp
     Render/draw_command_aggregator.h
@@ -90,6 +91,9 @@ add_library(graphic STATIC
 
     Render/tone_map_pass.h
     Render/tone_map_pass.cpp
+
+    Render/depth_view_pass.h
+    Render/depth_view_pass.cpp
 
     Render/skybox_pass.h
     Render/skybox_pass.cpp
@@ -120,6 +124,8 @@ target_add_hlsl_auto(graphic "6.6"
     "${CMAKE_SOURCE_DIR}/shaders/tonemap.ps.hlsl"
     "${CMAKE_SOURCE_DIR}/shaders/skybox.vs.hlsl"
     "${CMAKE_SOURCE_DIR}/shaders/skybox.ps.hlsl"
+    "${CMAKE_SOURCE_DIR}/shaders/depthview.vs.hlsl"
+    "${CMAKE_SOURCE_DIR}/shaders/depthview.ps.hlsl"
 )
 
 # manually add shaders files

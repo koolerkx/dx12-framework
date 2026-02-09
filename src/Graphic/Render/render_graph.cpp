@@ -100,7 +100,7 @@ void RenderGraph::ApplyPassSetup(ID3D12GraphicsCommandList* cmd, const PassSetup
         entry.render_texture->TransitionTo(cmd, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
         break;
       case RenderGraphResourceType::DepthBuffer:
-        entry.depth_buffer->TransitionTo(cmd, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+        entry.depth_buffer->TransitionTo(cmd, D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
         break;
       case RenderGraphResourceType::Backbuffer:
         assert(false && "Backbuffer cannot be a shader input");

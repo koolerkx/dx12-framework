@@ -161,6 +161,21 @@ struct SkyboxShader {
   }
 };
 
+struct PostProcessDepthViewShader {
+  static constexpr ShaderId ID = 8;
+  using VertexType = Vertex::Empty;
+
+  static constexpr RSPreset RS_PRESET = RSPreset::Standard;
+  static constexpr std::string_view NAME = "DepthView";
+  static constexpr std::wstring_view VS_PATH = L"Content/shaders/depthview.vs.cso";
+  static constexpr std::wstring_view PS_PATH = L"Content/shaders/depthview.ps.cso";
+  static constexpr ShaderRenderHints HINTS = {};
+
+  static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
+    return VertexType::GetInputLayout();
+  }
+};
+
 // Shader Registration
 using AllShaders = std::tuple<SpriteShader,
   SpriteInstancedUIShader,
@@ -169,7 +184,8 @@ using AllShaders = std::tuple<SpriteShader,
   Basic3DShader,
   DebugLineShader,
   PostProcessToneMapShader,
-  SkyboxShader>;
+  SkyboxShader,
+  PostProcessDepthViewShader>;
 
 [[maybe_unused]] constexpr size_t SHADER_COUNT = std::tuple_size_v<AllShaders>;
 
