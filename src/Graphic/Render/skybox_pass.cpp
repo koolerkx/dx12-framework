@@ -1,12 +1,12 @@
 #include "skybox_pass.h"
 
 #include "Command/render_command_list.h"
+#include "Frame/constant_buffers.h"
 #include "Framework/Logging/logger.h"
 #include "Pipeline/root_parameter_slots.h"
 #include "Pipeline/shader_descriptors.h"
 #include "Pipeline/shader_manager.h"
 #include "Pipeline/vertex_types.h"
-#include "Render/render_texture.h"
 #include "d3dx12.h"
 
 SkyboxPass::SkyboxPass(ID3D12Device* device, ShaderManager* shader_manager, PassSetup pass_setup)
@@ -138,16 +138,7 @@ bool SkyboxPass::CreateCubeMesh() {
 void SkyboxPass::Execute(const RenderFrameContext& frame, const FramePacket& packet) {
   const auto& bg = packet.background;
 
-  if (bg.mode == BackgroundMode::ClearColor) {
-    if (!setup_.color_targets.empty() && setup_.color_targets[0].texture) {
-      auto* rt = setup_.color_targets[0].texture;
-      float clear[4] = {bg.clear_color.x, bg.clear_color.y, bg.clear_color.z, bg.clear_color.w};
-      frame.command_list->ClearRenderTargetView(rt->GetRTV(), clear, 0, nullptr);
-    }
-    return;
-  }
-
-  if (bg.cubemap_srv_index == UINT32_MAX) return;
+  if (bg.mode != BackgroundMode::ClearColor && bg.cubemap_srv_index == UINT32_MAX) return;
   if (!pipeline_state_) return;
 
   RenderCommandList cmd(frame.command_list, frame.dynamic_allocator, frame.frame_cb, frame.object_cb_allocator);
@@ -168,16 +159,24 @@ void SkyboxPass::Execute(const RenderFrameContext& frame, const FramePacket& pac
   frame_cb_data.screenSize = Math::Vector2(static_cast<float>(frame.screen_width), static_cast<float>(frame.screen_height));
   cmd.SetFrameConstants(frame_cb_data);
 
+  uint32_t srv_index = (bg.mode == BackgroundMode::ClearColor) ? UINT32_MAX : bg.cubemap_srv_index;
+
   struct SkyboxCB {
     uint32_t cubemap_srv_index;
     uint32_t padding[3];
   };
   static_assert(sizeof(SkyboxCB) == 16);
 
-  SkyboxCB skybox_cb = {bg.cubemap_srv_index, {}};
+  SkyboxCB skybox_cb = {srv_index, {}};
   auto skybox_alloc = frame.object_cb_allocator->Allocate<SkyboxCB>();
   memcpy(skybox_alloc.cpu_ptr, &skybox_cb, sizeof(SkyboxCB));
   frame.command_list->SetGraphicsRootConstantBufferView(RootSlot::ToIndex(RootSlot::ConstantBuffer::Light), skybox_alloc.gpu_ptr);
+
+  if (bg.mode == BackgroundMode::ClearColor) {
+    ObjectCB object_cb = {};
+    object_cb.color = bg.clear_color;
+    cmd.SetObjectConstants(object_cb);
+  }
 
   frame.command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
   cube_mesh_.Draw(frame.command_list);
