@@ -84,5 +84,8 @@ void RenderTexture::SafeRelease(DescriptorHeapManager& heap_mgr) {
     srv_index_ = 0;
   }
 
-  rtv_allocation_ = DescriptorHeapAllocator::Allocation{};
+  if (rtv_allocation_.IsValid()) {
+    heap_mgr.GetRtvAllocator().FreeImmediate(rtv_allocation_.index, 1);
+    rtv_allocation_ = {};
+  }
 }

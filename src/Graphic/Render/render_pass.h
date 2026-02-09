@@ -4,21 +4,12 @@
 
 #include "Frame/frame_packet.h"
 #include "Frame/render_frame_context.h"
-
-class RenderTexture;
-class DepthBuffer;
+#include "Render/render_graph_handle.h"
 
 struct PassSetup {
-  struct ColorTarget {
-    RenderTexture* texture = nullptr;  // nullptr = backbuffer
-  };
-  struct DepthTarget {
-    DepthBuffer* buffer = nullptr;  // nullptr = no depth
-  };
-
-  std::vector<ColorTarget> color_targets;
-  DepthTarget depth;
-  std::vector<RenderTexture*> shader_inputs;
+  std::vector<RenderGraphHandle> color_targets;
+  RenderGraphHandle depth = RenderGraphHandle::Invalid;
+  std::vector<RenderGraphHandle> shader_inputs;
 };
 
 class IRenderPass {

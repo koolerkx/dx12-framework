@@ -4,13 +4,13 @@
 
 #include "Frame/frame_packet.h"
 #include "Frame/render_frame_context.h"
+#include "Render/render_graph_handle.h"
 #include "Render/render_pass.h"
 #include "Rendering/hdr_config.h"
 
 struct ID3D12Device;
 class MaterialManager;
 class ShaderManager;
-class RenderTexture;
 
 class ToneMapPass : public IRenderPass {
  public:
@@ -18,7 +18,7 @@ class ToneMapPass : public IRenderPass {
     MaterialManager* material_manager,
     ShaderManager* shader_manager,
     PassSetup pass_setup,
-    RenderTexture* hdr_texture,
+    RenderGraphHandle hdr_handle,
     const HdrConfig* config,
     const HdrDebug* debug);
   ~ToneMapPass() = default;
@@ -37,7 +37,7 @@ class ToneMapPass : public IRenderPass {
   ShaderManager* shader_manager_;
   ComPtr<ID3D12PipelineState> pipeline_state_;
 
-  RenderTexture* hdr_texture_ = nullptr;
+  RenderGraphHandle hdr_handle_ = RenderGraphHandle::Invalid;
   const HdrConfig* config_ = nullptr;
   const HdrDebug* debug_ = nullptr;
 };

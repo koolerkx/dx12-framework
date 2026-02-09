@@ -3,20 +3,20 @@
 #include "Framework/Logging/logger.h"
 #include "Pipeline/material_manager.h"
 #include "Pipeline/shader_manager.h"
-#include "Render/render_texture.h"
+#include "Render/render_graph.h"
 #include "d3dx12.h"
 
 ToneMapPass::ToneMapPass(ID3D12Device* device,
   MaterialManager* material_manager,
   ShaderManager* shader_manager,
   PassSetup pass_setup,
-  RenderTexture* hdr_texture,
+  RenderGraphHandle hdr_handle,
   const HdrConfig* config,
   const HdrDebug* debug)
     : device_(device),
       material_manager_(material_manager),
       shader_manager_(shader_manager),
-      hdr_texture_(hdr_texture),
+      hdr_handle_(hdr_handle),
       config_(config),
       debug_(debug) {
   setup_ = std::move(pass_setup);
@@ -77,7 +77,7 @@ void ToneMapPass::Execute(const RenderFrameContext& frame, const FramePacket& pa
     uint32_t debug_mode;
     uint32_t hdr_srv_index;
     uint32_t padding = 0;
-  } cb_data = {.exposure = config_->exposure, .debug_mode = debug_->debug_view ? 1u : 0u, .hdr_srv_index = hdr_texture_->GetSrvIndex()};
+  } cb_data = {.exposure = config_->exposure, .debug_mode = debug_->debug_view ? 1u : 0u, .hdr_srv_index = frame.render_graph->GetSrvIndex(hdr_handle_)};
 
   auto cb_alloc = frame.object_cb_allocator->Allocate<ToneMapCB>();
   memcpy(cb_alloc.cpu_ptr, &cb_data, sizeof(ToneMapCB));
