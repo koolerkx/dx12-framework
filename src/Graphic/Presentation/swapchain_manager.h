@@ -57,7 +57,7 @@ class SwapChainManager {
     return swap_chain_.Get();
   }
 
-  UINT GetWdith() const {
+  UINT GetWidth() const {
     return width_;
   }
   UINT GetHeight() const {

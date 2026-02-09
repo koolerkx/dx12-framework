@@ -2,6 +2,8 @@
 
 #include <dxgiformat.h>
 
+#include <cstdint>
+
 #include "Descriptor/descriptor_heap_allocator.h"
 #include "Descriptor/descriptor_heap_manager.h"
 #include "Device/gpu_resource.h"
@@ -21,13 +23,23 @@ class DepthBuffer : public GpuResource {
     return dsv_allocation_.cpu;
   }
 
+  uint32_t GetSrvIndex() const {
+    return srv_index_;
+  }
+
   void Clear(ID3D12GraphicsCommandList* command_list, float depth = 1.0f, UINT8 stencil = 0);
 
-  void ResetFrameState() { cleared_this_frame_ = false; }
-  bool NeedsClear() const { return !cleared_this_frame_; }
-  void MarkCleared() { cleared_this_frame_ = true; }
+  void ResetFrameState() {
+    cleared_this_frame_ = false;
+  }
+  bool NeedsClear() const {
+    return !cleared_this_frame_;
+  }
+  void MarkCleared() {
+    cleared_this_frame_ = true;
+  }
 
-  void SafeRelease();
+  void SafeRelease(DescriptorHeapManager& heap_mgr);
 
   UINT GetWidth() const {
     return width_;
@@ -42,6 +54,7 @@ class DepthBuffer : public GpuResource {
 
  private:
   DescriptorHeapAllocator::Allocation dsv_allocation_;
+  uint32_t srv_index_ = 0;
   UINT width_ = 0;
   UINT height_ = 0;
   DXGI_FORMAT format_ = DXGI_FORMAT_D32_FLOAT;
