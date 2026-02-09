@@ -44,6 +44,8 @@ add_library(game STATIC
     Component/Renderer/ui_sprite_renderer.cpp
     Component/Renderer/ui_text_renderer.h
     Component/Renderer/ui_text_renderer.cpp
+    Component/Renderer/particle_emitter.h
+    Component/Renderer/particle_emitter.cpp
 
     SceneSetting/active_camera_setting.h
     SceneSetting/active_camera_setting.cpp

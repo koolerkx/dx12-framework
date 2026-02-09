@@ -1,0 +1,102 @@
+#pragma once
+
+#include <functional>
+#include <random>
+#include <vector>
+
+#include "Component/component.h"
+#include "Component/render_settings.h"
+#include "Component/transform_component.h"
+#include "Framework/Math/Math.h"
+#include "Graphic/Frame/frame_packet.h"
+#include "Graphic/Resource/Texture/texture.h"
+#include "game_object.h"
+
+using Math::Matrix4;
+using Math::Vector2;
+using Math::Vector3;
+using Math::Vector4;
+
+class ParticleEmitter : public Component<ParticleEmitter> {
+ public:
+  struct SpawnParams {
+    Vector3 offset;
+    Vector3 direction;
+  };
+
+  using SpawnFn = std::function<SpawnParams(std::mt19937& rng)>;
+
+  struct Particle {
+    Vector3 position;
+    Vector3 velocity;
+    Vector4 color;
+    float size;
+    float lifetime;
+    float age;
+
+    bool IsAlive() const {
+      return age < lifetime;
+    }
+    float GetLifetimeRatio() const {
+      return age / lifetime;
+    }
+  };
+
+  struct Props {
+    Texture* texture = nullptr;
+    size_t max_particles = 100;
+    float emit_rate = 10.0f;
+    float particle_lifetime = 2.0f;
+    Vector2 particle_size = {1.0f, 1.0f};
+    Vector4 start_color = {1, 1, 1, 1};
+    Vector4 end_color = {1, 1, 1, 0};
+    float start_speed = 5.0f;
+    float speed_variation = 2.0f;
+    Vector3 gravity = {0, -9.8f, 0};
+    bool loop = true;
+    Rendering::BlendMode blend_mode = Rendering::BlendMode::Additive;
+    SpawnFn spawn_fn = SpawnFromCenter();
+  };
+
+  ParticleEmitter(GameObject* owner);
+  ParticleEmitter(GameObject* owner, const Props& props);
+
+  void Play();
+  void Stop();
+  void Clear();
+
+  bool IsPlaying() const {
+    return is_playing_;
+  }
+
+  void OnUpdate(float dt) override;
+  void OnRender(FramePacket& packet) override;
+
+  static SpawnFn SpawnFromCenter();
+
+ private:
+  void EmitParticles(float dt);
+  void UpdateParticles(float dt);
+  void RemoveDeadParticles();
+
+  std::vector<Particle> particles_;
+
+  Texture* texture_ = nullptr;
+  size_t max_particles_ = 100;
+  float emit_rate_ = 10.0f;
+  float particle_lifetime_ = 2.0f;
+  Vector2 particle_size_ = {1.0f, 1.0f};
+  Vector4 start_color_ = {1, 1, 1, 1};
+  Vector4 end_color_ = {1, 1, 1, 0};
+  float start_speed_ = 5.0f;
+  float speed_variation_ = 2.0f;
+  Vector3 gravity_ = {0, -9.8f, 0};
+  bool loop_ = true;
+
+  float emit_accumulator_ = 0.0f;
+  bool is_playing_ = false;
+  Rendering::RenderSettings render_settings_;
+  SpawnFn spawn_fn_;
+
+  thread_local static std::mt19937 rng_;
+};
