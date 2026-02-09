@@ -55,8 +55,8 @@ class TransformComponent : public Component<TransformComponent> {
   Vector3 GetRight();
   Vector3 GetUp();
 
-  Vector3 GetWorldPosition() const;
-  Vector3 GetWorldScale() const;
+  Vector3 GetWorldPosition();
+  Vector3 GetWorldScale();
 
  private:
   void UpdateLocalMatrix();

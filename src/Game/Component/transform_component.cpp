@@ -107,10 +107,10 @@ Vector3 TransformComponent::GetUp() {
   return GetWorldMatrix().GetRow(1).xyz().Normalized();
 }
 
-Vector3 TransformComponent::GetWorldPosition() const {
-  return world_matrix_.GetTranslation();
+Vector3 TransformComponent::GetWorldPosition() {
+  return GetWorldMatrix().GetTranslation();
 }
 
-Vector3 TransformComponent::GetWorldScale() const {
-  return world_matrix_.GetScale();
+Vector3 TransformComponent::GetWorldScale() {
+  return GetWorldMatrix().GetScale();
 }
