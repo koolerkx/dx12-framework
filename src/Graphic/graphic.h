@@ -119,6 +119,13 @@ class Graphic {
     return descriptor_heap_manager_;
   }
 
+  HdrDebug& GetHdrDebug() {
+    return hdr_debug_;
+  }
+  DepthViewConfig& GetDepthViewConfig() {
+    return depth_view_config_;
+  }
+
   using OverlayRenderFunc = std::function<void(ID3D12GraphicsCommandList*)>;
   void SetOverlayRenderer(OverlayRenderFunc renderer) {
     overlay_renderer_ = std::move(renderer);

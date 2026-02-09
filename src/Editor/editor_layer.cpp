@@ -51,6 +51,8 @@ void EditorLayer::Initialize(HWND hwnd, Graphic& graphic) {
   };
   dx12_info.UserData = this;
   ImGui_ImplDX12_Init(&dx12_info);
+
+  graphic_ = &graphic;
 }
 
 void EditorLayer::Shutdown(Graphic& graphic) {
@@ -77,6 +79,7 @@ void EditorLayer::Render(ID3D12GraphicsCommandList* cmd) {
   if (show_hierarchy_) DrawHierarchy();
   if (show_inspector_) DrawInspector();
   if (show_scene_settings_) DrawSceneSettings();
+  if (show_debug_) DrawDebugPanel();
 
   ImGui::Render();
   ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), cmd);
@@ -89,9 +92,7 @@ void EditorLayer::SetScene(IScene* scene) {
 }
 
 void EditorLayer::SubscribeEvents(EventBus& bus) {
-  event_scope_.Subscribe<SceneChangedEvent>(bus, [this](const SceneChangedEvent& e) {
-    SetScene(e.new_scene);
-  });
+  event_scope_.Subscribe<SceneChangedEvent>(bus, [this](const SceneChangedEvent& e) { SetScene(e.new_scene); });
 }
 
 bool EditorLayer::WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -117,6 +118,7 @@ void EditorLayer::DrawMainMenu() {
       ImGui::MenuItem("Hierarchy", nullptr, &show_hierarchy_);
       ImGui::MenuItem("Inspector", nullptr, &show_inspector_);
       ImGui::MenuItem("Scene Settings", nullptr, &show_scene_settings_);
+      ImGui::MenuItem("Debug", nullptr, &show_debug_);
       ImGui::EndMenu();
     }
     ImGui::EndMainMenuBar();
@@ -385,6 +387,30 @@ void EditorLayer::DrawSceneSettings() {
     } else {
       ImGui::Text("Skybox: %s", bg.HasSkybox() ? "Loaded" : "None");
     }
+  }
+
+  ImGui::End();
+}
+
+void EditorLayer::DrawDebugPanel() {
+  ImGui::Begin("Debug");
+
+  auto& depth_cfg = graphic_->GetDepthViewConfig();
+  auto& hdr_dbg = graphic_->GetHdrDebug();
+
+  static const char* kDisplayViewNames[] = {"Normal", "Scene RT", "Depth Buffer"};
+  int current = 0;
+  if (hdr_dbg.debug_view) current = 1;
+  if (depth_cfg.enabled) current = 2;
+
+  if (ImGui::Combo("Display View", &current, kDisplayViewNames, IM_ARRAYSIZE(kDisplayViewNames))) {
+    hdr_dbg.debug_view = (current == 1);
+    depth_cfg.enabled = (current == 2);
+  }
+
+  if (depth_cfg.enabled) {
+    ImGui::DragFloat("Near Plane", &depth_cfg.near_plane, 0.01f, 0.001f, depth_cfg.far_plane);
+    ImGui::DragFloat("Far Plane", &depth_cfg.far_plane, 1.0f, depth_cfg.near_plane, 100000.0f);
   }
 
   ImGui::End();

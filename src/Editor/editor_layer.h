@@ -42,7 +42,9 @@ class EditorLayer {
   void DrawMainMenu();
   void DrawGameObjectNode(GameObject* go);
   void DrawSceneSettings();
+  void DrawDebugPanel();
 
+  Graphic* graphic_ = nullptr;
   IScene* scene_ = nullptr;
   GameObject* selected_object_ = nullptr;
   DescriptorHeapAllocator::Allocation imgui_font_srv_;
@@ -51,6 +53,7 @@ class EditorLayer {
   bool show_hierarchy_ = true;
   bool show_inspector_ = true;
   bool show_scene_settings_ = true;
+  bool show_debug_ = true;
 
   EventScope event_scope_;
 };
