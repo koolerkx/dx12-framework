@@ -47,6 +47,7 @@ uint64_t DepthFirst(const DrawCommand& cmd, bool front_to_back) {
 void MaterialRenderer::Record(const RenderFrameContext& frame,
   const std::vector<DrawCommand>& commands,
   const CameraData& camera,
+  const LightingConfig& lighting,
   uint32_t screen_width,
   uint32_t screen_height) {
   if (commands.empty()) {
@@ -82,6 +83,14 @@ void MaterialRenderer::Record(const RenderFrameContext& frame,
   frame_cb_data.cameraPos = camera.position;
   frame_cb_data.screenSize = Vector2(static_cast<float>(screen_width), static_cast<float>(screen_height));
   cmd.SetFrameConstants(frame_cb_data);
+
+  LightingCB lighting_cb = {};
+  lighting_cb.lightDirection = lighting.direction;
+  lighting_cb.lightIntensity = lighting.intensity;
+  lighting_cb.directionalColor = lighting.directional_color;
+  lighting_cb.ambientIntensity = lighting.ambient_intensity;
+  lighting_cb.ambientColor = lighting.ambient_color;
+  cmd.SetLightingConstants(lighting_cb);
 
   Matrix4 view_proj = camera.view_proj;
   const Material* current_material = first_material;
@@ -119,6 +128,10 @@ void MaterialRenderer::RecordSingle(RenderCommandList& cmd, const DrawCommand& d
   obj_data.uvOffset = draw_cmd.uv_offset;
   obj_data.uvScale = draw_cmd.uv_scale;
   obj_data.samplerIndex = draw_cmd.material_instance.sampler_index;
+  uint32_t flags = 0;
+  if (HasTag(draw_cmd.tags, RenderTag::Lit)) flags |= 1u;
+  if (draw_cmd.layer == RenderLayer::Opaque) flags |= 2u;
+  obj_data.flags = flags;
   cmd.SetObjectConstants(obj_data);
 
   cmd.DrawMesh(draw_cmd.mesh);

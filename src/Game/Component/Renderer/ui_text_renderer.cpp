@@ -75,7 +75,7 @@ void UITextRenderer::OnRender(FramePacket& packet) {
   Texture* texture = text_mesh_handle_.GetTexture();
   if (!texture) return;
 
-  const Mesh* quad_mesh = context->GetAssetManager().GetDefaultMesh(DefaultMesh::Quad);
+  const Mesh* quad_mesh = context->GetAssetManager().GetDefaultMesh(DefaultMesh::Rect);
   if (!quad_mesh) return;
 
   DrawCommand cmd;

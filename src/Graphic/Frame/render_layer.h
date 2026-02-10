@@ -9,6 +9,7 @@ enum class RenderTag : uint32_t {
   None = 0,
   CastShadow = 1 << 0,
   ReceiveShadow = 1 << 1,
+  Lit = 1 << 2,
 };
 
 using RenderTagMask = uint32_t;

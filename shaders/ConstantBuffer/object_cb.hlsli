@@ -16,7 +16,8 @@ struct ObjectCB {
   float2 uvOffset;
   float2 uvScale;
   uint samplerIndex;
-  uint3 _padding1;
+  uint flags;
+  uint2 _padding1;
 };
 ConstantBuffer<ObjectCB> g_ObjectCB : register(OBJECT_CB_SLOT);
 

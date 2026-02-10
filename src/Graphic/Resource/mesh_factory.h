@@ -6,52 +6,50 @@
 
 class MeshFactory {
  public:
-  // Create a unit cube (1x1x1) centered at origin
   static bool CreateCube(ID3D12Device* device, Mesh& out_mesh) {
-    // Cube vertices with positions, UVs, and colors
     struct Vertex {
       float pos[3];
+      float normal[3];
       float uv[2];
-      float color[4];  // RGBA
+      float color[4];
     };
 
-    // 24 vertices (4 per face for proper UVs and normals)
     Vertex vertices[] = {
       // Front face (Z+)
-      {{-0.5f, -0.5f, 0.5f}, {0.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},  // 0
-      {{0.5f, -0.5f, 0.5f}, {1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},   // 1
-      {{0.5f, 0.5f, 0.5f}, {1.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},    // 2
-      {{-0.5f, 0.5f, 0.5f}, {0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},   // 3
+      {{-0.5f, -0.5f, 0.5f}, {0, 0, 1}, {0.0f, 1.0f}, {1, 1, 1, 1}},
+      {{0.5f, -0.5f, 0.5f}, {0, 0, 1}, {1.0f, 1.0f}, {1, 1, 1, 1}},
+      {{0.5f, 0.5f, 0.5f}, {0, 0, 1}, {1.0f, 0.0f}, {1, 1, 1, 1}},
+      {{-0.5f, 0.5f, 0.5f}, {0, 0, 1}, {0.0f, 0.0f}, {1, 1, 1, 1}},
 
       // Back face (Z-)
-      {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},   // 4
-      {{-0.5f, -0.5f, -0.5f}, {1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},  // 5
-      {{-0.5f, 0.5f, -0.5f}, {1.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},   // 6
-      {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},    // 7
+      {{0.5f, -0.5f, -0.5f}, {0, 0, -1}, {0.0f, 1.0f}, {1, 1, 1, 1}},
+      {{-0.5f, -0.5f, -0.5f}, {0, 0, -1}, {1.0f, 1.0f}, {1, 1, 1, 1}},
+      {{-0.5f, 0.5f, -0.5f}, {0, 0, -1}, {1.0f, 0.0f}, {1, 1, 1, 1}},
+      {{0.5f, 0.5f, -0.5f}, {0, 0, -1}, {0.0f, 0.0f}, {1, 1, 1, 1}},
 
       // Top face (Y+)
-      {{-0.5f, 0.5f, 0.5f}, {0.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},   // 8
-      {{0.5f, 0.5f, 0.5f}, {1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},    // 9
-      {{0.5f, 0.5f, -0.5f}, {1.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},   // 10
-      {{-0.5f, 0.5f, -0.5f}, {0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},  // 11
+      {{-0.5f, 0.5f, 0.5f}, {0, 1, 0}, {0.0f, 1.0f}, {1, 1, 1, 1}},
+      {{0.5f, 0.5f, 0.5f}, {0, 1, 0}, {1.0f, 1.0f}, {1, 1, 1, 1}},
+      {{0.5f, 0.5f, -0.5f}, {0, 1, 0}, {1.0f, 0.0f}, {1, 1, 1, 1}},
+      {{-0.5f, 0.5f, -0.5f}, {0, 1, 0}, {0.0f, 0.0f}, {1, 1, 1, 1}},
 
       // Bottom face (Y-)
-      {{-0.5f, -0.5f, -0.5f}, {0.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},  // 12
-      {{0.5f, -0.5f, -0.5f}, {1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},   // 13
-      {{0.5f, -0.5f, 0.5f}, {1.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},    // 14
-      {{-0.5f, -0.5f, 0.5f}, {0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},   // 15
+      {{-0.5f, -0.5f, -0.5f}, {0, -1, 0}, {0.0f, 1.0f}, {1, 1, 1, 1}},
+      {{0.5f, -0.5f, -0.5f}, {0, -1, 0}, {1.0f, 1.0f}, {1, 1, 1, 1}},
+      {{0.5f, -0.5f, 0.5f}, {0, -1, 0}, {1.0f, 0.0f}, {1, 1, 1, 1}},
+      {{-0.5f, -0.5f, 0.5f}, {0, -1, 0}, {0.0f, 0.0f}, {1, 1, 1, 1}},
 
       // Right face (X+)
-      {{0.5f, -0.5f, 0.5f}, {0.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},   // 16
-      {{0.5f, -0.5f, -0.5f}, {1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},  // 17
-      {{0.5f, 0.5f, -0.5f}, {1.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},   // 18
-      {{0.5f, 0.5f, 0.5f}, {0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},    // 19
+      {{0.5f, -0.5f, 0.5f}, {1, 0, 0}, {0.0f, 1.0f}, {1, 1, 1, 1}},
+      {{0.5f, -0.5f, -0.5f}, {1, 0, 0}, {1.0f, 1.0f}, {1, 1, 1, 1}},
+      {{0.5f, 0.5f, -0.5f}, {1, 0, 0}, {1.0f, 0.0f}, {1, 1, 1, 1}},
+      {{0.5f, 0.5f, 0.5f}, {1, 0, 0}, {0.0f, 0.0f}, {1, 1, 1, 1}},
 
       // Left face (X-)
-      {{-0.5f, -0.5f, -0.5f}, {0.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},  // 20
-      {{-0.5f, -0.5f, 0.5f}, {1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},   // 21
-      {{-0.5f, 0.5f, 0.5f}, {1.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},    // 22
-      {{-0.5f, 0.5f, -0.5f}, {0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},   // 23
+      {{-0.5f, -0.5f, -0.5f}, {-1, 0, 0}, {0.0f, 1.0f}, {1, 1, 1, 1}},
+      {{-0.5f, -0.5f, 0.5f}, {-1, 0, 0}, {1.0f, 1.0f}, {1, 1, 1, 1}},
+      {{-0.5f, 0.5f, 0.5f}, {-1, 0, 0}, {1.0f, 0.0f}, {1, 1, 1, 1}},
+      {{-0.5f, 0.5f, -0.5f}, {-1, 0, 0}, {0.0f, 0.0f}, {1, 1, 1, 1}},
     };
 
     // 36 indices (6 faces * 2 triangles * 3 vertices)
@@ -101,19 +99,19 @@ class MeshFactory {
     return out_mesh.Create(device, vertices, 24, indices, 36);
   }
 
-  // Create a unit quad for testing
   static bool CreateQuad(ID3D12Device* device, Mesh& out_mesh) {
     struct Vertex {
       float pos[3];
+      float normal[3];
       float uv[2];
-      float color[4];  // RGBA
+      float color[4];
     };
 
     Vertex vertices[] = {
-      {{-0.5f, -0.5f, 0.0f}, {0.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},  // Bottom-left
-      {{0.5f, -0.5f, 0.0f}, {1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},   // Bottom-right
-      {{0.5f, 0.5f, 0.0f}, {1.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},    // Top-right
-      {{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},   // Top-left
+      {{-0.5f, -0.5f, 0.0f}, {0, 0, -1}, {0.0f, 1.0f}, {1, 1, 1, 1}},
+      {{0.5f, -0.5f, 0.0f}, {0, 0, -1}, {1.0f, 1.0f}, {1, 1, 1, 1}},
+      {{0.5f, 0.5f, 0.0f}, {0, 0, -1}, {1.0f, 0.0f}, {1, 1, 1, 1}},
+      {{-0.5f, 0.5f, 0.0f}, {0, 0, -1}, {0.0f, 0.0f}, {1, 1, 1, 1}},
     };
 
     uint16_t indices[] = {0, 1, 2, 2, 3, 0};
@@ -121,12 +119,31 @@ class MeshFactory {
     return out_mesh.Create(device, vertices, 4, indices, 6);
   }
 
-  // Create a subdivided plane on XZ plane (Y=0)
-  static bool CreatePlane(ID3D12Device* device, Mesh& out_mesh, uint32_t subdivisions_x = 1, uint32_t subdivisions_z = 1) {
+  static bool CreateRect(ID3D12Device* device, Mesh& out_mesh) {
     struct Vertex {
       float pos[3];
       float uv[2];
-      float color[4];  // RGBA
+      float color[4];
+    };
+
+    Vertex vertices[] = {
+      {{-0.5f, -0.5f, 0.0f}, {0.0f, 1.0f}, {1, 1, 1, 1}},
+      {{0.5f, -0.5f, 0.0f}, {1.0f, 1.0f}, {1, 1, 1, 1}},
+      {{0.5f, 0.5f, 0.0f}, {1.0f, 0.0f}, {1, 1, 1, 1}},
+      {{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f}, {1, 1, 1, 1}},
+    };
+
+    uint16_t indices[] = {0, 1, 2, 2, 3, 0};
+
+    return out_mesh.Create(device, vertices, 4, indices, 6);
+  }
+
+  static bool CreatePlane(ID3D12Device* device, Mesh& out_mesh, uint32_t subdivisions_x = 1, uint32_t subdivisions_z = 1) {
+    struct Vertex {
+      float pos[3];
+      float normal[3];
+      float uv[2];
+      float color[4];
     };
 
     // Calculate vertex count
@@ -147,7 +164,7 @@ class MeshFactory {
         float pos_x = u - 0.5f;
         float pos_z = v - 0.5f;
 
-        vertices.push_back({{pos_x, 0.0f, pos_z}, {u, v}, {1.0f, 1.0f, 1.0f, 1.0f}});
+        vertices.push_back({{pos_x, 0.0f, pos_z}, {0, 1, 0}, {u, v}, {1.0f, 1.0f, 1.0f, 1.0f}});
       }
     }
 

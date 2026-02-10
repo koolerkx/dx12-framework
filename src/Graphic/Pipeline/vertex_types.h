@@ -64,6 +64,25 @@ struct PositionTexCoordColor {
 };
 static_assert(sizeof(PositionTexCoordColor) == 36);
 
+struct PositionNormalTexCoordColor {
+  Vector3 position;
+  Vector3 normal;
+  Vector2 tex_coord;
+  Vector4 color;
+
+  static constexpr std::array INPUT_LAYOUT = {
+    D3D12_INPUT_ELEMENT_DESC{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+    D3D12_INPUT_ELEMENT_DESC{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+    D3D12_INPUT_ELEMENT_DESC{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+    D3D12_INPUT_ELEMENT_DESC{"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+  };
+
+  static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
+    return {INPUT_LAYOUT.data(), INPUT_LAYOUT.size()};
+  }
+};
+static_assert(sizeof(PositionNormalTexCoordColor) == 48);
+
 struct SpriteInstance {
   Matrix4 world_matrix;
   Vector4 color;
@@ -129,6 +148,6 @@ static_assert(sizeof(SkyboxVertex) == 12);
 
 using LineVertex = PositionColor;
 using SpriteVertex = PositionTexCoordColor;
-using Basic3DVertex = PositionTexCoordColor;
+using Basic3DVertex = PositionNormalTexCoordColor;
 
 }  // namespace Graphics::Vertex

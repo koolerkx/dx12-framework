@@ -56,7 +56,7 @@ void ParticleEmitter::OnRender(FramePacket& packet) {
   auto& material_mgr = context->GetGraphic()->GetMaterialManager();
 
   DrawCommand cmd;
-  cmd.mesh = context->GetAssetManager().GetDefaultMesh(DefaultMesh::Quad);
+  cmd.mesh = context->GetAssetManager().GetDefaultMesh(DefaultMesh::Rect);
   cmd.material = material_mgr.GetOrCreateMaterial(Graphics::SpriteInstancedShader::ID, render_settings_);
   cmd.material_instance.material = cmd.material;
   cmd.material_instance.albedo_texture_index = texture_->GetBindlessIndex();

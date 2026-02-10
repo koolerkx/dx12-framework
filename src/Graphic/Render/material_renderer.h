@@ -29,6 +29,7 @@ class MaterialRenderer {
   virtual void Record(const RenderFrameContext& frame,
     const std::vector<DrawCommand>& commands,
     const CameraData& camera,
+    const LightingConfig& lighting,
     uint32_t screen_width,
     uint32_t screen_height);
 

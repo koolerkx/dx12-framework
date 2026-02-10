@@ -34,6 +34,7 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   texture_additive_ = asset_manager.LoadTexture("Content/textures/sun_additive.png");
 
   GetBackgroundSetting().SetSkybox("Content/skybox/sunflowers_puresky_standard_cubemap_4k.hdr", asset_manager);
+  GetLightSetting().SetDirection(Math::Vector3{0.5f, -1.0f, 0.5f}.Normalized());
 
   SetupCamera();
 

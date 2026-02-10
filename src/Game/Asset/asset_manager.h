@@ -22,7 +22,8 @@ namespace Text {
 struct TextLayoutProps;
 }
 
-enum class DefaultMesh { Quad, Cube, Plane };
+// Quad for 3D, Rect for 2D
+enum class DefaultMesh { Quad, Cube, Plane, Rect };
 
 class AssetManager {
  public:

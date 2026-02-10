@@ -26,12 +26,16 @@ struct alignas(256) ObjectCB {
   Vector2 uvOffset;
   Vector2 uvScale;
   uint32_t samplerIndex;
-  uint32_t _padding[3];
+  uint32_t flags;
+  uint32_t _padding[2];
 };
 
 struct alignas(256) LightingCB {
   Vector3 lightDirection;
   float lightIntensity;
-  Vector3 lightColor;
+  Vector3 directionalColor;
+  float ambientIntensity;
+  Vector3 ambientColor;
   float _padding;
 };
+static_assert(sizeof(LightingCB) == 256);

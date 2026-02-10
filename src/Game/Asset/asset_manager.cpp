@@ -87,6 +87,12 @@ void AssetManager::CreateDefaultMeshes() {
     owned_default_meshes_[DefaultMesh::Cube] = std::move(cube_mesh);
   }
 
+  auto rect_mesh = std::make_unique<Mesh>();
+  if (MeshFactory::CreateRect(device, *rect_mesh)) {
+    default_meshes_[DefaultMesh::Rect] = rect_mesh.get();
+    owned_default_meshes_[DefaultMesh::Rect] = std::move(rect_mesh);
+  }
+
   // Create and own Plane mesh (10x10 subdivisions for terrain)
   auto plane_mesh = std::make_unique<Mesh>();
   if (MeshFactory::CreatePlane(device, *plane_mesh, 10, 10)) {

@@ -95,8 +95,8 @@ void IScene::Render(FramePacket& packet) {
       MakeScreenSpaceCamera(static_cast<float>(gfx->GetFrameBufferWidth()), static_cast<float>(gfx->GetFrameBufferHeight()));
   }
 
-  // Rendering Setting
   packet.background = background_setting_.ToConfig();
+  packet.lighting = light_setting_.ToConfig();
 
   RenderRootObjects(packet);
 
