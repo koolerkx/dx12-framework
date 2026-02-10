@@ -1,5 +1,6 @@
 #include "render_graph.h"
 
+#include <algorithm>
 #include <cassert>
 #include <queue>
 #include <unordered_set>
@@ -283,6 +284,8 @@ void RenderGraph::Compile() {
       last_producer[ri] = i;
     };
 
+    // std::for_each(setup.resource_reads.begin(), setup.resource_reads.end(), process_read);
+    // std::for_each(setup.resource_writes.begin(), setup.resource_writes.end(), process_write);
     for (auto handle : setup.resource_reads) {
       process_read(handle);
     }
@@ -325,7 +328,45 @@ void RenderGraph::Compile() {
       pass_count);
   }
   assert(execution_order_.size() == pass_count && "Render graph has a cycle");
+
+  CullDeadPasses(pass_count);
   compiled_ = true;
+}
+
+void RenderGraph::CullDeadPasses(uint32_t pass_count) {
+  std::vector<std::vector<uint32_t>> predecessors(pass_count);
+  for (uint32_t i = 0; i < pass_count; ++i) {
+    for (uint32_t succ : pass_nodes_[i].successors) {
+      predecessors[succ].push_back(i);
+    }
+  }
+
+  std::vector<bool> alive(pass_count, false);
+  std::queue<uint32_t> worklist;
+
+  for (uint32_t i = 0; i < pass_count; ++i) {
+    const auto& setup = passes_[i]->GetPassSetup();
+    for (auto handle : setup.resource_writes) {
+      if (GetEntry(handle).type == RenderGraphResourceType::Backbuffer) {
+        alive[i] = true;
+        worklist.push(i);
+        break;
+      }
+    }
+  }
+
+  while (!worklist.empty()) {
+    uint32_t current = worklist.front();
+    worklist.pop();
+    for (uint32_t pred : predecessors[current]) {
+      if (!alive[pred]) {
+        alive[pred] = true;
+        worklist.push(pred);
+      }
+    }
+  }
+
+  std::erase_if(execution_order_, [&](uint32_t idx) { return !alive[idx]; });
 }
 
 const RenderGraph::ResourceEntry& RenderGraph::GetEntry(RenderGraphHandle handle) const {

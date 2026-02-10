@@ -55,6 +55,7 @@ class RenderGraph {
 
   void ApplyPassSetup(ID3D12GraphicsCommandList* cmd, const PassSetup& setup);
   void Compile();
+  void CullDeadPasses(uint32_t pass_count);
   const ResourceEntry& GetEntry(RenderGraphHandle handle) const;
 
   std::vector<ResourceEntry> resources_;
