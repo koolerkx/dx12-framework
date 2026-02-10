@@ -14,11 +14,9 @@ void TextRenderer::SetRenderLayer(RenderLayer layer) {
   switch (layer) {
     case RenderLayer::Opaque:
       render_settings_ = Rendering::RenderSettings::Opaque();
-      shader_id_ = Graphics::SpriteInstancedWorldShader::ID;
       break;
     case RenderLayer::Transparent:
       render_settings_ = Rendering::RenderSettings::Transparent();
-      shader_id_ = Graphics::SpriteInstancedWorldTransparentShader::ID;
       break;
     default:
       return;
@@ -37,9 +35,20 @@ void TextRenderer::SetPivot(const Vector2& normalized_pivot) {
 }
 
 TextRenderer::EditorData TextRenderer::GetEditorData() const {
-  return {text_, font_family_, pixel_size_, color_, h_align_, v_align_,
-          line_spacing_, letter_spacing_, use_kerning_, billboard_mode_,
-          text_pivot_, render_settings_, render_layer_, render_tags_};
+  return {text_,
+    font_family_,
+    pixel_size_,
+    color_,
+    h_align_,
+    v_align_,
+    line_spacing_,
+    letter_spacing_,
+    use_kerning_,
+    billboard_mode_,
+    text_pivot_,
+    render_settings_,
+    render_layer_,
+    render_tags_};
 }
 
 void TextRenderer::ApplyEditorData(const EditorData& data) {
@@ -79,7 +88,7 @@ void TextRenderer::OnRender(FramePacket& packet) {
   }
 
   auto& material_mgr = context->GetGraphic()->GetMaterialManager();
-  const Material* material = material_mgr.GetOrCreateMaterial(shader_id_, render_settings_);
+  const Material* material = material_mgr.GetOrCreateMaterial(Graphics::SpriteInstancedShader::ID, render_settings_);
   if (!material) return;
 
   auto* transform = GetOwner()->GetTransform();
@@ -100,6 +109,7 @@ void TextRenderer::OnRender(FramePacket& packet) {
   cmd.material_instance.material = cmd.material;
   cmd.material_instance.albedo_texture_index = texture->GetBindlessIndex();
   cmd.material_instance.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
+  cmd.material_instance.use_alpha_test = (render_layer_ != RenderLayer::Transparent);
 
   cmd.instances.reserve(text_mesh_handle_.GetGlyphCount());
 

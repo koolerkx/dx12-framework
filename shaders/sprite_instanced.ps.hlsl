@@ -1,11 +1,3 @@
-// ============================================================================
-// Sprite Instanced World Pixel Shader (Transparent Version)
-// Purpose: Hardware instanced rendering for world-space transparent
-// text/sprites Samples texture and applies per-instance color tint with full
-// alpha blending NOTE: No alpha clipping/discard - uses proper alpha blending
-// instead
-// ============================================================================
-
 cbuffer ObjectCB : register(b1) {
   row_major float4x4 g_World;
   row_major float4x4 g_WorldViewProj;
@@ -16,7 +8,6 @@ cbuffer ObjectCB : register(b1) {
   uint3 _padding1;
 };
 
-// Material data from root constants
 struct MaterialData {
   uint albedoTextureIndex;
   uint normalTextureIndex;
@@ -25,7 +16,6 @@ struct MaterialData {
 };
 ConstantBuffer<MaterialData> g_MaterialData : register(b3);
 
-// Bindless Resources
 Texture2D g_Textures[] : register(t0, space1);
 SamplerState g_Samplers[] : register(s0, space0);
 
@@ -40,6 +30,10 @@ float4 main(PSIN input) : SV_TARGET {
       g_Samplers[g_SamplerIndex], input.uv);
 
   float4 finalColor = texColor * input.color;
+
+  if ((g_MaterialData.flags & 1u) && finalColor.a < 0.01f) {
+    discard;
+  }
 
   return finalColor;
 }

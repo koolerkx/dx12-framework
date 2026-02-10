@@ -77,6 +77,8 @@ void MaterialRenderer::Record(const RenderFrameContext& frame,
   frame_cb_data.view = camera.view;
   frame_cb_data.proj = camera.proj;
   frame_cb_data.viewProj = camera.view_proj;
+  frame_cb_data.invView = camera.inv_view;
+  frame_cb_data.invProj = camera.inv_proj;
   frame_cb_data.cameraPos = camera.position;
   frame_cb_data.screenSize = Vector2(static_cast<float>(screen_width), static_cast<float>(screen_height));
   cmd.SetFrameConstants(frame_cb_data);

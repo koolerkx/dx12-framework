@@ -204,6 +204,5 @@ class TextRenderer : public Component<TextRenderer> {
   Vector2 text_pivot_ = {0.5f, 0.0f};
 
   RenderLayer render_layer_ = RenderLayer::Transparent;
-  Graphics::ShaderId shader_id_ = Graphics::SpriteInstancedWorldTransparentShader::ID;
   RenderTagMask render_tags_ = 0;
 };

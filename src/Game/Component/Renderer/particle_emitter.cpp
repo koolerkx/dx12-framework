@@ -57,7 +57,7 @@ void ParticleEmitter::OnRender(FramePacket& packet) {
 
   DrawCommand cmd;
   cmd.mesh = context->GetAssetManager().GetDefaultMesh(DefaultMesh::Quad);
-  cmd.material = material_mgr.GetOrCreateMaterial(Graphics::SpriteInstancedWorldTransparentShader::ID, render_settings_);
+  cmd.material = material_mgr.GetOrCreateMaterial(Graphics::SpriteInstancedShader::ID, render_settings_);
   cmd.material_instance.material = cmd.material;
   cmd.material_instance.albedo_texture_index = texture_->GetBindlessIndex();
   cmd.material_instance.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);

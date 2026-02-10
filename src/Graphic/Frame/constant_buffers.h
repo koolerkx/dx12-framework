@@ -10,11 +10,14 @@ struct alignas(256) FrameCB {
   Matrix4 view;
   Matrix4 proj;
   Matrix4 viewProj;
+  Matrix4 invView;
+  Matrix4 invProj;
   Vector3 cameraPos;
   float time;
   Vector2 screenSize;
   Vector2 _padding;
 };
+static_assert(sizeof(FrameCB) == 512);
 
 struct alignas(256) ObjectCB {
   Matrix4 world;

@@ -54,44 +54,14 @@ struct SpriteShader {
   }
 };
 
-struct SpriteInstancedUIShader {
+struct SpriteInstancedShader {
   static constexpr ShaderId ID = 1;
   using VertexType = Vertex::SpriteInstanced;
 
   static constexpr RSPreset RS_PRESET = RSPreset::Standard;
-  static constexpr std::string_view NAME = "SpriteInstancedUI";
-  static constexpr std::wstring_view VS_PATH = L"Content/shaders/sprite_instanced_ui.vs.cso";
-  static constexpr std::wstring_view PS_PATH = L"Content/shaders/sprite_instanced_ui.ps.cso";
-  static constexpr ShaderRenderHints HINTS = {};
-
-  static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
-    return VertexType::GetInputLayout();
-  }
-};
-
-struct SpriteInstancedWorldShader {
-  static constexpr ShaderId ID = 2;
-  using VertexType = Vertex::SpriteInstanced;
-
-  static constexpr RSPreset RS_PRESET = RSPreset::Standard;
-  static constexpr std::string_view NAME = "SpriteInstancedWorld";
-  static constexpr std::wstring_view VS_PATH = L"Content/shaders/sprite_instanced_world.vs.cso";
-  static constexpr std::wstring_view PS_PATH = L"Content/shaders/sprite_instanced_world.ps.cso";
-  static constexpr ShaderRenderHints HINTS = {};
-
-  static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
-    return VertexType::GetInputLayout();
-  }
-};
-
-struct SpriteInstancedWorldTransparentShader {
-  static constexpr ShaderId ID = 3;
-  using VertexType = Vertex::SpriteInstanced;
-
-  static constexpr RSPreset RS_PRESET = RSPreset::Standard;
-  static constexpr std::string_view NAME = "SpriteInstancedWorldTransparent";
-  static constexpr std::wstring_view VS_PATH = L"Content/shaders/sprite_instanced_world_transparent.vs.cso";
-  static constexpr std::wstring_view PS_PATH = L"Content/shaders/sprite_instanced_world_transparent.ps.cso";
+  static constexpr std::string_view NAME = "SpriteInstanced";
+  static constexpr std::wstring_view VS_PATH = L"Content/shaders/sprite_instanced.vs.cso";
+  static constexpr std::wstring_view PS_PATH = L"Content/shaders/sprite_instanced.ps.cso";
   static constexpr ShaderRenderHints HINTS = {};
 
   static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
@@ -193,9 +163,7 @@ struct PostProcessBlitShader {
 
 // Shader Registration
 using AllShaders = std::tuple<SpriteShader,
-  SpriteInstancedUIShader,
-  SpriteInstancedWorldShader,
-  SpriteInstancedWorldTransparentShader,
+  SpriteInstancedShader,
   Basic3DShader,
   DebugLineShader,
   PostProcessToneMapShader,

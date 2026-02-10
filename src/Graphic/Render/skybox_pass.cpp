@@ -155,6 +155,8 @@ void SkyboxPass::Execute(const RenderFrameContext& frame, const FramePacket& pac
   frame_cb_data.view = packet.main_camera.view;
   frame_cb_data.proj = packet.main_camera.proj;
   frame_cb_data.viewProj = packet.main_camera.view_proj;
+  frame_cb_data.invView = packet.main_camera.inv_view;
+  frame_cb_data.invProj = packet.main_camera.inv_proj;
   frame_cb_data.cameraPos = packet.main_camera.position;
   frame_cb_data.screenSize = Math::Vector2(static_cast<float>(frame.screen_width), static_cast<float>(frame.screen_height));
   cmd.SetFrameConstants(frame_cb_data);

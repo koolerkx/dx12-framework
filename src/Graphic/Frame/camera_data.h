@@ -8,6 +8,8 @@ struct CameraData {
   Matrix4 view;
   Matrix4 proj;
   Matrix4 view_proj;
+  Matrix4 inv_view;
+  Matrix4 inv_proj;
   Vector3 position;
   Vector3 forward;
   Vector3 up;
@@ -17,6 +19,8 @@ inline void StoreMatrixToCameraData(CameraData& data, const Matrix4& view, const
   data.view = view;
   data.proj = proj;
   data.view_proj = view * proj;
+  data.inv_view = view.Inverted();
+  data.inv_proj = proj.Inverted();
 }
 
 inline CameraData MakeScreenSpaceCamera(float width, float height) {

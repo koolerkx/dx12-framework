@@ -39,12 +39,8 @@ Rendering::RenderSettings MaterialManager::GetDefaultSettings(Graphics::ShaderId
     settings.double_sided = false;
     settings.sampler_type = Rendering::SamplerType::LinearWrap;
     settings.render_target_format = Rendering::RenderTargetFormat::HDR;
-  } else if (shader_id == Graphics::SpriteInstancedUIShader::ID) {
-    settings = Rendering::RenderSettings::UI();
-  } else if (shader_id == Graphics::SpriteInstancedWorldShader::ID) {
+  } else if (shader_id == Graphics::SpriteInstancedShader::ID) {
     settings = Rendering::RenderSettings::Opaque();
-  } else if (shader_id == Graphics::SpriteInstancedWorldTransparentShader::ID) {
-    settings = Rendering::RenderSettings::Transparent();
   } else if (shader_id == Graphics::Basic3DShader::ID) {
     settings = Rendering::RenderSettings::Opaque();
   } else {

@@ -2,6 +2,8 @@ cbuffer FrameCB : register(b0) {
   row_major float4x4 g_View;
   row_major float4x4 g_Proj;
   row_major float4x4 g_ViewProj;
+  row_major float4x4 g_InvView;
+  row_major float4x4 g_InvProj;
   float3 g_CameraPos;
   float g_Time;
   float2 g_ScreenSize;
