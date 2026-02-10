@@ -34,6 +34,9 @@ class RenderGraph {
 
   void AddPass(std::unique_ptr<IRenderPass> pass);
 
+  // Use this to mark a resource not cull by dead path
+  void MarkExternallyReferenced(RenderGraphHandle handle);
+
   void BeginFrame();
   void Execute(const RenderFrameContext& frame, const FramePacket& packet);
   void FinalizeFrame(ID3D12GraphicsCommandList* cmd);
@@ -46,6 +49,7 @@ class RenderGraph {
     RenderGraphResourceType type;
     RenderTexture* render_texture = nullptr;
     DepthBuffer* depth_buffer = nullptr;
+    bool externally_referenced = false;
   };
 
   struct PassNode {

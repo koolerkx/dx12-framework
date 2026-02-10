@@ -219,6 +219,15 @@ void Graphic::WaitForGpuIdle() {
   }
 }
 
+void Graphic::SetOverlayRenderer(OverlayRenderFunc renderer) {
+  overlay_renderer_ = std::move(renderer);
+  if (overlay_renderer_) {
+    render_graph_->MarkExternallyReferenced(preview_handles_.scene_rt);
+    render_graph_->MarkExternallyReferenced(preview_handles_.depth_preview_rt);
+    render_graph_->MarkExternallyReferenced(preview_handles_.tonemap_rt);
+  }
+}
+
 void Graphic::Shutdown() {
   bool expected = false;
   if (!is_shutting_down_.compare_exchange_strong(expected, true)) {

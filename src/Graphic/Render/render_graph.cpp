@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cassert>
 #include <queue>
+#include <ranges>
 #include <unordered_set>
 
 #include "Core/utils.h"
@@ -92,6 +93,13 @@ void RenderGraph::TransitionForRead(ID3D12GraphicsCommandList* cmd, RenderGraphH
 
 void RenderGraph::AddPass(std::unique_ptr<IRenderPass> pass) {
   passes_.push_back(std::move(pass));
+  compiled_ = false;
+}
+
+void RenderGraph::MarkExternallyReferenced(RenderGraphHandle handle) {
+  auto index = static_cast<uint16_t>(handle);
+  assert(index < resources_.size());
+  resources_[index].externally_referenced = true;
   compiled_ = false;
 }
 
@@ -265,34 +273,28 @@ void RenderGraph::Compile() {
     }
   };
 
-  for (uint32_t i = 0; i < pass_count; ++i) {
-    const auto& setup = passes_[i]->GetPassSetup();
+  for (auto [i, pass] : passes_ | std::views::enumerate) {
+    const auto& setup = pass->GetPassSetup();
     std::unordered_set<uint32_t> tracked_predecessors;
+    auto pass_index = static_cast<uint32_t>(i);
 
     auto process_read = [&](RenderGraphHandle handle) {
       auto ri = static_cast<uint32_t>(handle);
       if (ri < resource_count && last_producer[ri] != UINT32_MAX) {
-        link_dependency(last_producer[ri], i, tracked_predecessors);
+        link_dependency(last_producer[ri], pass_index, tracked_predecessors);
       }
     };
 
     auto process_write = [&](RenderGraphHandle handle) {
       auto ri = static_cast<uint32_t>(handle);
       if (ri < resource_count && last_producer[ri] != UINT32_MAX) {
-        link_dependency(last_producer[ri], i, tracked_predecessors);
+        link_dependency(last_producer[ri], pass_index, tracked_predecessors);
       }
-      last_producer[ri] = i;
+      last_producer[ri] = pass_index;
     };
 
-    // std::for_each(setup.resource_reads.begin(), setup.resource_reads.end(), process_read);
-    // std::for_each(setup.resource_writes.begin(), setup.resource_writes.end(), process_write);
-    for (auto handle : setup.resource_reads) {
-      process_read(handle);
-    }
-
-    for (auto handle : setup.resource_writes) {
-      process_write(handle);
-    }
+    std::ranges::for_each(setup.resource_reads, process_read);
+    std::ranges::for_each(setup.resource_writes, process_write);
 
     if (setup.depth != RenderGraphHandle::Invalid) {
       process_write(setup.depth);
@@ -300,12 +302,9 @@ void RenderGraph::Compile() {
   }
 
   // Kahn's algorithm with insertion-order tiebreaker (min-heap)
-  std::priority_queue<uint32_t, std::vector<uint32_t>, std::greater<>> ready;
-  for (uint32_t i = 0; i < pass_count; ++i) {
-    if (pass_nodes_[i].predecessor_count == 0) {
-      ready.push(i);
-    }
-  }
+  auto root_passes =
+    std::views::iota(0u, pass_count) | std::views::filter([&](uint32_t i) { return pass_nodes_[i].predecessor_count == 0; });
+  std::priority_queue<uint32_t, std::vector<uint32_t>, std::greater<>> ready(std::greater<>{}, {root_passes.begin(), root_passes.end()});
 
   while (!ready.empty()) {
     uint32_t current = ready.top();
@@ -335,23 +334,28 @@ void RenderGraph::Compile() {
 
 void RenderGraph::CullDeadPasses(uint32_t pass_count) {
   std::vector<std::vector<uint32_t>> predecessors(pass_count);
-  for (uint32_t i = 0; i < pass_count; ++i) {
-    for (uint32_t succ : pass_nodes_[i].successors) {
-      predecessors[succ].push_back(i);
-    }
+  for (auto [i, node] : pass_nodes_ | std::views::enumerate) {
+    std::ranges::for_each(node.successors, [&](uint32_t succ) { predecessors[succ].push_back(static_cast<uint32_t>(i)); });
   }
 
   std::vector<bool> alive(pass_count, false);
   std::queue<uint32_t> worklist;
 
-  for (uint32_t i = 0; i < pass_count; ++i) {
-    const auto& setup = passes_[i]->GetPassSetup();
-    for (auto handle : setup.resource_writes) {
-      if (GetEntry(handle).type == RenderGraphResourceType::Backbuffer) {
-        alive[i] = true;
-        worklist.push(i);
-        break;
-      }
+  auto mark_alive = [&](uint32_t i) {
+    if (!alive[i]) {
+      alive[i] = true;
+      worklist.push(i);
+    }
+  };
+
+  auto is_output_resource = [&](RenderGraphHandle handle) {
+    const auto& entry = GetEntry(handle);
+    return entry.type == RenderGraphResourceType::Backbuffer || entry.externally_referenced;
+  };
+
+  for (auto [i, pass] : passes_ | std::views::enumerate) {
+    if (std::ranges::any_of(pass->GetPassSetup().resource_writes, is_output_resource)) {
+      mark_alive(static_cast<uint32_t>(i));
     }
   }
 

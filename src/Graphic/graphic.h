@@ -145,9 +145,8 @@ class Graphic {
   }
 
   using OverlayRenderFunc = std::function<void(ID3D12GraphicsCommandList*)>;
-  void SetOverlayRenderer(OverlayRenderFunc renderer) {
-    overlay_renderer_ = std::move(renderer);
-  }
+  void SetOverlayRenderer(OverlayRenderFunc renderer);
+
 
  private:
   std::unique_ptr<gfx::DeviceContext> device_context_;
