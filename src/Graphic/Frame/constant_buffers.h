@@ -22,6 +22,7 @@ static_assert(sizeof(FrameCB) == 512);
 struct alignas(256) ObjectCB {
   Matrix4 world;
   Matrix4 worldViewProj;
+  Matrix4 normalMatrix;
   Vector4 color;
   Vector2 uvOffset;
   Vector2 uvScale;
@@ -29,6 +30,7 @@ struct alignas(256) ObjectCB {
   uint32_t flags;
   uint32_t _padding[2];
 };
+static_assert(sizeof(ObjectCB) == 256);
 
 struct alignas(256) LightingCB {
   Vector3 lightDirection;

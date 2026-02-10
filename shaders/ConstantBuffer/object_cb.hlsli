@@ -12,6 +12,7 @@
 struct ObjectCB {
   row_major float4x4 world;
   row_major float4x4 worldViewProj;
+  row_major float4x4 normalMatrix;
   float4 color;
   float2 uvOffset;
   float2 uvScale;

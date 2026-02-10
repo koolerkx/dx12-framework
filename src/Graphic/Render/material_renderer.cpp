@@ -124,6 +124,7 @@ void MaterialRenderer::RecordSingle(RenderCommandList& cmd, const DrawCommand& d
   Matrix4 wvp = world * view_proj;
   obj_data.world = world;
   obj_data.worldViewProj = wvp;
+  obj_data.normalMatrix = world.Inverted().Transposed();
   obj_data.color = draw_cmd.color;
   obj_data.uvOffset = draw_cmd.uv_offset;
   obj_data.uvScale = draw_cmd.uv_scale;
