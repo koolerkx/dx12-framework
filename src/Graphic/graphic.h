@@ -24,6 +24,7 @@
 #include "Presentation/presentation_context.h"
 #include "Render/material_renderer.h"
 #include "Render/render_graph.h"
+#include "Render/render_graph_handle.h"
 #include "Rendering/hdr_config.h"
 #include "Resource/Font/sprite_font_manager.h"
 #include "Resource/Texture/texture_manager.h"
@@ -119,11 +120,28 @@ class Graphic {
     return descriptor_heap_manager_;
   }
 
+  struct RenderTargetPreview {
+    RenderGraphHandle scene_rt = RenderGraphHandle::Invalid;
+    RenderGraphHandle depth_preview_rt = RenderGraphHandle::Invalid;
+    RenderGraphHandle tonemap_rt = RenderGraphHandle::Invalid;
+  };
+
+  RenderGraph* GetRenderGraph() {
+    return render_graph_.get();
+  }
+
+  const RenderTargetPreview& GetPreviewHandles() const {
+    return preview_handles_;
+  }
+
   HdrDebug& GetHdrDebug() {
     return hdr_debug_;
   }
   DepthViewConfig& GetDepthViewConfig() {
     return depth_view_config_;
+  }
+  DepthViewConfig& GetDepthPreviewConfig() {
+    return depth_preview_config_;
   }
 
   using OverlayRenderFunc = std::function<void(ID3D12GraphicsCommandList*)>;
@@ -146,6 +164,7 @@ class Graphic {
   HdrConfig hdr_config_;
   HdrDebug hdr_debug_;
   DepthViewConfig depth_view_config_;
+  DepthViewConfig depth_preview_config_ = {.enabled = true, .near_plane = 0.1f, .far_plane = 1000.0f};
 
   UINT frame_buffer_width_ = 0;
   UINT frame_buffer_height_ = 0;
@@ -164,6 +183,7 @@ class Graphic {
   std::unique_ptr<RenderGraph> render_graph_;
 
   std::unique_ptr<DebugLineRenderer> debug_line_renderer_;
+  RenderTargetPreview preview_handles_;
 
   HWND hwnd_ = nullptr;
   bool enable_vsync_ = true;

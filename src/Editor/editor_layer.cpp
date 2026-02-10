@@ -16,6 +16,7 @@
 #include "Game/scene_events.h"
 #include "Graphic/Descriptor/descriptor_heap_manager.h"
 #include "Graphic/Pipeline/shader_registry.h"
+#include "Graphic/Render/render_graph.h"
 #include "Graphic/graphic.h"
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -80,6 +81,7 @@ void EditorLayer::Render(ID3D12GraphicsCommandList* cmd) {
   if (show_inspector_) DrawInspector();
   if (show_scene_settings_) DrawSceneSettings();
   if (show_debug_) DrawDebugPanel();
+  if (show_render_pipeline_) DrawRenderPipelinePanel(cmd);
 
   ImGui::Render();
   ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), cmd);
@@ -119,6 +121,7 @@ void EditorLayer::DrawMainMenu() {
       ImGui::MenuItem("Inspector", nullptr, &show_inspector_);
       ImGui::MenuItem("Scene Settings", nullptr, &show_scene_settings_);
       ImGui::MenuItem("Debug", nullptr, &show_debug_);
+      ImGui::MenuItem("Render Pipeline", nullptr, &show_render_pipeline_);
       ImGui::EndMenu();
     }
     ImGui::EndMainMenuBar();
@@ -411,6 +414,43 @@ void EditorLayer::DrawDebugPanel() {
   if (depth_cfg.enabled) {
     ImGui::DragFloat("Near Plane", &depth_cfg.near_plane, 0.01f, 0.001f, depth_cfg.far_plane);
     ImGui::DragFloat("Far Plane", &depth_cfg.far_plane, 1.0f, depth_cfg.near_plane, 100000.0f);
+  }
+
+  ImGui::End();
+}
+
+void EditorLayer::DrawRenderPipelinePanel(ID3D12GraphicsCommandList* cmd) {
+  ImGui::Begin("Render Pipeline", &show_render_pipeline_);
+
+  auto* graph = graphic_->GetRenderGraph();
+  auto& handles = graphic_->GetPreviewHandles();
+  float width = ImGui::GetContentRegionAvail().x;
+  float aspect = static_cast<float>(graphic_->GetFrameBufferWidth()) / static_cast<float>(graphic_->GetFrameBufferHeight());
+  ImVec2 size(width, width / aspect);
+
+  struct Entry {
+    const char* label;
+    RenderGraphHandle handle;
+  };
+  Entry entries[] = {
+    {"Scene RT", handles.scene_rt},
+    {"Depth", handles.depth_preview_rt},
+    {"ToneMapping", handles.tonemap_rt},
+  };
+
+  for (auto& [label, handle] : entries) {
+    graph->TransitionForRead(cmd, handle);
+    ImGui::Text("%s", label);
+    auto gpu = graph->GetSrvGpuHandle(handle);
+    ImGui::Image(static_cast<ImTextureID>(gpu.ptr), size);
+
+    if (handle == handles.depth_preview_rt) {
+      auto& cfg = graphic_->GetDepthPreviewConfig();
+      ImGui::DragFloat("Near", &cfg.near_plane, 0.01f, 0.001f, cfg.far_plane);
+      ImGui::DragFloat("Far", &cfg.far_plane, 1.0f, cfg.near_plane, 100000.0f);
+    }
+
+    ImGui::Separator();
   }
 
   ImGui::End();

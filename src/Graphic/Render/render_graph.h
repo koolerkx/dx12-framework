@@ -29,6 +29,8 @@ class RenderGraph {
   RenderGraphHandle ImportBackbuffer(const char* name);
 
   uint32_t GetSrvIndex(RenderGraphHandle handle) const;
+  D3D12_GPU_DESCRIPTOR_HANDLE GetSrvGpuHandle(RenderGraphHandle handle) const;
+  void TransitionForRead(ID3D12GraphicsCommandList* cmd, RenderGraphHandle handle);
 
   void AddPass(std::unique_ptr<IRenderPass> pass);
 

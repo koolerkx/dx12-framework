@@ -56,6 +56,8 @@ class DescriptorHeapAllocator {
     return heap_.Get();
   }
 
+  D3D12_GPU_DESCRIPTOR_HANDLE GetGpuHandle(uint32_t offset_index) const;
+
  private:
   std::mutex alloc_mutex_;
   ComPtr<ID3D12DescriptorHeap> heap_ = nullptr;    // Only set if we own the heap
@@ -68,9 +70,7 @@ class DescriptorHeapAllocator {
   uint32_t capacity_ = 0;
   uint32_t allocated_ = 0;
 
-  // For calculating absolute handles
   D3D12_CPU_DESCRIPTOR_HANDLE GetCpuHandle(uint32_t offset_index) const;
-  D3D12_GPU_DESCRIPTOR_HANDLE GetGpuHandle(uint32_t offset_index) const;
 
   std::vector<FreeBlock> free_list_;
   void AddToFreeList(uint32_t offset, uint32_t count);

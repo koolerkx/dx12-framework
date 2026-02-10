@@ -43,6 +43,7 @@ class EditorLayer {
   void DrawGameObjectNode(GameObject* go);
   void DrawSceneSettings();
   void DrawDebugPanel();
+  void DrawRenderPipelinePanel(ID3D12GraphicsCommandList* cmd);
 
   Graphic* graphic_ = nullptr;
   IScene* scene_ = nullptr;
@@ -54,6 +55,7 @@ class EditorLayer {
   bool show_inspector_ = true;
   bool show_scene_settings_ = true;
   bool show_debug_ = true;
+  bool show_render_pipeline_ = true;
 
   EventScope event_scope_;
 };

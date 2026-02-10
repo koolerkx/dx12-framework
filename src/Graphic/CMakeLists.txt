@@ -97,6 +97,9 @@ add_library(graphic STATIC
 
     Render/skybox_pass.h
     Render/skybox_pass.cpp
+
+    Render/blit_pass.h
+    Render/blit_pass.cpp
 )
 
 target_link_libraries(graphic PUBLIC framework)
@@ -126,6 +129,8 @@ target_add_hlsl_auto(graphic "6.6"
     "${CMAKE_SOURCE_DIR}/shaders/skybox.ps.hlsl"
     "${CMAKE_SOURCE_DIR}/shaders/depthview.vs.hlsl"
     "${CMAKE_SOURCE_DIR}/shaders/depthview.ps.hlsl"
+    "${CMAKE_SOURCE_DIR}/shaders/blit.vs.hlsl"
+    "${CMAKE_SOURCE_DIR}/shaders/blit.ps.hlsl"
 )
 
 # manually add shaders files

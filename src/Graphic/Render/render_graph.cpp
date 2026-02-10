@@ -3,6 +3,7 @@
 #include <cassert>
 
 #include "Core/utils.h"
+#include "Descriptor/descriptor_heap_manager.h"
 #include "Presentation/depth_buffer.h"
 #include "Presentation/swapchain_manager.h"
 #include "Render/render_texture.h"
@@ -63,6 +64,26 @@ uint32_t RenderGraph::GetSrvIndex(RenderGraphHandle handle) const {
       return 0;
   }
   return 0;
+}
+
+D3D12_GPU_DESCRIPTOR_HANDLE RenderGraph::GetSrvGpuHandle(RenderGraphHandle handle) const {
+  uint32_t index = GetSrvIndex(handle);
+  return heap_manager_->GetSrvStaticAllocator().GetGpuHandle(index);
+}
+
+void RenderGraph::TransitionForRead(ID3D12GraphicsCommandList* cmd, RenderGraphHandle handle) {
+  const auto& entry = GetEntry(handle);
+  switch (entry.type) {
+    case RenderGraphResourceType::RenderTexture:
+      entry.render_texture->TransitionTo(cmd, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+      break;
+    case RenderGraphResourceType::DepthBuffer:
+      entry.depth_buffer->TransitionTo(cmd, D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+      break;
+    case RenderGraphResourceType::Backbuffer:
+      assert(false && "Backbuffer cannot be transitioned for read");
+      break;
+  }
 }
 
 void RenderGraph::AddPass(std::unique_ptr<IRenderPass> pass) {

@@ -176,6 +176,21 @@ struct PostProcessDepthViewShader {
   }
 };
 
+struct PostProcessBlitShader {
+  static constexpr ShaderId ID = 9;
+  using VertexType = Vertex::Empty;
+
+  static constexpr RSPreset RS_PRESET = RSPreset::Standard;
+  static constexpr std::string_view NAME = "Blit";
+  static constexpr std::wstring_view VS_PATH = L"Content/shaders/blit.vs.cso";
+  static constexpr std::wstring_view PS_PATH = L"Content/shaders/blit.ps.cso";
+  static constexpr ShaderRenderHints HINTS = {};
+
+  static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
+    return VertexType::GetInputLayout();
+  }
+};
+
 // Shader Registration
 using AllShaders = std::tuple<SpriteShader,
   SpriteInstancedUIShader,
@@ -185,7 +200,8 @@ using AllShaders = std::tuple<SpriteShader,
   DebugLineShader,
   PostProcessToneMapShader,
   SkyboxShader,
-  PostProcessDepthViewShader>;
+  PostProcessDepthViewShader,
+  PostProcessBlitShader>;
 
 [[maybe_unused]] constexpr size_t SHADER_COUNT = std::tuple_size_v<AllShaders>;
 
