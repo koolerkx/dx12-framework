@@ -137,12 +137,15 @@ target_add_hlsl_auto(graphic "6.6"
 
 include(fetch)
 
+if(DYNAMIC_CRT)
+  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL" CACHE STRING "MSVC Runtime Library" FORCE)
+else()
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "MSVC Runtime Library")
+endif()
 
-FetchContent_MSVC(DirectXTex https://github.com/microsoft/DirectXTex.git oct2025)
 set(BUILD_TOOLS OFF CACHE BOOL "" FORCE)
 set(BUILD_SAMPLE OFF CACHE BOOL "" FORCE)
 set(BUILD_DX11 OFF CACHE BOOL "" FORCE)
 
-FetchContent_MakeAvailable(DirectXTex)
+FetchContent_MSVC(DirectXTex https://github.com/microsoft/DirectXTex.git oct2025)
 target_link_libraries(graphic PUBLIC DirectXTex)

@@ -55,6 +55,16 @@
             }
         },
         {
+            "name": "x64-debug-renderdoc",
+            "displayName": "x64 Debug (RenderDoc)",
+            "inherits": "windows-base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "DYNAMIC_CRT": "ON",
+                "ENABLE_EDITOR": "ON"
+            }
+        },
+        {
             "name": "visual-studio",
             "hidden": true,
             "generator": "Visual Studio 17 2022",
@@ -132,6 +142,10 @@
             "targets": [
                 "ALL_BUILD"
             ]
+        },
+        {
+            "name": "x64-debug-renderdoc-build",
+            "configurePreset": "x64-debug-renderdoc"
         }
     ]
 }
