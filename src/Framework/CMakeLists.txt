@@ -1,3 +1,6 @@
+include(fetch)
+FetchContent_BASE(uuid_v4 https://github.com/crashoz/uuid_v4.git v1.0.0 EXCLUDE_FROM_ALL)
+
 add_library(framework STATIC
   Core/types.h
   Core/utils.h
@@ -52,6 +55,9 @@ add_library(framework STATIC
   # Math
   Math/Math.h
   Math/Math.cpp
+
+  # UUID
+  UUID/uuid.h
 )
 
 target_link_libraries(framework PUBLIC
@@ -62,3 +68,4 @@ set_msvc_runtime(framework)
 
 target_include_directories(framework PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
 target_include_directories(framework PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(framework PUBLIC ${uuid_v4_SOURCE_DIR})

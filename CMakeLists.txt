@@ -46,5 +46,4 @@ function(set_msvc_runtime target)
   endif()
 endfunction()
 
-# サブプロジェクトを含めます。
 add_subdirectory("src")

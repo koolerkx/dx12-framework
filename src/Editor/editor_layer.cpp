@@ -285,6 +285,7 @@ void EditorLayer::DrawInspector() {
 
   if (selected_object_) {
     ImGui::Text("Name: %s", selected_object_->GetName().c_str());
+    ImGui::TextDisabled("UUID: %s", selected_object_->GetUUID().ToString().c_str());
     ImGui::Separator();
 
     for (const auto& comp : selected_object_->GetComponents()) {

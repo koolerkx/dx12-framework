@@ -180,3 +180,19 @@ void GameObject::Destroy() {
 bool GameObject::IsPendingDestroy() const {
   return is_pending_destroy_;
 }
+
+void GameObject::NotifyComponentAdded(IComponentBase* component) {
+  if (scene_) {
+    scene_->RegisterComponent(component);
+  }
+}
+
+void GameObject::SetUUID(const framework::UUID& uuid) {
+  if (scene_) {
+    scene_->UnregisterGameObject(this);
+  }
+  uuid_ = uuid;
+  if (scene_) {
+    scene_->RegisterGameObject(this);
+  }
+}

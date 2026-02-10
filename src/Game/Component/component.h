@@ -2,6 +2,7 @@
 
 #include <typeinfo>
 
+#include "Framework/UUID/uuid.h"
 #include "Graphic/Frame/frame_packet.h"
 
 class DebugDrawer;
@@ -64,6 +65,13 @@ class IComponentBase {
     return "Unknown";
   }
 
+  const framework::UUID& GetUUID() const {
+    return uuid_;
+  }
+  void SetUUID(const framework::UUID& uuid) {
+    uuid_ = uuid;
+  }
+
   GameObject* GetOwner() const {
     return owner_;
   }
@@ -90,6 +98,7 @@ class IComponentBase {
   GameObject* owner_;
 
  private:
+  framework::UUID uuid_;
   bool enabled_ = true;
   bool is_started_ = false;
   bool debug_draw_enabled_ = true;

@@ -17,6 +17,7 @@ GameObject* IScene::CreateGameObject(const std::string& name, const TransformCom
   auto obj = std::make_unique<GameObject>(this, name);
   GameObject* ptr = obj.get();
   game_objects_.push_back(std::move(obj));
+  RegisterGameObject(ptr);
 
   ptr->Init();
   ptr->GetTransform()->Apply(transform);
@@ -51,6 +52,8 @@ void IScene::Exit() {
   camera_setting_.Clear();
   ui_camera_setting_.Clear();
 
+  gameobject_uuid_map_.clear();
+  component_uuid_map_.clear();
   game_objects_.clear();
   is_started_ = false;
 }
@@ -160,6 +163,35 @@ void IScene::DestroyGameObject(const std::string& name) {
   }
 }
 
+void IScene::RegisterGameObject(GameObject* obj) {
+  gameobject_uuid_map_[obj->GetUUID()] = obj;
+}
+
+void IScene::UnregisterGameObject(GameObject* obj) {
+  gameobject_uuid_map_.erase(obj->GetUUID());
+}
+
+void IScene::RegisterComponent(IComponentBase* component) {
+  component_uuid_map_[component->GetUUID()] = component;
+}
+
+void IScene::UnregisterGameObjectAndComponents(GameObject* obj) {
+  gameobject_uuid_map_.erase(obj->GetUUID());
+  for (const auto& comp : obj->GetComponents()) {
+    component_uuid_map_.erase(comp->GetUUID());
+  }
+}
+
+GameObject* IScene::FindGameObjectByUUID(const framework::UUID& uuid) const {
+  auto it = gameobject_uuid_map_.find(uuid);
+  return it != gameobject_uuid_map_.end() ? it->second : nullptr;
+}
+
+IComponentBase* IScene::FindComponentByUUID(const framework::UUID& uuid) const {
+  auto it = component_uuid_map_.find(uuid);
+  return it != component_uuid_map_.end() ? it->second : nullptr;
+}
+
 void IScene::CleanupDestroyedObjects() {
   while (true) {
     size_t count_before = game_objects_.size();
@@ -169,6 +201,7 @@ void IScene::CleanupDestroyedObjects() {
       if (obj->IsPendingDestroy()) {
         camera_setting_.RemoveCamerasOwnedBy(obj.get());
         ui_camera_setting_.RemoveCamerasOwnedBy(obj.get());
+        UnregisterGameObjectAndComponents(obj.get());
         obj->DetachFromHierarchy();
       }
     }

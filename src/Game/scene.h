@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "Graphic/Frame/frame_packet.h"
@@ -96,11 +97,22 @@ class IScene {
     return game_objects_;
   }
 
+  GameObject* FindGameObjectByUUID(const framework::UUID& uuid) const;
+  IComponentBase* FindComponentByUUID(const framework::UUID& uuid) const;
+
   void DestroyGameObject(GameObject* obj);
   void DestroyGameObject(const std::string& name);
 
  private:
+  void RegisterGameObject(GameObject* obj);
+  void UnregisterGameObject(GameObject* obj);
+  void RegisterComponent(IComponentBase* component);
+  void UnregisterGameObjectAndComponents(GameObject* obj);
+
   std::vector<std::unique_ptr<GameObject>> game_objects_;
+  std::unordered_map<framework::UUID, GameObject*> gameobject_uuid_map_;
+  std::unordered_map<framework::UUID, IComponentBase*> component_uuid_map_;
+
   ActiveCameraSetting camera_setting_;
   ActiveUICameraSetting ui_camera_setting_;
   BackgroundSetting background_setting_;
@@ -117,4 +129,6 @@ class IScene {
   void RenderRootObjects(FramePacket& packet);
   void DebugDrawRootObjects(DebugDrawer& drawer);
   void StartAllObjects();
+
+  friend class GameObject;
 };

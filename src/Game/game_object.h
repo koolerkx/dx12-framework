@@ -6,6 +6,7 @@
 
 #include "Component/component.h"
 #include "Component/transform_component.h"
+#include "Framework/UUID/uuid.h"
 
 class IScene;
 class GameContext;
@@ -26,6 +27,11 @@ class GameObject {
   bool IsStarted() const {
     return is_started_;
   }
+
+  const framework::UUID& GetUUID() const {
+    return uuid_;
+  }
+  void SetUUID(const framework::UUID& uuid);
 
   TransformComponent* GetTransform();
 
@@ -57,6 +63,7 @@ class GameObject {
     components_.push_back(std::move(component));
 
     ptr->OnInit();
+    NotifyComponentAdded(ptr);
 
     return ptr;
   }
@@ -112,10 +119,12 @@ class GameObject {
  private:
   void FlushPendingStarts();
 
+  void NotifyComponentAdded(IComponentBase* component);
   void AddChild(GameObject* child);
   void RemoveChild(GameObject* child);
 
  private:
+  framework::UUID uuid_;
   std::string name_;
   bool is_started_ = false;
   bool is_pending_destroy_ = false;
