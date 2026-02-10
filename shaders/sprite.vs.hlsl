@@ -1,57 +1,16 @@
-// === Constant Buffers ===
-cbuffer FrameCB : register(b0) {
-  row_major float4x4 g_View;
-  row_major float4x4 g_Proj;
-  row_major float4x4 g_ViewProj;
-  row_major float4x4 g_InvView;
-  row_major float4x4 g_InvProj;
-  float3 g_CameraPos;
-  float g_Time;
-  float2 g_ScreenSize;
-  float2 _padding0;
-};
-
-cbuffer ObjectCB : register(b1) {
-  row_major float4x4 g_World;
-  row_major float4x4 g_WorldViewProj;
-  float4 g_ObjectColor;
-  float2 g_UVOffset; // UV offset for atlas/sprite sheet
-  float2 g_UVScale;  // UV scale (1,1 = full texture)
-};
-
-// Material data from root constants
-struct MaterialData {
-  uint albedoTextureIndex;
-  uint normalTextureIndex;
-  uint metallicRoughnessIndex;
-  uint flags;
-};
-ConstantBuffer<MaterialData> g_MaterialData : register(b3);
-
-// === Bindless Resources ===
-Texture2D g_Textures[] : register(t0, space1);
-SamplerState g_Sampler : register(s0);
-
-// === Vertex Shader ===
-struct VSIN {
-  float3 position : POSITION;
-  float2 uv : TEXCOORD;
-  float4 color : COLOR;
-};
+#include "ConstantBuffer/object_cb.hlsli"
+#include "common_types.hlsli"
 
 struct VSOUT {
   float4 position : SV_POSITION;
-  float2 uv : TEXCOORD0;
+  float2 uv : TEXCOORD;
   float4 color : COLOR;
 };
 
 VSOUT main(VSIN input) {
   VSOUT output;
-
-  output.position = mul(float4(input.position, 1.0f), g_WorldViewProj);
-
-  output.uv = input.uv * g_UVScale + g_UVOffset;
+  output.position = mul(float4(input.position, 1.0f), g_ObjectCB.worldViewProj);
+  output.uv = input.uv * g_ObjectCB.uvScale + g_ObjectCB.uvOffset;
   output.color = input.color;
-
   return output;
 }

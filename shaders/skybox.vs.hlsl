@@ -1,23 +1,23 @@
-#include "basic_type.hlsli"
+#include "ConstantBuffer/frame_cb.hlsli"
 
-struct SkyboxVSInput {
-  float3 pos : POSITION;
+struct VSIN {
+  float3 position : POSITION;
 };
 
-struct SkyboxVSOutput {
+struct VSOUT {
   float4 position : SV_POSITION;
-  float3 local_pos : TEXCOORD0;
+  float3 local_pos : TEXCOORD;
 };
 
-SkyboxVSOutput main(SkyboxVSInput input) {
-  SkyboxVSOutput output;
+VSOUT main(VSIN input) {
+  VSOUT output;
 
-  float4x4 view_no_translate = g_View;
+  float4x4 view_no_translate = g_FrameCB.view;
   view_no_translate[3] = float4(0, 0, 0, 1);
 
-  float4 clip_pos = mul(float4(input.pos, 1.0), mul(view_no_translate, g_Proj));
+  float4 clip_pos = mul(float4(input.position, 1.0), mul(view_no_translate, g_FrameCB.proj));
   output.position = clip_pos.xyww;
-  output.local_pos = input.pos;
+  output.local_pos = input.position;
 
   return output;
 }

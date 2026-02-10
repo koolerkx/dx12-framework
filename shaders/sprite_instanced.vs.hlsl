@@ -1,25 +1,4 @@
-cbuffer FrameCB : register(b0) {
-  row_major float4x4 g_View;
-  row_major float4x4 g_Proj;
-  row_major float4x4 g_ViewProj;
-  row_major float4x4 g_InvView;
-  row_major float4x4 g_InvProj;
-  float3 g_CameraPos;
-  float g_Time;
-  float2 g_ScreenSize;
-  float2 _padding0;
-};
-
-struct MaterialData {
-  uint albedoTextureIndex;
-  uint normalTextureIndex;
-  uint metallicRoughnessIndex;
-  uint flags;
-};
-ConstantBuffer<MaterialData> g_MaterialData : register(b3);
-
-Texture2D g_Textures[] : register(t0, space1);
-SamplerState g_Sampler : register(s0);
+#include "ConstantBuffer/frame_cb.hlsli"
 
 struct VSIN {
   float3 position : POSITION;
@@ -37,7 +16,7 @@ struct VSIN {
 
 struct VSOUT {
   float4 position : SV_POSITION;
-  float2 uv : TEXCOORD0;
+  float2 uv : TEXCOORD;
   float4 color : COLOR;
 };
 
@@ -47,9 +26,8 @@ VSOUT main(VSIN input) {
   float4x4 instanceWorld = float4x4(input.instanceWorld0, input.instanceWorld1,
                                     input.instanceWorld2, input.instanceWorld3);
 
-  float4 localPos = float4(input.position, 1.0f);
-  float4 worldPos = mul(localPos, instanceWorld);
-  output.position = mul(worldPos, g_ViewProj);
+  float4 worldPos = mul(float4(input.position, 1.0f), instanceWorld);
+  output.position = mul(worldPos, g_FrameCB.viewProj);
 
   output.uv = input.uv * input.instanceUVScale + input.instanceUVOffset;
   output.color = input.color * input.instanceColor;

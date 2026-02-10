@@ -1,20 +1,26 @@
-#include "basic_type.hlsli"
-
-cbuffer DepthViewCB : register(b2) {
-  uint g_DepthSrvIndex;
-  float g_NearPlane;
-  float g_FarPlane;
+struct DepthViewCB {
+  uint depthSrvIndex;
+  float nearPlane;
+  float farPlane;
   uint _padding;
-}
+};
+ConstantBuffer<DepthViewCB> g_DepthViewCB : register(b2);
 
+Texture2D g_Textures[] : register(t0, space1);
 SamplerState g_Samplers[] : register(s0, space0);
 
-float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD) : SV_TARGET {
-  float depth = g_Textures[g_DepthSrvIndex].Sample(g_Samplers[0], uv).r;
+struct PSIN {
+  float4 position : SV_POSITION;
+  float2 uv : TEXCOORD;
+};
+
+float4 main(PSIN input) : SV_TARGET {
+  float depth =
+      g_Textures[g_DepthViewCB.depthSrvIndex].Sample(g_Samplers[0], input.uv).r;
 
   // Linearize reverse-Z depth
-  float linear_depth =
-      g_NearPlane / (g_FarPlane - depth * (g_FarPlane - g_NearPlane));
+  float linear_depth = g_DepthViewCB.nearPlane /
+      (g_DepthViewCB.farPlane - depth * (g_DepthViewCB.farPlane - g_DepthViewCB.nearPlane));
 
   return float4(linear_depth, linear_depth, linear_depth, 1.0);
 }

@@ -1,11 +1,16 @@
-#include "basic_type.hlsli"
+struct BlitCB {
+  uint srcSrvIndex;
+};
+ConstantBuffer<BlitCB> g_BlitCB : register(b2);
 
-cbuffer BlitCB : register(b2) {
-  uint g_SrcSrvIndex;
-}
-
+Texture2D g_Textures[] : register(t0, space1);
 SamplerState g_Samplers[] : register(s0, space0);
 
-float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD) : SV_TARGET {
-  return g_Textures[g_SrcSrvIndex].Sample(g_Samplers[0], uv);
+struct PSIN {
+  float4 position : SV_POSITION;
+  float2 uv : TEXCOORD;
+};
+
+float4 main(PSIN input) : SV_TARGET {
+  return g_Textures[g_BlitCB.srcSrvIndex].Sample(g_Samplers[0], input.uv);
 }

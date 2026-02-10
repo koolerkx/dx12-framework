@@ -1,12 +1,10 @@
-#include "basic_type.hlsli"
-
-struct VSOutput {
+struct VSOUT {
   float4 position : SV_POSITION;
   float2 uv : TEXCOORD;
 };
 
-VSOutput main(uint vertexID : SV_VertexID) {
-  VSOutput output;
+VSOUT main(uint vertexID : SV_VertexID) {
+  VSOUT output;
 
   output.uv = float2((vertexID == 2) ? 2.0 : 0.0,
                       (vertexID == 1) ? 2.0 : 0.0);

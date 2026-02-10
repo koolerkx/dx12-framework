@@ -1,5 +1,3 @@
-#include "basic_type.hlsli"
-
 // ACES Filmic Tone Mapping Approximation by Krzysztof Narkowicz
 // https://knarkowicz.wordpress.com/2016/01/06/aces-filmic-tone-mapping-curve/
 float3 ACESFilmic(float3 x) {
@@ -24,34 +22,33 @@ float3 LinearToSRGB(float3 color) {
   return saturate(srgb);
 }
 
-cbuffer ToneMapCB : register(b2) {
-  float g_Exposure;
-  uint g_DebugMode;
-  uint g_HdrSrvIndex;
+struct ToneMapCB {
+  float exposure;
+  uint debugMode;
+  uint hdrSrvIndex;
   uint _padding;
-}
+};
+ConstantBuffer<ToneMapCB> g_ToneMapCB : register(b2);
 
-// g_Textures is declared in basic_type.hlsli, but g_Samplers[] needs to be declared here
+Texture2D g_Textures[] : register(t0, space1);
 SamplerState g_Samplers[] : register(s0, space0);
 
-float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD) : SV_TARGET {
-  // Sample HDR render target using index from constant buffer
-  float3 hdr_color = g_Textures[g_HdrSrvIndex].Sample(g_Samplers[0], uv).rgb;
+struct PSIN {
+  float4 position : SV_POSITION;
+  float2 uv : TEXCOORD;
+};
 
-  // Debug view: skip tone mapping
-  if (g_DebugMode == 1) {
+float4 main(PSIN input) : SV_TARGET {
+  float3 hdr_color =
+      g_Textures[g_ToneMapCB.hdrSrvIndex].Sample(g_Samplers[0], input.uv).rgb;
+
+  if (g_ToneMapCB.debugMode == 1) {
     return float4(hdr_color / 16.0, 1.0);
   }
 
-  // Apply exposure
-  float3 exposed = hdr_color * g_Exposure;
-
-  // Tone map to LINEAR LDR
+  float3 exposed = hdr_color * g_ToneMapCB.exposure;
   float3 linear_ldr = ACESFilmic(exposed);
-
-  // Convert linear to sRGB (manual since swapchain is UNORM format)
   float3 srgb_ldr = LinearToSRGB(linear_ldr);
 
-  // Output alpha = 1.0 (opaque swapchain)
   return float4(srgb_ldr, 1.0);
 }
