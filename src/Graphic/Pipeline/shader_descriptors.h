@@ -107,7 +107,7 @@ struct PostProcessToneMapShader {
 
   static constexpr RSPreset RS_PRESET = RSPreset::Standard;
   static constexpr std::string_view NAME = "ToneMap";
-  static constexpr std::wstring_view VS_PATH = L"Content/shaders/tonemap.vs.cso";
+  static constexpr std::wstring_view VS_PATH = L"Content/shaders/fullscreen.vs.cso";
   static constexpr std::wstring_view PS_PATH = L"Content/shaders/tonemap.ps.cso";
   static constexpr ShaderRenderHints HINTS = {};
 
@@ -137,7 +137,7 @@ struct PostProcessDepthViewShader {
 
   static constexpr RSPreset RS_PRESET = RSPreset::Standard;
   static constexpr std::string_view NAME = "DepthView";
-  static constexpr std::wstring_view VS_PATH = L"Content/shaders/depthview.vs.cso";
+  static constexpr std::wstring_view VS_PATH = L"Content/shaders/fullscreen.vs.cso";
   static constexpr std::wstring_view PS_PATH = L"Content/shaders/depthview.ps.cso";
   static constexpr ShaderRenderHints HINTS = {};
 
@@ -152,7 +152,7 @@ struct PostProcessBlitShader {
 
   static constexpr RSPreset RS_PRESET = RSPreset::Standard;
   static constexpr std::string_view NAME = "Blit";
-  static constexpr std::wstring_view VS_PATH = L"Content/shaders/blit.vs.cso";
+  static constexpr std::wstring_view VS_PATH = L"Content/shaders/fullscreen.vs.cso";
   static constexpr std::wstring_view PS_PATH = L"Content/shaders/blit.ps.cso";
   static constexpr ShaderRenderHints HINTS = {};
 
