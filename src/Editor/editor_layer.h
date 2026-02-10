@@ -3,6 +3,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <d3d12.h>
+#include <imgui.h>
 
 #include "Framework/Event/event_scope.hpp"
 #include "Graphic/Descriptor/descriptor_heap_allocator.h"
@@ -44,6 +45,9 @@ class EditorLayer {
   void DrawSceneSettings();
   void DrawDebugPanel();
   void DrawRenderPipelinePanel(ID3D12GraphicsCommandList* cmd);
+  void RebuildFontAtlas(float scale);
+  void ScaleExistingWindows(float ratio);
+  void UpdateScaling();
 
   Graphic* graphic_ = nullptr;
   IScene* scene_ = nullptr;
@@ -56,6 +60,10 @@ class EditorLayer {
   bool show_scene_settings_ = true;
   bool show_debug_ = true;
   bool show_render_pipeline_ = true;
+
+  float ui_scale_ = 1.0f;
+  UINT last_scaled_width_ = 0;
+  ImGuiStyle base_style_{};
 
   EventScope event_scope_;
 };

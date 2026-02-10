@@ -3,6 +3,9 @@
 #include <imgui.h>
 #include <imgui_impl_dx12.h>
 #include <imgui_impl_win32.h>
+#include <imgui_internal.h>
+
+#include <algorithm>
 
 #include "Framework/Core/utils.h"
 #include "Game/Component/Renderer/mesh_renderer.h"
@@ -18,6 +21,7 @@
 #include "Graphic/Pipeline/shader_registry.h"
 #include "Graphic/Render/render_graph.h"
 #include "Graphic/graphic.h"
+
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -54,6 +58,8 @@ void EditorLayer::Initialize(HWND hwnd, Graphic& graphic) {
   ImGui_ImplDX12_Init(&dx12_info);
 
   graphic_ = &graphic;
+  base_style_ = ImGui::GetStyle();
+  UpdateScaling();
 }
 
 void EditorLayer::Shutdown(Graphic& graphic) {
@@ -70,6 +76,7 @@ void EditorLayer::Shutdown(Graphic& graphic) {
 void EditorLayer::BeginFrame() {
   ImGui_ImplDX12_NewFrame();
   ImGui_ImplWin32_NewFrame();
+  UpdateScaling();
   ImGui::NewFrame();
 }
 
@@ -396,14 +403,12 @@ void EditorLayer::DrawSceneSettings() {
 
   if (ImGui::CollapsingHeader("Lighting", ImGuiTreeNodeFlags_DefaultOpen)) {
     float azimuth = light.GetAzimuth();
-    if (ImGui::SliderFloat("Azimuth", &azimuth, -180.0f, 180.0f,
-                           "%.1f deg")) {
+    if (ImGui::SliderFloat("Azimuth", &azimuth, -180.0f, 180.0f, "%.1f deg")) {
       light.SetAzimuth(azimuth);
     }
 
     float elevation = light.GetElevation();
-    if (ImGui::SliderFloat("Elevation", &elevation, -90.0f, 90.0f,
-                           "%.1f deg")) {
+    if (ImGui::SliderFloat("Elevation", &elevation, -90.0f, 90.0f, "%.1f deg")) {
       light.SetElevation(elevation);
     }
 
@@ -418,8 +423,7 @@ void EditorLayer::DrawSceneSettings() {
     }
 
     float ambient_intensity = light.GetAmbientIntensity();
-    if (ImGui::DragFloat("Ambient Intensity", &ambient_intensity, 0.01f, 0.0f,
-                         2.0f)) {
+    if (ImGui::DragFloat("Ambient Intensity", &ambient_intensity, 0.01f, 0.0f, 2.0f)) {
       light.SetAmbientIntensity(ambient_intensity);
     }
 
@@ -510,4 +514,67 @@ void EditorLayer::DrawMeshRendererInspector(MeshRenderer* renderer) {
   DrawRenderSettingsEditor(data.render_settings, true);
 
   renderer->ApplyEditorData(data);
+}
+
+void EditorLayer::RebuildFontAtlas(float scale) {
+  ImGuiIO& io = ImGui::GetIO();
+  io.Fonts->Clear();
+
+  ImFontConfig config;
+  config.SizePixels = 13.0f * scale;
+  io.Fonts->AddFontDefault(&config);
+  io.Fonts->Build();
+
+  ImGui_ImplDX12_InvalidateDeviceObjects();
+  ImGui_ImplDX12_CreateDeviceObjects();
+}
+
+namespace {
+
+void ScaleDockNodeRecursive(ImGuiDockNode* node, float ratio) {
+  if (!node) return;
+  node->SizeRef = ImVec2(node->SizeRef.x * ratio, node->SizeRef.y * ratio);
+  ScaleDockNodeRecursive(node->ChildNodes[0], ratio);
+  ScaleDockNodeRecursive(node->ChildNodes[1], ratio);
+}
+
+}  // namespace
+
+void EditorLayer::ScaleExistingWindows(float ratio) {
+  ImGuiContext& g = *ImGui::GetCurrentContext();
+
+  for (ImGuiWindow* window : g.Windows) {
+    if (window->DockNode) continue;
+    window->Pos = ImVec2(window->Pos.x * ratio, window->Pos.y * ratio);
+    window->Size = ImVec2(window->Size.x * ratio, window->Size.y * ratio);
+    window->SizeFull = ImVec2(window->SizeFull.x * ratio, window->SizeFull.y * ratio);
+  }
+
+  ImGuiDockContext& dc = g.DockContext;
+  for (int n = 0; n < dc.Nodes.Data.Size; ++n) {
+    auto* node = static_cast<ImGuiDockNode*>(dc.Nodes.Data[n].val_p);
+    if (node && node->IsRootNode()) {
+      ScaleDockNodeRecursive(node, ratio);
+    }
+  }
+}
+
+void EditorLayer::UpdateScaling() {
+  UINT width = graphic_->GetFrameBufferWidth();
+  if (width == last_scaled_width_) return;
+
+  float scale = static_cast<float>(width) / 1920.0f;
+  scale = std::clamp(scale, 0.5f, 3.0f);
+
+  if (ui_scale_ > 0.0f) {
+    ScaleExistingWindows(scale / ui_scale_);
+  }
+
+  RebuildFontAtlas(scale);
+
+  ImGui::GetStyle() = base_style_;
+  ImGui::GetStyle().ScaleAllSizes(scale);
+
+  last_scaled_width_ = width;
+  ui_scale_ = scale;
 }
