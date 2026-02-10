@@ -392,6 +392,43 @@ void EditorLayer::DrawSceneSettings() {
     }
   }
 
+  auto& light = scene_->GetLightSetting();
+
+  if (ImGui::CollapsingHeader("Lighting", ImGuiTreeNodeFlags_DefaultOpen)) {
+    float azimuth = light.GetAzimuth();
+    if (ImGui::SliderFloat("Azimuth", &azimuth, -180.0f, 180.0f,
+                           "%.1f deg")) {
+      light.SetAzimuth(azimuth);
+    }
+
+    float elevation = light.GetElevation();
+    if (ImGui::SliderFloat("Elevation", &elevation, -90.0f, 90.0f,
+                           "%.1f deg")) {
+      light.SetElevation(elevation);
+    }
+
+    float intensity = light.GetIntensity();
+    if (ImGui::DragFloat("Intensity", &intensity, 0.01f, 0.0f, 5.0f)) {
+      light.SetIntensity(intensity);
+    }
+
+    Math::Vector3 dir_color = light.GetDirectionalColor();
+    if (ImGui::ColorEdit3("Directional Color", &dir_color.x)) {
+      light.SetDirectionalColor(dir_color);
+    }
+
+    float ambient_intensity = light.GetAmbientIntensity();
+    if (ImGui::DragFloat("Ambient Intensity", &ambient_intensity, 0.01f, 0.0f,
+                         2.0f)) {
+      light.SetAmbientIntensity(ambient_intensity);
+    }
+
+    Math::Vector3 ambient_color = light.GetAmbientColor();
+    if (ImGui::ColorEdit3("Ambient Color", &ambient_color.x)) {
+      light.SetAmbientColor(ambient_color);
+    }
+  }
+
   ImGui::End();
 }
 

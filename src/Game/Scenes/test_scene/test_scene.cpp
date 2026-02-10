@@ -34,7 +34,9 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   texture_additive_ = asset_manager.LoadTexture("Content/textures/sun_additive.png");
 
   GetBackgroundSetting().SetSkybox("Content/skybox/sunflowers_puresky_standard_cubemap_4k.hdr", asset_manager);
-  GetLightSetting().SetDirection(Math::Vector3{0.5f, -1.0f, 0.5f}.Normalized());
+  auto& light = GetLightSetting();
+  light.SetAzimuth(45.0f);
+  light.SetElevation(55.0f);
 
   SetupCamera();
 
@@ -55,6 +57,13 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   cube_object2_ = CreateGameObject("Cube2", {.position = {1, 1, 1}});
   cube_object2_->SetParent(cube_object_);
   cube_object2_->AddComponent<MeshRenderer>(MeshRenderer::Props{
+    .mesh = asset_manager.GetDefaultMesh(DefaultMesh::Cube),
+    .texture = texture_background_.Get(),
+    .color = colors::White,
+  });
+
+  auto* cube_object3 = CreateGameObject("PivotCube", {.position = {0, -4.5, -3}, .pivot = {0, -0.5f, 0}});
+  cube_object3->AddComponent<MeshRenderer>(MeshRenderer::Props{
     .mesh = asset_manager.GetDefaultMesh(DefaultMesh::Cube),
     .texture = texture_background_.Get(),
     .color = colors::White,
