@@ -13,11 +13,11 @@
 #include "Framework/Logging/logger.h"
 #include "Framework/Math/Math.h"
 #include "Presentation/swapchain_manager.h"
+#include "Render/blit_pass.h"
 #include "Render/debug_pass.h"
+#include "Render/depth_view_pass.h"
 #include "Render/material_pass.h"
 #include "Render/skybox_pass.h"
-#include "Render/blit_pass.h"
-#include "Render/depth_view_pass.h"
 #include "Render/tone_map_pass.h"
 
 using Math::Vector3;
@@ -128,32 +128,30 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
   auto backbuffer = render_graph_->ImportBackbuffer("backbuffer");
   auto scene_rt = render_graph_->CreateRenderTexture(
     "scene_rt", DXGI_FORMAT_R16G16B16A16_FLOAT, frame_buffer_width, frame_buffer_height, device_.Get(), colors::DarkSlateGray);
-  auto scene_depth = render_graph_->CreateDepthBuffer(
-    "scene_depth", frame_buffer_width, frame_buffer_height, device_.Get());
-  auto tonemap_rt = render_graph_->CreateRenderTexture(
-    "tonemap_rt", DXGI_FORMAT_R8G8B8A8_UNORM, frame_buffer_width, frame_buffer_height, device_.Get());
+  auto scene_depth = render_graph_->CreateDepthBuffer("scene_depth", frame_buffer_width, frame_buffer_height, device_.Get());
+  auto tonemap_rt =
+    render_graph_->CreateRenderTexture("tonemap_rt", DXGI_FORMAT_R8G8B8A8_UNORM, frame_buffer_width, frame_buffer_height, device_.Get());
   auto depth_preview_rt = render_graph_->CreateRenderTexture(
     "depth_preview_rt", DXGI_FORMAT_R8G8B8A8_UNORM, frame_buffer_width, frame_buffer_height, device_.Get());
 
   preview_handles_ = {scene_rt, depth_preview_rt, tonemap_rt};
 
   PassSetup scene_setup;
-  scene_setup.color_targets = {scene_rt};
+  scene_setup.resource_writes = {scene_rt};
   scene_setup.depth = scene_depth;
 
   PassSetup backbuffer_setup;
-  backbuffer_setup.color_targets = {backbuffer};
+  backbuffer_setup.resource_writes = {backbuffer};
 
   PassSetup tonemap_setup;
-  tonemap_setup.color_targets = {tonemap_rt};
-  tonemap_setup.shader_inputs = {scene_rt};
+  tonemap_setup.resource_writes = {tonemap_rt};
+  tonemap_setup.resource_reads = {scene_rt};
 
   render_graph_->AddPass(std::make_unique<SkyboxPass>(device_.Get(), &render_services_->GetShaderManager(), scene_setup));
   render_graph_->AddPass(std::make_unique<MaterialPass>("Opaque Pass", opaque_renderer_.get(), RenderLayer::Opaque, scene_setup));
   render_graph_->AddPass(
     std::make_unique<MaterialPass>("Transparent Pass", transparent_renderer_.get(), RenderLayer::Transparent, scene_setup));
-  render_graph_->AddPass(
-    std::make_unique<DebugPass>(debug_line_renderer_.get(), &render_services_->GetMaterialManager(), scene_setup));
+  render_graph_->AddPass(std::make_unique<DebugPass>(debug_line_renderer_.get(), &render_services_->GetMaterialManager(), scene_setup));
   render_graph_->AddPass(std::make_unique<ToneMapPass>(device_.Get(),
     &render_services_->GetMaterialManager(),
     &render_services_->GetShaderManager(),
@@ -163,33 +161,24 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
     &hdr_debug_));
 
   PassSetup depth_preview_setup;
-  depth_preview_setup.color_targets = {depth_preview_rt};
-  depth_preview_setup.shader_inputs = {scene_depth};
+  depth_preview_setup.resource_writes = {depth_preview_rt};
+  depth_preview_setup.resource_reads = {scene_depth};
 
-  render_graph_->AddPass(std::make_unique<DepthViewPass>(device_.Get(),
-    &render_services_->GetShaderManager(),
-    depth_preview_setup,
-    scene_depth,
-    &depth_preview_config_));
+  render_graph_->AddPass(std::make_unique<DepthViewPass>(
+    device_.Get(), &render_services_->GetShaderManager(), depth_preview_setup, scene_depth, &depth_preview_config_));
 
   PassSetup blit_setup;
-  blit_setup.color_targets = {backbuffer};
-  blit_setup.shader_inputs = {tonemap_rt};
+  blit_setup.resource_writes = {backbuffer};
+  blit_setup.resource_reads = {tonemap_rt};
 
-  render_graph_->AddPass(std::make_unique<BlitPass>(device_.Get(),
-    &render_services_->GetShaderManager(),
-    blit_setup,
-    tonemap_rt));
+  render_graph_->AddPass(std::make_unique<BlitPass>(device_.Get(), &render_services_->GetShaderManager(), blit_setup, tonemap_rt));
 
   PassSetup depth_view_setup;
-  depth_view_setup.color_targets = {backbuffer};
-  depth_view_setup.shader_inputs = {scene_depth};
+  depth_view_setup.resource_writes = {backbuffer};
+  depth_view_setup.resource_reads = {scene_depth};
 
-  render_graph_->AddPass(std::make_unique<DepthViewPass>(device_.Get(),
-    &render_services_->GetShaderManager(),
-    depth_view_setup,
-    scene_depth,
-    &depth_view_config_));
+  render_graph_->AddPass(std::make_unique<DepthViewPass>(
+    device_.Get(), &render_services_->GetShaderManager(), depth_view_setup, scene_depth, &depth_view_config_));
 
   auto ui_camera_from_packet = [](const RenderFrameContext&, const FramePacket& packet) { return packet.ui_camera; };
   render_graph_->AddPass(

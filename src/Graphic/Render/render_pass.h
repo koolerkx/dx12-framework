@@ -7,9 +7,9 @@
 #include "Render/render_graph_handle.h"
 
 struct PassSetup {
-  std::vector<RenderGraphHandle> color_targets;
+  std::vector<RenderGraphHandle> resource_writes;
   RenderGraphHandle depth = RenderGraphHandle::Invalid;
-  std::vector<RenderGraphHandle> shader_inputs;
+  std::vector<RenderGraphHandle> resource_reads;
 };
 
 class IRenderPass {

@@ -48,13 +48,22 @@ class RenderGraph {
     DepthBuffer* depth_buffer = nullptr;
   };
 
+  struct PassNode {
+    std::vector<uint32_t> successors;
+    uint32_t predecessor_count = 0;
+  };
+
   void ApplyPassSetup(ID3D12GraphicsCommandList* cmd, const PassSetup& setup);
+  void Compile();
   const ResourceEntry& GetEntry(RenderGraphHandle handle) const;
 
   std::vector<ResourceEntry> resources_;
   std::vector<std::unique_ptr<RenderTexture>> owned_render_textures_;
   std::vector<std::unique_ptr<DepthBuffer>> owned_depth_buffers_;
   std::vector<std::unique_ptr<IRenderPass>> passes_;
+  std::vector<PassNode> pass_nodes_;
+  std::vector<uint32_t> execution_order_;
+  bool compiled_ = false;
 
   SwapChainManager* swapchain_ = nullptr;
   DescriptorHeapManager* heap_manager_ = nullptr;

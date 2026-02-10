@@ -1,9 +1,12 @@
 #include "render_graph.h"
 
 #include <cassert>
+#include <queue>
+#include <unordered_set>
 
 #include "Core/utils.h"
 #include "Descriptor/descriptor_heap_manager.h"
+#include "Framework/Logging/logger.h"
 #include "Presentation/depth_buffer.h"
 #include "Presentation/swapchain_manager.h"
 #include "Render/render_texture.h"
@@ -88,6 +91,7 @@ void RenderGraph::TransitionForRead(ID3D12GraphicsCommandList* cmd, RenderGraphH
 
 void RenderGraph::AddPass(std::unique_ptr<IRenderPass> pass) {
   passes_.push_back(std::move(pass));
+  compiled_ = false;
 }
 
 void RenderGraph::BeginFrame() {
@@ -103,7 +107,10 @@ void RenderGraph::BeginFrame() {
 }
 
 void RenderGraph::Execute(const RenderFrameContext& frame, const FramePacket& packet) {
-  for (auto& pass : passes_) {
+  if (!compiled_) Compile();
+
+  for (uint32_t idx : execution_order_) {
+    auto& pass = passes_[idx];
     if (!pass) continue;
 
     utils::CommandListEventGroup(frame.command_list, utils::utf8_to_wstring(pass->GetName()).c_str(), [&]() {
@@ -114,7 +121,7 @@ void RenderGraph::Execute(const RenderFrameContext& frame, const FramePacket& pa
 }
 
 void RenderGraph::ApplyPassSetup(ID3D12GraphicsCommandList* cmd, const PassSetup& setup) {
-  for (auto handle : setup.shader_inputs) {
+  for (auto handle : setup.resource_reads) {
     const auto& entry = GetEntry(handle);
     switch (entry.type) {
       case RenderGraphResourceType::RenderTexture:
@@ -133,7 +140,7 @@ void RenderGraph::ApplyPassSetup(ID3D12GraphicsCommandList* cmd, const PassSetup
   uint32_t rt_width = 0;
   uint32_t rt_height = 0;
 
-  for (auto handle : setup.color_targets) {
+  for (auto handle : setup.resource_writes) {
     const auto& entry = GetEntry(handle);
     switch (entry.type) {
       case RenderGraphResourceType::Backbuffer: {
@@ -223,6 +230,9 @@ void RenderGraph::Resize(ID3D12Device* device, uint32_t width, uint32_t height) 
 
 void RenderGraph::Shutdown() {
   passes_.clear();
+  pass_nodes_.clear();
+  execution_order_.clear();
+  compiled_ = false;
 
   for (auto& rt : owned_render_textures_) {
     rt->SafeRelease(*heap_manager_);
@@ -235,6 +245,87 @@ void RenderGraph::Shutdown() {
   owned_depth_buffers_.clear();
 
   resources_.clear();
+}
+
+void RenderGraph::Compile() {
+  const auto pass_count = static_cast<uint32_t>(passes_.size());
+  const auto resource_count = static_cast<uint32_t>(resources_.size());
+
+  pass_nodes_.assign(pass_count, PassNode{});
+  execution_order_.clear();
+  execution_order_.reserve(pass_count);
+
+  std::vector<uint32_t> last_producer(resource_count, UINT32_MAX);
+
+  auto link_dependency = [&](uint32_t from, uint32_t to, std::unordered_set<uint32_t>& tracked_predecessors) {
+    if (tracked_predecessors.insert(from).second) {
+      pass_nodes_[from].successors.push_back(to);
+      pass_nodes_[to].predecessor_count++;
+    }
+  };
+
+  for (uint32_t i = 0; i < pass_count; ++i) {
+    const auto& setup = passes_[i]->GetPassSetup();
+    std::unordered_set<uint32_t> tracked_predecessors;
+
+    auto process_read = [&](RenderGraphHandle handle) {
+      auto ri = static_cast<uint32_t>(handle);
+      if (ri < resource_count && last_producer[ri] != UINT32_MAX) {
+        link_dependency(last_producer[ri], i, tracked_predecessors);
+      }
+    };
+
+    auto process_write = [&](RenderGraphHandle handle) {
+      auto ri = static_cast<uint32_t>(handle);
+      if (ri < resource_count && last_producer[ri] != UINT32_MAX) {
+        link_dependency(last_producer[ri], i, tracked_predecessors);
+      }
+      last_producer[ri] = i;
+    };
+
+    for (auto handle : setup.resource_reads) {
+      process_read(handle);
+    }
+
+    for (auto handle : setup.resource_writes) {
+      process_write(handle);
+    }
+
+    if (setup.depth != RenderGraphHandle::Invalid) {
+      process_write(setup.depth);
+    }
+  }
+
+  // Kahn's algorithm with insertion-order tiebreaker (min-heap)
+  std::priority_queue<uint32_t, std::vector<uint32_t>, std::greater<>> ready;
+  for (uint32_t i = 0; i < pass_count; ++i) {
+    if (pass_nodes_[i].predecessor_count == 0) {
+      ready.push(i);
+    }
+  }
+
+  while (!ready.empty()) {
+    uint32_t current = ready.top();
+    ready.pop();
+    execution_order_.push_back(current);
+
+    for (uint32_t succ : pass_nodes_[current].successors) {
+      if (--pass_nodes_[succ].predecessor_count == 0) {
+        ready.push(succ);
+      }
+    }
+  }
+
+  if (execution_order_.size() != pass_count) {
+    Logger::LogFormat(LogLevel::Error,
+      LogCategory::Graphic,
+      Logger::Here(),
+      "Render graph has a cycle: sorted {}/{} passes",
+      execution_order_.size(),
+      pass_count);
+  }
+  assert(execution_order_.size() == pass_count && "Render graph has a cycle");
+  compiled_ = true;
 }
 
 const RenderGraph::ResourceEntry& RenderGraph::GetEntry(RenderGraphHandle handle) const {
