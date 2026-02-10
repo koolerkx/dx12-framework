@@ -12,15 +12,19 @@ struct ID3D12Device;
 class MaterialManager;
 class ShaderManager;
 
+struct ToneMapPassProps {
+  ID3D12Device* device;
+  MaterialManager* material_manager;
+  ShaderManager* shader_manager;
+  PassSetup pass_setup;
+  RenderGraphHandle hdr_handle;
+  const HdrConfig* config;
+  const HdrDebug* debug;
+};
+
 class ToneMapPass : public IRenderPass {
  public:
-  ToneMapPass(ID3D12Device* device,
-    MaterialManager* material_manager,
-    ShaderManager* shader_manager,
-    PassSetup pass_setup,
-    RenderGraphHandle hdr_handle,
-    const HdrConfig* config,
-    const HdrDebug* debug);
+  explicit ToneMapPass(const ToneMapPassProps& props);
   ~ToneMapPass() = default;
 
   const char* GetName() const override {

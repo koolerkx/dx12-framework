@@ -1,8 +1,8 @@
 #include "material_pass.h"
 
-MaterialPass::MaterialPass(const char* name, MaterialRenderer* renderer, RenderLayer layer, PassSetup pass_setup, CameraProvider camera)
-    : name_(name), renderer_(renderer), layer_(layer), camera_provider_(std::move(camera)) {
-  setup_ = std::move(pass_setup);
+MaterialPass::MaterialPass(const MaterialPassProps& props)
+    : name_(props.name), renderer_(props.renderer), layer_(props.layer), camera_provider_(props.camera) {
+  setup_ = props.pass_setup;
 }
 
 void MaterialPass::Execute(const RenderFrameContext& frame, const FramePacket& packet) {

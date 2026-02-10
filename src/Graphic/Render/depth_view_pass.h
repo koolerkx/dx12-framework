@@ -11,13 +11,17 @@
 struct ID3D12Device;
 class ShaderManager;
 
+struct DepthViewPassProps {
+  ID3D12Device* device;
+  ShaderManager* shader_manager;
+  PassSetup pass_setup;
+  RenderGraphHandle depth_handle;
+  const DepthViewConfig* config;
+};
+
 class DepthViewPass : public IRenderPass {
  public:
-  DepthViewPass(ID3D12Device* device,
-    ShaderManager* shader_manager,
-    PassSetup pass_setup,
-    RenderGraphHandle depth_handle,
-    const DepthViewConfig* config);
+  explicit DepthViewPass(const DepthViewPassProps& props);
   ~DepthViewPass() = default;
 
   const char* GetName() const override {

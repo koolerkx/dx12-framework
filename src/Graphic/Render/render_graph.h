@@ -15,6 +15,22 @@ class DescriptorHeapManager;
 
 enum class RenderGraphResourceType : uint8_t { RenderTexture, DepthBuffer, Backbuffer };
 
+struct CreateRenderTextureProps {
+  const char* name;
+  DXGI_FORMAT format;
+  uint32_t width;
+  uint32_t height;
+  ID3D12Device* device;
+  Color clear_color = colors::Black;
+};
+
+struct CreateDepthBufferProps {
+  const char* name;
+  uint32_t width;
+  uint32_t height;
+  ID3D12Device* device;
+};
+
 class RenderGraph {
  public:
   RenderGraph();
@@ -23,9 +39,8 @@ class RenderGraph {
   void SetSwapChain(SwapChainManager* swapchain);
   void SetHeapManager(DescriptorHeapManager* heap_mgr);
 
-  RenderGraphHandle CreateRenderTexture(
-    const char* name, DXGI_FORMAT format, uint32_t width, uint32_t height, ID3D12Device* device, Color clear_color = colors::Black);
-  RenderGraphHandle CreateDepthBuffer(const char* name, uint32_t width, uint32_t height, ID3D12Device* device);
+  RenderGraphHandle CreateRenderTexture(const CreateRenderTextureProps& props);
+  RenderGraphHandle CreateDepthBuffer(const CreateDepthBufferProps& props);
   RenderGraphHandle ImportBackbuffer(const char* name);
 
   uint32_t GetSrvIndex(RenderGraphHandle handle) const;

@@ -124,15 +124,46 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
   render_graph_ = std::make_unique<RenderGraph>();
   render_graph_->SetSwapChain(&presentation_context_->GetSwapChainManager());
   render_graph_->SetHeapManager(&descriptor_heap_manager_);
+  BuildRenderPipeline();
 
+  is_initialized_ = true;
+  return true;
+}
+
+void Graphic::BuildRenderPipeline() {
   auto backbuffer = render_graph_->ImportBackbuffer("backbuffer");
-  auto scene_rt = render_graph_->CreateRenderTexture(
-    "scene_rt", DXGI_FORMAT_R16G16B16A16_FLOAT, frame_buffer_width, frame_buffer_height, device_.Get(), colors::DarkSlateGray);
-  auto scene_depth = render_graph_->CreateDepthBuffer("scene_depth", frame_buffer_width, frame_buffer_height, device_.Get());
-  auto tonemap_rt =
-    render_graph_->CreateRenderTexture("tonemap_rt", DXGI_FORMAT_R8G8B8A8_UNORM, frame_buffer_width, frame_buffer_height, device_.Get());
-  auto depth_preview_rt = render_graph_->CreateRenderTexture(
-    "depth_preview_rt", DXGI_FORMAT_R8G8B8A8_UNORM, frame_buffer_width, frame_buffer_height, device_.Get());
+
+  auto scene_rt = render_graph_->CreateRenderTexture({
+    .name = "scene_rt",
+    .format = DXGI_FORMAT_R16G16B16A16_FLOAT,
+    .width = frame_buffer_width_,
+    .height = frame_buffer_height_,
+    .device = device_.Get(),
+    .clear_color = colors::DarkSlateGray,
+  });
+
+  auto scene_depth = render_graph_->CreateDepthBuffer({
+    .name = "scene_depth",
+    .width = frame_buffer_width_,
+    .height = frame_buffer_height_,
+    .device = device_.Get(),
+  });
+
+  auto tonemap_rt = render_graph_->CreateRenderTexture({
+    .name = "tonemap_rt",
+    .format = DXGI_FORMAT_R8G8B8A8_UNORM,
+    .width = frame_buffer_width_,
+    .height = frame_buffer_height_,
+    .device = device_.Get(),
+  });
+
+  auto depth_preview_rt = render_graph_->CreateRenderTexture({
+    .name = "depth_preview_rt",
+    .format = DXGI_FORMAT_R8G8B8A8_UNORM,
+    .width = frame_buffer_width_,
+    .height = frame_buffer_height_,
+    .device = device_.Get(),
+  });
 
   preview_handles_ = {scene_rt, depth_preview_rt, tonemap_rt};
 
@@ -148,44 +179,76 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
   tonemap_setup.resource_reads = {scene_rt};
 
   render_graph_->AddPass(std::make_unique<SkyboxPass>(device_.Get(), &render_services_->GetShaderManager(), scene_setup));
-  render_graph_->AddPass(std::make_unique<MaterialPass>("Opaque Pass", opaque_renderer_.get(), RenderLayer::Opaque, scene_setup));
-  render_graph_->AddPass(
-    std::make_unique<MaterialPass>("Transparent Pass", transparent_renderer_.get(), RenderLayer::Transparent, scene_setup));
+
+  render_graph_->AddPass(std::make_unique<MaterialPass>(MaterialPass::MaterialPassProps{
+    .name = "Opaque Pass",
+    .renderer = opaque_renderer_.get(),
+    .layer = RenderLayer::Opaque,
+    .pass_setup = scene_setup,
+  }));
+
+  render_graph_->AddPass(std::make_unique<MaterialPass>(MaterialPass::MaterialPassProps{
+    .name = "Transparent Pass",
+    .renderer = transparent_renderer_.get(),
+    .layer = RenderLayer::Transparent,
+    .pass_setup = scene_setup,
+  }));
+
   render_graph_->AddPass(std::make_unique<DebugPass>(debug_line_renderer_.get(), &render_services_->GetMaterialManager(), scene_setup));
-  render_graph_->AddPass(std::make_unique<ToneMapPass>(device_.Get(),
-    &render_services_->GetMaterialManager(),
-    &render_services_->GetShaderManager(),
-    tonemap_setup,
-    scene_rt,
-    &hdr_config_,
-    &hdr_debug_));
+
+  render_graph_->AddPass(std::make_unique<ToneMapPass>(ToneMapPassProps{
+    .device = device_.Get(),
+    .material_manager = &render_services_->GetMaterialManager(),
+    .shader_manager = &render_services_->GetShaderManager(),
+    .pass_setup = tonemap_setup,
+    .hdr_handle = scene_rt,
+    .config = &hdr_config_,
+    .debug = &hdr_debug_,
+  }));
 
   PassSetup depth_preview_setup;
   depth_preview_setup.resource_writes = {depth_preview_rt};
   depth_preview_setup.resource_reads = {scene_depth};
 
-  render_graph_->AddPass(std::make_unique<DepthViewPass>(
-    device_.Get(), &render_services_->GetShaderManager(), depth_preview_setup, scene_depth, &depth_preview_config_));
+  render_graph_->AddPass(std::make_unique<DepthViewPass>(DepthViewPassProps{
+    .device = device_.Get(),
+    .shader_manager = &render_services_->GetShaderManager(),
+    .pass_setup = depth_preview_setup,
+    .depth_handle = scene_depth,
+    .config = &depth_preview_config_,
+  }));
 
   PassSetup blit_setup;
   blit_setup.resource_writes = {backbuffer};
   blit_setup.resource_reads = {tonemap_rt};
 
-  render_graph_->AddPass(std::make_unique<BlitPass>(device_.Get(), &render_services_->GetShaderManager(), blit_setup, tonemap_rt));
+  render_graph_->AddPass(std::make_unique<BlitPass>(BlitPassProps{
+    .device = device_.Get(),
+    .shader_manager = &render_services_->GetShaderManager(),
+    .pass_setup = blit_setup,
+    .source_handle = tonemap_rt,
+  }));
 
   PassSetup depth_view_setup;
   depth_view_setup.resource_writes = {backbuffer};
   depth_view_setup.resource_reads = {scene_depth};
 
-  render_graph_->AddPass(std::make_unique<DepthViewPass>(
-    device_.Get(), &render_services_->GetShaderManager(), depth_view_setup, scene_depth, &depth_view_config_));
+  render_graph_->AddPass(std::make_unique<DepthViewPass>(DepthViewPassProps{
+    .device = device_.Get(),
+    .shader_manager = &render_services_->GetShaderManager(),
+    .pass_setup = depth_view_setup,
+    .depth_handle = scene_depth,
+    .config = &depth_view_config_,
+  }));
 
   auto ui_camera_from_packet = [](const RenderFrameContext&, const FramePacket& packet) { return packet.ui_camera; };
-  render_graph_->AddPass(
-    std::make_unique<MaterialPass>("UI Pass", ui_renderer_.get(), RenderLayer::UI, backbuffer_setup, ui_camera_from_packet));
-
-  is_initialized_ = true;
-  return true;
+  render_graph_->AddPass(std::make_unique<MaterialPass>(MaterialPass::MaterialPassProps{
+    .name = "UI Pass",
+    .renderer = ui_renderer_.get(),
+    .layer = RenderLayer::UI,
+    .pass_setup = backbuffer_setup,
+    .camera = ui_camera_from_packet,
+  }));
 }
 
 bool Graphic::ResizeBuffers(UINT width, UINT height) {

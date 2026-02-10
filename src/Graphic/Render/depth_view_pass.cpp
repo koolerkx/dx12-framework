@@ -5,10 +5,9 @@
 #include "Render/render_graph.h"
 #include "d3dx12.h"
 
-DepthViewPass::DepthViewPass(
-  ID3D12Device* device, ShaderManager* shader_manager, PassSetup pass_setup, RenderGraphHandle depth_handle, const DepthViewConfig* config)
-    : device_(device), shader_manager_(shader_manager), depth_handle_(depth_handle), config_(config) {
-  setup_ = std::move(pass_setup);
+DepthViewPass::DepthViewPass(const DepthViewPassProps& props)
+    : device_(props.device), shader_manager_(props.shader_manager), depth_handle_(props.depth_handle), config_(props.config) {
+  setup_ = props.pass_setup;
   if (!CreatePipelineObjects()) {
     Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[DepthViewPass] Failed to create pipeline objects");
   }

@@ -15,7 +15,15 @@ class MaterialPass : public IRenderPass {
  public:
   using CameraProvider = std::function<CameraData(const RenderFrameContext&, const FramePacket&)>;
 
-  MaterialPass(const char* name, MaterialRenderer* renderer, RenderLayer layer, PassSetup pass_setup, CameraProvider camera = {});
+  struct MaterialPassProps {
+    const char* name;
+    MaterialRenderer* renderer;
+    RenderLayer layer;
+    PassSetup pass_setup;
+    CameraProvider camera = {};
+  };
+
+  explicit MaterialPass(const MaterialPassProps& props);
 
   void Execute(const RenderFrameContext& frame, const FramePacket& packet) override;
 

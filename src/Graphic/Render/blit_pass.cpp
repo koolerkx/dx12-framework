@@ -5,14 +5,11 @@
 #include "Render/render_graph.h"
 #include "d3dx12.h"
 
-BlitPass::BlitPass(ID3D12Device* device,
-  ShaderManager* shader_manager,
-  PassSetup pass_setup,
-  RenderGraphHandle source_handle)
-    : device_(device),
-      shader_manager_(shader_manager),
-      source_handle_(source_handle) {
-  setup_ = std::move(pass_setup);
+BlitPass::BlitPass(const BlitPassProps& props)
+    : device_(props.device),
+      shader_manager_(props.shader_manager),
+      source_handle_(props.source_handle) {
+  setup_ = props.pass_setup;
   if (!CreatePipelineObjects()) {
     Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[BlitPass] Failed to create pipeline objects");
   }

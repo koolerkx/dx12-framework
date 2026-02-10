@@ -190,6 +190,8 @@ class Graphic {
 
   OverlayRenderFunc overlay_renderer_;
 
+  void BuildRenderPipeline();
+
   bool is_initialized_ = false;
   std::atomic<bool> is_shutting_down_{false};
 };

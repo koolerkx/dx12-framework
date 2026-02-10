@@ -24,29 +24,28 @@ void RenderGraph::SetHeapManager(DescriptorHeapManager* heap_mgr) {
   heap_manager_ = heap_mgr;
 }
 
-RenderGraphHandle RenderGraph::CreateRenderTexture(
-  const char* name, DXGI_FORMAT format, uint32_t width, uint32_t height, ID3D12Device* device, Color clear_color) {
-  auto rt = std::make_unique<RenderTexture>(format, clear_color);
-  if (!rt->Initialize(device, width, height, *heap_manager_)) {
+RenderGraphHandle RenderGraph::CreateRenderTexture(const CreateRenderTextureProps& props) {
+  auto rt = std::make_unique<RenderTexture>(props.format, props.clear_color);
+  if (!rt->Initialize(props.device, props.width, props.height, *heap_manager_)) {
     return RenderGraphHandle::Invalid;
   }
-  rt->SetDebugName(name);
+  rt->SetDebugName(props.name);
 
   auto index = static_cast<uint16_t>(resources_.size());
-  resources_.push_back({name, RenderGraphResourceType::RenderTexture, rt.get(), nullptr});
+  resources_.push_back({props.name, RenderGraphResourceType::RenderTexture, rt.get(), nullptr});
   owned_render_textures_.push_back(std::move(rt));
   return static_cast<RenderGraphHandle>(index);
 }
 
-RenderGraphHandle RenderGraph::CreateDepthBuffer(const char* name, uint32_t width, uint32_t height, ID3D12Device* device) {
+RenderGraphHandle RenderGraph::CreateDepthBuffer(const CreateDepthBufferProps& props) {
   auto db = std::make_unique<DepthBuffer>();
-  if (!db->Initialize(device, width, height, *heap_manager_)) {
+  if (!db->Initialize(props.device, props.width, props.height, *heap_manager_)) {
     return RenderGraphHandle::Invalid;
   }
-  db->SetDebugName(name);
+  db->SetDebugName(props.name);
 
   auto index = static_cast<uint16_t>(resources_.size());
-  resources_.push_back({name, RenderGraphResourceType::DepthBuffer, nullptr, db.get()});
+  resources_.push_back({props.name, RenderGraphResourceType::DepthBuffer, nullptr, db.get()});
   owned_depth_buffers_.push_back(std::move(db));
   return static_cast<RenderGraphHandle>(index);
 }

@@ -6,20 +6,14 @@
 #include "Render/render_graph.h"
 #include "d3dx12.h"
 
-ToneMapPass::ToneMapPass(ID3D12Device* device,
-  MaterialManager* material_manager,
-  ShaderManager* shader_manager,
-  PassSetup pass_setup,
-  RenderGraphHandle hdr_handle,
-  const HdrConfig* config,
-  const HdrDebug* debug)
-    : device_(device),
-      material_manager_(material_manager),
-      shader_manager_(shader_manager),
-      hdr_handle_(hdr_handle),
-      config_(config),
-      debug_(debug) {
-  setup_ = std::move(pass_setup);
+ToneMapPass::ToneMapPass(const ToneMapPassProps& props)
+    : device_(props.device),
+      material_manager_(props.material_manager),
+      shader_manager_(props.shader_manager),
+      hdr_handle_(props.hdr_handle),
+      config_(props.config),
+      debug_(props.debug) {
+  setup_ = props.pass_setup;
   if (!CreatePipelineObjects()) {
     Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[ToneMapPass] Failed to create pipeline objects");
   }

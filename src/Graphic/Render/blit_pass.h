@@ -10,12 +10,16 @@
 struct ID3D12Device;
 class ShaderManager;
 
+struct BlitPassProps {
+  ID3D12Device* device;
+  ShaderManager* shader_manager;
+  PassSetup pass_setup;
+  RenderGraphHandle source_handle;
+};
+
 class BlitPass : public IRenderPass {
  public:
-  BlitPass(ID3D12Device* device,
-    ShaderManager* shader_manager,
-    PassSetup pass_setup,
-    RenderGraphHandle source_handle);
+  explicit BlitPass(const BlitPassProps& props);
   ~BlitPass() = default;
 
   const char* GetName() const override {
