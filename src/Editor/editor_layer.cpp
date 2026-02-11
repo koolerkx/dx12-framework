@@ -14,6 +14,7 @@
 #include "Game/Component/Renderer/text_renderer.h"
 #include "Game/Component/Renderer/ui_sprite_renderer.h"
 #include "Game/Component/Renderer/ui_text_renderer.h"
+#include "Game/Component/camera_component.h"
 #include "Game/Component/point_light_component.h"
 #include "Game/Component/transform_component.h"
 #include "Game/Debug/debug_drawer.h"
@@ -308,6 +309,10 @@ void EditorLayer::DrawInspector() {
         if (ImGui::CollapsingHeader("UITextRenderer")) DrawUITextRendererInspector(ui_text);
       } else if (auto* mesh = dynamic_cast<MeshRenderer*>(comp.get())) {
         if (ImGui::CollapsingHeader("MeshRenderer")) DrawMeshRendererInspector(mesh);
+      } else if (auto* camera = dynamic_cast<CameraComponent*>(comp.get())) {
+        if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen)) {
+          DrawCameraInspector(camera);
+        }
       } else if (auto* point_light = dynamic_cast<PointLightComponent*>(comp.get())) {
         if (ImGui::CollapsingHeader("PointLightComponent", ImGuiTreeNodeFlags_DefaultOpen)) {
           bool dbg = comp->IsDebugDrawEnabled();
@@ -749,6 +754,13 @@ void EditorLayer::DrawMeshRendererInspector(MeshRenderer* renderer) {
   ImGui::Checkbox("Rim Shadow Affected", &data.rim_shadow_affected);
 
   renderer->ApplyEditorData(data);
+}
+
+void EditorLayer::DrawCameraInspector(CameraComponent* camera) {
+  float exposure = camera->GetExposure();
+  if (ImGui::DragFloat("Exposure", &exposure, 0.01f, 0.01f, 10.0f)) {
+    camera->SetExposure(exposure);
+  }
 }
 
 void EditorLayer::DrawPointLightInspector(PointLightComponent* light) {

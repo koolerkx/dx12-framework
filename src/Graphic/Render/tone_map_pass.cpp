@@ -11,7 +11,6 @@ ToneMapPass::ToneMapPass(const ToneMapPassProps& props)
       material_manager_(props.material_manager),
       shader_manager_(props.shader_manager),
       hdr_handle_(props.hdr_handle),
-      config_(props.config),
       debug_(props.debug) {
   setup_ = props.pass_setup;
   if (!CreatePipelineObjects()) {
@@ -57,7 +56,7 @@ void ToneMapPass::Execute(const RenderFrameContext& frame, const FramePacket& pa
     uint32_t debug_mode;
     uint32_t hdr_srv_index;
     uint32_t padding = 0;
-  } cb_data = {.exposure = config_->exposure,
+  } cb_data = {.exposure = packet.main_camera.exposure,
     .debug_mode = debug_->debug_view ? 1u : 0u,
     .hdr_srv_index = frame.render_graph->GetSrvIndex(hdr_handle_)};
 

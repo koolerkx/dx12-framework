@@ -41,6 +41,13 @@ class CameraComponent : public Component<CameraComponent> {
     return far_plane_;
   }
 
+  float GetExposure() const {
+    return exposure_;
+  }
+  void SetExposure(float exposure) {
+    exposure_ = exposure;
+  }
+
  private:
   void UpdateProjectionMatrix();
 
@@ -55,6 +62,7 @@ class CameraComponent : public Component<CameraComponent> {
 
   float near_plane_ = 0.1f;
   float far_plane_ = 1000.0f;
+  float exposure_ = 1.0f;
 
   Math::Matrix4 projection_matrix_;
   bool is_dirty_ = true;

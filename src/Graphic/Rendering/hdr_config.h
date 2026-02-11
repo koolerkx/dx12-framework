@@ -1,10 +1,5 @@
 #pragma once
 
-struct HdrConfig {
-  float exposure = 1.0f;
-  bool enable_tone_mapping = true;
-};
-
 struct HdrDebug {
   bool collect_stats = false;
   bool stats_pending = false;

@@ -167,7 +167,6 @@ class Graphic {
 
   DescriptorHeapManager descriptor_heap_manager_;
 
-  HdrConfig hdr_config_;
   HdrDebug hdr_debug_;
   DepthViewConfig depth_view_config_;
   DepthViewConfig depth_preview_config_ = {.enabled = true, .near_plane = 0.1f, .far_plane = 1000.0f};

@@ -18,6 +18,7 @@ class UISpriteRenderer;
 class TextRenderer;
 class UITextRenderer;
 class MeshRenderer;
+class CameraComponent;
 class PointLightComponent;
 
 class DebugDrawer;
@@ -44,6 +45,7 @@ class EditorLayer {
   void DrawTextRendererInspector(TextRenderer* renderer);
   void DrawUITextRendererInspector(UITextRenderer* renderer);
   void DrawMeshRendererInspector(MeshRenderer* renderer);
+  void DrawCameraInspector(CameraComponent* camera);
   void DrawPointLightInspector(PointLightComponent* light);
   void DrawMainMenu();
   void DrawGameObjectNode(GameObject* go);

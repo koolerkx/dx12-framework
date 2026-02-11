@@ -13,6 +13,7 @@ struct CameraData {
   Vector3 position;
   Vector3 forward;
   Vector3 up;
+  float exposure = 1.0f;
 };
 
 inline void StoreMatrixToCameraData(CameraData& data, const Matrix4& view, const Matrix4& proj) {

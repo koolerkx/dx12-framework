@@ -18,7 +18,6 @@ struct ToneMapPassProps {
   ShaderManager* shader_manager;
   PassSetup pass_setup;
   RenderGraphHandle hdr_handle;
-  const HdrConfig* config;
   const HdrDebug* debug;
 };
 
@@ -42,6 +41,5 @@ class ToneMapPass : public IRenderPass {
   ComPtr<ID3D12PipelineState> pipeline_state_;
 
   RenderGraphHandle hdr_handle_ = RenderGraphHandle::Invalid;
-  const HdrConfig* config_ = nullptr;
   const HdrDebug* debug_ = nullptr;
 };

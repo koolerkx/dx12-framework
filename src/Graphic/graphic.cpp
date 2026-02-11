@@ -246,7 +246,6 @@ void Graphic::BuildRenderPipeline() {
     .shader_manager = &render_services_->GetShaderManager(),
     .pass_setup = tonemap_setup,
     .hdr_handle = scene_rt,
-    .config = &hdr_config_,
     .debug = &hdr_debug_,
   }));
 

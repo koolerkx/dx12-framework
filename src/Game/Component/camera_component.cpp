@@ -62,6 +62,7 @@ CameraData CameraComponent::GetCameraData() const {
   Vector3 target = data.position + data.forward;
   Matrix4 view = Matrix4::CreateLookAt(data.position, target, data.up);
   StoreMatrixToCameraData(data, view, projection_matrix_);
+  data.exposure = exposure_;
 
   return data;
 }
