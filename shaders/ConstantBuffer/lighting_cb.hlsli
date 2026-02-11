@@ -67,7 +67,7 @@ void CalcPointLightContribution(float3 N, float3 V, float3 worldPos,
 
       float3 H = normalize(L + V);
       float spec = pow(saturate(dot(N, H)), specularPower);
-      totalSpecular += lightColor * specularIntensity * spec;
+      totalSpecular += lightColor * specularIntensity * spec * NdotL;
     }
   }
 }

@@ -46,7 +46,7 @@ float4 main(PSIN input) : SV_TARGET {
     float spec = pow(saturate(dot(N, H)), g_MaterialData.specularPower);
     float3 specular = g_LightingCB.directionalColor *
                       g_LightingCB.lightIntensity *
-                      g_MaterialData.specularIntensity * spec * shadow;
+                      g_MaterialData.specularIntensity * spec * NdotL * shadow;
 
     float rim = pow(1.0 - saturate(dot(N, V)), g_MaterialData.rimPower);
     float3 rimLight =
