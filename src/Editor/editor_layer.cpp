@@ -463,7 +463,7 @@ void EditorLayer::DrawSceneSettings() {
       pending_shadow_resolution_ = RESOLUTION_OPTIONS[selected];
     }
 
-    static constexpr const char* ALGORITHM_LABELS[] = {"Hard", "PCF 3x3"};
+    static constexpr const char* ALGORITHM_LABELS[] = {"Hard", "PCF 3x3", "Poisson Disk", "Rotated Poisson Disk"};
     int algo = static_cast<int>(shadow.GetAlgorithm());
     if (ImGui::Combo("Algorithm", &algo, ALGORITHM_LABELS, IM_ARRAYSIZE(ALGORITHM_LABELS))) {
       shadow.SetAlgorithm(static_cast<ShadowAlgorithm>(algo));

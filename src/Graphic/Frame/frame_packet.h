@@ -27,6 +27,8 @@ struct LightingConfig {
 enum class ShadowAlgorithm : uint32_t {
   Hard = 0,
   PCF3x3 = 1,
+  PoissonDisk = 2,
+  RotatedPoissonDisk = 3,
 };
 
 struct ShadowConfig {
