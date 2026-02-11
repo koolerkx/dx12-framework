@@ -5,6 +5,7 @@
 #include "Command/render_command_list.h"
 #include "Frame/constant_buffers.h"
 #include "Pipeline/material.h"
+#include "Render/shadow_config.h"
 
 namespace SortKey {
 
@@ -95,12 +96,18 @@ void MaterialRenderer::Record(const RenderFrameContext& frame,
 
   ShadowCB shadow_cb = {};
   if (shadow.enabled && frame.shadow_data) {
-    shadow_cb.lightViewProj = frame.shadow_data->light_view_proj;
-    shadow_cb.shadowMapIndex = frame.shadow_data->shadow_map_srv_index;
-    shadow_cb.shadowBias = shadow.depth_bias;
-    shadow_cb.shadowNormalBias = shadow.normal_bias;
-    shadow_cb.shadowMapResolution = frame.shadow_data->shadow_map_resolution;
+    auto* sd = frame.shadow_data;
+    for (uint32_t i = 0; i < ShadowCascadeConfig::MAX_CASCADES; ++i) {
+      shadow_cb.lightViewProj[i] = sd->light_view_proj[i];
+      shadow_cb.shadowMapIndex[i] = sd->shadow_map_srv_index[i];
+      shadow_cb.cascadeDepthBias[i] = shadow.cascade_depth_bias[i];
+      shadow_cb.cascadeNormalBias[i] = shadow.cascade_normal_bias[i];
+      shadow_cb.cascadeSplitDistances[i] = sd->cascade_split_distances[i];
+    }
     shadow_cb.shadowAlgorithm = static_cast<uint32_t>(shadow.algorithm);
+    shadow_cb.shadowMapResolution = sd->shadow_map_resolution;
+    shadow_cb.cascadeCount = sd->cascade_count;
+    shadow_cb.cascadeBlendRange = shadow.cascade_blend_range;
     shadow_cb.shadowColor = shadow.shadow_color;
   }
   cmd.SetShadowConstants(shadow_cb);

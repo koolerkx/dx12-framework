@@ -124,7 +124,8 @@ class Graphic {
     RenderGraphHandle scene_rt = RenderGraphHandle::Invalid;
     RenderGraphHandle depth_preview_rt = RenderGraphHandle::Invalid;
     RenderGraphHandle tonemap_rt = RenderGraphHandle::Invalid;
-    RenderGraphHandle shadow_map = RenderGraphHandle::Invalid;
+    RenderGraphHandle shadow_maps[ShadowCascadeConfig::MAX_CASCADES];
+    uint32_t shadow_map_count = 0;
   };
 
   RenderGraph* GetRenderGraph() {
@@ -166,7 +167,8 @@ class Graphic {
   DepthViewConfig depth_preview_config_ = {.enabled = true, .near_plane = 0.1f, .far_plane = 1000.0f};
 
   ShadowFrameData shadow_frame_data_;
-  RenderGraphHandle shadow_depth_handle_ = RenderGraphHandle::Invalid;
+  RenderGraphHandle shadow_depth_handles_[ShadowCascadeConfig::MAX_CASCADES];
+  uint32_t active_cascade_count_ = ShadowCascadeConfig::DEFAULT_CASCADE_COUNT;
 
   UINT frame_buffer_width_ = 0;
   UINT frame_buffer_height_ = 0;
@@ -197,6 +199,8 @@ class Graphic {
 
  public:
   void SetShadowMapResolution(uint32_t resolution);
+  void SetCascadeCount(uint32_t count);
+  const ShadowFrameData& GetShadowFrameData() const { return shadow_frame_data_; }
 
   bool is_initialized_ = false;
   std::atomic<bool> is_shutting_down_{false};

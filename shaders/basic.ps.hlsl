@@ -1,3 +1,4 @@
+#include "ConstantBuffer/frame_cb.hlsli"
 #include "ConstantBuffer/lighting_cb.hlsli"
 #include "ConstantBuffer/material_cb.hlsli"
 #include "ConstantBuffer/object_cb.hlsli"

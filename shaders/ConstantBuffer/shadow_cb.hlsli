@@ -12,37 +12,55 @@
 #define SHADOW_ALGO_POISSON 2
 #define SHADOW_ALGO_ROTATED_POISSON 3
 
+#define MAX_CASCADES 4
+
 struct ShadowCB {
-  row_major float4x4 lightViewProj;
-  uint shadowMapIndex;
-  float shadowBias;
-  float shadowNormalBias;
-  uint shadowMapResolution;
+  row_major float4x4 lightViewProj[MAX_CASCADES];
+  uint4 shadowMapIndex;
+  float4 cascadeDepthBias;
+  float4 cascadeNormalBias;
+  float4 cascadeSplitDistances;
   uint shadowAlgorithm;
+  uint shadowMapResolution;
+  uint cascadeCount;
+  float cascadeBlendRange;
   float3 shadowColor;
+  float _padding;
 };
 ConstantBuffer<ShadowCB> g_ShadowCB : register(SHADOW_CB_SLOT);
 
-float3 ProjectToShadowSpace(float3 worldPos, float3 worldNormal) {
-  float3 biasedPos = worldPos + worldNormal * g_ShadowCB.shadowNormalBias;
-  float4 shadowPos = mul(float4(biasedPos, 1.0f), g_ShadowCB.lightViewProj);
+float3 ProjectToShadowSpace(float3 worldPos, float3 worldNormal, uint cascade) {
+  float3 biasedPos =
+      worldPos + worldNormal * g_ShadowCB.cascadeNormalBias[cascade];
+  float4 shadowPos =
+      mul(float4(biasedPos, 1.0f), g_ShadowCB.lightViewProj[cascade]);
   float3 projCoords = shadowPos.xyz / shadowPos.w;
   projCoords.x = projCoords.x * 0.5 + 0.5;
   projCoords.y = projCoords.y * -0.5 + 0.5;
   return projCoords;
 }
 
-float CalculateShadowHard(float3 worldPos, float3 worldNormal) {
-  float3 projCoords = ProjectToShadowSpace(worldPos, worldNormal);
+uint SelectCascade(float viewDepth) {
+  uint cascade = 0;
+  [unroll] for (uint i = 0; i < MAX_CASCADES; ++i) {
+    if (i < g_ShadowCB.cascadeCount &&
+        viewDepth > g_ShadowCB.cascadeSplitDistances[i]) {
+      cascade = i + 1;
+    }
+  }
+  return min(cascade, g_ShadowCB.cascadeCount - 1);
+}
 
+float SampleShadowHard(float3 projCoords, uint cascade) {
   if (projCoords.z > 1.0 || projCoords.x < 0.0 || projCoords.x > 1.0 ||
       projCoords.y < 0.0 || projCoords.y > 1.0)
     return 1.0;
 
-  float depth = g_Textures[g_ShadowCB.shadowMapIndex]
+  float depth = g_Textures[g_ShadowCB.shadowMapIndex[cascade]]
                     .Sample(g_Samplers[SHADOW_SAMPLER_INDEX], projCoords.xy)
                     .r;
-  return (projCoords.z - g_ShadowCB.shadowBias > depth) ? 0.0 : 1.0;
+  return (projCoords.z - g_ShadowCB.cascadeDepthBias[cascade] > depth) ? 0.0
+                                                                       : 1.0;
 }
 
 static const float2 POISSON_DISK[16] = {
@@ -64,9 +82,7 @@ float InterleavedGradientNoise(float2 screenPos) {
   return frac(magic.z * frac(dot(screenPos, magic.xy)));
 }
 
-float CalculateShadowPoisson(float3 worldPos, float3 worldNormal) {
-  float3 projCoords = ProjectToShadowSpace(worldPos, worldNormal);
-
+float SampleShadowPoisson(float3 projCoords, uint cascade) {
   if (projCoords.z > 1.0 || projCoords.x < 0.0 || projCoords.x > 1.0 ||
       projCoords.y < 0.0 || projCoords.y > 1.0)
     return 1.0;
@@ -77,18 +93,18 @@ float CalculateShadowPoisson(float3 worldPos, float3 worldNormal) {
   [unroll] for (uint i = 0; i < POISSON_SAMPLE_COUNT; ++i) {
     float2 offset = POISSON_DISK[i] * texelSize * POISSON_SPREAD;
     float depth =
-        g_Textures[g_ShadowCB.shadowMapIndex]
+        g_Textures[g_ShadowCB.shadowMapIndex[cascade]]
             .Sample(g_Samplers[SHADOW_SAMPLER_INDEX], projCoords.xy + offset)
             .r;
-    shadow += (projCoords.z - g_ShadowCB.shadowBias > depth) ? 0.0 : 1.0;
+    shadow += (projCoords.z - g_ShadowCB.cascadeDepthBias[cascade] > depth)
+                  ? 0.0
+                  : 1.0;
   }
   return shadow / float(POISSON_SAMPLE_COUNT);
 }
 
-float CalculateShadowRotatedPoisson(float3 worldPos, float3 worldNormal,
-                                    float2 screenPos) {
-  float3 projCoords = ProjectToShadowSpace(worldPos, worldNormal);
-
+float SampleShadowRotatedPoisson(float3 projCoords, uint cascade,
+                                 float2 screenPos) {
   if (projCoords.z > 1.0 || projCoords.x < 0.0 || projCoords.x > 1.0 ||
       projCoords.y < 0.0 || projCoords.y > 1.0)
     return 1.0;
@@ -104,17 +120,17 @@ float CalculateShadowRotatedPoisson(float3 worldPos, float3 worldNormal,
   [unroll] for (uint i = 0; i < POISSON_SAMPLE_COUNT; ++i) {
     float2 offset = mul(rotation, POISSON_DISK[i]) * texelSize * POISSON_SPREAD;
     float depth =
-        g_Textures[g_ShadowCB.shadowMapIndex]
+        g_Textures[g_ShadowCB.shadowMapIndex[cascade]]
             .Sample(g_Samplers[SHADOW_SAMPLER_INDEX], projCoords.xy + offset)
             .r;
-    shadow += (projCoords.z - g_ShadowCB.shadowBias > depth) ? 0.0 : 1.0;
+    shadow += (projCoords.z - g_ShadowCB.cascadeDepthBias[cascade] > depth)
+                  ? 0.0
+                  : 1.0;
   }
   return shadow / float(POISSON_SAMPLE_COUNT);
 }
 
-float CalculateShadowPCF3x3(float3 worldPos, float3 worldNormal) {
-  float3 projCoords = ProjectToShadowSpace(worldPos, worldNormal);
-
+float SampleShadowPCF3x3(float3 projCoords, uint cascade) {
   if (projCoords.z > 1.0 || projCoords.x < 0.0 || projCoords.x > 1.0 ||
       projCoords.y < 0.0 || projCoords.y > 1.0)
     return 1.0;
@@ -126,23 +142,48 @@ float CalculateShadowPCF3x3(float3 worldPos, float3 worldNormal) {
     [unroll] for (int y = -1; y <= 1; ++y) {
       float2 offset = float2(x, y) * texelSize;
       float depth =
-          g_Textures[g_ShadowCB.shadowMapIndex]
+          g_Textures[g_ShadowCB.shadowMapIndex[cascade]]
               .Sample(g_Samplers[SHADOW_SAMPLER_INDEX], projCoords.xy + offset)
               .r;
-      shadow += (projCoords.z - g_ShadowCB.shadowBias > depth) ? 0.0 : 1.0;
+      shadow += (projCoords.z - g_ShadowCB.cascadeDepthBias[cascade] > depth)
+                    ? 0.0
+                    : 1.0;
     }
   }
   return shadow / 9.0;
 }
 
-float CalculateShadow(float3 worldPos, float3 worldNormal, float2 screenPos) {
+float SampleShadowForCascade(float3 worldPos, float3 worldNormal,
+                             float2 screenPos, uint cascade) {
+  float3 projCoords = ProjectToShadowSpace(worldPos, worldNormal, cascade);
+
   if (g_ShadowCB.shadowAlgorithm == SHADOW_ALGO_ROTATED_POISSON)
-    return CalculateShadowRotatedPoisson(worldPos, worldNormal, screenPos);
+    return SampleShadowRotatedPoisson(projCoords, cascade, screenPos);
   if (g_ShadowCB.shadowAlgorithm == SHADOW_ALGO_POISSON)
-    return CalculateShadowPoisson(worldPos, worldNormal);
+    return SampleShadowPoisson(projCoords, cascade);
   if (g_ShadowCB.shadowAlgorithm == SHADOW_ALGO_PCF3X3)
-    return CalculateShadowPCF3x3(worldPos, worldNormal);
-  return CalculateShadowHard(worldPos, worldNormal);
+    return SampleShadowPCF3x3(projCoords, cascade);
+  return SampleShadowHard(projCoords, cascade);
+}
+
+float CalculateShadow(float3 worldPos, float3 worldNormal, float2 screenPos) {
+  float viewDepth = abs(mul(float4(worldPos, 1.0), g_FrameCB.view).z);
+  uint cascade = SelectCascade(viewDepth);
+  float shadow =
+      SampleShadowForCascade(worldPos, worldNormal, screenPos, cascade);
+
+  if (cascade < g_ShadowCB.cascadeCount - 1) {
+    float splitDist = g_ShadowCB.cascadeSplitDistances[cascade];
+    float blendRange = splitDist * g_ShadowCB.cascadeBlendRange;
+    if (blendRange > 0.0 && viewDepth > splitDist - blendRange) {
+      float nextShadow =
+          SampleShadowForCascade(worldPos, worldNormal, screenPos, cascade + 1);
+      float t = (viewDepth - (splitDist - blendRange)) / blendRange;
+      shadow = lerp(shadow, nextShadow, saturate(t));
+    }
+  }
+
+  return shadow;
 }
 
 #endif

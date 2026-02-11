@@ -1,6 +1,8 @@
 #include "shadow_pass.h"
 
+#include <algorithm>
 #include <array>
+#include <cstdio>
 
 #include "Command/render_command_list.h"
 #include "Frame/constant_buffers.h"
@@ -14,8 +16,29 @@
 using Math::Matrix4;
 using Math::Vector3;
 
-ShadowPass::ShadowPass(const Props& props) : device_(props.device), shader_manager_(props.shader_manager), shadow_data_(props.shadow_data) {
+namespace {
+
+// C_i = λ * n*(f/n)^(i/m) + (1-λ) * (n + i/m*(f-n))
+void ComputeCascadeSplits(float camera_near, float shadow_distance, uint32_t count, float out[ShadowCascadeConfig::MAX_CASCADES]) {
+  float n = Math::Max(camera_near, 0.01f);
+  float f = shadow_distance;
+  float m = static_cast<float>(count);
+  constexpr float lambda = ShadowCascadeConfig::SPLIT_LAMBDA;
+
+  for (uint32_t i = 0; i < count; ++i) {
+    float t = static_cast<float>(i + 1) / m;
+    float log_split = n * std::pow(f / n, t);
+    float lin_split = n + t * (f - n);
+    out[i] = lambda * log_split + (1.0f - lambda) * lin_split;
+  }
+}
+
+}  // namespace
+
+ShadowPass::ShadowPass(const Props& props)
+    : device_(props.device), shader_manager_(props.shader_manager), shadow_data_(props.shadow_data), cascade_index_(props.cascade_index) {
   setup_ = props.pass_setup;
+  std::snprintf(name_buffer_, sizeof(name_buffer_), "Shadow Pass %u", cascade_index_);
   if (!CreatePipelineState()) {
     Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[ShadowPass] Failed to create pipeline state");
   }
@@ -72,7 +95,8 @@ bool ShadowPass::CreatePipelineState() {
   return true;
 }
 
-Matrix4 ShadowPass::ComputeLightViewProj(const CameraData& camera, const Vector3& light_dir, float shadow_distance, float light_distance) const {
+Matrix4 ShadowPass::ComputeLightViewProj(
+  const CameraData& camera, const Vector3& light_dir, float near_dist, float far_dist, float light_distance) const {
   Matrix4 inv_view_proj = (camera.view * camera.proj).Inverted();
 
   std::array<Vector3, 8> ndc_corners = {{
@@ -91,14 +115,19 @@ Matrix4 ShadowPass::ComputeLightViewProj(const CameraData& camera, const Vector3
     world_corners[i] = inv_view_proj.TransformPoint(ndc_corners[i]);
   }
 
-  if (shadow_distance > 0.0f) {
-    float camera_far = std::abs(camera.inv_proj.TransformPoint(Vector3(0, 0, 1)).z);
-    if (camera_far > 0.0f && shadow_distance < camera_far) {
-      float t = shadow_distance / camera_far;
-      for (size_t i = 4; i < 8; ++i) {
-        world_corners[i] = world_corners[i - 4] + (world_corners[i] - world_corners[i - 4]) * t;
-      }
+  float camera_near = std::abs(camera.inv_proj.TransformPoint(Vector3(0, 0, 0)).z);
+  float camera_far = std::abs(camera.inv_proj.TransformPoint(Vector3(0, 0, 1)).z);
+  float depth_range = camera_far - camera_near;
+  if (depth_range > 0.0f) {
+    float t_near = std::clamp((near_dist - camera_near) / depth_range, 0.0f, 1.0f);
+    float t_far = std::clamp((far_dist - camera_near) / depth_range, 0.0f, 1.0f);
+    std::array<Vector3, 8> clipped;
+    for (size_t i = 0; i < 4; ++i) {
+      Vector3 ray = world_corners[i + 4] - world_corners[i];
+      clipped[i] = world_corners[i] + ray * t_near;
+      clipped[i + 4] = world_corners[i] + ray * t_far;
     }
+    world_corners = clipped;
   }
 
   Vector3 center = Vector3::Zero;
@@ -159,9 +188,22 @@ Matrix4 ShadowPass::ComputeLightViewProj(const CameraData& camera, const Vector3
 void ShadowPass::Execute(const RenderFrameContext& frame, const FramePacket& packet) {
   if (!pipeline_state_ || !shadow_data_) return;
   if (!packet.shadow.enabled) return;
+  uint32_t allocated_count = shadow_data_->cascade_count;
+  uint32_t effective_count = (std::min)(packet.shadow.cascade_count, allocated_count);
+  if (cascade_index_ >= effective_count) return;
 
-  Matrix4 light_view_proj = ComputeLightViewProj(packet.main_camera, packet.lighting.direction, packet.shadow.shadow_distance, packet.shadow.light_distance);
-  shadow_data_->light_view_proj = light_view_proj;
+  if (cascade_index_ == 0) {
+    float camera_near = std::abs(packet.main_camera.inv_proj.TransformPoint(Vector3(0, 0, 0)).z);
+    ComputeCascadeSplits(camera_near, packet.shadow.shadow_distance, effective_count, shadow_data_->cascade_split_distances);
+    shadow_data_->cascade_count = effective_count;
+  }
+
+  float near_dist = (cascade_index_ == 0) ? 0.0f : shadow_data_->cascade_split_distances[cascade_index_ - 1];
+  float far_dist = shadow_data_->cascade_split_distances[cascade_index_];
+
+  Matrix4 light_view_proj =
+    ComputeLightViewProj(packet.main_camera, packet.lighting.direction, near_dist, far_dist, packet.shadow.light_distance);
+  shadow_data_->light_view_proj[cascade_index_] = light_view_proj;
 
   RenderCommandList cmd(frame.command_list, frame.dynamic_allocator, frame.frame_cb, frame.object_cb_allocator);
 

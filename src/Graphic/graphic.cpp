@@ -5,6 +5,7 @@
 #include <d3dcompiler.h>
 #include <dxgiformat.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <vector>
 
@@ -166,31 +167,44 @@ void Graphic::BuildRenderPipeline() {
     .device = device_.Get(),
   });
 
-  auto shadow_depth = render_graph_->CreateDepthBuffer({
-    .name = "shadow_depth",
-    .width = shadow_frame_data_.shadow_map_resolution,
-    .height = shadow_frame_data_.shadow_map_resolution,
-    .device = device_.Get(),
-    .fixed_size = true,
-  });
-  shadow_depth_handle_ = shadow_depth;
+  static constexpr const char* SHADOW_DEPTH_NAMES[] = {"shadow_depth_0", "shadow_depth_1", "shadow_depth_2", "shadow_depth_3"};
 
-  PassSetup shadow_setup;
-  shadow_setup.depth = shadow_depth;
+  std::vector<RenderGraphHandle> shadow_reads;
+  for (uint32_t i = 0; i < active_cascade_count_; ++i) {
+    auto handle = render_graph_->CreateDepthBuffer({
+      .name = SHADOW_DEPTH_NAMES[i],
+      .width = shadow_frame_data_.shadow_map_resolution,
+      .height = shadow_frame_data_.shadow_map_resolution,
+      .device = device_.Get(),
+      .fixed_size = true,
+    });
+    shadow_depth_handles_[i] = handle;
+    shadow_reads.push_back(handle);
 
-  render_graph_->AddPass(std::make_unique<ShadowPass>(ShadowPass::Props{
-    .device = device_.Get(),
-    .shader_manager = &render_services_->GetShaderManager(),
-    .pass_setup = shadow_setup,
-    .shadow_data = &shadow_frame_data_,
-  }));
+    PassSetup shadow_setup;
+    shadow_setup.depth = handle;
 
-  preview_handles_ = {scene_rt, depth_preview_rt, tonemap_rt, shadow_depth};
+    render_graph_->AddPass(std::make_unique<ShadowPass>(ShadowPass::Props{
+      .device = device_.Get(),
+      .shader_manager = &render_services_->GetShaderManager(),
+      .pass_setup = shadow_setup,
+      .shadow_data = &shadow_frame_data_,
+      .cascade_index = i,
+    }));
+  }
+
+  preview_handles_.scene_rt = scene_rt;
+  preview_handles_.depth_preview_rt = depth_preview_rt;
+  preview_handles_.tonemap_rt = tonemap_rt;
+  preview_handles_.shadow_map_count = active_cascade_count_;
+  for (uint32_t i = 0; i < active_cascade_count_; ++i) {
+    preview_handles_.shadow_maps[i] = shadow_depth_handles_[i];
+  }
 
   PassSetup scene_setup;
   scene_setup.resource_writes = {scene_rt};
   scene_setup.depth = scene_depth;
-  scene_setup.resource_reads = {shadow_depth};
+  scene_setup.resource_reads = shadow_reads;
 
   PassSetup backbuffer_setup;
   backbuffer_setup.resource_writes = {backbuffer};
@@ -309,7 +323,9 @@ void Graphic::SetOverlayRenderer(OverlayRenderFunc renderer) {
     render_graph_->MarkExternallyReferenced(preview_handles_.scene_rt);
     render_graph_->MarkExternallyReferenced(preview_handles_.depth_preview_rt);
     render_graph_->MarkExternallyReferenced(preview_handles_.tonemap_rt);
-    render_graph_->MarkExternallyReferenced(preview_handles_.shadow_map);
+    for (uint32_t i = 0; i < preview_handles_.shadow_map_count; ++i) {
+      render_graph_->MarkExternallyReferenced(preview_handles_.shadow_maps[i]);
+    }
   }
 }
 
@@ -378,7 +394,10 @@ RenderFrameContext Graphic::BeginFrame() {
 
   render_graph_->BeginFrame();
 
-  shadow_frame_data_.shadow_map_srv_index = render_graph_->GetSrvIndex(shadow_depth_handle_);
+  shadow_frame_data_.cascade_count = active_cascade_count_;
+  for (uint32_t i = 0; i < active_cascade_count_; ++i) {
+    shadow_frame_data_.shadow_map_srv_index[i] = render_graph_->GetSrvIndex(shadow_depth_handles_[i]);
+  }
 
   return RenderFrameContext{.frame_index = frame_index,
     .command_list = cmd,
@@ -419,8 +438,22 @@ void Graphic::RenderScene(const RenderFrameContext& frame, const FramePacket& wo
 void Graphic::SetShadowMapResolution(uint32_t resolution) {
   if (shadow_frame_data_.shadow_map_resolution == resolution) return;
   shadow_frame_data_.shadow_map_resolution = resolution;
-  render_graph_->ResizeDepthBuffer(shadow_depth_handle_, device_.Get(), resolution, resolution);
-  shadow_frame_data_.shadow_map_srv_index = render_graph_->GetSrvIndex(shadow_depth_handle_);
+  for (uint32_t i = 0; i < active_cascade_count_; ++i) {
+    render_graph_->ResizeDepthBuffer(shadow_depth_handles_[i], device_.Get(), resolution, resolution);
+    shadow_frame_data_.shadow_map_srv_index[i] = render_graph_->GetSrvIndex(shadow_depth_handles_[i]);
+  }
+}
+
+void Graphic::SetCascadeCount(uint32_t count) {
+  count = std::clamp(count, 1u, ShadowCascadeConfig::MAX_CASCADES);
+  if (count == active_cascade_count_) return;
+  WaitForGpuIdle();
+  active_cascade_count_ = count;
+  render_graph_ = std::make_unique<RenderGraph>();
+  render_graph_->SetSwapChain(&presentation_context_->GetSwapChainManager());
+  render_graph_->SetHeapManager(&descriptor_heap_manager_);
+  BuildRenderPipeline();
+  if (overlay_renderer_) SetOverlayRenderer(std::move(overlay_renderer_));
 }
 
 void Graphic::AddDebugLine(const Vector3& start, const Vector3& end, const Vector4& color) {

@@ -9,12 +9,16 @@
 #include "Frame/constant_buffers.h"
 #include "Frame/dynamic_upload_buffer.h"
 #include "Framework/Math/Math.h"
+#include "Render/shadow_config.h"
 
 class RenderGraph;
 
 struct ShadowFrameData {
-  Math::Matrix4 light_view_proj;
-  uint32_t shadow_map_srv_index = UINT32_MAX;
+  Math::Matrix4 light_view_proj[ShadowCascadeConfig::MAX_CASCADES];
+  uint32_t shadow_map_srv_index[ShadowCascadeConfig::MAX_CASCADES] = {
+    UINT32_MAX, UINT32_MAX, UINT32_MAX, UINT32_MAX};
+  float cascade_split_distances[ShadowCascadeConfig::MAX_CASCADES] = {};
+  uint32_t cascade_count = ShadowCascadeConfig::DEFAULT_CASCADE_COUNT;
   uint32_t shadow_map_resolution = 2048;
 };
 

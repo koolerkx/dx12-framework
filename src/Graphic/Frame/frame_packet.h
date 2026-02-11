@@ -3,10 +3,11 @@
 #include <vector>
 
 #include "Framework/Core/color.h"
-#include "Graphic/Render/shadow_config.h"
 #include "Framework/Math/Math.h"
+#include "Graphic/Render/shadow_config.h"
 #include "camera_data.h"
 #include "draw_command.h"
+
 
 enum class BackgroundMode : uint8_t { ClearColor, Skybox };
 
@@ -33,10 +34,18 @@ enum class ShadowAlgorithm : uint32_t {
 
 struct ShadowConfig {
   uint32_t resolution = 2048;
-  float depth_bias = ShadowReceiverDefaults::DEPTH_BIAS;
-  float normal_bias = ShadowReceiverDefaults::NORMAL_BIAS;
+  uint32_t cascade_count = ShadowCascadeConfig::DEFAULT_CASCADE_COUNT;
+  float cascade_depth_bias[ShadowCascadeConfig::MAX_CASCADES] = {ShadowReceiverDefaults::DEPTH_BIAS,
+    ShadowReceiverDefaults::DEPTH_BIAS,
+    ShadowReceiverDefaults::DEPTH_BIAS,
+    ShadowReceiverDefaults::DEPTH_BIAS};
+  float cascade_normal_bias[ShadowCascadeConfig::MAX_CASCADES] = {ShadowReceiverDefaults::NORMAL_BIAS,
+    ShadowReceiverDefaults::NORMAL_BIAS,
+    ShadowReceiverDefaults::NORMAL_BIAS,
+    ShadowReceiverDefaults::NORMAL_BIAS};
   float shadow_distance = 100.0f;
   float light_distance = 100.0f;
+  float cascade_blend_range = 0.1f;
   ShadowAlgorithm algorithm = ShadowAlgorithm::PCF3x3;
   Math::Vector3 shadow_color = Math::Vector3(0.0f, 0.0f, 0.0f);
   bool enabled = true;

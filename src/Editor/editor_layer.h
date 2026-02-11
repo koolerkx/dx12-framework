@@ -70,4 +70,5 @@ class EditorLayer {
   EventScope event_scope_;
 
   uint32_t pending_shadow_resolution_ = 0;
+  uint32_t pending_cascade_count_ = 0;
 };

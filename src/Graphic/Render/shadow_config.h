@@ -2,6 +2,14 @@
 
 #include <cstdint>
 
+namespace ShadowCascadeConfig {
+
+[[maybe_unused]] constexpr uint32_t MAX_CASCADES = 4;
+[[maybe_unused]] constexpr uint32_t DEFAULT_CASCADE_COUNT = 3;
+[[maybe_unused]] constexpr float SPLIT_LAMBDA = 0.75f;
+
+}  // namespace ShadowCascadeConfig
+
 // Hardware rasterizer bias applied during shadow map rendering (caster-side).
 // These are baked into the PSO and require pipeline rebuild to change.
 // Tuning guide:

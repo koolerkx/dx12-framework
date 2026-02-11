@@ -1,5 +1,6 @@
 #pragma once
 #include "Framework/Math/Math.h"
+#include "Graphic/Render/shadow_config.h"
 
 using Math::Matrix4;
 using Math::Vector2;
@@ -43,12 +44,16 @@ struct alignas(256) LightingCB {
 static_assert(sizeof(LightingCB) == 256);
 
 struct alignas(256) ShadowCB {
-  Matrix4 lightViewProj;
-  uint32_t shadowMapIndex;
-  float shadowBias;
-  float shadowNormalBias;
-  uint32_t shadowMapResolution;
+  Matrix4 lightViewProj[ShadowCascadeConfig::MAX_CASCADES];
+  uint32_t shadowMapIndex[ShadowCascadeConfig::MAX_CASCADES];
+  float cascadeDepthBias[ShadowCascadeConfig::MAX_CASCADES];
+  float cascadeNormalBias[ShadowCascadeConfig::MAX_CASCADES];
+  float cascadeSplitDistances[ShadowCascadeConfig::MAX_CASCADES];
   uint32_t shadowAlgorithm;
+  uint32_t shadowMapResolution;
+  uint32_t cascadeCount;
+  float cascadeBlendRange;
   Vector3 shadowColor;
+  float _padding;
 };
-static_assert(sizeof(ShadowCB) == 256);
+static_assert(sizeof(ShadowCB) == 512);

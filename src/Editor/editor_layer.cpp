@@ -6,6 +6,7 @@
 #include <imgui_internal.h>
 
 #include <algorithm>
+#include <cstdio>
 
 #include "Framework/Core/utils.h"
 #include "Game/Component/Renderer/mesh_renderer.h"
@@ -74,6 +75,13 @@ void EditorLayer::Shutdown(Graphic& graphic) {
 }
 
 void EditorLayer::BeginFrame() {
+  if (pending_cascade_count_ > 0 && scene_) {
+    graphic_->WaitForGpuIdle();
+    graphic_->SetCascadeCount(pending_cascade_count_);
+    scene_->GetShadowSetting().SetCascadeCount(pending_cascade_count_);
+    pending_cascade_count_ = 0;
+  }
+
   if (pending_shadow_resolution_ > 0) {
     graphic_->WaitForGpuIdle();
     graphic_->SetShadowMapResolution(pending_shadow_resolution_);
@@ -448,6 +456,12 @@ void EditorLayer::DrawSceneSettings() {
       shadow.SetEnabled(enabled);
     }
 
+    static constexpr const char* CASCADE_LABELS[] = {"1", "2", "3", "4"};
+    int cascade_count = static_cast<int>(shadow.GetCascadeCount()) - 1;
+    if (ImGui::Combo("Cascade Count", &cascade_count, CASCADE_LABELS, IM_ARRAYSIZE(CASCADE_LABELS))) {
+      pending_cascade_count_ = static_cast<uint32_t>(cascade_count) + 1;
+    }
+
     static constexpr uint32_t RESOLUTION_OPTIONS[] = {512, 1024, 2048, 4096};
     static constexpr const char* RESOLUTION_LABELS[] = {"512", "1024", "2048", "4096"};
     uint32_t current_res = shadow.GetResolution();
@@ -469,16 +483,6 @@ void EditorLayer::DrawSceneSettings() {
       shadow.SetAlgorithm(static_cast<ShadowAlgorithm>(algo));
     }
 
-    float depth_bias = shadow.GetDepthBias();
-    if (ImGui::DragFloat("Depth Bias", &depth_bias, 0.0001f, 0.0f, 0.1f, "%.4f")) {
-      shadow.SetDepthBias(depth_bias);
-    }
-
-    float normal_bias = shadow.GetNormalBias();
-    if (ImGui::DragFloat("Normal Bias", &normal_bias, 0.001f, 0.0f, 0.5f, "%.3f")) {
-      shadow.SetNormalBias(normal_bias);
-    }
-
     float distance = shadow.GetShadowDistance();
     if (ImGui::DragFloat("Shadow Distance", &distance, 1.0f, 1.0f, 1000.0f, "%.0f")) {
       shadow.SetShadowDistance(distance);
@@ -487,6 +491,45 @@ void EditorLayer::DrawSceneSettings() {
     float light_dist = shadow.GetLightDistance();
     if (ImGui::DragFloat("Light Distance", &light_dist, 1.0f, 1.0f, 1000.0f, "%.0f")) {
       shadow.SetLightDistance(light_dist);
+    }
+
+    float blend_range = shadow.GetCascadeBlendRange();
+    if (ImGui::DragFloat("Cascade Blend", &blend_range, 0.01f, 0.0f, 0.5f, "%.2f")) {
+      shadow.SetCascadeBlendRange(blend_range);
+    }
+
+    auto& shadow_data = graphic_->GetShadowFrameData();
+    if (shadow_data.cascade_count > 1) {
+      char splits_buf[128];
+      int offset = 0;
+      for (uint32_t i = 0; i < shadow_data.cascade_count; ++i) {
+        if (i > 0) offset += std::snprintf(splits_buf + offset, sizeof(splits_buf) - offset, " | ");
+        offset += std::snprintf(splits_buf + offset, sizeof(splits_buf) - offset, "%.1f", shadow_data.cascade_split_distances[i]);
+      }
+      ImGui::Text("Cascades: %s", splits_buf);
+    }
+
+    for (uint32_t i = 0; i < shadow.GetCascadeCount(); ++i) {
+      char label[32];
+      std::snprintf(label, sizeof(label), "Cascade %u", i);
+      if (ImGui::TreeNode(label)) {
+        char depth_label[32];
+        char normal_label[32];
+        std::snprintf(depth_label, sizeof(depth_label), "Depth Bias##%u", i);
+        std::snprintf(normal_label, sizeof(normal_label), "Normal Bias##%u", i);
+
+        float depth_bias = shadow.GetCascadeDepthBias(i);
+        if (ImGui::DragFloat(depth_label, &depth_bias, 0.0001f, 0.0f, 0.1f, "%.4f")) {
+          shadow.SetCascadeDepthBias(i, depth_bias);
+        }
+
+        float normal_bias = shadow.GetCascadeNormalBias(i);
+        if (ImGui::DragFloat(normal_label, &normal_bias, 0.001f, 0.0f, 0.5f, "%.3f")) {
+          shadow.SetCascadeNormalBias(i, normal_bias);
+        }
+
+        ImGui::TreePop();
+      }
     }
 
     auto shadow_color = shadow.GetShadowColor();
@@ -568,14 +611,28 @@ void EditorLayer::DrawShadowMapPanel(ID3D12GraphicsCommandList* cmd) {
   ImGui::Begin("Shadow Map", &show_shadow_map_);
 
   auto* graph = graphic_->GetRenderGraph();
-  auto handle = graphic_->GetPreviewHandles().shadow_map;
+  auto& handles = graphic_->GetPreviewHandles();
 
-  if (handle != RenderGraphHandle::Invalid) {
-    graph->TransitionForRead(cmd, handle);
-    float width = ImGui::GetContentRegionAvail().x;
-    ImVec2 size(width, width);
-    auto gpu = graph->GetSrvGpuHandle(handle);
-    ImGui::Image(static_cast<ImTextureID>(gpu.ptr), size);
+  if (handles.shadow_map_count > 0) {
+    float total_width = ImGui::GetContentRegionAvail().x;
+    float spacing = ImGui::GetStyle().ItemSpacing.x;
+    float map_width = (total_width - spacing * (handles.shadow_map_count - 1)) / handles.shadow_map_count;
+    ImVec2 size(map_width, map_width);
+
+    for (uint32_t i = 0; i < handles.shadow_map_count; ++i) {
+      auto handle = handles.shadow_maps[i];
+      if (handle == RenderGraphHandle::Invalid) continue;
+      graph->TransitionForRead(cmd, handle);
+
+      if (i > 0) ImGui::SameLine();
+      ImGui::BeginGroup();
+      char label[32];
+      std::snprintf(label, sizeof(label), "Cascade %u", i);
+      ImGui::Text("%s", label);
+      auto gpu = graph->GetSrvGpuHandle(handle);
+      ImGui::Image(static_cast<ImTextureID>(gpu.ptr), size);
+      ImGui::EndGroup();
+    }
   } else {
     ImGui::TextDisabled("Shadow map not available");
   }
