@@ -87,6 +87,10 @@ struct MaterialInstance {
   bool use_alpha_test = false;
   bool double_sided = false;
 
+  // Specular parameters
+  float specular_intensity = 0.5f;
+  float specular_power = 32.0f;
+
   // Helpers
   bool IsValid() const {
     return material != nullptr && material->IsValid();

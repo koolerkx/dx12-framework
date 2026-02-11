@@ -40,7 +40,15 @@ float4 main(PSIN input) : SV_TARGET {
     float3 diffuse = g_LightingCB.directionalColor *
                      g_LightingCB.lightIntensity * NdotL * shadowTint;
     float3 ambient = g_LightingCB.ambientColor * g_LightingCB.ambientIntensity;
-    baseColor.rgb *= (diffuse + ambient);
+
+    float3 V = normalize(g_FrameCB.cameraPos - input.worldPos);
+    float3 H = normalize(L + V);
+    float spec = pow(saturate(dot(N, H)), g_MaterialData.specularPower);
+    float3 specular = g_LightingCB.directionalColor *
+                      g_LightingCB.lightIntensity *
+                      g_MaterialData.specularIntensity * spec * shadow;
+
+    baseColor.rgb = baseColor.rgb * (diffuse + ambient) + specular;
   }
 
   return baseColor;

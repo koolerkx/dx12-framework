@@ -690,6 +690,9 @@ void EditorLayer::DrawMeshRendererInspector(MeshRenderer* renderer) {
     }
   }
 
+  ImGui::SliderFloat("Specular Intensity", &data.specular_intensity, 0.0f, 2.0f);
+  ImGui::SliderFloat("Specular Power", &data.specular_power, 1.0f, 256.0f);
+
   renderer->ApplyEditorData(data);
 }
 

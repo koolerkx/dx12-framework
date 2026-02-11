@@ -102,6 +102,13 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
     .double_sided = true,
   });
 
+  sphere_object_ = CreateGameObject("Sphere", {.position = {-4, 0, 0}});
+  sphere_object_->AddComponent<MeshRenderer>(MeshRenderer::Props{
+    .mesh = asset_manager.GetDefaultMesh(DefaultMesh::Sphere),
+    .texture = texture_background_.Get(),
+    .color = colors::White,
+  });
+
   pivot_cube_ = CreateGameObject("PivotCube", {.position = {5, 0, 5}, .pivot = {0.5f, 0, 0}});
   pivot_cube_->AddComponent<MeshRenderer>(MeshRenderer::Props{
     .mesh = asset_manager.GetDefaultMesh(DefaultMesh::Cube),
@@ -195,6 +202,7 @@ void TestScene::OnExit() {
   cube_object_ = nullptr;
   cube_object2_ = nullptr;
   pivot_cube_ = nullptr;
+  sphere_object_ = nullptr;
 }
 
 void TestScene::SetupCamera() {

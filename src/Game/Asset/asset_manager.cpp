@@ -99,6 +99,12 @@ void AssetManager::CreateDefaultMeshes() {
     default_meshes_[DefaultMesh::Plane] = plane_mesh.get();
     owned_default_meshes_[DefaultMesh::Plane] = std::move(plane_mesh);
   }
+
+  auto sphere_mesh = std::make_unique<Mesh>();
+  if (MeshFactory::CreateSphere(device, *sphere_mesh, 32, 16)) {
+    default_meshes_[DefaultMesh::Sphere] = sphere_mesh.get();
+    owned_default_meshes_[DefaultMesh::Sphere] = std::move(sphere_mesh);
+  }
 }
 
 const Mesh* AssetManager::GetDefaultMesh(DefaultMesh type) const {

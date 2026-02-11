@@ -14,6 +14,8 @@ struct MaterialData {
   uint normalTextureIndex;
   uint metallicRoughnessIndex;
   uint flags;
+  float specularIntensity;
+  float specularPower;
 };
 ConstantBuffer<MaterialData> g_MaterialData : register(MATERIAL_CB_SLOT);
 

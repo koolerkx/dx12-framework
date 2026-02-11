@@ -2,6 +2,8 @@
 #include <d3d12.h>
 #include <sys/stat.h>
 
+#include <cmath>
+
 #include "mesh.h"
 
 class MeshFactory {
@@ -189,6 +191,71 @@ class MeshFactory {
         indices.push_back(top_right);
         indices.push_back(bottom_left);
         indices.push_back(bottom_right);
+      }
+    }
+
+    return out_mesh.Create(device, vertices.data(), vertices.size(), indices.data(), indices.size());
+  }
+
+  static bool CreateSphere(ID3D12Device* device, Mesh& out_mesh, uint32_t segments = 32, uint32_t rings = 16) {
+    struct Vertex {
+      float pos[3];
+      float normal[3];
+      float uv[2];
+      float color[4];
+    };
+
+    constexpr float PI = 3.14159265358979323846f;
+    constexpr float RADIUS = 0.5f;
+
+    uint32_t vertex_count = (rings + 1) * (segments + 1);
+    uint32_t index_count = rings * segments * 6;
+
+    std::vector<Vertex> vertices;
+    vertices.reserve(vertex_count);
+
+    for (uint32_t ring = 0; ring <= rings; ++ring) {
+      float v = static_cast<float>(ring) / rings;
+      float theta = v * PI;
+      float sin_theta = sinf(theta);
+      float cos_theta = cosf(theta);
+
+      for (uint32_t seg = 0; seg <= segments; ++seg) {
+        float u = static_cast<float>(seg) / segments;
+        float phi = u * 2.0f * PI;
+        float sin_phi = sinf(phi);
+        float cos_phi = cosf(phi);
+
+        float nx = sin_theta * cos_phi;
+        float ny = cos_theta;
+        float nz = sin_theta * sin_phi;
+
+        vertices.push_back({
+          {nx * RADIUS, ny * RADIUS, nz * RADIUS},
+          {nx, ny, nz},
+          {u, v},
+          {1.0f, 1.0f, 1.0f, 1.0f},
+        });
+      }
+    }
+
+    std::vector<uint16_t> indices;
+    indices.reserve(index_count);
+
+    for (uint32_t ring = 0; ring < rings; ++ring) {
+      for (uint32_t seg = 0; seg < segments; ++seg) {
+        uint16_t current = static_cast<uint16_t>(ring * (segments + 1) + seg);
+        uint16_t next = static_cast<uint16_t>(current + 1);
+        uint16_t below = static_cast<uint16_t>(current + segments + 1);
+        uint16_t below_next = static_cast<uint16_t>(below + 1);
+
+        indices.push_back(current);
+        indices.push_back(next);
+        indices.push_back(below);
+
+        indices.push_back(next);
+        indices.push_back(below_next);
+        indices.push_back(below);
       }
     }
 

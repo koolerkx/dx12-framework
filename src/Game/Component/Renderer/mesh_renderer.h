@@ -21,6 +21,8 @@ class MeshRenderer : public Component<MeshRenderer> {
     Vector4 color = {1, 1, 1, 1};
     Graphics::ShaderId shader_id = Graphics::Basic3DShader::ID;
     RenderLayer render_layer = RenderLayer::Opaque;
+    float specular_intensity = 0.5f;
+    float specular_power = 32.0f;
   };
 
   using Component::Component;
@@ -31,6 +33,8 @@ class MeshRenderer : public Component<MeshRenderer> {
     SetColor(props.color);
     SetShaderId(props.shader_id);
     SetRenderLayer(props.render_layer);
+    SetSpecularIntensity(props.specular_intensity);
+    SetSpecularPower(props.specular_power);
   }
 
   void SetMesh(const Mesh* mesh) {
@@ -61,6 +65,12 @@ class MeshRenderer : public Component<MeshRenderer> {
   void SetRenderLayer(RenderLayer layer) {
     render_layer_ = layer;
   }
+  void SetSpecularIntensity(float intensity) {
+    specular_intensity_ = intensity;
+  }
+  void SetSpecularPower(float power) {
+    specular_power_ = power;
+  }
   void SetRenderTags(RenderTagMask tags) {
     render_tags_ = tags;
   }
@@ -85,10 +95,12 @@ class MeshRenderer : public Component<MeshRenderer> {
     Rendering::RenderSettings render_settings;
     RenderLayer render_layer;
     RenderTagMask render_tags;
+    float specular_intensity;
+    float specular_power;
   };
 
   EditorData GetEditorData() const {
-    return {color_, render_settings_, render_layer_, render_tags_};
+    return {color_, render_settings_, render_layer_, render_tags_, specular_intensity_, specular_power_};
   }
 
   void ApplyEditorData(const EditorData& data) {
@@ -96,6 +108,8 @@ class MeshRenderer : public Component<MeshRenderer> {
     render_settings_ = data.render_settings;
     render_layer_ = data.render_layer;
     render_tags_ = data.render_tags;
+    specular_intensity_ = data.specular_intensity;
+    specular_power_ = data.specular_power;
   }
 
   void OnRender(FramePacket& packet) override {
@@ -116,6 +130,8 @@ class MeshRenderer : public Component<MeshRenderer> {
     cmd.material_instance.material = cmd.material;
     cmd.material_instance.albedo_texture_index = texture_ ? texture_->GetBindlessIndex() : 0;
     cmd.material_instance.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
+    cmd.material_instance.specular_intensity = specular_intensity_;
+    cmd.material_instance.specular_power = specular_power_;
 
     Vector3 worldPos = transform->GetWorldPosition();
     Vector3 camPos = packet.main_camera.position;
@@ -132,6 +148,9 @@ class MeshRenderer : public Component<MeshRenderer> {
   Graphics::ShaderId shader_id_ = Graphics::Basic3DShader::ID;
   Rendering::RenderSettings render_settings_ = Rendering::RenderSettings::Opaque();
   Vector4 color_ = {1.0f, 1.0f, 1.0f, 1.0f};
+
+  float specular_intensity_ = 0.5f;
+  float specular_power_ = 32.0f;
 
   RenderLayer render_layer_ = RenderLayer::Opaque;
   RenderTagMask render_tags_ = static_cast<uint32_t>(RenderTag::CastShadow | RenderTag::ReceiveShadow | RenderTag::Lit);

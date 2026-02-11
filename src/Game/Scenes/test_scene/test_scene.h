@@ -21,6 +21,7 @@ class TestScene : public IScene {
   GameObject* cube_object_ = nullptr;
   GameObject* cube_object2_ = nullptr;
   GameObject* pivot_cube_ = nullptr;
+  GameObject* sphere_object_ = nullptr;
 
   void SetupCamera();
 };

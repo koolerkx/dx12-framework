@@ -117,13 +117,21 @@ class RenderCommandList {
   }
 
   void SetMaterialData(const MaterialInstance& material_instance) {
-    // Pack material data into 32-bit constants
-    uint32_t material_data[4] = {material_instance.albedo_texture_index,
+    struct {
+      uint32_t albedo_texture_index;
+      uint32_t normal_texture_index;
+      uint32_t metallic_roughness_index;
+      uint32_t flags;
+      float specular_intensity;
+      float specular_power;
+    } material_data = {material_instance.albedo_texture_index,
       material_instance.normal_texture_index,
       material_instance.metallic_roughness_index,
-      (material_instance.use_alpha_test ? 1u : 0u) | (material_instance.double_sided ? 2u : 0u)};
+      (material_instance.use_alpha_test ? 1u : 0u) | (material_instance.double_sided ? 2u : 0u),
+      material_instance.specular_intensity,
+      material_instance.specular_power};
 
-    cmd_->SetGraphicsRoot32BitConstants(RootSlot::ToIndex(RootSlot::Constants::MaterialData), 4, material_data, 0);
+    cmd_->SetGraphicsRoot32BitConstants(RootSlot::ToIndex(RootSlot::Constants::MaterialData), 6, &material_data, 0);
   }
 
   void DrawMesh(const Mesh* mesh) {
