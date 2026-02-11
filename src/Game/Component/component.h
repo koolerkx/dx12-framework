@@ -1,5 +1,7 @@
 #pragma once
 
+#include <typeinfo>
+
 #include "Graphic/Frame/frame_packet.h"
 
 // Define a unique ID type for components
@@ -53,7 +55,9 @@ class IComponentBase {
   }
 
   virtual ComponentTypeID GetTypeID() const = 0;
-  virtual const char* GetTypeName() const { return "Unknown"; }
+  virtual const char* GetTypeName() const {
+    return "Unknown";
+  }
 
   GameObject* GetOwner() const {
     return owner_;
@@ -90,5 +94,8 @@ class Component : public IComponentBase {
     return ComponentType<Derived>::GetID();
   }
 
-  const char* GetTypeName() const override { return typeid(Derived).name(); }
+  const char* GetTypeName() const override {
+    const std::type_info& info = typeid(Derived);
+    return info.name();
+  }
 };
