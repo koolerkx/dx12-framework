@@ -124,6 +124,7 @@ class Graphic {
     RenderGraphHandle scene_rt = RenderGraphHandle::Invalid;
     RenderGraphHandle depth_preview_rt = RenderGraphHandle::Invalid;
     RenderGraphHandle tonemap_rt = RenderGraphHandle::Invalid;
+    RenderGraphHandle shadow_map = RenderGraphHandle::Invalid;
   };
 
   RenderGraph* GetRenderGraph() {

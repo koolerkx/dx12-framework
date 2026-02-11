@@ -63,6 +63,7 @@ void EditorLayer::Initialize(HWND hwnd, Graphic& graphic) {
 }
 
 void EditorLayer::Shutdown(Graphic& graphic) {
+  graphic.WaitForGpuIdle();
   ImGui_ImplDX12_Shutdown();
   ImGui_ImplWin32_Shutdown();
   ImGui::DestroyContext();
@@ -95,6 +96,7 @@ void EditorLayer::Render(ID3D12GraphicsCommandList* cmd) {
   if (show_scene_settings_) DrawSceneSettings();
   if (show_debug_) DrawDebugPanel();
   if (show_render_pipeline_) DrawRenderPipelinePanel(cmd);
+  if (show_shadow_map_) DrawShadowMapPanel(cmd);
 
   ImGui::Render();
   ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), cmd);
@@ -476,6 +478,10 @@ void EditorLayer::DrawSceneSettings() {
     if (ImGui::DragFloat("Shadow Distance", &distance, 1.0f, 1.0f, 1000.0f, "%.0f")) {
       shadow.SetShadowDistance(distance);
     }
+
+    if (ImGui::Button("Show Shadow Map")) {
+      show_shadow_map_ = true;
+    }
   }
 
   ImGui::End();
@@ -537,6 +543,25 @@ void EditorLayer::DrawRenderPipelinePanel(ID3D12GraphicsCommandList* cmd) {
     }
 
     ImGui::Separator();
+  }
+
+  ImGui::End();
+}
+
+void EditorLayer::DrawShadowMapPanel(ID3D12GraphicsCommandList* cmd) {
+  ImGui::Begin("Shadow Map", &show_shadow_map_);
+
+  auto* graph = graphic_->GetRenderGraph();
+  auto handle = graphic_->GetPreviewHandles().shadow_map;
+
+  if (handle != RenderGraphHandle::Invalid) {
+    graph->TransitionForRead(cmd, handle);
+    float width = ImGui::GetContentRegionAvail().x;
+    ImVec2 size(width, width);
+    auto gpu = graph->GetSrvGpuHandle(handle);
+    ImGui::Image(static_cast<ImTextureID>(gpu.ptr), size);
+  } else {
+    ImGui::TextDisabled("Shadow map not available");
   }
 
   ImGui::End();

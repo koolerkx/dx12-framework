@@ -185,7 +185,7 @@ void Graphic::BuildRenderPipeline() {
     .shadow_data = &shadow_frame_data_,
   }));
 
-  preview_handles_ = {scene_rt, depth_preview_rt, tonemap_rt};
+  preview_handles_ = {scene_rt, depth_preview_rt, tonemap_rt, shadow_depth};
 
   PassSetup scene_setup;
   scene_setup.resource_writes = {scene_rt};
@@ -309,6 +309,7 @@ void Graphic::SetOverlayRenderer(OverlayRenderFunc renderer) {
     render_graph_->MarkExternallyReferenced(preview_handles_.scene_rt);
     render_graph_->MarkExternallyReferenced(preview_handles_.depth_preview_rt);
     render_graph_->MarkExternallyReferenced(preview_handles_.tonemap_rt);
+    render_graph_->MarkExternallyReferenced(preview_handles_.shadow_map);
   }
 }
 

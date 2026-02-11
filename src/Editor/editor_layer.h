@@ -45,6 +45,7 @@ class EditorLayer {
   void DrawSceneSettings();
   void DrawDebugPanel();
   void DrawRenderPipelinePanel(ID3D12GraphicsCommandList* cmd);
+  void DrawShadowMapPanel(ID3D12GraphicsCommandList* cmd);
   void RebuildFontAtlas(float scale);
   void ScaleExistingWindows(float ratio);
   void UpdateScaling();
@@ -60,6 +61,7 @@ class EditorLayer {
   bool show_scene_settings_ = true;
   bool show_debug_ = true;
   bool show_render_pipeline_ = true;
+  bool show_shadow_map_ = false;
 
   float ui_scale_ = 1.0f;
   UINT last_scaled_width_ = 0;
