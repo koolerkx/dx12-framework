@@ -3,11 +3,11 @@
 #include "Command/render_command_list.h"
 #include "Frame/constant_buffers.h"
 #include "Framework/Logging/logger.h"
+#include "Pipeline/pipeline_state_builder.h"
 #include "Pipeline/root_parameter_slots.h"
 #include "Pipeline/shader_descriptors.h"
 #include "Pipeline/shader_manager.h"
 #include "Pipeline/vertex_types.h"
-#include "d3dx12.h"
 
 SkyboxPass::SkyboxPass(ID3D12Device* device, ShaderManager* shader_manager, PassSetup pass_setup)
     : device_(device), shader_manager_(shader_manager) {
@@ -34,41 +34,20 @@ bool SkyboxPass::CreatePipelineObjects() {
     return false;
   }
 
-  D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc = {};
-  pso_desc.pRootSignature = root_signature;
-  pso_desc.VS = CD3DX12_SHADER_BYTECODE(vs->GetBufferPointer(), vs->GetBufferSize());
-  pso_desc.PS = CD3DX12_SHADER_BYTECODE(ps->GetBufferPointer(), ps->GetBufferSize());
+  pipeline_state_ = PipelineStateBuilder()
+                      .SetRootSignature(root_signature)
+                      .SetVertexShader(vs)
+                      .SetPixelShader(ps)
+                      .SetInputLayout(Graphics::SkyboxShader::GetInputLayout())
+                      .SetDepthTest(true)
+                      .SetDepthWrite(false)
+                      .SetDepthComparisonFunc(D3D12_COMPARISON_FUNC_LESS_EQUAL)
+                      .SetRenderTargetFormat(DXGI_FORMAT_R16G16B16A16_FLOAT)
+                      .SetDepthStencilFormat(DXGI_FORMAT_D32_FLOAT)
+                      .SetName(L"SkyboxPass_PSO")
+                      .Build(device_);
 
-  auto input_layout = Graphics::SkyboxShader::GetInputLayout();
-  pso_desc.InputLayout = {input_layout.data(), static_cast<UINT>(input_layout.size())};
-
-  pso_desc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-  pso_desc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
-  pso_desc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-
-  pso_desc.DepthStencilState.DepthEnable = TRUE;
-  pso_desc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
-  pso_desc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
-  pso_desc.DepthStencilState.StencilEnable = FALSE;
-
-  pso_desc.SampleMask = UINT_MAX;
-  pso_desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-  pso_desc.NumRenderTargets = 1;
-  pso_desc.RTVFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
-  pso_desc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
-  pso_desc.SampleDesc.Count = 1;
-
-  HRESULT hr = device_->CreateGraphicsPipelineState(&pso_desc, IID_PPV_ARGS(&pipeline_state_));
-  if (FAILED(hr)) {
-    Logger::LogFormat(LogLevel::Error,
-      LogCategory::Graphic,
-      Logger::Here(),
-      "[SkyboxPass] Failed to create PSO, HRESULT=0x{:08X}",
-      static_cast<uint32_t>(hr));
-    return false;
-  }
-  pipeline_state_->SetName(L"SkyboxPass_PSO");
-  return true;
+  return pipeline_state_ != nullptr;
 }
 
 bool SkyboxPass::CreateCubeMesh() {

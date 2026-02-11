@@ -3,6 +3,11 @@
 #include "Framework/Logging/logger.h"
 
 ComPtr<ID3D12PipelineState> PipelineStateBuilder::Build(ID3D12Device* device) {
+  if (!inputLayout_.empty()) {  // prevent chaining split at middle and pointing to a temporary object
+    desc_.InputLayout.pInputElementDescs = inputLayout_.data();
+    desc_.InputLayout.NumElements = static_cast<UINT>(inputLayout_.size());
+  }
+
   ComPtr<ID3D12PipelineState> pso;
   HRESULT hr = device->CreateGraphicsPipelineState(&desc_, IID_PPV_ARGS(&pso));
   if (FAILED(hr)) {
@@ -12,6 +17,9 @@ ComPtr<ID3D12PipelineState> PipelineStateBuilder::Build(ID3D12Device* device) {
       "[PipelineStateBuilder] Failed to create PSO, HRESULT=0x{:08X}",
       static_cast<uint32_t>(hr));
     return nullptr;
+  }
+  if (name_) {
+    pso->SetName(name_);
   }
   return pso;
 }

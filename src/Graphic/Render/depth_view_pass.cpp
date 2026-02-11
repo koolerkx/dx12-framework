@@ -1,9 +1,9 @@
 #include "depth_view_pass.h"
 
 #include "Framework/Logging/logger.h"
+#include "Pipeline/pipeline_state_builder.h"
 #include "Pipeline/shader_manager.h"
 #include "Render/render_graph.h"
-#include "d3dx12.h"
 
 DepthViewPass::DepthViewPass(const DepthViewPassProps& props)
     : device_(props.device), shader_manager_(props.shader_manager), depth_handle_(props.depth_handle), config_(props.config) {
@@ -27,29 +27,15 @@ bool DepthViewPass::CreatePipelineObjects() {
     return false;
   }
 
-  D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc = {};
-  pso_desc.pRootSignature = root_signature;
-  pso_desc.VS = CD3DX12_SHADER_BYTECODE(vs->GetBufferPointer(), vs->GetBufferSize());
-  pso_desc.PS = CD3DX12_SHADER_BYTECODE(ps->GetBufferPointer(), ps->GetBufferSize());
-  pso_desc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-  pso_desc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
-  pso_desc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-  pso_desc.DepthStencilState.DepthEnable = FALSE;
-  pso_desc.DepthStencilState.StencilEnable = FALSE;
-  pso_desc.SampleMask = UINT_MAX;
-  pso_desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-  pso_desc.NumRenderTargets = 1;
-  pso_desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-  pso_desc.SampleDesc.Count = 1;
+  pipeline_state_ = PipelineStateBuilder()
+                      .SetRootSignature(root_signature)
+                      .SetVertexShader(vs)
+                      .SetPixelShader(ps)
+                      .SetRenderTargetFormat(DXGI_FORMAT_R8G8B8A8_UNORM)
+                      .SetName(L"DepthViewPass_PSO")
+                      .Build(device_);
 
-  HRESULT hr = device_->CreateGraphicsPipelineState(&pso_desc, IID_PPV_ARGS(&pipeline_state_));
-  if (FAILED(hr)) {
-    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[DepthViewPass] Failed to create PSO");
-    return false;
-  }
-
-  pipeline_state_->SetName(L"DepthViewPass_PSO");
-  return true;
+  return pipeline_state_ != nullptr;
 }
 
 void DepthViewPass::Execute(const RenderFrameContext& frame, const FramePacket& packet) {

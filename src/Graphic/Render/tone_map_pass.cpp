@@ -2,9 +2,9 @@
 
 #include "Framework/Logging/logger.h"
 #include "Pipeline/material_manager.h"
+#include "Pipeline/pipeline_state_builder.h"
 #include "Pipeline/shader_manager.h"
 #include "Render/render_graph.h"
-#include "d3dx12.h"
 
 ToneMapPass::ToneMapPass(const ToneMapPassProps& props)
     : device_(props.device),
@@ -33,29 +33,15 @@ bool ToneMapPass::CreatePipelineObjects() {
     return false;
   }
 
-  D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc = {};
-  pso_desc.pRootSignature = root_signature;
-  pso_desc.VS = CD3DX12_SHADER_BYTECODE(vs->GetBufferPointer(), vs->GetBufferSize());
-  pso_desc.PS = CD3DX12_SHADER_BYTECODE(ps->GetBufferPointer(), ps->GetBufferSize());
-  pso_desc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-  pso_desc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
-  pso_desc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-  pso_desc.DepthStencilState.DepthEnable = FALSE;
-  pso_desc.DepthStencilState.StencilEnable = FALSE;
-  pso_desc.SampleMask = UINT_MAX;
-  pso_desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-  pso_desc.NumRenderTargets = 1;
-  pso_desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-  pso_desc.SampleDesc.Count = 1;
+  pipeline_state_ = PipelineStateBuilder()
+                      .SetRootSignature(root_signature)
+                      .SetVertexShader(vs)
+                      .SetPixelShader(ps)
+                      .SetRenderTargetFormat(DXGI_FORMAT_R8G8B8A8_UNORM)
+                      .SetName(L"ToneMapPass_PSO")
+                      .Build(device_);
 
-  HRESULT hr = device_->CreateGraphicsPipelineState(&pso_desc, IID_PPV_ARGS(&pipeline_state_));
-  if (FAILED(hr)) {
-    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[ToneMapPass] Failed to create PSO");
-    return false;
-  }
-
-  pipeline_state_->SetName(L"ToneMapPass_PSO");
-  return true;
+  return pipeline_state_ != nullptr;
 }
 
 void ToneMapPass::Execute(const RenderFrameContext& frame, const FramePacket& packet) {
@@ -71,7 +57,9 @@ void ToneMapPass::Execute(const RenderFrameContext& frame, const FramePacket& pa
     uint32_t debug_mode;
     uint32_t hdr_srv_index;
     uint32_t padding = 0;
-  } cb_data = {.exposure = config_->exposure, .debug_mode = debug_->debug_view ? 1u : 0u, .hdr_srv_index = frame.render_graph->GetSrvIndex(hdr_handle_)};
+  } cb_data = {.exposure = config_->exposure,
+    .debug_mode = debug_->debug_view ? 1u : 0u,
+    .hdr_srv_index = frame.render_graph->GetSrvIndex(hdr_handle_)};
 
   auto cb_alloc = frame.object_cb_allocator->Allocate<ToneMapCB>();
   memcpy(cb_alloc.cpu_ptr, &cb_data, sizeof(ToneMapCB));

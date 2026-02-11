@@ -2,6 +2,7 @@
 #include <d3d12.h>
 #include <d3dcompiler.h>
 
+#include <span>
 #include <vector>
 
 #include "Core/types.h"
@@ -40,6 +41,7 @@ class PipelineStateBuilder {
 
     // Depth Stencil
     desc_.DepthStencilState.DepthEnable = FALSE;
+    desc_.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
     desc_.DepthStencilState.StencilEnable = FALSE;
 
     // Primitive Topology
@@ -75,6 +77,13 @@ class PipelineStateBuilder {
     return *this;
   }
 
+  PipelineStateBuilder& SetInputLayout(std::span<const D3D12_INPUT_ELEMENT_DESC> layout) {
+    inputLayout_.assign(layout.begin(), layout.end());
+    desc_.InputLayout.pInputElementDescs = inputLayout_.data();
+    desc_.InputLayout.NumElements = static_cast<UINT>(inputLayout_.size());
+    return *this;
+  }
+
   PipelineStateBuilder& SetRenderTargetFormat(DXGI_FORMAT format, UINT index = 0) {
     desc_.RTVFormats[index] = format;
     if (desc_.NumRenderTargets < (index + 1)) {
@@ -90,7 +99,26 @@ class PipelineStateBuilder {
 
   PipelineStateBuilder& SetDepthTest(bool enable) {
     desc_.DepthStencilState.DepthEnable = enable;
-    desc_.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+    if (enable) {
+      desc_.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+    }
+    return *this;
+  }
+
+  PipelineStateBuilder& SetDepthComparisonFunc(D3D12_COMPARISON_FUNC func) {
+    desc_.DepthStencilState.DepthFunc = func;
+    return *this;
+  }
+
+  PipelineStateBuilder& SetDepthBias(int bias, float clamp, float slope_scaled) {
+    desc_.RasterizerState.DepthBias = bias;
+    desc_.RasterizerState.DepthBiasClamp = clamp;
+    desc_.RasterizerState.SlopeScaledDepthBias = slope_scaled;
+    return *this;
+  }
+
+  PipelineStateBuilder& SetFillMode(D3D12_FILL_MODE mode) {
+    desc_.RasterizerState.FillMode = mode;
     return *this;
   }
 
@@ -115,9 +143,15 @@ class PipelineStateBuilder {
 
   PipelineStateBuilder& SetBlendMode(BlendMode mode);
 
+  PipelineStateBuilder& SetName(const wchar_t* name) {
+    name_ = name;
+    return *this;
+  }
+
   ComPtr<ID3D12PipelineState> Build(ID3D12Device* device);
 
  private:
   D3D12_GRAPHICS_PIPELINE_STATE_DESC desc_;
   std::vector<D3D12_INPUT_ELEMENT_DESC> inputLayout_;
+  const wchar_t* name_ = nullptr;
 };

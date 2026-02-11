@@ -8,9 +8,9 @@
 #include "Frame/constant_buffers.h"
 #include "Framework/Logging/logger.h"
 #include "Framework/Math/Math.h"
+#include "Pipeline/pipeline_state_builder.h"
 #include "Pipeline/shader_descriptors.h"
 #include "Pipeline/shader_manager.h"
-#include "d3dx12.h"
 #include "shadow_config.h"
 
 using Math::Matrix4;
@@ -46,7 +46,6 @@ ShadowPass::ShadowPass(const Props& props)
 
 bool ShadowPass::CreatePipelineState() {
   auto* vs = shader_manager_->GetVertexShader<Graphics::ShadowDepthShader>();
-  auto* ps = shader_manager_->GetPixelShader<Graphics::ShadowDepthShader>();
   if (!vs) {
     Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[ShadowPass] Shadow depth VS not loaded");
     return false;
@@ -57,42 +56,19 @@ bool ShadowPass::CreatePipelineState() {
     return false;
   }
 
-  auto input_layout = Graphics::ShadowDepthShader::GetInputLayout();
+  pipeline_state_ =
+    PipelineStateBuilder()
+      .SetRootSignature(root_signature)
+      .SetVertexShader(vs)
+      .SetInputLayout(Graphics::ShadowDepthShader::GetInputLayout())
+      .SetCullMode(D3D12_CULL_MODE_BACK)
+      .EnableDepthTest()
+      .SetDepthBias(ShadowHardwareConfig::DEPTH_BIAS, ShadowHardwareConfig::DEPTH_BIAS_CLAMP, ShadowHardwareConfig::SLOPE_SCALED_DEPTH_BIAS)
+      .SetDepthStencilFormat(DXGI_FORMAT_D32_FLOAT)
+      .SetName(L"ShadowPass_PSO")
+      .Build(device_);
 
-  D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc = {};
-  pso_desc.pRootSignature = root_signature;
-  pso_desc.VS = CD3DX12_SHADER_BYTECODE(vs->GetBufferPointer(), vs->GetBufferSize());
-  if (ps) {
-    pso_desc.PS = CD3DX12_SHADER_BYTECODE(ps->GetBufferPointer(), ps->GetBufferSize());
-  }
-  pso_desc.InputLayout = {input_layout.data(), static_cast<UINT>(input_layout.size())};
-  pso_desc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-  pso_desc.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
-  pso_desc.RasterizerState.DepthBias = ShadowHardwareConfig::DEPTH_BIAS;
-  pso_desc.RasterizerState.SlopeScaledDepthBias = ShadowHardwareConfig::SLOPE_SCALED_DEPTH_BIAS;
-  pso_desc.RasterizerState.DepthBiasClamp = ShadowHardwareConfig::DEPTH_BIAS_CLAMP;
-  pso_desc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-  pso_desc.DepthStencilState.DepthEnable = TRUE;
-  pso_desc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-  pso_desc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
-  pso_desc.DepthStencilState.StencilEnable = FALSE;
-  pso_desc.SampleMask = UINT_MAX;
-  pso_desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-  pso_desc.NumRenderTargets = 0;
-  pso_desc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
-  pso_desc.SampleDesc.Count = 1;
-
-  HRESULT hr = device_->CreateGraphicsPipelineState(&pso_desc, IID_PPV_ARGS(&pipeline_state_));
-  if (FAILED(hr)) {
-    Logger::LogFormat(LogLevel::Error,
-      LogCategory::Graphic,
-      Logger::Here(),
-      "[ShadowPass] Failed to create PSO, HRESULT=0x{:08X}",
-      static_cast<uint32_t>(hr));
-    return false;
-  }
-  pipeline_state_->SetName(L"ShadowPass_PSO");
-  return true;
+  return pipeline_state_ != nullptr;
 }
 
 Matrix4 ShadowPass::ComputeLightViewProj(
