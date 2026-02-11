@@ -27,7 +27,7 @@ class ShadowPass : public IRenderPass {
 
  private:
   bool CreatePipelineState();
-  Math::Matrix4 ComputeLightViewProj(const CameraData& camera, const Math::Vector3& light_dir, float shadow_distance) const;
+  Math::Matrix4 ComputeLightViewProj(const CameraData& camera, const Math::Vector3& light_dir, float shadow_distance, float light_distance) const;
 
   ID3D12Device* device_;
   ShaderManager* shader_manager_;

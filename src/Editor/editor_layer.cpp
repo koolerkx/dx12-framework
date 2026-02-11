@@ -484,6 +484,11 @@ void EditorLayer::DrawSceneSettings() {
       shadow.SetShadowDistance(distance);
     }
 
+    float light_dist = shadow.GetLightDistance();
+    if (ImGui::DragFloat("Light Distance", &light_dist, 1.0f, 1.0f, 1000.0f, "%.0f")) {
+      shadow.SetLightDistance(light_dist);
+    }
+
     auto shadow_color = shadow.GetShadowColor();
     float color[3] = {shadow_color.x, shadow_color.y, shadow_color.z};
     if (ImGui::ColorEdit3("Shadow Color", color)) {

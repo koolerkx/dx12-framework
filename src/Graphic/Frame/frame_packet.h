@@ -33,6 +33,7 @@ struct ShadowConfig {
   float depth_bias = 0.005f;
   float normal_bias = 0.02f;
   float shadow_distance = 100.0f;
+  float light_distance = 100.0f;
   ShadowAlgorithm algorithm = ShadowAlgorithm::PCF3x3;
   Math::Vector3 shadow_color = Math::Vector3(0.0f, 0.0f, 0.0f);
   bool enabled = true;

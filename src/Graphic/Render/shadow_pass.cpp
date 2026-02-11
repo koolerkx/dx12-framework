@@ -71,7 +71,7 @@ bool ShadowPass::CreatePipelineState() {
   return true;
 }
 
-Matrix4 ShadowPass::ComputeLightViewProj(const CameraData& camera, const Vector3& light_dir, float shadow_distance) const {
+Matrix4 ShadowPass::ComputeLightViewProj(const CameraData& camera, const Vector3& light_dir, float shadow_distance, float light_distance) const {
   Matrix4 inv_view_proj = (camera.view * camera.proj).Inverted();
 
   std::array<Vector3, 8> ndc_corners = {{
@@ -114,7 +114,6 @@ Matrix4 ShadowPass::ComputeLightViewProj(const CameraData& camera, const Vector3
     light_up = Vector3::Right;
   }
 
-  float light_distance = 100.0f;
   Vector3 light_pos = center - normalized_light * light_distance;
   Matrix4 light_view = Matrix4::CreateLookAt(light_pos, center, light_up);
 
@@ -160,7 +159,7 @@ void ShadowPass::Execute(const RenderFrameContext& frame, const FramePacket& pac
   if (!pipeline_state_ || !shadow_data_) return;
   if (!packet.shadow.enabled) return;
 
-  Matrix4 light_view_proj = ComputeLightViewProj(packet.main_camera, packet.lighting.direction, packet.shadow.shadow_distance);
+  Matrix4 light_view_proj = ComputeLightViewProj(packet.main_camera, packet.lighting.direction, packet.shadow.shadow_distance, packet.shadow.light_distance);
   shadow_data_->light_view_proj = light_view_proj;
 
   RenderCommandList cmd(frame.command_list, frame.dynamic_allocator, frame.frame_cb, frame.object_cb_allocator);
