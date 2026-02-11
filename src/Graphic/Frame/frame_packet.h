@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "Framework/Core/color.h"
+#include "Graphic/Render/shadow_config.h"
 #include "Framework/Math/Math.h"
 #include "camera_data.h"
 #include "draw_command.h"
@@ -30,8 +31,8 @@ enum class ShadowAlgorithm : uint32_t {
 
 struct ShadowConfig {
   uint32_t resolution = 2048;
-  float depth_bias = 0.005f;
-  float normal_bias = 0.02f;
+  float depth_bias = ShadowReceiverDefaults::DEPTH_BIAS;
+  float normal_bias = ShadowReceiverDefaults::NORMAL_BIAS;
   float shadow_distance = 100.0f;
   float light_distance = 100.0f;
   ShadowAlgorithm algorithm = ShadowAlgorithm::PCF3x3;

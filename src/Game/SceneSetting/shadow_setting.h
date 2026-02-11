@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include "Graphic/Frame/frame_packet.h"
+#include "Graphic/Render/shadow_config.h"
 
 class ShadowSetting {
  public:
@@ -40,9 +41,9 @@ class ShadowSetting {
  private:
   bool enabled_ = true;
   uint32_t resolution_ = 2048;
-  float depth_bias_ = 0.005f;
-  float normal_bias_ = 0.02f;
-  float shadow_distance_ = 100.0f;
+  float depth_bias_ = ShadowReceiverDefaults::DEPTH_BIAS;
+  float normal_bias_ = ShadowReceiverDefaults::NORMAL_BIAS;
+  float shadow_distance_ = 30.0f;
   float light_distance_ = 100.0f;
   ShadowAlgorithm algorithm_ = ShadowAlgorithm::PCF3x3;
   Math::Vector3 shadow_color_ = Math::Vector3(0.0f, 0.0f, 0.0f);

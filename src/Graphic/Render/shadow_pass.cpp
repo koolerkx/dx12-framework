@@ -9,6 +9,7 @@
 #include "Pipeline/shader_descriptors.h"
 #include "Pipeline/shader_manager.h"
 #include "d3dx12.h"
+#include "shadow_config.h"
 
 using Math::Matrix4;
 using Math::Vector3;
@@ -44,9 +45,9 @@ bool ShadowPass::CreatePipelineState() {
   pso_desc.InputLayout = {input_layout.data(), static_cast<UINT>(input_layout.size())};
   pso_desc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
   pso_desc.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
-  pso_desc.RasterizerState.DepthBias = 1000;
-  pso_desc.RasterizerState.SlopeScaledDepthBias = 1.0f;
-  pso_desc.RasterizerState.DepthBiasClamp = 0.0f;
+  pso_desc.RasterizerState.DepthBias = ShadowHardwareConfig::DEPTH_BIAS;
+  pso_desc.RasterizerState.SlopeScaledDepthBias = ShadowHardwareConfig::SLOPE_SCALED_DEPTH_BIAS;
+  pso_desc.RasterizerState.DepthBiasClamp = ShadowHardwareConfig::DEPTH_BIAS_CLAMP;
   pso_desc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
   pso_desc.DepthStencilState.DepthEnable = TRUE;
   pso_desc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
