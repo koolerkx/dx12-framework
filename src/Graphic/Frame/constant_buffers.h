@@ -57,3 +57,17 @@ struct alignas(256) ShadowCB {
   float _padding;
 };
 static_assert(sizeof(ShadowCB) == 512);
+
+struct alignas(256) MaterialCB {
+  uint32_t albedo_texture_index;
+  uint32_t normal_texture_index;
+  uint32_t metallic_roughness_index;
+  uint32_t flags;
+  float specular_intensity;
+  float specular_power;
+  float rim_intensity;
+  float rim_power;
+  Vector3 rim_color;
+  float _padding;
+};
+static_assert(sizeof(MaterialCB) == 256);

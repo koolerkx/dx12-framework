@@ -693,6 +693,11 @@ void EditorLayer::DrawMeshRendererInspector(MeshRenderer* renderer) {
   ImGui::SliderFloat("Specular Intensity", &data.specular_intensity, 0.0f, 2.0f);
   ImGui::SliderFloat("Specular Power", &data.specular_power, 1.0f, 256.0f);
 
+  ImGui::SliderFloat("Rim Intensity", &data.rim_intensity, 0.0f, 2.0f);
+  ImGui::SliderFloat("Rim Power", &data.rim_power, 0.5f, 16.0f);
+  ImGui::ColorEdit3("Rim Color", &data.rim_color.x);
+  ImGui::Checkbox("Rim Shadow Affected", &data.rim_shadow_affected);
+
   renderer->ApplyEditorData(data);
 }
 

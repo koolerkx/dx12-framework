@@ -7,15 +7,11 @@ namespace RootSlot {
 
 // Root constants and CBVs
 enum class ConstantBuffer : uint32_t {
-  Frame = 0,    // FrameCB - per-frame constants (view, proj, camera, time, etc)
-  Object = 1,   // ObjectCB - per-object constants (world matrix, color, etc)
-  Light = 2,    // LightingCB - lighting data
-  Shadow = 4,   // ShadowCB - shadow mapping data (b4)
-};
-
-// Root constants (32-bit values)
-enum class Constants : uint32_t {
-  MaterialData = 3,  // Material constants (texture indices, flags, etc)
+  Frame = 0,     // FrameCB - per-frame constants (view, proj, camera, time, etc)
+  Object = 1,    // ObjectCB - per-object constants (world matrix, color, etc)
+  Light = 2,     // LightingCB - lighting data
+  Material = 3,  // MaterialCB - material constants (texture indices, specular, rim, etc)
+  Shadow = 4,    // ShadowCB - shadow mapping data (b4)
 };
 
 // Descriptor tables
@@ -36,10 +32,6 @@ enum class StaticSampler : uint32_t {
 
 // Helper functions to convert enum to uint32_t for API calls
 inline constexpr uint32_t ToIndex(ConstantBuffer slot) {
-  return static_cast<uint32_t>(slot);
-}
-
-inline constexpr uint32_t ToIndex(Constants slot) {
   return static_cast<uint32_t>(slot);
 }
 

@@ -48,7 +48,11 @@ float4 main(PSIN input) : SV_TARGET {
                       g_LightingCB.lightIntensity *
                       g_MaterialData.specularIntensity * spec * shadow;
 
-    baseColor.rgb = baseColor.rgb * (diffuse + ambient) + specular;
+    float rim = pow(1.0 - saturate(dot(N, V)), g_MaterialData.rimPower);
+    float3 rimLight = g_MaterialData.rimColor * g_MaterialData.rimIntensity * rim;
+    if (g_MaterialData.flags & 4u) rimLight *= shadow;
+
+    baseColor.rgb = baseColor.rgb * (diffuse + ambient) + specular + rimLight;
   }
 
   return baseColor;

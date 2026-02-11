@@ -137,7 +137,18 @@ void MaterialRenderer::Record(const RenderFrameContext& frame,
 }
 
 void MaterialRenderer::RecordSingle(RenderCommandList& cmd, const DrawCommand& draw_cmd, const Matrix4& view_proj, bool shadow_enabled) {
-  cmd.SetMaterialData(draw_cmd.material_instance);
+  const auto& mi = draw_cmd.material_instance;
+  MaterialCB mat = {};
+  mat.albedo_texture_index = mi.albedo_texture_index;
+  mat.normal_texture_index = mi.normal_texture_index;
+  mat.metallic_roughness_index = mi.metallic_roughness_index;
+  mat.flags = (mi.use_alpha_test ? 1u : 0u) | (mi.double_sided ? 2u : 0u) | (mi.rim_shadow_affected ? 4u : 0u);
+  mat.specular_intensity = mi.specular_intensity;
+  mat.specular_power = mi.specular_power;
+  mat.rim_intensity = mi.rim_intensity;
+  mat.rim_power = mi.rim_power;
+  mat.rim_color = Vector3(mi.rim_color[0], mi.rim_color[1], mi.rim_color[2]);
+  cmd.SetMaterialConstants(mat);
 
   ObjectCB obj_data = {};
   Matrix4 world = draw_cmd.world_matrix;
@@ -160,7 +171,18 @@ void MaterialRenderer::RecordSingle(RenderCommandList& cmd, const DrawCommand& d
 }
 
 void MaterialRenderer::RecordInstanced(RenderCommandList& cmd, const DrawCommand& draw_cmd) {
-  cmd.SetMaterialData(draw_cmd.material_instance);
+  const auto& mi = draw_cmd.material_instance;
+  MaterialCB mat = {};
+  mat.albedo_texture_index = mi.albedo_texture_index;
+  mat.normal_texture_index = mi.normal_texture_index;
+  mat.metallic_roughness_index = mi.metallic_roughness_index;
+  mat.flags = (mi.use_alpha_test ? 1u : 0u) | (mi.double_sided ? 2u : 0u) | (mi.rim_shadow_affected ? 4u : 0u);
+  mat.specular_intensity = mi.specular_intensity;
+  mat.specular_power = mi.specular_power;
+  mat.rim_intensity = mi.rim_intensity;
+  mat.rim_power = mi.rim_power;
+  mat.rim_color = Vector3(mi.rim_color[0], mi.rim_color[1], mi.rim_color[2]);
+  cmd.SetMaterialConstants(mat);
 
   ObjectCB obj_data = {};
   obj_data.samplerIndex = draw_cmd.material_instance.sampler_index;

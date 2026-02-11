@@ -116,22 +116,11 @@ class RenderCommandList {
     cmd_->SetGraphicsRootConstantBufferView(RootSlot::ToIndex(RootSlot::ConstantBuffer::Shadow), allocation.gpu_ptr);
   }
 
-  void SetMaterialData(const MaterialInstance& material_instance) {
-    struct {
-      uint32_t albedo_texture_index;
-      uint32_t normal_texture_index;
-      uint32_t metallic_roughness_index;
-      uint32_t flags;
-      float specular_intensity;
-      float specular_power;
-    } material_data = {material_instance.albedo_texture_index,
-      material_instance.normal_texture_index,
-      material_instance.metallic_roughness_index,
-      (material_instance.use_alpha_test ? 1u : 0u) | (material_instance.double_sided ? 2u : 0u),
-      material_instance.specular_intensity,
-      material_instance.specular_power};
-
-    cmd_->SetGraphicsRoot32BitConstants(RootSlot::ToIndex(RootSlot::Constants::MaterialData), 6, &material_data, 0);
+  void SetMaterialConstants(const MaterialCB& data) {
+    auto allocation = object_allocator_->Allocate<MaterialCB>();
+    if (!allocation.cpu_ptr) return;
+    memcpy(allocation.cpu_ptr, &data, sizeof(MaterialCB));
+    cmd_->SetGraphicsRootConstantBufferView(RootSlot::ToIndex(RootSlot::ConstantBuffer::Material), allocation.gpu_ptr);
   }
 
   void DrawMesh(const Mesh* mesh) {

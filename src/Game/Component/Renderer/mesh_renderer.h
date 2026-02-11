@@ -23,6 +23,10 @@ class MeshRenderer : public Component<MeshRenderer> {
     RenderLayer render_layer = RenderLayer::Opaque;
     float specular_intensity = 0.5f;
     float specular_power = 32.0f;
+    float rim_intensity = 0.0f;
+    float rim_power = 4.0f;
+    Vector3 rim_color = {1, 1, 1};
+    bool rim_shadow_affected = false;
   };
 
   using Component::Component;
@@ -35,6 +39,10 @@ class MeshRenderer : public Component<MeshRenderer> {
     SetRenderLayer(props.render_layer);
     SetSpecularIntensity(props.specular_intensity);
     SetSpecularPower(props.specular_power);
+    SetRimIntensity(props.rim_intensity);
+    SetRimPower(props.rim_power);
+    SetRimColor(props.rim_color);
+    SetRimShadowAffected(props.rim_shadow_affected);
   }
 
   void SetMesh(const Mesh* mesh) {
@@ -71,6 +79,18 @@ class MeshRenderer : public Component<MeshRenderer> {
   void SetSpecularPower(float power) {
     specular_power_ = power;
   }
+  void SetRimIntensity(float intensity) {
+    rim_intensity_ = intensity;
+  }
+  void SetRimPower(float power) {
+    rim_power_ = power;
+  }
+  void SetRimColor(const Vector3& color) {
+    rim_color_ = color;
+  }
+  void SetRimShadowAffected(bool affected) {
+    rim_shadow_affected_ = affected;
+  }
   void SetRenderTags(RenderTagMask tags) {
     render_tags_ = tags;
   }
@@ -97,10 +117,15 @@ class MeshRenderer : public Component<MeshRenderer> {
     RenderTagMask render_tags;
     float specular_intensity;
     float specular_power;
+    float rim_intensity;
+    float rim_power;
+    Vector3 rim_color;
+    bool rim_shadow_affected;
   };
 
   EditorData GetEditorData() const {
-    return {color_, render_settings_, render_layer_, render_tags_, specular_intensity_, specular_power_};
+    return {color_, render_settings_, render_layer_, render_tags_, specular_intensity_, specular_power_,
+      rim_intensity_, rim_power_, rim_color_, rim_shadow_affected_};
   }
 
   void ApplyEditorData(const EditorData& data) {
@@ -110,6 +135,10 @@ class MeshRenderer : public Component<MeshRenderer> {
     render_tags_ = data.render_tags;
     specular_intensity_ = data.specular_intensity;
     specular_power_ = data.specular_power;
+    rim_intensity_ = data.rim_intensity;
+    rim_power_ = data.rim_power;
+    rim_color_ = data.rim_color;
+    rim_shadow_affected_ = data.rim_shadow_affected;
   }
 
   void OnRender(FramePacket& packet) override {
@@ -132,6 +161,12 @@ class MeshRenderer : public Component<MeshRenderer> {
     cmd.material_instance.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
     cmd.material_instance.specular_intensity = specular_intensity_;
     cmd.material_instance.specular_power = specular_power_;
+    cmd.material_instance.rim_intensity = rim_intensity_;
+    cmd.material_instance.rim_power = rim_power_;
+    cmd.material_instance.rim_color[0] = rim_color_.x;
+    cmd.material_instance.rim_color[1] = rim_color_.y;
+    cmd.material_instance.rim_color[2] = rim_color_.z;
+    cmd.material_instance.rim_shadow_affected = rim_shadow_affected_;
 
     Vector3 worldPos = transform->GetWorldPosition();
     Vector3 camPos = packet.main_camera.position;
@@ -151,6 +186,10 @@ class MeshRenderer : public Component<MeshRenderer> {
 
   float specular_intensity_ = 0.5f;
   float specular_power_ = 32.0f;
+  float rim_intensity_ = 0.0f;
+  float rim_power_ = 4.0f;
+  Vector3 rim_color_ = {1.0f, 1.0f, 1.0f};
+  bool rim_shadow_affected_ = false;
 
   RenderLayer render_layer_ = RenderLayer::Opaque;
   RenderTagMask render_tags_ = static_cast<uint32_t>(RenderTag::CastShadow | RenderTag::ReceiveShadow | RenderTag::Lit);

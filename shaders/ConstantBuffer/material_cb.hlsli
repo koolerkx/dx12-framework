@@ -16,6 +16,10 @@ struct MaterialData {
   uint flags;
   float specularIntensity;
   float specularPower;
+  float rimIntensity;
+  float rimPower;
+  float3 rimColor;
+  float _padding;
 };
 ConstantBuffer<MaterialData> g_MaterialData : register(MATERIAL_CB_SLOT);
 

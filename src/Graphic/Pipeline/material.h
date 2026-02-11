@@ -91,6 +91,12 @@ struct MaterialInstance {
   float specular_intensity = 0.5f;
   float specular_power = 32.0f;
 
+  // Rim light parameters
+  float rim_intensity = 0.0f;
+  float rim_power = 4.0f;
+  float rim_color[3] = {1.0f, 1.0f, 1.0f};
+  bool rim_shadow_affected = false;
+
   // Helpers
   bool IsValid() const {
     return material != nullptr && material->IsValid();

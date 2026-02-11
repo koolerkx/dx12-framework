@@ -126,7 +126,7 @@ bool ShaderManager::CreateStandardRS() {
                                                                        .AddRootCBV(1, 0)  // Slot 1: Object (b1)
                                                                        .AddRootCBV(2, 0)  // Slot 2: Light (b2)
                                                                        // Material data (texture indices, etc)
-                                                                       .Add32BitConstants(6, 3, 0)  // Slot 3: MaterialData (b3)
+                                                                       .AddRootCBV(3, 0)  // Slot 3: Material (b3)
                                                                        // Shadow mapping data
                                                                        .AddRootCBV(4, 0)  // Slot 4: Shadow (b4)
                                                                        // Global bindless texture array
