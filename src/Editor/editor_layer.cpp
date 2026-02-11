@@ -10,7 +10,6 @@
 
 #include "Framework/Core/utils.h"
 #include "Game/Component/Renderer/mesh_renderer.h"
-#include "Game/Serialization/scene_serializer.h"
 #include "Game/Component/Renderer/sprite_renderer.h"
 #include "Game/Component/Renderer/text_renderer.h"
 #include "Game/Component/Renderer/ui_sprite_renderer.h"
@@ -19,13 +18,17 @@
 #include "Game/Component/point_light_component.h"
 #include "Game/Component/transform_component.h"
 #include "Game/Debug/debug_drawer.h"
+#include "Game/Serialization/scene_serializer.h"
 #include "Game/game_object.h"
 #include "Game/scene.h"
 #include "Game/scene_events.h"
+#include "Game/scene_id.h"
+#include "Game/scene_manager.h"
 #include "Graphic/Descriptor/descriptor_heap_manager.h"
 #include "Graphic/Pipeline/shader_registry.h"
 #include "Graphic/Render/render_graph.h"
 #include "Graphic/graphic.h"
+
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -167,11 +170,12 @@ void EditorLayer::DrawMainMenu() {
 
   if (save_status_timer_ > 0.0f) {
     save_status_timer_ -= ImGui::GetIO().DeltaTime;
-    float alpha = std::min(save_status_timer_, 1.0f);
+    float alpha = (std::min)(save_status_timer_, 1.0f);
     ImVec4 color = save_status_success_ ? ImVec4(0.2f, 0.8f, 0.2f, alpha) : ImVec4(0.9f, 0.2f, 0.2f, alpha);
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x * 0.5f, 40.0f * ui_scale_), ImGuiCond_Always, ImVec2(0.5f, 0.0f));
     ImGui::SetNextWindowBgAlpha(0.7f * alpha);
-    if (ImGui::Begin("##save_status", nullptr,
+    if (ImGui::Begin("##save_status",
+          nullptr,
           ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoNav)) {
       ImGui::TextColored(color, "%s", save_status_success_ ? "Saved successfully" : "Save failed");
     }
@@ -182,7 +186,9 @@ void EditorLayer::DrawMainMenu() {
 void EditorLayer::DrawSceneMenu() {
   if (ImGui::BeginMenu("Scene")) {
     if (ImGui::MenuItem("New Scene")) {
-      // TODO: implement scene clearing
+      if (scene_ && scene_->GetContext()) {
+        scene_->GetContext()->GetSceneManager()->RequestLoad(SceneId::EMPTY_SCENE);
+      }
     }
     ImGui::MenuItem("Load Scene", nullptr, false, false);
 

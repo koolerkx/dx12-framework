@@ -12,7 +12,6 @@
 #include "Component/sprite_sheet_helper.h"
 #include "Component/transform_component.h"
 #include "Debug/debug_drawer.h"
-#include "Frame/frame_packet.h"
 #include "Framework/Core/color.h"
 #include "Framework/Input/input.h"
 #include "Framework/Logging/logger.h"

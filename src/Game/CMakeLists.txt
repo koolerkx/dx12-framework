@@ -64,6 +64,8 @@ add_library(game STATIC
     Debug/debug_drawer.h
     Debug/debug_drawer.cpp
 
+    Scenes/empty_scene.h
+
     Scenes/cube_scene/cube_scene.h
     Scenes/cube_scene/cube_scene.cpp
 

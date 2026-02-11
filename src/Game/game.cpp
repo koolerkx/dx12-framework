@@ -3,6 +3,7 @@
 #include "Debug/debug_drawer.h"
 #include "Graphic/graphic.h"
 #include "Scenes/cube_scene/cube_scene.h"
+#include "Scenes/empty_scene.h"
 #include "Scenes/test_scene/test_scene.h"
 #include "game_context.h"
 
@@ -28,6 +29,7 @@ void Game::Initialize() {
 
   scene_manager_.Register<TestScene>(SceneId::TEST_SCENE);
   scene_manager_.Register<CubeScene>(SceneId::CUBE_SCENE);
+  scene_manager_.Register<EmptyScene>(SceneId::EMPTY_SCENE);
   scene_manager_.RequestLoad(SceneId::TEST_SCENE);
   scene_manager_.ProcessPending(asset_manager_, context_, context_->GetGraphic());
 }
