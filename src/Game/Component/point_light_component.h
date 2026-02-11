@@ -2,6 +2,7 @@
 
 #include "Component/component.h"
 #include "Component/transform_component.h"
+#include "Debug/debug_drawer.h"
 #include "Framework/Math/Math.h"
 #include "Graphic/Frame/frame_packet.h"
 #include "game_object.h"
@@ -66,6 +67,11 @@ class PointLightComponent : public Component<PointLightComponent> {
     intensity_ = data.intensity;
     radius_ = data.radius;
     falloff_ = data.falloff;
+  }
+
+  void OnDebugDraw(DebugDrawer& drawer) override {
+    auto position = GetOwner()->GetTransform()->GetWorldPosition();
+    drawer.DrawWireSphere(position, radius_, Math::Vector4(color_.x, color_.y, color_.z, 1.0f));
   }
 
   void OnRender(FramePacket& packet) override {
