@@ -99,6 +99,10 @@ class Graphic {
     }
   }
 
+  bool IsVSyncEnabled() const {
+    return enable_vsync_;
+  }
+
   UINT GetFrameBufferWidth() const {
     return frame_buffer_width_;
   }

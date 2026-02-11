@@ -17,7 +17,8 @@ bool SwapChainManager::Initialize(ID3D12Device* device,
   HWND hwnd,
   UINT width,
   UINT height,
-  DescriptorHeapManager& descriptor_manager) {
+  DescriptorHeapManager& descriptor_manager,
+  bool allow_tearing) {
   assert(device != nullptr);
   assert(factory != nullptr);
   assert(command_queue != nullptr);
@@ -39,7 +40,8 @@ bool SwapChainManager::Initialize(ID3D12Device* device,
   swap_chain_desc.Scaling = DXGI_SCALING_STRETCH;
   swap_chain_desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
   swap_chain_desc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
-  swap_chain_desc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+  swap_chain_flags_ = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH | (allow_tearing ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0);
+  swap_chain_desc.Flags = swap_chain_flags_;
 
   ComPtr<IDXGISwapChain1> swap_chain1;
   HRESULT hr = factory->CreateSwapChainForHwnd(command_queue, hwnd, &swap_chain_desc, nullptr, nullptr, swap_chain1.GetAddressOf());
@@ -145,7 +147,7 @@ bool SwapChainManager::Resize(UINT width, UINT height, DescriptorHeapManager& de
   assert(swap_chain_ != nullptr);
 
   ReleaseBackBuffers();
-  HRESULT hr = swap_chain_->ResizeBuffers(BUFFER_COUNT, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH);
+  HRESULT hr = swap_chain_->ResizeBuffers(BUFFER_COUNT, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, swap_chain_flags_);
 
   if (FAILED(hr)) {
     Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[SwapChainManager] Failed to resize swap chain");

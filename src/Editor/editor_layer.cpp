@@ -567,6 +567,11 @@ void EditorLayer::DrawDebugPanel() {
   if (hdr_dbg.debug_view) current = 1;
   if (depth_cfg.enabled) current = 2;
 
+  bool vsync = graphic_->IsVSyncEnabled();
+  if (ImGui::Checkbox("VSync", &vsync)) {
+    graphic_->SetVSync(vsync);
+  }
+
   if (ImGui::Combo("Display View", &current, kDisplayViewNames, IM_ARRAYSIZE(kDisplayViewNames))) {
     hdr_dbg.debug_view = (current == 1);
     depth_cfg.enabled = (current == 2);

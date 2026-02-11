@@ -21,9 +21,10 @@ bool PresentationContext::Initialize(
   ID3D12Device* device, IDXGIFactory6* factory, ID3D12CommandQueue* queue, DescriptorHeapManager* heap_manager, const CreateInfo& info) {
   heap_manager_ = heap_manager;
   vsync_enabled_ = info.enable_vsync;
+  allow_tearing_ = info.allow_tearing;
 
   swap_chain_ = std::make_unique<SwapChainManager>();
-  if (!swap_chain_->Initialize(device, factory, queue, info.hwnd, info.width, info.height, *heap_manager)) {
+  if (!swap_chain_->Initialize(device, factory, queue, info.hwnd, info.width, info.height, *heap_manager, allow_tearing_)) {
     Logger::LogFormat(LogLevel::Fatal, LogCategory::Graphic, Logger::Here(), "Failed to initialize SwapChainManager");
     return false;
   }
@@ -51,7 +52,8 @@ bool PresentationContext::Resize(uint32_t width, uint32_t height, ID3D12CommandQ
 
 void PresentationContext::Present() {
   UINT sync_interval = vsync_enabled_ ? 1 : 0;
-  swap_chain_->Present(sync_interval, 0);
+  UINT present_flags = (!vsync_enabled_ && allow_tearing_) ? DXGI_PRESENT_ALLOW_TEARING : 0;
+  swap_chain_->Present(sync_interval, present_flags);
 }
 
 uint32_t PresentationContext::GetCurrentBackBufferIndex() const {

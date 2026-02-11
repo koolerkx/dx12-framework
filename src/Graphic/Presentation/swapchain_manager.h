@@ -27,7 +27,8 @@ class SwapChainManager {
     HWND hwnd,
     UINT width,
     UINT height,
-    DescriptorHeapManager& descriptor_manager);
+    DescriptorHeapManager& descriptor_manager,
+    bool allow_tearing = false);
 
   void SafeRelease();
   bool IsInitialized() const {
@@ -73,6 +74,7 @@ class SwapChainManager {
 
   UINT width_ = 0;
   UINT height_ = 0;
+  UINT swap_chain_flags_ = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
   ID3D12Device* device_ = nullptr;
 

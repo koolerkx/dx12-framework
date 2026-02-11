@@ -145,6 +145,16 @@ bool DeviceContext::QueryFeatureSupport() {
     supports_raytracing_ = false;
   }
 
+  // Check tearing support for unlocked framerate
+  BOOL allow_tearing = FALSE;
+  if (SUCCEEDED(factory_->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &allow_tearing, sizeof(allow_tearing)))) {
+    supports_tearing_ = (allow_tearing == TRUE);
+    Logger::LogFormat(
+      LogLevel::Info, LogCategory::Graphic, Logger::Here(), "Tearing: {}", supports_tearing_ ? "supported" : "not supported");
+  } else {
+    supports_tearing_ = false;
+  }
+
   return true;
 }
 

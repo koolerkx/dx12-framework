@@ -38,6 +38,10 @@ class DeviceContext {
     return supports_raytracing_;
   }
 
+  bool SupportsTearing() const {
+    return supports_tearing_;
+  }
+
   D3D_FEATURE_LEVEL GetFeatureLevel() const {
     return feature_level_;
   }
@@ -56,6 +60,7 @@ class DeviceContext {
 
   bool supports_bindless_samplers_ = false;
   bool supports_raytracing_ = false;
+  bool supports_tearing_ = false;
   D3D_FEATURE_LEVEL feature_level_ = D3D_FEATURE_LEVEL_11_0;
 };
 

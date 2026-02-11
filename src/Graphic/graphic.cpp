@@ -124,6 +124,7 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
   presentation_info.height = frame_buffer_height;
   presentation_info.buffer_count = FRAME_BUFFER_COUNT;
   presentation_info.enable_vsync = props.enable_vsync;
+  presentation_info.allow_tearing = device_context_->SupportsTearing();
   presentation_context_ = gfx::PresentationContext::Create(
     device_.Get(), dxgi_factory_.Get(), command_queue_.Get(), &descriptor_heap_manager_, presentation_info);
   if (!presentation_context_) {

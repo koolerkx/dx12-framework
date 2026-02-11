@@ -19,6 +19,7 @@ class PresentationContext {
     uint32_t height = 0;
     uint32_t buffer_count = 2;
     bool enable_vsync = true;
+    bool allow_tearing = false;
   };
 
   [[nodiscard]] static std::unique_ptr<PresentationContext> Create(
@@ -49,6 +50,7 @@ class PresentationContext {
   DescriptorHeapManager* heap_manager_ = nullptr;
 
   bool vsync_enabled_ = true;
+  bool allow_tearing_ = false;
 };
 
 }  // namespace gfx
