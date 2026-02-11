@@ -31,7 +31,7 @@ class DebugDrawer {
   void DrawLine(const Vector3& start, const Vector3& end, const Vector4& color);
 
   struct CircleProps {
-    int segments = 16;
+    int segments = 32;
     Vector3 normal = Vector3::Up;
   };
   void DrawCircle(const Vector3& center, float radius, const Vector4& color, const CircleProps& props = {});
