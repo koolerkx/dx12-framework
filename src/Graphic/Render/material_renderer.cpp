@@ -111,6 +111,7 @@ void MaterialRenderer::Record(const RenderFrameContext& frame,
     shadow_cb.cascadeCount = sd->cascade_count;
     shadow_cb.cascadeBlendRange = shadow.cascade_blend_range;
     shadow_cb.shadowColor = shadow.shadow_color;
+    shadow_cb.lightSize = shadow.light_size;
   }
   cmd.SetShadowConstants(shadow_cb);
 

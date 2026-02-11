@@ -66,7 +66,7 @@ struct alignas(256) ShadowCB {
   uint32_t cascadeCount;
   float cascadeBlendRange;
   Vector3 shadowColor;
-  float _padding;
+  float lightSize;
 };
 static_assert(sizeof(ShadowCB) == 512);
 

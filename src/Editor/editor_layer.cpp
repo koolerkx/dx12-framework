@@ -480,10 +480,17 @@ void EditorLayer::DrawSceneSettings() {
       pending_shadow_resolution_ = RESOLUTION_OPTIONS[selected];
     }
 
-    static constexpr const char* ALGORITHM_LABELS[] = {"Hard", "PCF 3x3", "Poisson Disk", "Rotated Poisson Disk"};
+    static constexpr const char* ALGORITHM_LABELS[] = {"Hard", "PCF 3x3", "Poisson Disk", "Rotated Poisson Disk", "PCSS"};
     int algo = static_cast<int>(shadow.GetAlgorithm());
     if (ImGui::Combo("Algorithm", &algo, ALGORITHM_LABELS, IM_ARRAYSIZE(ALGORITHM_LABELS))) {
       shadow.SetAlgorithm(static_cast<ShadowAlgorithm>(algo));
+    }
+
+    if (shadow.GetAlgorithm() == ShadowAlgorithm::PCSS) {
+      float light_size = shadow.GetLightSize();
+      if (ImGui::SliderFloat("Light Size", &light_size, 0.1f, 20.0f, "%.1f")) {
+        shadow.SetLightSize(light_size);
+      }
     }
 
     float distance = shadow.GetShadowDistance();

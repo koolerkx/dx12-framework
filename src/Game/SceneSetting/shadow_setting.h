@@ -29,6 +29,9 @@ class ShadowSetting {
   void SetCascadeBlendRange(float range) {
     cascade_blend_range_ = range;
   }
+  void SetLightSize(float size) {
+    light_size_ = size;
+  }
 
   void SetCascadeCount(uint32_t count) {
     cascade_count_ = std::clamp(count, 1u, ShadowCascadeConfig::MAX_CASCADES);
@@ -61,6 +64,9 @@ class ShadowSetting {
   float GetCascadeBlendRange() const {
     return cascade_blend_range_;
   }
+  float GetLightSize() const {
+    return light_size_;
+  }
 
   uint32_t GetCascadeCount() const {
     return cascade_count_;
@@ -85,6 +91,7 @@ class ShadowSetting {
     config.cascade_blend_range = cascade_blend_range_;
     config.algorithm = algorithm_;
     config.shadow_color = shadow_color_;
+    config.light_size = light_size_;
     config.enabled = enabled_;
     return config;
   }
@@ -106,4 +113,5 @@ class ShadowSetting {
   float cascade_blend_range_ = 0.1f;
   ShadowAlgorithm algorithm_ = ShadowAlgorithm::PCF3x3;
   Math::Vector3 shadow_color_ = Math::Vector3(0.0f, 0.0f, 0.0f);
+  float light_size_ = 1.0f;
 };

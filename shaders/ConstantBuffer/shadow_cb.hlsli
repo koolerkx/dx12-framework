@@ -11,6 +11,7 @@
 #define SHADOW_ALGO_PCF3X3 1
 #define SHADOW_ALGO_POISSON 2
 #define SHADOW_ALGO_ROTATED_POISSON 3
+#define SHADOW_ALGO_PCSS 4
 
 #define MAX_CASCADES 4
 
@@ -25,7 +26,7 @@ struct ShadowCB {
   uint cascadeCount;
   float cascadeBlendRange;
   float3 shadowColor;
-  float _padding;
+  float lightSize;
 };
 ConstantBuffer<ShadowCB> g_ShadowCB : register(SHADOW_CB_SLOT);
 
@@ -153,10 +154,61 @@ float SampleShadowPCF3x3(float3 projCoords, uint cascade) {
   return shadow / 9.0;
 }
 
+float SampleShadowPCSS(float3 projCoords, uint cascade, float2 screenPos) {
+  if (projCoords.z > 1.0 || projCoords.x < 0.0 || projCoords.x > 1.0 ||
+      projCoords.y < 0.0 || projCoords.y > 1.0)
+    return 1.0;
+
+  float texelSize = 1.0 / float(g_ShadowCB.shadowMapResolution);
+  float angle = InterleavedGradientNoise(screenPos) * 6.28318530;
+  float s, c;
+  sincos(angle, s, c);
+  float2x2 rotation = float2x2(c, -s, s, c);
+
+  float searchRadius = g_ShadowCB.lightSize * texelSize * POISSON_SPREAD;
+  float blockerSum = 0.0;
+  uint blockerCount = 0;
+  float receiverDepth = projCoords.z - g_ShadowCB.cascadeDepthBias[cascade];
+
+  [unroll] for (uint i = 0; i < POISSON_SAMPLE_COUNT; ++i) {
+    float2 offset = mul(rotation, POISSON_DISK[i]) * searchRadius;
+    float depth =
+        g_Textures[g_ShadowCB.shadowMapIndex[cascade]]
+            .Sample(g_Samplers[SHADOW_SAMPLER_INDEX], projCoords.xy + offset)
+            .r;
+    if (receiverDepth > depth) {
+      blockerSum += depth;
+      blockerCount++;
+    }
+  }
+
+  if (blockerCount == 0)
+    return 1.0;
+
+  float avgBlockerDepth = blockerSum / float(blockerCount);
+  float penumbraWidth = (receiverDepth - avgBlockerDepth) / avgBlockerDepth *
+                        g_ShadowCB.lightSize;
+  float filterRadius = penumbraWidth * texelSize * POISSON_SPREAD;
+  filterRadius = max(filterRadius, texelSize);
+
+  float shadow = 0.0;
+  [unroll] for (uint j = 0; j < POISSON_SAMPLE_COUNT; ++j) {
+    float2 offset = mul(rotation, POISSON_DISK[j]) * filterRadius;
+    float depth =
+        g_Textures[g_ShadowCB.shadowMapIndex[cascade]]
+            .Sample(g_Samplers[SHADOW_SAMPLER_INDEX], projCoords.xy + offset)
+            .r;
+    shadow += (receiverDepth > depth) ? 0.0 : 1.0;
+  }
+  return shadow / float(POISSON_SAMPLE_COUNT);
+}
+
 float SampleShadowForCascade(float3 worldPos, float3 worldNormal,
                              float2 screenPos, uint cascade) {
   float3 projCoords = ProjectToShadowSpace(worldPos, worldNormal, cascade);
 
+  if (g_ShadowCB.shadowAlgorithm == SHADOW_ALGO_PCSS)
+    return SampleShadowPCSS(projCoords, cascade, screenPos);
   if (g_ShadowCB.shadowAlgorithm == SHADOW_ALGO_ROTATED_POISSON)
     return SampleShadowRotatedPoisson(projCoords, cascade, screenPos);
   if (g_ShadowCB.shadowAlgorithm == SHADOW_ALGO_POISSON)

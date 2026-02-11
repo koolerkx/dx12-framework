@@ -31,6 +31,7 @@ enum class ShadowAlgorithm : uint32_t {
   PCF3x3 = 1,
   PoissonDisk = 2,
   RotatedPoissonDisk = 3,
+  PCSS = 4,
 };
 
 struct ShadowConfig {
@@ -49,6 +50,7 @@ struct ShadowConfig {
   float cascade_blend_range = 0.1f;
   ShadowAlgorithm algorithm = ShadowAlgorithm::PCF3x3;
   Math::Vector3 shadow_color = Math::Vector3(0.0f, 0.0f, 0.0f);
+  float light_size = 1.0f;
   bool enabled = true;
 };
 
