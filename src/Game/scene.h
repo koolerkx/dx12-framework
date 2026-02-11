@@ -93,6 +93,13 @@ class IScene {
   GameObject* FindGameObject(const std::string& name) const;
 
  public:
+  void SetSceneName(const std::string& name) {
+    scene_name_ = name;
+  }
+  const std::string& GetSceneName() const {
+    return scene_name_;
+  }
+
   const std::vector<std::unique_ptr<GameObject>>& GetGameObjects() const {
     return game_objects_;
   }
@@ -109,6 +116,7 @@ class IScene {
   void RegisterComponent(IComponentBase* component);
   void UnregisterGameObjectAndComponents(GameObject* obj);
 
+  std::string scene_name_ = "Untitled";
   std::vector<std::unique_ptr<GameObject>> game_objects_;
   std::unordered_map<framework::UUID, GameObject*> gameobject_uuid_map_;
   std::unordered_map<framework::UUID, IComponentBase*> component_uuid_map_;

@@ -58,10 +58,25 @@ add_library(framework STATIC
 
   # UUID
   UUID/uuid.h
+
+  # Serialization
+  Serialize/serialize_node.h
+  Serialize/serialize_node.cpp
+  Serialize/serialize_node_impl.h
+  Serialize/serialize_document.h
+  Serialize/serialize_document.cpp
 )
+
+set(YAML_CPP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(YAML_CPP_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
+set(YAML_CPP_BUILD_CONTRIB OFF CACHE BOOL "" FORCE)
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+FetchContent_MSVC(yaml-cpp https://github.com/jbeder/yaml-cpp.git 0.8.0)
+unset(CMAKE_POLICY_VERSION_MINIMUM)
 
 target_link_libraries(framework PUBLIC
   GameInput.lib
+  yaml-cpp::yaml-cpp
 )
 
 set_msvc_runtime(framework)

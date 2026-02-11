@@ -1,11 +1,16 @@
 #pragma once
 
+#include <cstring>
 #include <typeinfo>
 
 #include "Framework/UUID/uuid.h"
 #include "Graphic/Frame/frame_packet.h"
 
 class DebugDrawer;
+
+namespace framework {
+class SerializeNode;
+}  // namespace framework
 
 // Define a unique ID type for components
 using ComponentTypeID = uint32_t;
@@ -64,6 +69,8 @@ class IComponentBase {
   virtual const char* GetTypeName() const {
     return "Unknown";
   }
+  virtual void OnSerialize(framework::SerializeNode& /*node*/) const {
+  }
 
   const framework::UUID& GetUUID() const {
     return uuid_;
@@ -117,7 +124,13 @@ class Component : public IComponentBase {
   }
 
   const char* GetTypeName() const override {
-    const std::type_info& info = typeid(Derived);
-    return info.name();
+    static const char* cleaned = [] {
+      const std::type_info& info = typeid(Derived);
+      const char* raw = info.name();
+      if (std::strncmp(raw, "class ", 6) == 0) return raw + 6;
+      if (std::strncmp(raw, "struct ", 7) == 0) return raw + 7;
+      return raw;
+    }();
+    return cleaned;
   }
 };

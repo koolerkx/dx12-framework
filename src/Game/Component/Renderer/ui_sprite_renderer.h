@@ -6,6 +6,7 @@
 #include "Component/render_settings.h"
 #include "Component/sprite_sheet_animator.h"
 #include "Framework/Math/Math.h"
+#include "Framework/Serialize/serialize_node.h"
 #include "Graphic/Frame/frame_packet.h"
 #include "Graphic/Resource/Texture/texture.h"
 #include "game_object.h"
@@ -81,6 +82,13 @@ class UISpriteRenderer : public Component<UISpriteRenderer> {
   void SetPivot(const Vector2& normalized_pivot);
   const Vector2& GetPivot() const {
     return ui_pivot_;
+  }
+
+  void OnSerialize(framework::SerializeNode& node) const override {
+    node.WriteVec4("Color", color_.x, color_.y, color_.z, color_.w);
+    node.WriteVec2("Size", size_.x, size_.y);
+    node.WriteVec2("Pivot", ui_pivot_.x, ui_pivot_.y);
+    node.Write("LayerId", layer_id_);
   }
 
   struct EditorData {

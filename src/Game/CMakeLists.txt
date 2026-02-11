@@ -47,6 +47,9 @@ add_library(game STATIC
     Component/Renderer/particle_emitter.h
     Component/Renderer/particle_emitter.cpp
 
+    Serialization/scene_serializer.h
+    Serialization/scene_serializer.cpp
+
     SceneSetting/active_camera_setting.h
     SceneSetting/active_camera_setting.cpp
     SceneSetting/active_ui_camera_setting.h

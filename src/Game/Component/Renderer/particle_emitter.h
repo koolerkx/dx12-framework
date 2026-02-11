@@ -8,6 +8,7 @@
 #include "Component/render_settings.h"
 #include "Component/transform_component.h"
 #include "Framework/Math/Math.h"
+#include "Framework/Serialize/serialize_node.h"
 #include "Graphic/Frame/frame_packet.h"
 #include "Graphic/Resource/Texture/texture.h"
 #include "game_object.h"
@@ -60,6 +61,19 @@ class ParticleEmitter : public Component<ParticleEmitter> {
 
   ParticleEmitter(GameObject* owner);
   ParticleEmitter(GameObject* owner, const Props& props);
+
+  void OnSerialize(framework::SerializeNode& node) const override {
+    node.Write("MaxParticles", static_cast<uint32_t>(max_particles_));
+    node.Write("EmitRate", emit_rate_);
+    node.Write("ParticleLifetime", particle_lifetime_);
+    node.WriteVec2("ParticleSize", particle_size_.x, particle_size_.y);
+    node.WriteVec4("StartColor", start_color_.x, start_color_.y, start_color_.z, start_color_.w);
+    node.WriteVec4("EndColor", end_color_.x, end_color_.y, end_color_.z, end_color_.w);
+    node.Write("StartSpeed", start_speed_);
+    node.Write("SpeedVariation", speed_variation_);
+    node.WriteVec3("Gravity", gravity_.x, gravity_.y, gravity_.z);
+    node.Write("Loop", loop_);
+  }
 
   void Play();
   void Stop();

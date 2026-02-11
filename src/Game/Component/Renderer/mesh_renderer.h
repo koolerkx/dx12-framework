@@ -3,8 +3,10 @@
 #include "Component/render_settings.h"
 #include "Component/transform_component.h"
 #include "Framework/Math/Math.h"
+#include "Framework/Serialize/serialize_node.h"
 #include "Graphic/Frame/frame_packet.h"
 #include "Graphic/Pipeline/shader_descriptors.h"
+#include "Graphic/Pipeline/shader_registry.h"
 #include "Graphic/Resource/Texture/texture.h"
 #include "Graphic/Resource/mesh.h"
 #include "game_context.h"
@@ -110,6 +112,20 @@ class MeshRenderer : public Component<MeshRenderer> {
     return shader_id_;
   }
 
+  // TOOD: Implement render tags and render setting
+  void OnSerialize(framework::SerializeNode& node) const override {
+    node.WriteVec4("Color", color_.x, color_.y, color_.z, color_.w);
+    auto shader_name = ShaderRegistry::GetName(shader_id_);
+    node.Write("Shader", std::string(shader_name));
+    node.Write("RenderLayer", render_layer_ == RenderLayer::Opaque ? "Opaque" : "Transparent");
+    node.Write("SpecularIntensity", specular_intensity_);
+    node.Write("SpecularPower", specular_power_);
+    node.Write("RimIntensity", rim_intensity_);
+    node.Write("RimPower", rim_power_);
+    node.WriteVec3("RimColor", rim_color_.x, rim_color_.y, rim_color_.z);
+    node.Write("RimShadowAffected", rim_shadow_affected_);
+  }
+
   struct EditorData {
     Vector4 color;
     Rendering::RenderSettings render_settings;
@@ -124,8 +140,16 @@ class MeshRenderer : public Component<MeshRenderer> {
   };
 
   EditorData GetEditorData() const {
-    return {color_, render_settings_, render_layer_, render_tags_, specular_intensity_, specular_power_,
-      rim_intensity_, rim_power_, rim_color_, rim_shadow_affected_};
+    return {color_,
+      render_settings_,
+      render_layer_,
+      render_tags_,
+      specular_intensity_,
+      specular_power_,
+      rim_intensity_,
+      rim_power_,
+      rim_color_,
+      rim_shadow_affected_};
   }
 
   void ApplyEditorData(const EditorData& data) {

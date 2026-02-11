@@ -10,6 +10,7 @@
 
 #include "Framework/Core/utils.h"
 #include "Game/Component/Renderer/mesh_renderer.h"
+#include "Game/Serialization/scene_serializer.h"
 #include "Game/Component/Renderer/sprite_renderer.h"
 #include "Game/Component/Renderer/text_renderer.h"
 #include "Game/Component/Renderer/ui_sprite_renderer.h"
@@ -148,6 +149,7 @@ void EditorLayer::DrawDockSpace() {
 
 void EditorLayer::DrawMainMenu() {
   if (ImGui::BeginMainMenuBar()) {
+    DrawSceneMenu();
     if (ImGui::BeginMenu("Window")) {
       ImGui::MenuItem("Performance", nullptr, &show_performance_);
       ImGui::MenuItem("Hierarchy", nullptr, &show_hierarchy_);
@@ -158,6 +160,115 @@ void EditorLayer::DrawMainMenu() {
       ImGui::EndMenu();
     }
     ImGui::EndMainMenuBar();
+  }
+
+  DrawSaveSceneModal();
+  DrawDumpSettingModal();
+
+  if (save_status_timer_ > 0.0f) {
+    save_status_timer_ -= ImGui::GetIO().DeltaTime;
+    float alpha = std::min(save_status_timer_, 1.0f);
+    ImVec4 color = save_status_success_ ? ImVec4(0.2f, 0.8f, 0.2f, alpha) : ImVec4(0.9f, 0.2f, 0.2f, alpha);
+    ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x * 0.5f, 40.0f * ui_scale_), ImGuiCond_Always, ImVec2(0.5f, 0.0f));
+    ImGui::SetNextWindowBgAlpha(0.7f * alpha);
+    if (ImGui::Begin("##save_status", nullptr,
+          ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoNav)) {
+      ImGui::TextColored(color, "%s", save_status_success_ ? "Saved successfully" : "Save failed");
+    }
+    ImGui::End();
+  }
+}
+
+void EditorLayer::DrawSceneMenu() {
+  if (ImGui::BeginMenu("Scene")) {
+    if (ImGui::MenuItem("New Scene")) {
+      // TODO: implement scene clearing
+    }
+    ImGui::MenuItem("Load Scene", nullptr, false, false);
+
+    ImGui::Separator();
+
+    if (ImGui::MenuItem("Save Scene")) {
+      if (scene_) {
+        strncpy_s(scene_name_buffer_, scene_->GetSceneName().c_str(), sizeof(scene_name_buffer_) - 1);
+      }
+      save_and_dump_ = false;
+      show_save_scene_modal_ = true;
+    }
+    if (ImGui::MenuItem("Dump Settings")) {
+      if (scene_) {
+        strncpy_s(scene_name_buffer_, scene_->GetSceneName().c_str(), sizeof(scene_name_buffer_) - 1);
+      }
+      show_dump_setting_modal_ = true;
+    }
+
+    ImGui::Separator();
+
+    if (ImGui::MenuItem("Save + Dump")) {
+      if (scene_) {
+        strncpy_s(scene_name_buffer_, scene_->GetSceneName().c_str(), sizeof(scene_name_buffer_) - 1);
+      }
+      save_and_dump_ = true;
+      show_save_scene_modal_ = true;
+    }
+
+    ImGui::EndMenu();
+  }
+}
+
+void EditorLayer::DrawSaveSceneModal() {
+  if (show_save_scene_modal_) {
+    ImGui::OpenPopup(save_and_dump_ ? "Save + Dump##modal" : "Save Scene##modal");
+    show_save_scene_modal_ = false;
+  }
+
+  const char* popup_id = save_and_dump_ ? "Save + Dump##modal" : "Save Scene##modal";
+  if (ImGui::BeginPopupModal(popup_id, nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+    ImGui::Text("Scene Name:");
+    ImGui::InputText("##scene_name", scene_name_buffer_, sizeof(scene_name_buffer_));
+
+    if (ImGui::Button("Confirm", ImVec2(120, 0))) {
+      if (scene_ && scene_name_buffer_[0] != '\0') {
+        std::string name(scene_name_buffer_);
+        scene_->SetSceneName(name);
+        bool ok = save_and_dump_ ? SceneSerializer::SaveAndDump(*scene_, name) : SceneSerializer::SaveScene(*scene_, name);
+        save_status_success_ = ok;
+        save_status_timer_ = 3.0f;
+      }
+      ImGui::CloseCurrentPopup();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+      ImGui::CloseCurrentPopup();
+    }
+    ImGui::EndPopup();
+  }
+}
+
+void EditorLayer::DrawDumpSettingModal() {
+  if (show_dump_setting_modal_) {
+    ImGui::OpenPopup("Dump Settings##modal");
+    show_dump_setting_modal_ = false;
+  }
+
+  if (ImGui::BeginPopupModal("Dump Settings##modal", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+    ImGui::Text("Scene Name:");
+    ImGui::InputText("##settings_name", scene_name_buffer_, sizeof(scene_name_buffer_));
+
+    if (ImGui::Button("Confirm", ImVec2(120, 0))) {
+      if (scene_ && scene_name_buffer_[0] != '\0') {
+        std::string name(scene_name_buffer_);
+        bool ok = SceneSerializer::DumpSettings(*scene_, name);
+        save_status_success_ = ok;
+        save_status_timer_ = 3.0f;
+      }
+      ImGui::CloseCurrentPopup();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+      ImGui::CloseCurrentPopup();
+    }
+    ImGui::EndPopup();
   }
 }
 

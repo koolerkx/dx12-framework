@@ -4,6 +4,7 @@
 #include "Component/transform_component.h"
 #include "Debug/debug_drawer.h"
 #include "Framework/Math/Math.h"
+#include "Framework/Serialize/serialize_node.h"
 #include "Graphic/Frame/frame_packet.h"
 #include "game_object.h"
 
@@ -49,6 +50,13 @@ class PointLightComponent : public Component<PointLightComponent> {
   }
   float GetFalloff() const {
     return falloff_;
+  }
+
+  void OnSerialize(framework::SerializeNode& node) const override {
+    node.WriteVec3("Color", color_.x, color_.y, color_.z);
+    node.Write("Intensity", intensity_);
+    node.Write("Radius", radius_);
+    node.Write("Falloff", falloff_);
   }
 
   struct EditorData {

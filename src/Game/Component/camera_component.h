@@ -1,6 +1,7 @@
 #pragma once
 #include "Component/component.h"
 #include "Framework/Math/Math.h"
+#include "Framework/Serialize/serialize_node.h"
 #include "Graphic/Frame/camera_data.h"
 
 enum class ProjectionType { Perspective, Orthographic };
@@ -21,6 +22,17 @@ class CameraComponent : public Component<CameraComponent> {
   }
 
   void OnStart() override;
+
+  void OnSerialize(framework::SerializeNode& node) const override {
+    node.Write("ProjectionType", projection_type_ == ProjectionType::Perspective ? "Perspective" : "Orthographic");
+    node.Write("FOV", fov_);
+    node.Write("AspectRatio", aspect_ratio_);
+    node.Write("OrthoWidth", ortho_width_);
+    node.Write("OrthoHeight", ortho_height_);
+    node.Write("NearPlane", near_plane_);
+    node.Write("FarPlane", far_plane_);
+    node.Write("Exposure", exposure_);
+  }
 
   void SetPerspective(float fov_radians, float aspect_ratio, float near_plane, float far_plane);
   void SetOrthographic(float width, float height, float near_plane, float far_plane);

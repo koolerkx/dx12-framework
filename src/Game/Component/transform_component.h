@@ -3,6 +3,7 @@
 #include "Debug/debug_drawer.h"
 #include "Framework/Core/color.h"
 #include "Framework/Math/Math.h"
+#include "Framework/Serialize/serialize_node.h"
 
 using Math::Matrix4;
 using Math::Quaternion;
@@ -24,6 +25,14 @@ class TransformComponent : public Component<TransformComponent> {
 
   void OnStart() override;
   void OnParentChanged() override;
+
+  void OnSerialize(framework::SerializeNode& node) const override {
+    node.WriteVec3("Position", local_pos_.x, local_pos_.y, local_pos_.z);
+    node.WriteVec3("Rotation", local_euler_degrees_.x, local_euler_degrees_.y, local_euler_degrees_.z);
+    node.WriteVec3("Scale", local_scale_.x, local_scale_.y, local_scale_.z);
+    node.WriteVec3("Pivot", local_pivot_.x, local_pivot_.y, local_pivot_.z);
+    node.WriteVec3("Anchor", local_anchor_.x, local_anchor_.y, local_anchor_.z);
+  }
 
   void OnDebugDraw(DebugDrawer& drawer) override {
     auto world = GetWorldMatrix();

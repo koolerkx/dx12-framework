@@ -4,8 +4,10 @@
 #include "Component/component.h"
 #include "Component/pivot_type.h"
 #include "Component/render_settings.h"
+#include "Framework/Core/utils.h"
 #include "Framework/Font/text_layout.h"
 #include "Framework/Math/Math.h"
+#include "Framework/Serialize/serialize_node.h"
 #include "Game/Asset/asset_manager.h"
 #include "Graphic/Frame/frame_packet.h"
 #include "Graphic/Resource/Font/sprite_font_manager.h"
@@ -134,6 +136,20 @@ class UITextRenderer : public Component<UITextRenderer> {
 
   Vector2 GetSize() const {
     return Vector2(text_mesh_handle_.GetWidth(), text_mesh_handle_.GetHeight());
+  }
+
+  void OnSerialize(framework::SerializeNode& node) const override {
+    node.Write("Text", utils::wstring_to_utf8(text_));
+    node.Write("FontFamily", static_cast<int>(font_family_));
+    node.Write("PixelSize", pixel_size_);
+    node.WriteVec4("Color", color_.x, color_.y, color_.z, color_.w);
+    node.Write("HAlign", static_cast<int>(h_align_));
+    node.Write("VAlign", static_cast<int>(v_align_));
+    node.Write("LineSpacing", line_spacing_);
+    node.Write("LetterSpacing", letter_spacing_);
+    node.Write("UseKerning", use_kerning_);
+    node.Write("LayerId", layer_id_);
+    node.WriteVec2("Pivot", text_pivot_.x, text_pivot_.y);
   }
 
   struct EditorData {

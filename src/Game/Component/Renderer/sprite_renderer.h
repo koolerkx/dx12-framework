@@ -8,6 +8,7 @@
 #include "Component/sprite_sheet_animator.h"
 #include "Component/transform_component.h"
 #include "Framework/Math/Math.h"
+#include "Framework/Serialize/serialize_node.h"
 #include "Game/Asset/asset_manager.h"
 #include "Graphic/Frame/frame_packet.h"
 #include "Graphic/Resource/Texture/texture.h"
@@ -105,6 +106,16 @@ class SpriteRenderer : public Component<SpriteRenderer> {
   }
   const Vector2& GetUVScale() const {
     return uv_scale_;
+  }
+
+  void OnSerialize(framework::SerializeNode& node) const override {
+    node.WriteVec4("Color", color_.x, color_.y, color_.z, color_.w);
+    node.WriteVec2("Size", size_.x, size_.y);
+    node.WriteVec2("Pivot", sprite_pivot_.x, sprite_pivot_.y);
+    node.WriteVec2("UVOffset", uv_offset_.x, uv_offset_.y);
+    node.WriteVec2("UVScale", uv_scale_.x, uv_scale_.y);
+    node.Write("BillboardMode", static_cast<int>(billboard_mode_));
+    node.Write("RenderLayer", render_layer_ == RenderLayer::Opaque ? "Opaque" : "Transparent");
   }
 
   struct EditorData {

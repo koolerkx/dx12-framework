@@ -48,6 +48,9 @@ class EditorLayer {
   void DrawCameraInspector(CameraComponent* camera);
   void DrawPointLightInspector(PointLightComponent* light);
   void DrawMainMenu();
+  void DrawSceneMenu();
+  void DrawSaveSceneModal();
+  void DrawDumpSettingModal();
   void DrawGameObjectNode(GameObject* go);
   void DrawSceneSettings();
   void DrawDebugPanel();
@@ -82,4 +85,11 @@ class EditorLayer {
 
   uint32_t pending_shadow_resolution_ = 0;
   uint32_t pending_cascade_count_ = 0;
+
+  bool show_save_scene_modal_ = false;
+  bool show_dump_setting_modal_ = false;
+  bool save_and_dump_ = false;
+  char scene_name_buffer_[256] = "Untitled";
+  float save_status_timer_ = 0.0f;
+  bool save_status_success_ = false;
 };
