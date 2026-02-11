@@ -1,5 +1,7 @@
 #pragma once
 #include "Component/component.h"
+#include "Debug/debug_drawer.h"
+#include "Framework/Core/color.h"
 #include "Framework/Math/Math.h"
 
 using Math::Matrix4;
@@ -13,7 +15,7 @@ class TransformComponent : public Component<TransformComponent> {
     Vector3 scale = Vector3::One;
     Vector3 rotation_degrees = Vector3::Zero;
     Vector3 pivot = Vector3::Zero;   // the scale and rotation center
-    Vector3 anchor = Vector3::Zero;  // the position offser
+    Vector3 anchor = Vector3::Zero;  // the position offset after rotation
   };
 
   using Component::Component;
@@ -22,6 +24,31 @@ class TransformComponent : public Component<TransformComponent> {
 
   void OnStart() override;
   void OnParentChanged() override;
+
+  void OnDebugDraw(DebugDrawer& drawer) override {
+    auto world = GetWorldMatrix();
+    float cross_length = 0.3f;
+
+    // Anchor cross: TransformPoint(anchor) = -pivot*S*R + pivot + pos (in parent space)
+    // Orbits around pivot under own S/R, independent of anchor value
+    Vector3 anchor_world = world.TransformPoint(local_anchor_);
+
+    // World-space directions (rotation only; ignores translation, and ideally ignores scale)
+    Vector3 x_dir = world.TransformVector(Vector3(1, 0, 0)).Normalized();
+    Vector3 y_dir = world.TransformVector(Vector3(0, 1, 0)).Normalized();
+    Vector3 z_dir = world.TransformVector(Vector3(0, 0, 1)).Normalized();
+
+    drawer.DrawLine(anchor_world - x_dir * cross_length, anchor_world + x_dir * cross_length, colors::Blue);
+    drawer.DrawLine(anchor_world - y_dir * cross_length, anchor_world + y_dir * cross_length, colors::Red);
+    drawer.DrawLine(anchor_world - z_dir * cross_length, anchor_world + z_dir * cross_length, colors::Lime);
+
+    // Pivot sphere: TransformPoint(pivot + anchor) = pivot + pos (in parent space)
+    // Independent of own S/R/anchor; parent S/R still applies
+    Vector3 pivot_world = world.TransformPoint(local_pivot_ + local_anchor_);
+    drawer.DrawWireSphere(pivot_world, 0.1f, colors::Yellow, 8);
+
+    drawer.DrawLine(anchor_world, pivot_world, colors::Gray);
+  }
 
   void SetPosition(const Vector3& pos);
   void SetScale(const Vector3& scale);

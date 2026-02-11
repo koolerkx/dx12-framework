@@ -78,18 +78,14 @@ void TransformComponent::UpdateLocalMatrix() {
     return;
   }
 
-  if (local_pivot_ == Vector3::Zero) {
-    local_matrix_ = Matrix4::CreateFromTRS(local_pos_ - local_anchor_, local_rot_, local_scale_);
-    return;
-  }
-
-  // M = T(-pivot) * S * R * T(pivot + pos - anchor)
-  Matrix4 neg_pivot = Matrix4::CreateTranslation(-local_pivot_);
+  // M = T(-pivot - anchor) * S * R * T(pivot + pos)
+  // v_out = (v - pivot - anchor) * S * R + pivot + pos
+  Matrix4 pre_translate = Matrix4::CreateTranslation(-local_pivot_ - local_anchor_);
   Matrix4 scale = Matrix4::CreateScale(local_scale_);
   Matrix4 rotation = Matrix4::CreateFromQuaternion(local_rot_);
-  Matrix4 final_translation = Matrix4::CreateTranslation(local_pivot_ + local_pos_ - local_anchor_);
+  Matrix4 post_translate = Matrix4::CreateTranslation(local_pivot_ + local_pos_);
 
-  local_matrix_ = neg_pivot * scale * rotation * final_translation;
+  local_matrix_ = pre_translate * scale * rotation * post_translate;
 }
 
 Matrix4 TransformComponent::GetWorldMatrix() {
