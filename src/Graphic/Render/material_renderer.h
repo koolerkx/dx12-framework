@@ -30,6 +30,7 @@ class MaterialRenderer {
     const std::vector<DrawCommand>& commands,
     const CameraData& camera,
     const LightingConfig& lighting,
+    const ShadowConfig& shadow,
     uint32_t screen_width,
     uint32_t screen_height);
 
@@ -41,7 +42,7 @@ class MaterialRenderer {
   }
 
  private:
-  void RecordSingle(RenderCommandList& cmd, const DrawCommand& draw_cmd, const Matrix4& view_proj);
+  void RecordSingle(RenderCommandList& cmd, const DrawCommand& draw_cmd, const Matrix4& view_proj, bool shadow_enabled);
   void RecordInstanced(RenderCommandList& cmd, const DrawCommand& draw_cmd);
 };
 

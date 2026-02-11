@@ -8,6 +8,7 @@
 #include "SceneSetting/active_ui_camera_setting.h"
 #include "SceneSetting/background_setting.h"
 #include "SceneSetting/light_setting.h"
+#include "SceneSetting/shadow_setting.h"
 #include "game_context.h"
 #include "game_object.h"
 
@@ -74,6 +75,12 @@ class IScene {
   const LightSetting& GetLightSetting() const {
     return light_setting_;
   }
+  ShadowSetting& GetShadowSetting() {
+    return shadow_setting_;
+  }
+  const ShadowSetting& GetShadowSetting() const {
+    return shadow_setting_;
+  }
 
  protected:
   GameObject* CreateGameObject(const std::string& name = "GameObject", const TransformComponent::Props& transform = {});
@@ -93,6 +100,7 @@ class IScene {
   ActiveUICameraSetting ui_camera_setting_;
   BackgroundSetting background_setting_;
   LightSetting light_setting_;
+  ShadowSetting shadow_setting_;
   bool is_started_ = false;
 
   GameContext* context_ = nullptr;

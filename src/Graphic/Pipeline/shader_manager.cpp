@@ -68,6 +68,11 @@ ID3DBlob* ShaderManager::GetVertexShader(Graphics::ShaderId id) {
 }
 
 ID3DBlob* ShaderManager::GetPixelShader(Graphics::ShaderId id) {
+  const ShaderRegistry::ShaderMetadata& metadata = GetShaderMetadata(id);
+  if (metadata.ps_path.empty()) {
+    return nullptr;
+  }
+
   // Check cache first
   auto it = pixel_shaders_.find(id);
   if (it != pixel_shaders_.end()) {
@@ -75,7 +80,6 @@ ID3DBlob* ShaderManager::GetPixelShader(Graphics::ShaderId id) {
   }
 
   // Load from file
-  const ShaderRegistry::ShaderMetadata& metadata = GetShaderMetadata(id);
   ID3DBlob* blob = LoadShaderFromFile(std::wstring(metadata.ps_path));
 
   if (blob) {
@@ -123,18 +127,20 @@ bool ShaderManager::CreateStandardRS() {
                                                                        .AddRootCBV(2, 0)  // Slot 2: Light (b2)
                                                                        // Material data (texture indices, etc)
                                                                        .Add32BitConstants(4, 3, 0)  // Slot 3: MaterialData (b3)
+                                                                       // Shadow mapping data
+                                                                       .AddRootCBV(4, 0)  // Slot 4: Shadow (b4)
                                                                        // Global bindless texture array
                                                                        .AddDescriptorTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
                                                                          SRV_CAPACITY,
                                                                          0,                            // register(t0)
                                                                          1,                            // space1
-                                                                         D3D12_SHADER_VISIBILITY_ALL)  // Slot 4: GlobalSRVs
+                                                                         D3D12_SHADER_VISIBILITY_ALL)  // Slot 5: GlobalSRVs
                                                                        // Bindless sampler array
                                                                        .AddDescriptorTable(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER,
                                                                          SAMPLER_CAPACITY,
                                                                          0,                              // register(s0)
                                                                          0,                              // space0
-                                                                         D3D12_SHADER_VISIBILITY_PIXEL)  // Slot 5: Samplers
+                                                                         D3D12_SHADER_VISIBILITY_PIXEL)  // Slot 6: Samplers
                                                                        .Build(device_);
 
     if (!rs_presets_[static_cast<size_t>(Graphics::RSPreset::Standard)]) {

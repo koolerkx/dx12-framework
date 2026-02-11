@@ -107,6 +107,15 @@ class RenderCommandList {
     cmd_->SetGraphicsRootConstantBufferView(RootSlot::ToIndex(RootSlot::ConstantBuffer::Light), allocation.gpu_ptr);
   }
 
+  void SetShadowConstants(const ShadowCB& data) {
+    auto allocation = object_allocator_->Allocate<ShadowCB>();
+    if (allocation.cpu_ptr == nullptr) {
+      return;
+    }
+    memcpy(allocation.cpu_ptr, &data, sizeof(ShadowCB));
+    cmd_->SetGraphicsRootConstantBufferView(RootSlot::ToIndex(RootSlot::ConstantBuffer::Shadow), allocation.gpu_ptr);
+  }
+
   void SetMaterialData(const MaterialInstance& material_instance) {
     // Pack material data into 32-bit constants
     uint32_t material_data[4] = {material_instance.albedo_texture_index,

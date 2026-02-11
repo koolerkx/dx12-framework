@@ -41,3 +41,12 @@ struct alignas(256) LightingCB {
   float _padding;
 };
 static_assert(sizeof(LightingCB) == 256);
+
+struct alignas(256) ShadowCB {
+  Matrix4 lightViewProj;
+  uint32_t shadowMapIndex;
+  float shadowBias;
+  float shadowNormalBias;
+  uint32_t shadowMapResolution;
+};
+static_assert(sizeof(ShadowCB) == 256);

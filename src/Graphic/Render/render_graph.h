@@ -29,6 +29,7 @@ struct CreateDepthBufferProps {
   uint32_t width;
   uint32_t height;
   ID3D12Device* device;
+  bool fixed_size = false;
 };
 
 class RenderGraph {
@@ -56,6 +57,7 @@ class RenderGraph {
   void Execute(const RenderFrameContext& frame, const FramePacket& packet);
   void FinalizeFrame(ID3D12GraphicsCommandList* cmd);
   void Resize(ID3D12Device* device, uint32_t width, uint32_t height);
+  void ResizeDepthBuffer(RenderGraphHandle handle, ID3D12Device* device, uint32_t width, uint32_t height);
   void Shutdown();
 
  private:
@@ -65,6 +67,7 @@ class RenderGraph {
     RenderTexture* render_texture = nullptr;
     DepthBuffer* depth_buffer = nullptr;
     bool externally_referenced = false;
+    bool fixed_size = false;
   };
 
   struct PassNode {

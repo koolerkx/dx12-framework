@@ -146,6 +146,19 @@ struct SkyboxVertex {
 };
 static_assert(sizeof(SkyboxVertex) == 12);
 
+struct ShadowVertex {
+  Vector3 position;
+
+  static constexpr std::array INPUT_LAYOUT = {
+    D3D12_INPUT_ELEMENT_DESC{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+  };
+
+  static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
+    return {INPUT_LAYOUT.data(), INPUT_LAYOUT.size()};
+  }
+};
+static_assert(sizeof(ShadowVertex) == 12);
+
 using LineVertex = PositionColor;
 using SpriteVertex = PositionTexCoordColor;
 using Basic3DVertex = PositionNormalTexCoordColor;

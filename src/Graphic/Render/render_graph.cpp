@@ -45,7 +45,7 @@ RenderGraphHandle RenderGraph::CreateDepthBuffer(const CreateDepthBufferProps& p
   db->SetDebugName(props.name);
 
   auto index = static_cast<uint16_t>(resources_.size());
-  resources_.push_back({props.name, RenderGraphResourceType::DepthBuffer, nullptr, db.get()});
+  resources_.push_back({props.name, RenderGraphResourceType::DepthBuffer, nullptr, db.get(), false, props.fixed_size});
   owned_depth_buffers_.push_back(std::move(db));
   return static_cast<RenderGraphHandle>(index);
 }
@@ -200,9 +200,14 @@ void RenderGraph::ApplyPassSetup(ID3D12GraphicsCommandList* cmd, const PassSetup
 
   if (!rtv_handles.empty()) {
     cmd->OMSetRenderTargets(static_cast<UINT>(rtv_handles.size()), rtv_handles.data(), FALSE, has_depth ? &dsv : nullptr);
+  } else if (has_depth) {
+    cmd->OMSetRenderTargets(0, nullptr, FALSE, &dsv);
+    const auto& depth_entry = GetEntry(setup.depth);
+    rt_width = depth_entry.depth_buffer->GetWidth();
+    rt_height = depth_entry.depth_buffer->GetHeight();
   }
 
-  if (!rtv_handles.empty()) {
+  if (rt_width > 0 && rt_height > 0) {
     D3D12_VIEWPORT viewport = {};
     viewport.Width = static_cast<float>(rt_width);
     viewport.Height = static_cast<float>(rt_height);
@@ -230,10 +235,26 @@ void RenderGraph::Resize(ID3D12Device* device, uint32_t width, uint32_t height) 
     rt->SafeRelease(*heap_manager_);
     rt->Initialize(device, width, height, *heap_manager_);
   }
-  for (auto& db : owned_depth_buffers_) {
-    db->SafeRelease(*heap_manager_);
-    db->Initialize(device, width, height, *heap_manager_);
+  for (size_t i = 0; i < owned_depth_buffers_.size(); ++i) {
+    bool is_fixed = false;
+    for (const auto& entry : resources_) {
+      if (entry.type == RenderGraphResourceType::DepthBuffer && entry.depth_buffer == owned_depth_buffers_[i].get()) {
+        is_fixed = entry.fixed_size;
+        break;
+      }
+    }
+    if (is_fixed) continue;
+    owned_depth_buffers_[i]->SafeRelease(*heap_manager_);
+    owned_depth_buffers_[i]->Initialize(device, width, height, *heap_manager_);
   }
+}
+
+void RenderGraph::ResizeDepthBuffer(RenderGraphHandle handle, ID3D12Device* device, uint32_t width, uint32_t height) {
+  auto& entry = resources_[static_cast<uint16_t>(handle)];
+  if (entry.type != RenderGraphResourceType::DepthBuffer || !entry.depth_buffer) return;
+  if (entry.depth_buffer->GetWidth() == width && entry.depth_buffer->GetHeight() == height) return;
+  entry.depth_buffer->SafeRelease(*heap_manager_);
+  entry.depth_buffer->Initialize(device, width, height, *heap_manager_);
 }
 
 void RenderGraph::Shutdown() {

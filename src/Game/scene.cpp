@@ -97,6 +97,7 @@ void IScene::Render(FramePacket& packet) {
 
   packet.background = background_setting_.ToConfig();
   packet.lighting = light_setting_.ToConfig();
+  packet.shadow = shadow_setting_.ToConfig();
 
   RenderRootObjects(packet);
 

@@ -74,6 +74,12 @@ void EditorLayer::Shutdown(Graphic& graphic) {
 }
 
 void EditorLayer::BeginFrame() {
+  if (pending_shadow_resolution_ > 0) {
+    graphic_->WaitForGpuIdle();
+    graphic_->SetShadowMapResolution(pending_shadow_resolution_);
+    pending_shadow_resolution_ = 0;
+  }
+
   ImGui_ImplDX12_NewFrame();
   ImGui_ImplWin32_NewFrame();
   UpdateScaling();
@@ -430,6 +436,45 @@ void EditorLayer::DrawSceneSettings() {
     Math::Vector3 ambient_color = light.GetAmbientColor();
     if (ImGui::ColorEdit3("Ambient Color", &ambient_color.x)) {
       light.SetAmbientColor(ambient_color);
+    }
+  }
+
+  auto& shadow = scene_->GetShadowSetting();
+
+  if (ImGui::CollapsingHeader("Shadow", ImGuiTreeNodeFlags_DefaultOpen)) {
+    bool enabled = shadow.IsEnabled();
+    if (ImGui::Checkbox("Enabled", &enabled)) {
+      shadow.SetEnabled(enabled);
+    }
+
+    static constexpr uint32_t RESOLUTION_OPTIONS[] = {512, 1024, 2048, 4096};
+    static constexpr const char* RESOLUTION_LABELS[] = {"512", "1024", "2048", "4096"};
+    uint32_t current_res = shadow.GetResolution();
+    int selected = 2;
+    for (int i = 0; i < 4; ++i) {
+      if (RESOLUTION_OPTIONS[i] == current_res) {
+        selected = i;
+        break;
+      }
+    }
+    if (ImGui::Combo("Resolution", &selected, RESOLUTION_LABELS, IM_ARRAYSIZE(RESOLUTION_LABELS))) {
+      shadow.SetResolution(RESOLUTION_OPTIONS[selected]);
+      pending_shadow_resolution_ = RESOLUTION_OPTIONS[selected];
+    }
+
+    float depth_bias = shadow.GetDepthBias();
+    if (ImGui::DragFloat("Depth Bias", &depth_bias, 0.0001f, 0.0f, 0.1f, "%.4f")) {
+      shadow.SetDepthBias(depth_bias);
+    }
+
+    float normal_bias = shadow.GetNormalBias();
+    if (ImGui::DragFloat("Normal Bias", &normal_bias, 0.001f, 0.0f, 0.5f, "%.3f")) {
+      shadow.SetNormalBias(normal_bias);
+    }
+
+    float distance = shadow.GetShadowDistance();
+    if (ImGui::DragFloat("Shadow Distance", &distance, 1.0f, 1.0f, 1000.0f, "%.0f")) {
+      shadow.SetShadowDistance(distance);
     }
   }
 

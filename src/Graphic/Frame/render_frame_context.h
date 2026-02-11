@@ -8,8 +8,15 @@
 #include "Descriptor/descriptor_heap_manager.h"
 #include "Frame/constant_buffers.h"
 #include "Frame/dynamic_upload_buffer.h"
+#include "Framework/Math/Math.h"
 
 class RenderGraph;
+
+struct ShadowFrameData {
+  Math::Matrix4 light_view_proj;
+  uint32_t shadow_map_srv_index = UINT32_MAX;
+  uint32_t shadow_map_resolution = 2048;
+};
 
 struct RenderFrameContext {
   uint32_t frame_index;
@@ -26,4 +33,5 @@ struct RenderFrameContext {
   uint32_t screen_height;
 
   RenderGraph* render_graph = nullptr;
+  ShadowFrameData* shadow_data = nullptr;
 };

@@ -147,7 +147,6 @@ class Graphic {
   using OverlayRenderFunc = std::function<void(ID3D12GraphicsCommandList*)>;
   void SetOverlayRenderer(OverlayRenderFunc renderer);
 
-
  private:
   std::unique_ptr<gfx::DeviceContext> device_context_;
   std::unique_ptr<gfx::CommandContext> command_context_;
@@ -164,6 +163,9 @@ class Graphic {
   HdrDebug hdr_debug_;
   DepthViewConfig depth_view_config_;
   DepthViewConfig depth_preview_config_ = {.enabled = true, .near_plane = 0.1f, .far_plane = 1000.0f};
+
+  ShadowFrameData shadow_frame_data_;
+  RenderGraphHandle shadow_depth_handle_ = RenderGraphHandle::Invalid;
 
   UINT frame_buffer_width_ = 0;
   UINT frame_buffer_height_ = 0;
@@ -191,6 +193,9 @@ class Graphic {
   OverlayRenderFunc overlay_renderer_;
 
   void BuildRenderPipeline();
+
+ public:
+  void SetShadowMapResolution(uint32_t resolution);
 
   bool is_initialized_ = false;
   std::atomic<bool> is_shutting_down_{false};

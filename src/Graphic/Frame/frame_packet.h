@@ -23,11 +23,20 @@ struct LightingConfig {
   Math::Vector3 ambient_color = Math::Vector3(1.0f, 1.0f, 1.0f);
 };
 
+struct ShadowConfig {
+  uint32_t resolution = 2048;
+  float depth_bias = 0.005f;
+  float normal_bias = 0.02f;
+  float shadow_distance = 100.0f;
+  bool enabled = true;
+};
+
 struct FramePacket {
   CameraData main_camera;
   CameraData ui_camera;
   BackgroundConfig background;
   LightingConfig lighting;
+  ShadowConfig shadow;
   std::vector<DrawCommand> commands;
 
   void Clear() {

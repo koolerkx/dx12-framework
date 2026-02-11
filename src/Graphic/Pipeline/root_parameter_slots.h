@@ -7,9 +7,10 @@ namespace RootSlot {
 
 // Root constants and CBVs
 enum class ConstantBuffer : uint32_t {
-  Frame = 0,   // FrameCB - per-frame constants (view, proj, camera, time, etc)
-  Object = 1,  // ObjectCB - per-object constants (world matrix, color, etc)
-  Light = 2,   // LightingCB - lighting data
+  Frame = 0,    // FrameCB - per-frame constants (view, proj, camera, time, etc)
+  Object = 1,   // ObjectCB - per-object constants (world matrix, color, etc)
+  Light = 2,    // LightingCB - lighting data
+  Shadow = 4,   // ShadowCB - shadow mapping data (b4)
 };
 
 // Root constants (32-bit values)
@@ -19,8 +20,8 @@ enum class Constants : uint32_t {
 
 // Descriptor tables
 enum class DescriptorTable : uint32_t {
-  GlobalSRVs = 4,  // Global bindless texture array (t0, space1)
-  Samplers = 5,    // Bindless sampler array (s0, space0)
+  GlobalSRVs = 5,  // Global bindless texture array (t0, space1)
+  Samplers = 6,    // Bindless sampler array (s0, space0)
 };
 
 // Static samplers (not root parameters, but defined in root signature)

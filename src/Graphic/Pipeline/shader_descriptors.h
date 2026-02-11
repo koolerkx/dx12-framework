@@ -161,6 +161,21 @@ struct PostProcessBlitShader {
   }
 };
 
+struct ShadowDepthShader {
+  static constexpr ShaderId ID = 10;
+  using VertexType = Vertex::ShadowVertex;
+
+  static constexpr RSPreset RS_PRESET = RSPreset::Standard;
+  static constexpr std::string_view NAME = "ShadowDepth";
+  static constexpr std::wstring_view VS_PATH = L"Content/shaders/shadow_depth.vs.cso";
+  static constexpr std::wstring_view PS_PATH = L"Content/shaders/shadow_depth.ps.cso";
+  static constexpr ShaderRenderHints HINTS = {};
+
+  static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
+    return VertexType::GetInputLayout();
+  }
+};
+
 // Shader Registration
 using AllShaders = std::tuple<SpriteShader,
   SpriteInstancedShader,
@@ -169,7 +184,8 @@ using AllShaders = std::tuple<SpriteShader,
   PostProcessToneMapShader,
   SkyboxShader,
   PostProcessDepthViewShader,
-  PostProcessBlitShader>;
+  PostProcessBlitShader,
+  ShadowDepthShader>;
 
 [[maybe_unused]] constexpr size_t SHADER_COUNT = std::tuple_size_v<AllShaders>;
 

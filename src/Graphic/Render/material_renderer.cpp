@@ -48,6 +48,7 @@ void MaterialRenderer::Record(const RenderFrameContext& frame,
   const std::vector<DrawCommand>& commands,
   const CameraData& camera,
   const LightingConfig& lighting,
+  const ShadowConfig& shadow,
   uint32_t screen_width,
   uint32_t screen_height) {
   if (commands.empty()) {
@@ -92,6 +93,16 @@ void MaterialRenderer::Record(const RenderFrameContext& frame,
   lighting_cb.ambientColor = lighting.ambient_color;
   cmd.SetLightingConstants(lighting_cb);
 
+  ShadowCB shadow_cb = {};
+  if (shadow.enabled && frame.shadow_data) {
+    shadow_cb.lightViewProj = frame.shadow_data->light_view_proj;
+    shadow_cb.shadowMapIndex = frame.shadow_data->shadow_map_srv_index;
+    shadow_cb.shadowBias = shadow.depth_bias;
+    shadow_cb.shadowNormalBias = shadow.normal_bias;
+    shadow_cb.shadowMapResolution = frame.shadow_data->shadow_map_resolution;
+  }
+  cmd.SetShadowConstants(shadow_cb);
+
   Matrix4 view_proj = camera.view_proj;
   const Material* current_material = first_material;
 
@@ -111,12 +122,12 @@ void MaterialRenderer::Record(const RenderFrameContext& frame,
     if (draw_cmd.IsInstanced()) {
       RecordInstanced(cmd, draw_cmd);
     } else {
-      RecordSingle(cmd, draw_cmd, view_proj);
+      RecordSingle(cmd, draw_cmd, view_proj, shadow.enabled);
     }
   }
 }
 
-void MaterialRenderer::RecordSingle(RenderCommandList& cmd, const DrawCommand& draw_cmd, const Matrix4& view_proj) {
+void MaterialRenderer::RecordSingle(RenderCommandList& cmd, const DrawCommand& draw_cmd, const Matrix4& view_proj, bool shadow_enabled) {
   cmd.SetMaterialData(draw_cmd.material_instance);
 
   ObjectCB obj_data = {};
@@ -132,6 +143,7 @@ void MaterialRenderer::RecordSingle(RenderCommandList& cmd, const DrawCommand& d
   uint32_t flags = 0;
   if (HasTag(draw_cmd.tags, RenderTag::Lit)) flags |= 1u;
   if (draw_cmd.layer == RenderLayer::Opaque) flags |= 2u;
+  if (shadow_enabled && HasTag(draw_cmd.tags, RenderTag::ReceiveShadow)) flags |= 4u;
   obj_data.flags = flags;
   cmd.SetObjectConstants(obj_data);
 

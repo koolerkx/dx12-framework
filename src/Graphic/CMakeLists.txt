@@ -100,6 +100,9 @@ add_library(graphic STATIC
 
     Render/blit_pass.h
     Render/blit_pass.cpp
+
+    Render/shadow_pass.h
+    Render/shadow_pass.cpp
 )
 
 target_link_libraries(graphic PUBLIC framework)
@@ -125,6 +128,8 @@ target_add_hlsl_auto(graphic "6.6"
     "${CMAKE_SOURCE_DIR}/shaders/skybox.ps.hlsl"
     "${CMAKE_SOURCE_DIR}/shaders/depthview.ps.hlsl"
     "${CMAKE_SOURCE_DIR}/shaders/blit.ps.hlsl"
+    "${CMAKE_SOURCE_DIR}/shaders/shadow_depth.vs.hlsl"
+    "${CMAKE_SOURCE_DIR}/shaders/shadow_depth.ps.hlsl"
 )
 
 # manually add shaders files
@@ -140,7 +145,7 @@ include(fetch)
 if(DYNAMIC_CRT)
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL" CACHE STRING "MSVC Runtime Library" FORCE)
 else()
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "MSVC Runtime Library")
+  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "MSVC Runtime Library")
 endif()
 
 set(BUILD_TOOLS OFF CACHE BOOL "" FORCE)

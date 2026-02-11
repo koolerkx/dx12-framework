@@ -17,6 +17,7 @@
 #include "Render/debug_pass.h"
 #include "Render/depth_view_pass.h"
 #include "Render/material_pass.h"
+#include "Render/shadow_pass.h"
 #include "Render/skybox_pass.h"
 #include "Render/tone_map_pass.h"
 
@@ -165,11 +166,31 @@ void Graphic::BuildRenderPipeline() {
     .device = device_.Get(),
   });
 
+  auto shadow_depth = render_graph_->CreateDepthBuffer({
+    .name = "shadow_depth",
+    .width = shadow_frame_data_.shadow_map_resolution,
+    .height = shadow_frame_data_.shadow_map_resolution,
+    .device = device_.Get(),
+    .fixed_size = true,
+  });
+  shadow_depth_handle_ = shadow_depth;
+
+  PassSetup shadow_setup;
+  shadow_setup.depth = shadow_depth;
+
+  render_graph_->AddPass(std::make_unique<ShadowPass>(ShadowPass::Props{
+    .device = device_.Get(),
+    .shader_manager = &render_services_->GetShaderManager(),
+    .pass_setup = shadow_setup,
+    .shadow_data = &shadow_frame_data_,
+  }));
+
   preview_handles_ = {scene_rt, depth_preview_rt, tonemap_rt};
 
   PassSetup scene_setup;
   scene_setup.resource_writes = {scene_rt};
   scene_setup.depth = scene_depth;
+  scene_setup.resource_reads = {shadow_depth};
 
   PassSetup backbuffer_setup;
   backbuffer_setup.resource_writes = {backbuffer};
@@ -356,6 +377,8 @@ RenderFrameContext Graphic::BeginFrame() {
 
   render_graph_->BeginFrame();
 
+  shadow_frame_data_.shadow_map_srv_index = render_graph_->GetSrvIndex(shadow_depth_handle_);
+
   return RenderFrameContext{.frame_index = frame_index,
     .command_list = cmd,
     .frame_cb = &frame_cb_storage_.GetBuffer(frame_index),
@@ -364,7 +387,8 @@ RenderFrameContext Graphic::BeginFrame() {
     .global_heap_manager = &descriptor_heap_manager_,
     .screen_width = frame_buffer_width_,
     .screen_height = frame_buffer_height_,
-    .render_graph = render_graph_.get()};
+    .render_graph = render_graph_.get(),
+    .shadow_data = &shadow_frame_data_};
 }
 
 void Graphic::EndFrame(const RenderFrameContext& frame) {
@@ -389,6 +413,13 @@ void Graphic::EndFrame(const RenderFrameContext& frame) {
 
 void Graphic::RenderScene(const RenderFrameContext& frame, const FramePacket& world) {
   render_graph_->Execute(frame, world);
+}
+
+void Graphic::SetShadowMapResolution(uint32_t resolution) {
+  if (shadow_frame_data_.shadow_map_resolution == resolution) return;
+  shadow_frame_data_.shadow_map_resolution = resolution;
+  render_graph_->ResizeDepthBuffer(shadow_depth_handle_, device_.Get(), resolution, resolution);
+  shadow_frame_data_.shadow_map_srv_index = render_graph_->GetSrvIndex(shadow_depth_handle_);
 }
 
 void Graphic::AddDebugLine(const Vector3& start, const Vector3& end, const Vector4& color) {

@@ -66,4 +66,6 @@ class EditorLayer {
   ImGuiStyle base_style_{};
 
   EventScope event_scope_;
+
+  uint32_t pending_shadow_resolution_ = 0;
 };

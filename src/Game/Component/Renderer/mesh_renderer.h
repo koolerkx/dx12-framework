@@ -134,5 +134,5 @@ class MeshRenderer : public Component<MeshRenderer> {
   Vector4 color_ = {1.0f, 1.0f, 1.0f, 1.0f};
 
   RenderLayer render_layer_ = RenderLayer::Opaque;
-  RenderTagMask render_tags_ = static_cast<uint32_t>(RenderTag::Lit);
+  RenderTagMask render_tags_ = static_cast<uint32_t>(RenderTag::CastShadow | RenderTag::ReceiveShadow | RenderTag::Lit);
 };

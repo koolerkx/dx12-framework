@@ -4,12 +4,15 @@
 struct VSOUT {
   float4 position : SV_POSITION;
   float3 worldNormal : NORMAL;
-  float2 uv : TEXCOORD;
+  float2 uv : TEXCOORD0;
   float4 color : COLOR;
+  float3 worldPos : TEXCOORD1;
 };
 
 VSOUT main(VS_IN_3D input) {
   VSOUT output;
+  float4 worldPos = mul(float4(input.position, 1.0f), g_ObjectCB.world);
+  output.worldPos = worldPos.xyz;
   output.position = mul(float4(input.position, 1.0f), g_ObjectCB.worldViewProj);
   output.worldNormal =
       normalize(mul(input.normal, (float3x3)g_ObjectCB.normalMatrix));

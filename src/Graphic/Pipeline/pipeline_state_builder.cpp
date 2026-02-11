@@ -1,12 +1,17 @@
 #include "pipeline_state_builder.h"
 
-#include <stdexcept>
+#include "Framework/Logging/logger.h"
 
 ComPtr<ID3D12PipelineState> PipelineStateBuilder::Build(ID3D12Device* device) {
   ComPtr<ID3D12PipelineState> pso;
   HRESULT hr = device->CreateGraphicsPipelineState(&desc_, IID_PPV_ARGS(&pso));
   if (FAILED(hr)) {
-    throw std::runtime_error("Failed to create graphics pipeline state");
+    Logger::LogFormat(LogLevel::Error,
+      LogCategory::Graphic,
+      Logger::Here(),
+      "[PipelineStateBuilder] Failed to create PSO, HRESULT=0x{:08X}",
+      static_cast<uint32_t>(hr));
+    return nullptr;
   }
   return pso;
 }
