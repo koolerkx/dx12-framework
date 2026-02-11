@@ -15,8 +15,7 @@ class RenderGraph;
 
 struct ShadowFrameData {
   Math::Matrix4 light_view_proj[ShadowCascadeConfig::MAX_CASCADES];
-  uint32_t shadow_map_srv_index[ShadowCascadeConfig::MAX_CASCADES] = {
-    UINT32_MAX, UINT32_MAX, UINT32_MAX, UINT32_MAX};
+  uint32_t shadow_map_srv_index[ShadowCascadeConfig::MAX_CASCADES] = {UINT32_MAX, UINT32_MAX, UINT32_MAX, UINT32_MAX};
   float cascade_split_distances[ShadowCascadeConfig::MAX_CASCADES] = {};
   uint32_t cascade_count = ShadowCascadeConfig::DEFAULT_CASCADE_COUNT;
   uint32_t shadow_map_resolution = 2048;
@@ -38,4 +37,7 @@ struct RenderFrameContext {
 
   RenderGraph* render_graph = nullptr;
   ShadowFrameData* shadow_data = nullptr;
+
+  D3D12_GPU_VIRTUAL_ADDRESS point_light_srv = 0;
+  uint32_t point_light_count = 0;
 };

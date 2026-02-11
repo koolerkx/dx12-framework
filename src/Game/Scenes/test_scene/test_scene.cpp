@@ -8,6 +8,7 @@
 #include "Component/Renderer/ui_text_renderer.h"
 #include "Component/camera_component.h"
 #include "Component/pivot_type.h"
+#include "Component/point_light_component.h"
 #include "Component/sprite_sheet_helper.h"
 #include "Component/transform_component.h"
 #include "Debug/debug_drawer.h"
@@ -142,6 +143,22 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
     });
     Logger::LogFormat(LogLevel::Info, LogCategory::Game, Logger::Here(), "UI Text size: {} x {}", text->GetSize().x, text->GetSize().y);
   }
+
+  auto* point_light1 = CreateGameObject("PointLight_Red", {.position = {3, 1, 0}});
+  point_light1->AddComponent<PointLightComponent>(PointLightComponent::Props{
+    .color = {1.0f, 0.2f, 0.2f},
+    .intensity = 2.0f,
+    .radius = 15.0f,
+    .falloff = 1.0f,
+  });
+
+  auto* point_light2 = CreateGameObject("PointLight_Blue", {.position = {-3, 1, 0}});
+  point_light2->AddComponent<PointLightComponent>(PointLightComponent::Props{
+    .color = {0.2f, 0.4f, 1.0f},
+    .intensity = 2.0f,
+    .radius = 15.0f,
+    .falloff = 1.0f,
+  });
 
   auto* text_obj2 = CreateGameObject("Basic Text 2", {.position = {0, -3, 1}});
   text_obj2->AddComponent<TextRenderer>(TextRenderer::Props{

@@ -4,8 +4,8 @@
 #include <deque>
 #include <vector>
 
-#include "Pipeline/sampler_builder.h"
 #include "Core/types.h"
+#include "Pipeline/sampler_builder.h"
 
 class RootSignatureBuilder {
  public:
@@ -48,6 +48,16 @@ class RootSignatureBuilder {
   RootSignatureBuilder& AddRootCBV(UINT shaderRegister, UINT registerSpace = 0) {
     D3D12_ROOT_PARAMETER param = {};
     param.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+    param.Descriptor.ShaderRegister = shaderRegister;
+    param.Descriptor.RegisterSpace = registerSpace;
+    param.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+    parameters_.push_back(param);
+    return *this;
+  }
+
+  RootSignatureBuilder& AddRootSRV(UINT shaderRegister, UINT registerSpace = 0) {
+    D3D12_ROOT_PARAMETER param = {};
+    param.ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
     param.Descriptor.ShaderRegister = shaderRegister;
     param.Descriptor.RegisterSpace = registerSpace;
     param.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;

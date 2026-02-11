@@ -141,6 +141,8 @@ bool ShaderManager::CreateStandardRS() {
                                                                          0,                              // register(s0)
                                                                          0,                              // space0
                                                                          D3D12_SHADER_VISIBILITY_PIXEL)  // Slot 6: Samplers
+                                                                       // Point light structured buffer
+                                                                       .AddRootSRV(0, 2)  // Slot 7: PointLights (t0, space2)
                                                                        .Build(device_);
 
     if (!rs_presets_[static_cast<size_t>(Graphics::RSPreset::Standard)]) {

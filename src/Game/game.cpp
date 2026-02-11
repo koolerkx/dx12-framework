@@ -69,6 +69,7 @@ void Game::OnRender() {
     scene->OnRender(frame_packet_);
   }
 
+  graphic->UploadPointLights(frame_context, frame_packet_);
   graphic->RenderScene(frame_context, frame_packet_);
   graphic->EndFrame(frame_context);
 }

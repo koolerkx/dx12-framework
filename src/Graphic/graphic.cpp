@@ -99,6 +99,14 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
     }
   }
 
+  for (int i = 0; i < FRAME_BUFFER_COUNT; ++i) {
+    std::wstring name = L"PointLightBuffer_Frame" + std::to_wstring(i);
+    if (!point_light_buffers_[i].Initialize(device_.Get(), MAX_POINT_LIGHTS, name)) {
+      Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "Failed to initialize point light buffer {}", i);
+      return false;
+    }
+  }
+
   ui_renderer_ = std::make_unique<UiRenderer>();
   opaque_renderer_ = std::make_unique<OpaqueRenderer>();
   transparent_renderer_ = std::make_unique<TransparentRenderer>();
@@ -408,7 +416,8 @@ RenderFrameContext Graphic::BeginFrame() {
     .screen_width = frame_buffer_width_,
     .screen_height = frame_buffer_height_,
     .render_graph = render_graph_.get(),
-    .shadow_data = &shadow_frame_data_};
+    .shadow_data = &shadow_frame_data_,
+    .point_light_srv = point_light_buffers_[frame_index].GetGPUAddress()};
 }
 
 void Graphic::EndFrame(const RenderFrameContext& frame) {
@@ -429,6 +438,24 @@ void Graphic::EndFrame(const RenderFrameContext& frame) {
   render_services_->OnFrameEnd();
 
   presentation_context_->Present();
+}
+
+void Graphic::UploadPointLights(RenderFrameContext& frame, const FramePacket& world) {
+  uint32_t light_count = static_cast<uint32_t>(world.point_lights.size());
+  if (light_count > 0) {
+    std::vector<PointLightData> gpu_lights(light_count);
+    for (uint32_t i = 0; i < light_count; ++i) {
+      const auto& src = world.point_lights[i];
+      gpu_lights[i].position = src.position;
+      gpu_lights[i].intensity = src.intensity;
+      gpu_lights[i].color = src.color;
+      gpu_lights[i].radius = src.radius;
+      gpu_lights[i].falloff = src.falloff;
+      gpu_lights[i].enabled = 1;
+    }
+    point_light_buffers_[frame.frame_index].Update(gpu_lights);
+  }
+  frame.point_light_count = light_count;
 }
 
 void Graphic::RenderScene(const RenderFrameContext& frame, const FramePacket& world) {

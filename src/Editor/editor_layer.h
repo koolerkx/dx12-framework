@@ -18,6 +18,7 @@ class UISpriteRenderer;
 class TextRenderer;
 class UITextRenderer;
 class MeshRenderer;
+class PointLightComponent;
 
 class EditorLayer {
  public:
@@ -40,6 +41,7 @@ class EditorLayer {
   void DrawTextRendererInspector(TextRenderer* renderer);
   void DrawUITextRendererInspector(UITextRenderer* renderer);
   void DrawMeshRendererInspector(MeshRenderer* renderer);
+  void DrawPointLightInspector(PointLightComponent* light);
   void DrawMainMenu();
   void DrawGameObjectNode(GameObject* go);
   void DrawSceneSettings();

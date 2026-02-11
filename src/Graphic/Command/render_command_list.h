@@ -123,6 +123,10 @@ class RenderCommandList {
     cmd_->SetGraphicsRootConstantBufferView(RootSlot::ToIndex(RootSlot::ConstantBuffer::Material), allocation.gpu_ptr);
   }
 
+  void SetPointLightSRV(D3D12_GPU_VIRTUAL_ADDRESS address) {
+    cmd_->SetGraphicsRootShaderResourceView(RootSlot::ToIndex(RootSlot::ShaderResource::PointLights), address);
+  }
+
   void DrawMesh(const Mesh* mesh) {
     if (mesh) {
       mesh->Draw(cmd_);

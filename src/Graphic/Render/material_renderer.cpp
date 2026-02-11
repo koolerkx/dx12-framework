@@ -92,7 +92,9 @@ void MaterialRenderer::Record(const RenderFrameContext& frame,
   lighting_cb.directionalColor = lighting.directional_color;
   lighting_cb.ambientIntensity = lighting.ambient_intensity;
   lighting_cb.ambientColor = lighting.ambient_color;
+  lighting_cb.pointLightCount = frame.point_light_count;
   cmd.SetLightingConstants(lighting_cb);
+  cmd.SetPointLightSRV(frame.point_light_srv);
 
   ShadowCB shadow_cb = {};
   if (shadow.enabled && frame.shadow_data) {

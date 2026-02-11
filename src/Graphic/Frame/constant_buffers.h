@@ -39,9 +39,21 @@ struct alignas(256) LightingCB {
   Vector3 directionalColor;
   float ambientIntensity;
   Vector3 ambientColor;
-  float _padding;
+  uint32_t pointLightCount;
 };
 static_assert(sizeof(LightingCB) == 256);
+
+struct PointLightData {
+  Vector3 position;
+  float intensity;
+  Vector3 color;
+  float radius;
+  float falloff;
+  uint32_t enabled;
+  float _padding[2];
+};
+static_assert(sizeof(PointLightData) == 48);
+static_assert(sizeof(PointLightData) % 16 == 0);
 
 struct alignas(256) ShadowCB {
   Matrix4 lightViewProj[ShadowCascadeConfig::MAX_CASCADES];

@@ -1,0 +1,89 @@
+#pragma once
+
+#include "Component/component.h"
+#include "Component/transform_component.h"
+#include "Framework/Math/Math.h"
+#include "Graphic/Frame/frame_packet.h"
+#include "game_object.h"
+
+class PointLightComponent : public Component<PointLightComponent> {
+ public:
+  struct Props {
+    Math::Vector3 color = {1.0f, 1.0f, 1.0f};
+    float intensity = 1.0f;
+    float radius = 10.0f;
+    float falloff = 2.0f;
+  };
+
+  using Component::Component;
+
+  PointLightComponent(GameObject* owner, const Props& props) : Component(owner) {
+    color_ = props.color;
+    intensity_ = props.intensity;
+    radius_ = props.radius;
+    falloff_ = props.falloff;
+  }
+
+  void SetColor(const Math::Vector3& color) {
+    color_ = color;
+  }
+  void SetIntensity(float intensity) {
+    intensity_ = intensity;
+  }
+  void SetRadius(float radius) {
+    radius_ = radius;
+  }
+  void SetFalloff(float falloff) {
+    falloff_ = falloff;
+  }
+
+  Math::Vector3 GetColor() const {
+    return color_;
+  }
+  float GetIntensity() const {
+    return intensity_;
+  }
+  float GetRadius() const {
+    return radius_;
+  }
+  float GetFalloff() const {
+    return falloff_;
+  }
+
+  struct EditorData {
+    Math::Vector3 color;
+    float intensity;
+    float radius;
+    float falloff;
+  };
+
+  EditorData GetEditorData() const {
+    return {color_, intensity_, radius_, falloff_};
+  }
+
+  void ApplyEditorData(const EditorData& data) {
+    color_ = data.color;
+    intensity_ = data.intensity;
+    radius_ = data.radius;
+    falloff_ = data.falloff;
+  }
+
+  void OnRender(FramePacket& packet) override {
+    auto* transform = GetOwner()->GetTransform();
+    if (!transform) return;
+
+    PointLightEntry entry;
+    entry.position = transform->GetWorldPosition();
+    entry.intensity = intensity_;
+    entry.color = color_;
+    entry.radius = radius_;
+    entry.falloff = falloff_;
+    packet.AddPointLight(std::move(entry));
+  }
+
+ private:
+  Math::Vector3 color_ = {1.0f, 1.0f, 1.0f};
+  float intensity_ = 1.0f;
+  float radius_ = 10.0f;
+  float falloff_ = 2.0f;
+};

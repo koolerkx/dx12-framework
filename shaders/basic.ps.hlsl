@@ -49,10 +49,21 @@ float4 main(PSIN input) : SV_TARGET {
                       g_MaterialData.specularIntensity * spec * shadow;
 
     float rim = pow(1.0 - saturate(dot(N, V)), g_MaterialData.rimPower);
-    float3 rimLight = g_MaterialData.rimColor * g_MaterialData.rimIntensity * rim;
+    float3 rimLight =
+        g_MaterialData.rimColor * g_MaterialData.rimIntensity * rim;
     if (g_MaterialData.flags & 4u) rimLight *= shadow;
 
-    baseColor.rgb = baseColor.rgb * (diffuse + ambient) + specular + rimLight;
+    float3 pointDiffuse = float3(0, 0, 0);
+    float3 pointSpecular = float3(0, 0, 0);
+    if (g_LightingCB.pointLightCount > 0) {
+      CalcPointLightContribution(
+          N, V, input.worldPos, g_LightingCB.pointLightCount,
+          g_MaterialData.specularIntensity, g_MaterialData.specularPower,
+          pointDiffuse, pointSpecular);
+    }
+
+    baseColor.rgb = baseColor.rgb * (diffuse + ambient + pointDiffuse) +
+                    specular + pointSpecular + rimLight;
   }
 
   return baseColor;

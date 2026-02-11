@@ -14,6 +14,7 @@
 #include "Game/Component/Renderer/text_renderer.h"
 #include "Game/Component/Renderer/ui_sprite_renderer.h"
 #include "Game/Component/Renderer/ui_text_renderer.h"
+#include "Game/Component/point_light_component.h"
 #include "Game/Component/transform_component.h"
 #include "Game/game_object.h"
 #include "Game/scene.h"
@@ -294,6 +295,8 @@ void EditorLayer::DrawInspector() {
         if (ImGui::CollapsingHeader("UITextRenderer")) DrawUITextRendererInspector(ui_text);
       } else if (auto* mesh = dynamic_cast<MeshRenderer*>(comp.get())) {
         if (ImGui::CollapsingHeader("MeshRenderer")) DrawMeshRendererInspector(mesh);
+      } else if (auto* point_light = dynamic_cast<PointLightComponent*>(comp.get())) {
+        if (ImGui::CollapsingHeader("PointLightComponent", ImGuiTreeNodeFlags_DefaultOpen)) DrawPointLightInspector(point_light);
       } else {
         ImGui::CollapsingHeader(comp->GetTypeName());
       }
@@ -662,9 +665,9 @@ void EditorLayer::DrawMeshRendererInspector(MeshRenderer* renderer) {
       RenderTag tag;
     };
     static constexpr TagEntry TAG_ENTRIES[] = {
-        {"Cast Shadow", RenderTag::CastShadow},
-        {"Receive Shadow", RenderTag::ReceiveShadow},
-        {"Lit", RenderTag::Lit},
+      {"Cast Shadow", RenderTag::CastShadow},
+      {"Receive Shadow", RenderTag::ReceiveShadow},
+      {"Lit", RenderTag::Lit},
     };
 
     std::string preview;
@@ -699,6 +702,17 @@ void EditorLayer::DrawMeshRendererInspector(MeshRenderer* renderer) {
   ImGui::Checkbox("Rim Shadow Affected", &data.rim_shadow_affected);
 
   renderer->ApplyEditorData(data);
+}
+
+void EditorLayer::DrawPointLightInspector(PointLightComponent* light) {
+  auto data = light->GetEditorData();
+
+  ImGui::ColorEdit3("Color", &data.color.x);
+  ImGui::DragFloat("Intensity", &data.intensity, 0.01f, 0.0f, 10.0f);
+  ImGui::DragFloat("Radius", &data.radius, 0.1f, 0.1f, 100.0f);
+  ImGui::DragFloat("Falloff", &data.falloff, 0.1f, 0.0f, 10.0f);
+
+  light->ApplyEditorData(data);
 }
 
 void EditorLayer::RebuildFontAtlas(float scale) {

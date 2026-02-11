@@ -26,6 +26,7 @@
 #include "Render/render_graph.h"
 #include "Render/render_graph_handle.h"
 #include "Rendering/hdr_config.h"
+#include "Resource/Buffer/structured_buffer.h"
 #include "Resource/Font/sprite_font_manager.h"
 #include "Resource/Texture/texture_manager.h"
 #include "Resource/render_services.h"
@@ -52,6 +53,7 @@ class Graphic {
 
   RenderFrameContext BeginFrame();
   void EndFrame(const RenderFrameContext& frame);
+  void UploadPointLights(RenderFrameContext& frame, const FramePacket& world);
   void RenderScene(const RenderFrameContext& frame, const FramePacket& world);
 
   void AddDebugLine(const Math::Vector3& start, const Math::Vector3& end, const Math::Vector4& color = colors::White);
@@ -179,6 +181,9 @@ class Graphic {
   PerFrameConstantBuffer<FrameCB> frame_cb_storage_;
   std::vector<std::unique_ptr<DynamicUploadBuffer>> object_cb_allocators_;
 
+  // TODO: Abstract as UplaodStructuredBuffer when more structured buffers are needed
+  Graphics::StructuredBuffer<PointLightData> point_light_buffers_[FRAME_BUFFER_COUNT];
+
   std::unique_ptr<gfx::RenderServices> render_services_;
 
   std::unique_ptr<UiRenderer> ui_renderer_;
@@ -200,7 +205,9 @@ class Graphic {
  public:
   void SetShadowMapResolution(uint32_t resolution);
   void SetCascadeCount(uint32_t count);
-  const ShadowFrameData& GetShadowFrameData() const { return shadow_frame_data_; }
+  const ShadowFrameData& GetShadowFrameData() const {
+    return shadow_frame_data_;
+  }
 
   bool is_initialized_ = false;
   std::atomic<bool> is_shutting_down_{false};

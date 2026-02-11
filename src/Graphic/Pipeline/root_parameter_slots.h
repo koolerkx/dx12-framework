@@ -20,6 +20,11 @@ enum class DescriptorTable : uint32_t {
   Samplers = 6,    // Bindless sampler array (s0, space0)
 };
 
+// Root SRVs
+enum class ShaderResource : uint32_t {
+  PointLights = 7,  // StructuredBuffer<PointLight> (t0, space2)
+};
+
 // Static samplers (not root parameters, but defined in root signature)
 // Note: These are now replaced by bindless sampler descriptor table
 enum class StaticSampler : uint32_t {
@@ -36,6 +41,10 @@ inline constexpr uint32_t ToIndex(ConstantBuffer slot) {
 }
 
 inline constexpr uint32_t ToIndex(DescriptorTable slot) {
+  return static_cast<uint32_t>(slot);
+}
+
+inline constexpr uint32_t ToIndex(ShaderResource slot) {
   return static_cast<uint32_t>(slot);
 }
 

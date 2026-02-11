@@ -8,6 +8,7 @@
 #include "camera_data.h"
 #include "draw_command.h"
 
+static constexpr uint32_t MAX_POINT_LIGHTS = 8;
 
 enum class BackgroundMode : uint8_t { ClearColor, Skybox };
 
@@ -51,6 +52,14 @@ struct ShadowConfig {
   bool enabled = true;
 };
 
+struct PointLightEntry {
+  Math::Vector3 position;
+  float intensity = 1.0f;
+  Math::Vector3 color = {1.0f, 1.0f, 1.0f};
+  float radius = 10.0f;
+  float falloff = 2.0f;
+};
+
 struct FramePacket {
   CameraData main_camera;
   CameraData ui_camera;
@@ -58,12 +67,18 @@ struct FramePacket {
   LightingConfig lighting;
   ShadowConfig shadow;
   std::vector<DrawCommand> commands;
+  std::vector<PointLightEntry> point_lights;
 
   void Clear() {
     commands.clear();
+    point_lights.clear();
   }
 
   void AddCommand(DrawCommand cmd) {
     commands.emplace_back(std::move(cmd));
+  }
+
+  void AddPointLight(PointLightEntry entry) {
+    if (point_lights.size() < MAX_POINT_LIGHTS) point_lights.emplace_back(std::move(entry));
   }
 };
