@@ -100,6 +100,8 @@ void MaterialRenderer::Record(const RenderFrameContext& frame,
     shadow_cb.shadowBias = shadow.depth_bias;
     shadow_cb.shadowNormalBias = shadow.normal_bias;
     shadow_cb.shadowMapResolution = frame.shadow_data->shadow_map_resolution;
+    shadow_cb.shadowAlgorithm = static_cast<uint32_t>(shadow.algorithm);
+    shadow_cb.shadowColor = shadow.shadow_color;
   }
   cmd.SetShadowConstants(shadow_cb);
 

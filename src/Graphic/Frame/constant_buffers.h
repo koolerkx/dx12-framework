@@ -48,5 +48,7 @@ struct alignas(256) ShadowCB {
   float shadowBias;
   float shadowNormalBias;
   uint32_t shadowMapResolution;
+  uint32_t shadowAlgorithm;
+  Vector3 shadowColor;
 };
 static_assert(sizeof(ShadowCB) == 256);

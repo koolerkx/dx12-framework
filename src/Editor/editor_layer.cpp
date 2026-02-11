@@ -22,7 +22,6 @@
 #include "Graphic/Render/render_graph.h"
 #include "Graphic/graphic.h"
 
-
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 void EditorLayer::Initialize(HWND hwnd, Graphic& graphic) {
@@ -464,6 +463,12 @@ void EditorLayer::DrawSceneSettings() {
       pending_shadow_resolution_ = RESOLUTION_OPTIONS[selected];
     }
 
+    static constexpr const char* ALGORITHM_LABELS[] = {"Hard", "PCF 3x3"};
+    int algo = static_cast<int>(shadow.GetAlgorithm());
+    if (ImGui::Combo("Algorithm", &algo, ALGORITHM_LABELS, IM_ARRAYSIZE(ALGORITHM_LABELS))) {
+      shadow.SetAlgorithm(static_cast<ShadowAlgorithm>(algo));
+    }
+
     float depth_bias = shadow.GetDepthBias();
     if (ImGui::DragFloat("Depth Bias", &depth_bias, 0.0001f, 0.0f, 0.1f, "%.4f")) {
       shadow.SetDepthBias(depth_bias);
@@ -477,6 +482,12 @@ void EditorLayer::DrawSceneSettings() {
     float distance = shadow.GetShadowDistance();
     if (ImGui::DragFloat("Shadow Distance", &distance, 1.0f, 1.0f, 1000.0f, "%.0f")) {
       shadow.SetShadowDistance(distance);
+    }
+
+    auto shadow_color = shadow.GetShadowColor();
+    float color[3] = {shadow_color.x, shadow_color.y, shadow_color.z};
+    if (ImGui::ColorEdit3("Shadow Color", color)) {
+      shadow.SetShadowColor(Math::Vector3(color[0], color[1], color[2]));
     }
 
     if (ImGui::Button("Show Shadow Map")) {
@@ -582,6 +593,40 @@ void EditorLayer::DrawMeshRendererInspector(MeshRenderer* renderer) {
   DrawColorEditor("Color", data.color);
   DrawRenderLayerEditor(data.render_layer);
   DrawRenderSettingsEditor(data.render_settings, true);
+
+  {
+    struct TagEntry {
+      const char* label;
+      RenderTag tag;
+    };
+    static constexpr TagEntry TAG_ENTRIES[] = {
+        {"Cast Shadow", RenderTag::CastShadow},
+        {"Receive Shadow", RenderTag::ReceiveShadow},
+        {"Lit", RenderTag::Lit},
+    };
+
+    std::string preview;
+    for (const auto& [label, tag] : TAG_ENTRIES) {
+      if (HasTag(data.render_tags, tag)) {
+        if (!preview.empty()) preview += ", ";
+        preview += label;
+      }
+    }
+    if (preview.empty()) preview = "None";
+
+    if (ImGui::BeginCombo("Render Tags", preview.c_str())) {
+      for (const auto& [label, tag] : TAG_ENTRIES) {
+        bool has = HasTag(data.render_tags, tag);
+        if (ImGui::Checkbox(label, &has)) {
+          if (has)
+            data.render_tags |= static_cast<uint32_t>(tag);
+          else
+            data.render_tags &= ~static_cast<uint32_t>(tag);
+        }
+      }
+      ImGui::EndCombo();
+    }
+  }
 
   renderer->ApplyEditorData(data);
 }

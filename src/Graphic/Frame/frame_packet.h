@@ -23,11 +23,18 @@ struct LightingConfig {
   Math::Vector3 ambient_color = Math::Vector3(1.0f, 1.0f, 1.0f);
 };
 
+enum class ShadowAlgorithm : uint32_t {
+  Hard = 0,
+  PCF3x3 = 1,
+};
+
 struct ShadowConfig {
   uint32_t resolution = 2048;
   float depth_bias = 0.005f;
   float normal_bias = 0.02f;
   float shadow_distance = 100.0f;
+  ShadowAlgorithm algorithm = ShadowAlgorithm::PCF3x3;
+  Math::Vector3 shadow_color = Math::Vector3(0.0f, 0.0f, 0.0f);
   bool enabled = true;
 };
 
