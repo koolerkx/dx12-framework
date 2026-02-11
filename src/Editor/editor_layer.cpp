@@ -314,13 +314,13 @@ void EditorLayer::DrawTransformInspector(TransformComponent* transform) {
   Math::Vector3 position = transform->GetPosition();
   if (ImGui::DragFloat3("Position", &position.x, 0.1f)) transform->SetPosition(position);
 
-  Math::Vector3 euler_rad = transform->GetRotation().ToEulerAngles();
-  Math::Vector3 euler_deg = {
-    Math::ToDegrees(euler_rad.x),
-    Math::ToDegrees(euler_rad.y),
-    Math::ToDegrees(euler_rad.z),
-  };
-  if (ImGui::DragFloat3("Rotation", &euler_deg.x, 0.5f)) transform->SetRotationEulerDegree(euler_deg);
+  Math::Vector3 euler_deg = transform->GetRotationDegrees();
+  auto wrap = [](float deg) { return std::fmod(std::fmod(deg, 360.0f) + 540.0f, 360.0f) - 180.0f; };
+  Math::Vector3 display_deg = {wrap(euler_deg.x), wrap(euler_deg.y), wrap(euler_deg.z)};
+  if (ImGui::DragFloat3("Rotation", &display_deg.x, 0.5f)) {
+    Math::Vector3 delta = display_deg - Math::Vector3{wrap(euler_deg.x), wrap(euler_deg.y), wrap(euler_deg.z)};
+    transform->SetRotationEulerDegree(euler_deg + delta);
+  }
 
   Math::Vector3 scale = transform->GetScale();
   if (ImGui::DragFloat3("Scale", &scale.x, 0.01f)) transform->SetScale(scale);

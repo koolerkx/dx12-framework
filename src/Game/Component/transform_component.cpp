@@ -38,11 +38,13 @@ void TransformComponent::SetScale(const Vector3& scale) {
 
 void TransformComponent::SetRotation(const Quaternion& quat) {
   local_rot_ = quat;
+  local_euler_degrees_ = quat.ToEulerAngles() * Math::ToDegrees(1.0f);
   is_dirty_ = true;
 }
 
 void TransformComponent::SetRotationEuler(float pitch, float yaw, float roll) {
   local_rot_ = Quaternion::CreateFromEulerAngles(pitch, yaw, roll);
+  local_euler_degrees_ = {Math::ToDegrees(pitch), Math::ToDegrees(yaw), Math::ToDegrees(roll)};
   is_dirty_ = true;
 }
 
@@ -52,6 +54,7 @@ void TransformComponent::SetRotationEuler(const Vector3& euler) {
 
 void TransformComponent::SetRotationEulerDegree(float pitch, float yaw, float roll) {
   local_rot_ = Quaternion::CreateFromEulerAngles(Math::ToRadians(pitch), Math::ToRadians(yaw), Math::ToRadians(roll));
+  local_euler_degrees_ = {pitch, yaw, roll};
   is_dirty_ = true;
 }
 

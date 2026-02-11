@@ -55,6 +55,10 @@ class TransformComponent : public Component<TransformComponent> {
     return local_rot_;
   }
 
+  Vector3 GetRotationDegrees() const {
+    return local_euler_degrees_;
+  }
+
   Matrix4 GetWorldMatrix();
 
   Vector3 GetForward();
@@ -71,6 +75,7 @@ class TransformComponent : public Component<TransformComponent> {
   Vector3 local_pos_ = Vector3::Zero;
   Vector3 local_scale_ = Vector3::One;
   Quaternion local_rot_ = Quaternion::Identity;
+  Vector3 local_euler_degrees_ = Vector3::Zero;
   Vector3 local_pivot_ = Vector3::Zero;
   Vector3 local_anchor_ = Vector3::Zero;
 
