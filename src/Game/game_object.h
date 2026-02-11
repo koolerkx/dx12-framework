@@ -9,6 +9,7 @@
 
 class IScene;
 class GameContext;
+class DebugDrawer;
 
 class GameObject {
  public:
@@ -20,6 +21,7 @@ class GameObject {
   void Update(float dt);
   void FixedUpdate(float dt);
   void Render(FramePacket& packet);
+  void DebugDraw(DebugDrawer& drawer);
 
   bool IsStarted() const {
     return is_started_;

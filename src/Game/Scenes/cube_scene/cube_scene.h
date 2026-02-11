@@ -10,7 +10,7 @@ class CubeScene : public IScene {
  public:
   void OnEnter(AssetManager& asset_manager) override;
   void OnExit() override;
-  void OnRender(FramePacket& packet) override;
+  void OnDebugDraw(DebugDrawer& drawer) override;
 
   void OnPostUpdate(float dt) override;
 

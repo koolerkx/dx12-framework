@@ -74,6 +74,19 @@ void GameObject::Render(FramePacket& packet) {
   }
 }
 
+void GameObject::DebugDraw(DebugDrawer& drawer) {
+  const size_t count = components_.size();
+  for (size_t i = 0; i < count; ++i) {
+    auto& comp = components_[i];
+    if (comp->is_started_ && comp->IsEnabled() && comp->IsDebugDrawEnabled()) {
+      comp->OnDebugDraw(drawer);
+    }
+  }
+  for (auto* child : children_) {
+    child->DebugDraw(drawer);
+  }
+}
+
 void GameObject::FlushPendingStarts() {
   const size_t count = components_.size();
   for (size_t i = 0; i < count; ++i) {

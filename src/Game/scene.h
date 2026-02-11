@@ -33,8 +33,12 @@ class IScene {
   virtual void OnPostFixedUpdate(float /*dt*/) {
   }
 
-  // Override this to add custom rendering (e.g., debug visualizations)
+  // Override this to add custom rendering
   virtual void OnRender(FramePacket& /*packet*/) {
+  }
+
+  // Override this to add scene-level debug draw
+  virtual void OnDebugDraw(DebugDrawer& /*drawer*/) {
   }
 
   // System Update Functions, this update game objects and components
@@ -43,6 +47,7 @@ class IScene {
   void Update(float dt);
   void FixedUpdate(float dt);
   void Render(FramePacket& packet);
+  void DebugDraw(DebugDrawer& drawer);
 
   void SetContext(GameContext* context) {
     context_ = context;
@@ -110,5 +115,6 @@ class IScene {
   void UpdateRootObjects(float dt);
   void FixedUpdateRootObjects(float dt);
   void RenderRootObjects(FramePacket& packet);
+  void DebugDrawRootObjects(DebugDrawer& drawer);
   void StartAllObjects();
 };

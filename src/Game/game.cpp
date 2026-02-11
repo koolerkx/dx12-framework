@@ -1,5 +1,6 @@
 #include "game.h"
 
+#include "Debug/debug_drawer.h"
 #include "Graphic/graphic.h"
 #include "Scenes/cube_scene/cube_scene.h"
 #include "Scenes/test_scene/test_scene.h"
@@ -67,6 +68,10 @@ void Game::OnRender() {
   if (scene) {
     scene->Render(frame_packet_);
     scene->OnRender(frame_packet_);
+
+    if (debug_drawer_ && debug_drawer_->IsEnabled()) {
+      scene->DebugDraw(*debug_drawer_);
+    }
   }
 
   graphic->UploadPointLights(frame_context, frame_packet_);

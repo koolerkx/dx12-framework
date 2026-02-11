@@ -186,33 +186,30 @@ void TestScene::OnPostUpdate(float dt) {
   }
 }
 
-void TestScene::OnRender(FramePacket& /* packet */) {
-  auto* debug_drawer = GetContext()->GetDebugDrawer();
-  if (!debug_drawer) return;
-
+void TestScene::OnDebugDraw(DebugDrawer& drawer) {
   DebugDrawer::GridConfig grid_config;
   grid_config.size = 20.0f;
   grid_config.cell_size = 1.0f;
   grid_config.y_level = 0.0f;
   grid_config.color = colors::Gray;
-  debug_drawer->DrawGrid(grid_config);
+  drawer.DrawGrid(grid_config);
 
   DebugDrawer::AxisGizmoConfig axis_config;
   axis_config.position = Vector3::Zero;
   axis_config.length = 2.0f;
-  debug_drawer->DrawAxisGizmo(axis_config);
+  drawer.DrawAxisGizmo(axis_config);
 
-  debug_drawer->DrawBox({-5, 2, -5}, {1, 1, 1}, colors::Red);
+  drawer.DrawWireCube({-6, 1, -6}, {-4, 3, -4}, colors::Red);
 
-  debug_drawer->DrawSphere({-5, 2, -5}, 3, colors::Red, 32);
+  drawer.DrawWireSphere({-5, 2, -5}, 3, colors::Red, 32);
 
   DebugDrawer::AxisGizmoConfig pivot_axis;
   pivot_axis.position = {5.0f, 0.0f, 5.0f};
   pivot_axis.length = 1.0f;
-  debug_drawer->DrawAxisGizmo(pivot_axis);
+  drawer.DrawAxisGizmo(pivot_axis);
 
   auto pivot_world = pivot_cube_->GetComponent<TransformComponent>()->GetWorldMatrix().TransformPoint({0.5f, 0.0f, 0.0f});
-  debug_drawer->DrawSphere(pivot_world, 0.1f, colors::Yellow, 16);
+  drawer.DrawWireSphere(pivot_world, 0.1f, colors::Yellow, 16);
 }
 
 void TestScene::OnExit() {

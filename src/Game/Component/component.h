@@ -4,6 +4,8 @@
 
 #include "Graphic/Frame/frame_packet.h"
 
+class DebugDrawer;
+
 // Define a unique ID type for components
 using ComponentTypeID = uint32_t;
 inline ComponentTypeID GetNextComponentID() {
@@ -47,6 +49,9 @@ class IComponentBase {
   // Every frame render pass, gated by enabled and started
   virtual void OnRender(FramePacket& /*packet*/) {
   }
+  // Debug visualization, gated by enabled, started, and debug_draw_enabled
+  virtual void OnDebugDraw(DebugDrawer& /*drawer*/) {
+  }
   // In ~GameObject, after GameObject::OnDestroy, only if started
   virtual void OnDestroy() {
   }
@@ -74,12 +79,20 @@ class IComponentBase {
     return is_started_;
   }
 
+  bool IsDebugDrawEnabled() const {
+    return debug_draw_enabled_;
+  }
+  void SetDebugDrawEnabled(bool enabled) {
+    debug_draw_enabled_ = enabled;
+  }
+
  protected:
   GameObject* owner_;
 
  private:
   bool enabled_ = true;
   bool is_started_ = false;
+  bool debug_draw_enabled_ = true;
 
   friend class GameObject;
 };

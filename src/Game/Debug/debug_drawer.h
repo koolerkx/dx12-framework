@@ -1,26 +1,6 @@
-/**
- * @file debug_drawer.h
- *
- * @code {.cpp}
- * // Draw grid
- * DebugDrawer::GridConfig grid_config;
- * grid_config.size = 20.0f;
- * grid_config.cell_size = 1.0f;
- * grid_config.y_level = 0.0f;
- * grid_config.color = {0.5f, 0.5f, 0.5f, 1.0f};
- * debug_drawer->DrawGrid(grid_config);
- *
- * // Draw axis gizmo at world origin
- * DebugDrawer::AxisGizmoConfig axis_config;
- * axis_config.position = {0.0f, 0.0f, 0.0f};
- * axis_config.length = 2.0f;
- * debug_drawer->DrawAxisGizmo(axis_config);
- *
- * // Optional: Draw bounding box around cube
- * // debug_drawer->DrawBox({0, 0, 0}, {1, 1, 1}, {1, 1, 0, 1});
- * @endcode
- */
 #pragma once
+#include <algorithm>
+
 #include "Framework/Core/color.h"
 #include "Framework/Math/Math.h"
 
@@ -33,13 +13,40 @@ class DebugDrawer {
  public:
   explicit DebugDrawer(Graphic* graphic);
 
+  void SetEnabled(bool enabled) {
+    enabled_ = enabled;
+  }
+  bool IsEnabled() const {
+    return enabled_;
+  }
+
+  void SetGlobalOpacity(float opacity) {
+    global_opacity_ = std::clamp(opacity, 0.0f, 1.0f);
+  }
+  float GetGlobalOpacity() const {
+    return global_opacity_;
+  }
+
+  // Primitives
+  void DrawLine(const Vector3& start, const Vector3& end, const Vector4& color);
+
+  struct CircleProps {
+    int segments = 16;
+    Vector3 normal = Vector3::Up;
+  };
+  void DrawCircle(const Vector3& center, float radius, const Vector4& color, const CircleProps& props = {});
+
+  void DrawRect(const Vector3& min, const Vector3& max, const Vector4& color);
+  void DrawWireCube(const Vector3& min, const Vector3& max, const Vector4& color);
+  void DrawWireSphere(const Vector3& center, float radius, const Vector4& color = colors::Cyan, int segments = 16);
+
   // Grid drawing
   struct GridConfig {
-    float size;       // Total grid size
-    float cell_size;  // Size of each cell
-    float y_level;    // Height level
+    float size;
+    float cell_size;
+    float y_level;
     Vector4 color;
-    Vector4 axis_color;  // Color for X/Z axes
+    Vector4 axis_color;
 
     GridConfig() : size(20.0f), cell_size(1.0f), y_level(0.0f), color(colors::Gray), axis_color(colors::Silver) {
     }
@@ -59,12 +66,10 @@ class DebugDrawer {
 
   void DrawAxisGizmo(const AxisGizmoConfig& config = AxisGizmoConfig());
 
-  // Box drawing (useful for bounds visualization)
-  void DrawBox(const Vector3& center, const Vector3& extents, const Vector4& color = colors::Yellow);
-
-  // Sphere drawing (approximated with lines)
-  void DrawSphere(const Vector3& center, float radius, const Vector4& color = colors::Cyan, int segments = 16);
-
  private:
+  Vector4 ApplyOpacity(const Vector4& color) const;
+
   Graphic* graphic_;
+  bool enabled_ = true;
+  float global_opacity_ = 1.0f;
 };

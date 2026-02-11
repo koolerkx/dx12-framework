@@ -77,6 +77,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
 #ifdef ENABLE_EDITOR
   editor.SubscribeEvents(*event_bus);
   editor.SetScene(game.GetCurrentScene());
+  editor.SetDebugDrawer(context.GetDebugDrawer());
 #endif
 
   InputEventGenerator event_generator(inputSystem, *event_bus);

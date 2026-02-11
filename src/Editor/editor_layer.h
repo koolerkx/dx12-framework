@@ -20,6 +20,8 @@ class UITextRenderer;
 class MeshRenderer;
 class PointLightComponent;
 
+class DebugDrawer;
+
 class EditorLayer {
  public:
   void Initialize(HWND hwnd, Graphic& graphic);
@@ -27,6 +29,7 @@ class EditorLayer {
   void BeginFrame();
   void Render(ID3D12GraphicsCommandList* cmd);
   void SetScene(IScene* scene);
+  void SetDebugDrawer(DebugDrawer* drawer);
   void SubscribeEvents(EventBus& bus);
   bool WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -54,6 +57,7 @@ class EditorLayer {
 
   Graphic* graphic_ = nullptr;
   IScene* scene_ = nullptr;
+  DebugDrawer* debug_drawer_ = nullptr;
   GameObject* selected_object_ = nullptr;
   DescriptorHeapAllocator::Allocation imgui_font_srv_;
 
@@ -70,6 +74,9 @@ class EditorLayer {
   ImGuiStyle base_style_{};
 
   EventScope event_scope_;
+
+  bool debug_draw_enabled_ = true;
+  float debug_draw_opacity_ = 1.0f;
 
   uint32_t pending_shadow_resolution_ = 0;
   uint32_t pending_cascade_count_ = 0;

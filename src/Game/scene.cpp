@@ -129,6 +129,19 @@ void IScene::RenderRootObjects(FramePacket& packet) {
   }
 }
 
+void IScene::DebugDraw(DebugDrawer& drawer) {
+  DebugDrawRootObjects(drawer);
+  OnDebugDraw(drawer);
+}
+
+void IScene::DebugDrawRootObjects(DebugDrawer& drawer) {
+  for (auto& obj : game_objects_) {
+    if (obj->GetParent() == nullptr) {
+      obj->DebugDraw(drawer);
+    }
+  }
+}
+
 GameObject* IScene::FindGameObject(const std::string& name) const {
   for (auto& obj : game_objects_) {
     if (obj->GetName() == name) return obj.get();

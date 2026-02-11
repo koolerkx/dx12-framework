@@ -73,11 +73,6 @@ void CubeScene::OnPostUpdate(float dt) {
   rotation_angle_ += 30.0f * dt;
   cube_->GetComponent<TransformComponent>()->SetRotationEulerDegree({0.0f, rotation_angle_, 0.0f});
 
-  if (auto* debug_drawer = GetContext()->GetDebugDrawer()) {
-    debug_drawer->DrawGrid();
-    debug_drawer->DrawAxisGizmo();
-  }
-
   auto* input = GetContext()->GetInput();
   if (input && input->GetKeyDown(Keyboard::KeyCode::F1)) {
     GetContext()->GetSceneManager()->RequestLoad(SceneId::TEST_SCENE);
@@ -99,14 +94,13 @@ void CubeScene::SetupCamera() {
   GetCameraSetting().Register(camera);
 }
 
-void CubeScene::OnRender(FramePacket&) {
-  auto* debug_drawer = GetContext()->GetDebugDrawer();
-  if (!debug_drawer) return;
-
+void CubeScene::OnDebugDraw(DebugDrawer& drawer) {
   DebugDrawer::GridConfig grid_config;
   grid_config.size = 20.0f;
   grid_config.cell_size = 1.0f;
   grid_config.y_level = 0.0f;
   grid_config.color = colors::Gray;
-  debug_drawer->DrawGrid(grid_config);
+  drawer.DrawGrid(grid_config);
+
+  drawer.DrawAxisGizmo();
 }

@@ -16,6 +16,7 @@
 #include "Game/Component/Renderer/ui_text_renderer.h"
 #include "Game/Component/point_light_component.h"
 #include "Game/Component/transform_component.h"
+#include "Game/Debug/debug_drawer.h"
 #include "Game/game_object.h"
 #include "Game/scene.h"
 #include "Game/scene_events.h"
@@ -108,6 +109,14 @@ void EditorLayer::Render(ID3D12GraphicsCommandList* cmd) {
 
   ImGui::Render();
   ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), cmd);
+}
+
+void EditorLayer::SetDebugDrawer(DebugDrawer* drawer) {
+  debug_drawer_ = drawer;
+  if (drawer) {
+    debug_draw_enabled_ = drawer->IsEnabled();
+    debug_draw_opacity_ = drawer->GetGlobalOpacity();
+  }
 }
 
 void EditorLayer::SetScene(IScene* scene) {
@@ -283,6 +292,10 @@ void EditorLayer::DrawInspector() {
 
       if (auto* transform = dynamic_cast<TransformComponent*>(comp.get())) {
         if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
+          bool dbg = comp->IsDebugDrawEnabled();
+          ImGui::BeginDisabled(!debug_draw_enabled_);
+          if (ImGui::Checkbox("Debug Draw##comp", &dbg)) comp->SetDebugDrawEnabled(dbg);
+          ImGui::EndDisabled();
           DrawTransformInspector(transform);
         }
       } else if (auto* sprite = dynamic_cast<SpriteRenderer*>(comp.get())) {
@@ -296,7 +309,13 @@ void EditorLayer::DrawInspector() {
       } else if (auto* mesh = dynamic_cast<MeshRenderer*>(comp.get())) {
         if (ImGui::CollapsingHeader("MeshRenderer")) DrawMeshRendererInspector(mesh);
       } else if (auto* point_light = dynamic_cast<PointLightComponent*>(comp.get())) {
-        if (ImGui::CollapsingHeader("PointLightComponent", ImGuiTreeNodeFlags_DefaultOpen)) DrawPointLightInspector(point_light);
+        if (ImGui::CollapsingHeader("PointLightComponent", ImGuiTreeNodeFlags_DefaultOpen)) {
+          bool dbg = comp->IsDebugDrawEnabled();
+          ImGui::BeginDisabled(!debug_draw_enabled_);
+          if (ImGui::Checkbox("Debug Draw##comp", &dbg)) comp->SetDebugDrawEnabled(dbg);
+          ImGui::EndDisabled();
+          DrawPointLightInspector(point_light);
+        }
       } else {
         ImGui::CollapsingHeader(comp->GetTypeName());
       }
@@ -583,6 +602,19 @@ void EditorLayer::DrawDebugPanel() {
   if (depth_cfg.enabled) {
     ImGui::DragFloat("Near Plane", &depth_cfg.near_plane, 0.01f, 0.001f, depth_cfg.far_plane);
     ImGui::DragFloat("Far Plane", &depth_cfg.far_plane, 1.0f, depth_cfg.near_plane, 100000.0f);
+  }
+
+  ImGui::Separator();
+
+  if (debug_drawer_) {
+    if (ImGui::Checkbox("Debug Draw", &debug_draw_enabled_)) {
+      debug_drawer_->SetEnabled(debug_draw_enabled_);
+    }
+    ImGui::BeginDisabled(!debug_draw_enabled_);
+    if (ImGui::SliderFloat("Debug Opacity", &debug_draw_opacity_, 0.0f, 1.0f)) {
+      debug_drawer_->SetGlobalOpacity(debug_draw_opacity_);
+    }
+    ImGui::EndDisabled();
   }
 
   ImGui::End();

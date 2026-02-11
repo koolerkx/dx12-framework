@@ -26,7 +26,7 @@ Rendering::RenderSettings MaterialManager::GetDefaultSettings(Graphics::ShaderId
   Rendering::RenderSettings settings;
 
   if (shader_id == Graphics::DebugLineShader::ID) {
-    settings.blend_mode = Rendering::BlendMode::Opaque;
+    settings.blend_mode = Rendering::BlendMode::AlphaBlend;
     settings.depth_test = true;
     settings.depth_write = false;
     settings.double_sided = true;

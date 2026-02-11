@@ -11,7 +11,7 @@ class TestScene : public IScene {
   void OnExit() override;
 
   void OnPostUpdate(float dt) override;
-  void OnRender(FramePacket& packet) override;
+  void OnDebugDraw(DebugDrawer& drawer) override;
 
  private:
   AssetHandle<Texture> texture_background_;
