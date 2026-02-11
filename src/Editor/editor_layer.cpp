@@ -327,6 +327,9 @@ void EditorLayer::DrawTransformInspector(TransformComponent* transform) {
 
   Math::Vector3 pivot = transform->GetPivot();
   if (ImGui::DragFloat3("Pivot", &pivot.x, 0.1f)) transform->SetPivot(pivot);
+
+  Math::Vector3 anchor = transform->GetAnchor();
+  if (ImGui::DragFloat3("Anchor", &anchor.x, 0.1f)) transform->SetAnchor(anchor);
 }
 
 void EditorLayer::DrawSpriteRendererInspector(SpriteRenderer* renderer) {

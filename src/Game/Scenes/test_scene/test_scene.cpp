@@ -63,7 +63,7 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
     .color = colors::White,
   });
 
-  auto* cube_object3 = CreateGameObject("PivotCube", {.position = {0, -4.5, -3}, .pivot = {0, -0.5f, 0}});
+  auto* cube_object3 = CreateGameObject("PivotCube2", {.position = {0, -5.0f, -3}, .anchor = {0, -0.5f, 0}});
   cube_object3->AddComponent<MeshRenderer>(MeshRenderer::Props{
     .mesh = asset_manager.GetDefaultMesh(DefaultMesh::Cube),
     .texture = texture_background_.Get(),

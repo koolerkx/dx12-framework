@@ -7,6 +7,7 @@ void TransformComponent::Apply(const Props& props) {
   if (props.scale != Vector3::One) SetScale(props.scale);
   if (props.rotation_degrees != Vector3::Zero) SetRotationEulerDegree(props.rotation_degrees);
   if (props.pivot != Vector3::Zero) SetPivot(props.pivot);
+  if (props.anchor != Vector3::Zero) SetAnchor(props.anchor);
 }
 
 void TransformComponent::OnStart() {
@@ -63,19 +64,29 @@ void TransformComponent::SetPivot(const Vector3& pivot) {
   is_dirty_ = true;
 }
 
+void TransformComponent::SetAnchor(const Vector3& anchor) {
+  local_anchor_ = anchor;
+  is_dirty_ = true;
+}
+
 void TransformComponent::UpdateLocalMatrix() {
-  if (local_pivot_ == Vector3::Zero) {
+  if (local_pivot_ == Vector3::Zero && local_anchor_ == Vector3::Zero) {
     local_matrix_ = Matrix4::CreateFromTRS(local_pos_, local_rot_, local_scale_);
     return;
   }
 
-  // M = T(-pivot) * S * R * T(pivot + pos)
+  if (local_pivot_ == Vector3::Zero) {
+    local_matrix_ = Matrix4::CreateFromTRS(local_pos_ - local_anchor_, local_rot_, local_scale_);
+    return;
+  }
+
+  // M = T(-pivot) * S * R * T(pivot + pos - anchor)
   Matrix4 neg_pivot = Matrix4::CreateTranslation(-local_pivot_);
   Matrix4 scale = Matrix4::CreateScale(local_scale_);
   Matrix4 rotation = Matrix4::CreateFromQuaternion(local_rot_);
-  Matrix4 pos = Matrix4::CreateTranslation(local_pivot_ + local_pos_);
+  Matrix4 final_translation = Matrix4::CreateTranslation(local_pivot_ + local_pos_ - local_anchor_);
 
-  local_matrix_ = neg_pivot * scale * rotation * pos;
+  local_matrix_ = neg_pivot * scale * rotation * final_translation;
 }
 
 Matrix4 TransformComponent::GetWorldMatrix() {

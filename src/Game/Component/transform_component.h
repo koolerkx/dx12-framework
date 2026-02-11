@@ -12,7 +12,8 @@ class TransformComponent : public Component<TransformComponent> {
     Vector3 position = Vector3::Zero;
     Vector3 scale = Vector3::One;
     Vector3 rotation_degrees = Vector3::Zero;
-    Vector3 pivot = Vector3::Zero;
+    Vector3 pivot = Vector3::Zero;   // the scale and rotation center
+    Vector3 anchor = Vector3::Zero;  // the position offser
   };
 
   using Component::Component;
@@ -35,6 +36,11 @@ class TransformComponent : public Component<TransformComponent> {
   void SetPivot(const Vector3& pivot);
   Vector3 GetPivot() const {
     return local_pivot_;
+  }
+
+  void SetAnchor(const Vector3& anchor);
+  Vector3 GetAnchor() const {
+    return local_anchor_;
   }
 
   Vector3 GetPosition() const {
@@ -66,6 +72,7 @@ class TransformComponent : public Component<TransformComponent> {
   Vector3 local_scale_ = Vector3::One;
   Quaternion local_rot_ = Quaternion::Identity;
   Vector3 local_pivot_ = Vector3::Zero;
+  Vector3 local_anchor_ = Vector3::Zero;
 
   Matrix4 local_matrix_;
   Matrix4 world_matrix_;
