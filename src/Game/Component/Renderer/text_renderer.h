@@ -40,8 +40,10 @@ class TextRenderer : public Component<TextRenderer> {
     SetFont(props.font);
     SetPixelSize(props.pixel_size);
     SetColor(props.color);
+
     SetHorizontalAlign(props.h_align);
     SetVerticalAlign(props.v_align);
+
     SetBillboardMode(props.billboard_mode);
     SetPivot(props.pivot);
     if (props.double_sided) SetDoubleSided(true);
@@ -161,11 +163,13 @@ class TextRenderer : public Component<TextRenderer> {
     node.Write("FontFamily", static_cast<int>(font_family_));
     node.Write("PixelSize", pixel_size_);
     node.WriteVec4("Color", color_.x, color_.y, color_.z, color_.w);
+
     node.Write("HAlign", static_cast<int>(h_align_));
     node.Write("VAlign", static_cast<int>(v_align_));
     node.Write("LineSpacing", line_spacing_);
     node.Write("LetterSpacing", letter_spacing_);
     node.Write("UseKerning", use_kerning_);
+
     node.Write("BillboardMode", static_cast<int>(billboard_mode_));
     node.WriteVec2("Pivot", text_pivot_.x, text_pivot_.y);
     node.Write("RenderLayer", render_layer_ == RenderLayer::Opaque ? "Opaque" : "Transparent");
@@ -177,11 +181,13 @@ class TextRenderer : public Component<TextRenderer> {
     SetFont(static_cast<Font::FontFamily>(node.ReadInt("FontFamily", static_cast<int>(font_family_))));
     SetPixelSize(node.ReadFloat("PixelSize", pixel_size_));
     node.ReadVec4("Color", color_.x, color_.y, color_.z, color_.w);
+
     SetHorizontalAlign(static_cast<Text::HorizontalAlign>(node.ReadInt("HAlign", static_cast<int>(h_align_))));
     SetVerticalAlign(static_cast<Text::VerticalAlign>(node.ReadInt("VAlign", static_cast<int>(v_align_))));
     SetLineSpacing(node.ReadFloat("LineSpacing", line_spacing_));
     SetLetterSpacing(node.ReadFloat("LetterSpacing", letter_spacing_));
     SetUseKerning(node.ReadBool("UseKerning", use_kerning_));
+
     SetBillboardMode(static_cast<Billboard::Mode>(node.ReadInt("BillboardMode", static_cast<int>(billboard_mode_))));
     node.ReadVec2("Pivot", text_pivot_.x, text_pivot_.y);
     auto layer_str = node.ReadString("RenderLayer", "Transparent");

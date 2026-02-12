@@ -38,8 +38,10 @@ class SpriteRenderer : public Component<SpriteRenderer> {
 
   SpriteRenderer(GameObject* owner, const Props& props) : Component(owner) {
     if (!props.texture_path.empty()) SetTexturePath(props.texture_path);
+
     SetColor(props.color);
     SetSize(props.size);
+
     SetBillboardMode(props.billboard_mode);
     SetBlendMode(props.blend_mode);
     SetPivot(props.pivot);
@@ -129,11 +131,13 @@ class SpriteRenderer : public Component<SpriteRenderer> {
     if (!texture_path_.empty()) {
       node.Write("Texture", texture_path_);
     }
+
     node.WriteVec4("Color", color_.x, color_.y, color_.z, color_.w);
     node.WriteVec2("Size", size_.x, size_.y);
     node.WriteVec2("Pivot", sprite_pivot_.x, sprite_pivot_.y);
     node.WriteVec2("UVOffset", uv_offset_.x, uv_offset_.y);
     node.WriteVec2("UVScale", uv_scale_.x, uv_scale_.y);
+
     node.Write("BillboardMode", static_cast<int>(billboard_mode_));
     node.Write("BlendMode", static_cast<int>(render_settings_.blend_mode));
     node.Write("SamplerType", static_cast<int>(render_settings_.sampler_type));
@@ -142,6 +146,7 @@ class SpriteRenderer : public Component<SpriteRenderer> {
     node.Write("DoubleSided", render_settings_.double_sided);
     node.Write("RenderTags", static_cast<int>(render_tags_));
     node.Write("RenderLayer", render_layer_ == RenderLayer::Opaque ? "Opaque" : "Transparent");
+
     if (animator_) {
       auto anim_node = node.BeginMap("Animator");
       animator_->Serialize(anim_node);
@@ -153,11 +158,13 @@ class SpriteRenderer : public Component<SpriteRenderer> {
     if (!tex_path.empty()) {
       SetTexturePath(tex_path);
     }
+
     node.ReadVec4("Color", color_.x, color_.y, color_.z, color_.w);
     node.ReadVec2("Size", size_.x, size_.y);
     node.ReadVec2("Pivot", sprite_pivot_.x, sprite_pivot_.y);
     node.ReadVec2("UVOffset", uv_offset_.x, uv_offset_.y);
     node.ReadVec2("UVScale", uv_scale_.x, uv_scale_.y);
+
     billboard_mode_ = static_cast<Billboard::Mode>(node.ReadInt("BillboardMode", static_cast<int>(billboard_mode_)));
     render_settings_.blend_mode =
       static_cast<Rendering::BlendMode>(node.ReadInt("BlendMode", static_cast<int>(render_settings_.blend_mode)));
@@ -169,6 +176,7 @@ class SpriteRenderer : public Component<SpriteRenderer> {
     render_tags_ = static_cast<RenderTagMask>(node.ReadInt("RenderTags", static_cast<int>(render_tags_)));
     auto layer_str = node.ReadString("RenderLayer", "Transparent");
     render_layer_ = (layer_str == "Opaque") ? RenderLayer::Opaque : RenderLayer::Transparent;
+
     if (node.HasKey("Animator")) {
       auto anim_node = node.GetMap("Animator");
       GetAnimator().Deserialize(anim_node);

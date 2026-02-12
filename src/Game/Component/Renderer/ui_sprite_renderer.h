@@ -32,8 +32,10 @@ class UISpriteRenderer : public Component<UISpriteRenderer> {
 
   UISpriteRenderer(GameObject* owner, const Props& props) : Component(owner) {
     if (!props.texture_path.empty()) SetTexturePath(props.texture_path);
+
     SetColor(props.color);
     SetSize(props.size);
+
     if (props.layer_id != 0) SetLayerId(props.layer_id);
     SetPivot(props.pivot);
   }
@@ -106,13 +108,16 @@ class UISpriteRenderer : public Component<UISpriteRenderer> {
     if (!texture_path_.empty()) {
       node.Write("Texture", texture_path_);
     }
+
     node.WriteVec4("Color", color_.x, color_.y, color_.z, color_.w);
     node.WriteVec2("Size", size_.x, size_.y);
     node.WriteVec2("Pivot", ui_pivot_.x, ui_pivot_.y);
     node.Write("LayerId", layer_id_);
+
     node.Write("BlendMode", static_cast<int>(render_settings_.blend_mode));
     node.Write("SamplerType", static_cast<int>(render_settings_.sampler_type));
     node.Write("RenderTags", static_cast<int>(render_tags_));
+
     if (animator_) {
       auto anim_node = node.BeginMap("Animator");
       animator_->Serialize(anim_node);
@@ -124,15 +129,18 @@ class UISpriteRenderer : public Component<UISpriteRenderer> {
     if (!tex_path.empty()) {
       SetTexturePath(tex_path);
     }
+
     node.ReadVec4("Color", color_.x, color_.y, color_.z, color_.w);
     node.ReadVec2("Size", size_.x, size_.y);
     node.ReadVec2("Pivot", ui_pivot_.x, ui_pivot_.y);
     SetLayerId(node.ReadInt("LayerId", layer_id_));
+
     render_settings_.blend_mode =
       static_cast<Rendering::BlendMode>(node.ReadInt("BlendMode", static_cast<int>(render_settings_.blend_mode)));
     render_settings_.sampler_type =
       static_cast<Rendering::SamplerType>(node.ReadInt("SamplerType", static_cast<int>(render_settings_.sampler_type)));
     render_tags_ = static_cast<RenderTagMask>(node.ReadInt("RenderTags", static_cast<int>(render_tags_)));
+
     if (node.HasKey("Animator")) {
       auto anim_node = node.GetMap("Animator");
       GetAnimator().Deserialize(anim_node);

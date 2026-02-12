@@ -67,14 +67,20 @@ class ModelComponent : public Component<ModelComponent> {
     return model_;
   }
 
-  Graphics::ShaderId GetShaderId() const { return shader_id_; }
-  float GetModelScale() const { return model_scale_; }
+  Graphics::ShaderId GetShaderId() const {
+    return shader_id_;
+  }
+  float GetModelScale() const {
+    return model_scale_;
+  }
 
   void OnSerialize(framework::SerializeNode& node) const override {
     node.Write("ModelPath", model_path_);
+
     auto shader_name = ShaderRegistry::GetName(shader_id_);
     node.Write("Shader", std::string(shader_name));
     node.Write("RenderLayer", render_layer_ == RenderLayer::Opaque ? "Opaque" : "Transparent");
+
     node.Write("SplitMesh", split_mesh_to_children_);
     node.Write("ModelScale", model_scale_);
     node.Write("AnchorToGround", anchor_to_ground_);
@@ -89,11 +95,13 @@ class ModelComponent : public Component<ModelComponent> {
         if (model) model_ = std::move(model);
       }
     }
+
     auto shader_name = node.ReadString("Shader", "PBR");
     if (!shader_name.empty()) {
       auto id = ShaderRegistry::FindIdByName(shader_name);
       if (id) shader_id_ = *id;
     }
+
     auto layer_str = node.ReadString("RenderLayer", "Opaque");
     render_layer_ = (layer_str == "Opaque") ? RenderLayer::Opaque : RenderLayer::Transparent;
     split_mesh_to_children_ = node.ReadBool("SplitMesh", false);

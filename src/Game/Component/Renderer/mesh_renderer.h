@@ -122,15 +122,18 @@ class MeshRenderer : public Component<MeshRenderer> {
     } else if (!props.texture_path.empty()) {
       SetTexturePath(props.texture_path);
     }
+
     SetColor(props.color);
     SetShaderId(props.shader_id);
     SetRenderLayer(props.render_layer);
+
     SetSpecularIntensity(props.specular_intensity);
     SetSpecularPower(props.specular_power);
     SetRimIntensity(props.rim_intensity);
     SetRimPower(props.rim_power);
     SetRimColor(props.rim_color);
     SetRimShadowAffected(props.rim_shadow_affected);
+
     if (props.normal_texture) SetNormalTexture(props.normal_texture);
     if (props.metallic_roughness_texture) SetMetallicRoughnessTexture(props.metallic_roughness_texture);
     if (props.emissive_texture) SetEmissiveTexture(props.emissive_texture);
@@ -348,6 +351,7 @@ class MeshRenderer : public Component<MeshRenderer> {
     }
     albedo_.Serialize(node, "Texture");
     node.WriteVec4("Color", color_.x, color_.y, color_.z, color_.w);
+
     auto shader_name = ShaderRegistry::GetName(shader_id_);
     node.Write("Shader", std::string(shader_name));
     node.Write("RenderLayer", render_layer_ == RenderLayer::Opaque ? "Opaque" : "Transparent");
@@ -357,12 +361,14 @@ class MeshRenderer : public Component<MeshRenderer> {
     node.Write("DepthWrite", render_settings_.depth_write);
     node.Write("DoubleSided", render_settings_.double_sided);
     node.Write("RenderTags", static_cast<int>(render_tags_));
+
     node.Write("SpecularIntensity", specular_intensity_);
     node.Write("SpecularPower", specular_power_);
     node.Write("RimIntensity", rim_intensity_);
     node.Write("RimPower", rim_power_);
     node.WriteVec3("RimColor", rim_color_.x, rim_color_.y, rim_color_.z);
     node.Write("RimShadowAffected", rim_shadow_affected_);
+
     node.Write("Metallic", metallic_);
     node.Write("Roughness", roughness_);
     node.WriteVec3("EmissiveColor", emissive_color_.x, emissive_color_.y, emissive_color_.z);
@@ -384,6 +390,7 @@ class MeshRenderer : public Component<MeshRenderer> {
       SetTexturePath(tex_path);
     }
     node.ReadVec4("Color", color_.x, color_.y, color_.z, color_.w);
+
     auto shader_name = node.ReadString("Shader");
     if (!shader_name.empty()) {
       auto id = ShaderRegistry::FindIdByName(shader_name);
@@ -399,18 +406,21 @@ class MeshRenderer : public Component<MeshRenderer> {
     render_settings_.depth_write = node.ReadBool("DepthWrite", render_settings_.depth_write);
     render_settings_.double_sided = node.ReadBool("DoubleSided", render_settings_.double_sided);
     render_tags_ = static_cast<RenderTagMask>(node.ReadInt("RenderTags", static_cast<int>(render_tags_)));
+
     specular_intensity_ = node.ReadFloat("SpecularIntensity", specular_intensity_);
     specular_power_ = node.ReadFloat("SpecularPower", specular_power_);
     rim_intensity_ = node.ReadFloat("RimIntensity", rim_intensity_);
     rim_power_ = node.ReadFloat("RimPower", rim_power_);
     node.ReadVec3("RimColor", rim_color_.x, rim_color_.y, rim_color_.z);
     rim_shadow_affected_ = node.ReadBool("RimShadowAffected", rim_shadow_affected_);
+
     metallic_ = node.ReadFloat("Metallic", metallic_);
     roughness_ = node.ReadFloat("Roughness", roughness_);
     node.ReadVec3("EmissiveColor", emissive_color_.x, emissive_color_.y, emissive_color_.z);
     emissive_intensity_ = node.ReadFloat("EmissiveIntensity", emissive_intensity_);
 
     auto& assets = context->GetAssetManager();
+
     auto load_srgb = [&](const std::string& p) { return assets.LoadTexture(p); };
     auto load_linear = [&](const std::string& p) { return assets.LoadTextureLinear(p); };
     normal_.Deserialize(node, "NormalTexture", load_linear);

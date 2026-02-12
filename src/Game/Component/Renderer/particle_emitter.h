@@ -82,14 +82,17 @@ class ParticleEmitter : public Component<ParticleEmitter> {
     if (!texture_path_.empty()) {
       node.Write("Texture", texture_path_);
     }
+
     node.Write("MaxParticles", static_cast<uint32_t>(max_particles_));
     node.Write("EmitRate", emit_rate_);
     node.Write("ParticleLifetime", particle_lifetime_);
+
     node.WriteVec2("ParticleSize", particle_size_.x, particle_size_.y);
     node.WriteVec4("StartColor", start_color_.x, start_color_.y, start_color_.z, start_color_.w);
     node.WriteVec4("EndColor", end_color_.x, end_color_.y, end_color_.z, end_color_.w);
     node.Write("StartSpeed", start_speed_);
     node.Write("SpeedVariation", speed_variation_);
+
     node.WriteVec3("Gravity", gravity_.x, gravity_.y, gravity_.z);
     node.Write("Loop", loop_);
     node.Write("BlendMode", static_cast<int>(render_settings_.blend_mode));
@@ -100,14 +103,17 @@ class ParticleEmitter : public Component<ParticleEmitter> {
     if (!tex_path.empty()) {
       SetTexturePath(tex_path);
     }
+
     max_particles_ = node.ReadUint("MaxParticles", static_cast<uint32_t>(max_particles_));
     emit_rate_ = node.ReadFloat("EmitRate", emit_rate_);
     particle_lifetime_ = node.ReadFloat("ParticleLifetime", particle_lifetime_);
+
     node.ReadVec2("ParticleSize", particle_size_.x, particle_size_.y);
     node.ReadVec4("StartColor", start_color_.x, start_color_.y, start_color_.z, start_color_.w);
     node.ReadVec4("EndColor", end_color_.x, end_color_.y, end_color_.z, end_color_.w);
     start_speed_ = node.ReadFloat("StartSpeed", start_speed_);
     speed_variation_ = node.ReadFloat("SpeedVariation", speed_variation_);
+
     node.ReadVec3("Gravity", gravity_.x, gravity_.y, gravity_.z);
     loop_ = node.ReadBool("Loop", loop_);
     render_settings_.blend_mode =

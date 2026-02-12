@@ -29,8 +29,10 @@ class CameraComponent : public Component<CameraComponent> {
     node.Write("AspectRatio", aspect_ratio_);
     node.Write("OrthoWidth", ortho_width_);
     node.Write("OrthoHeight", ortho_height_);
+
     node.Write("NearPlane", near_plane_);
     node.Write("FarPlane", far_plane_);
+
     node.Write("Exposure", exposure_);
     node.Write("Priority", priority_);
   }
@@ -49,6 +51,7 @@ class CameraComponent : public Component<CameraComponent> {
     } else {
       SetPerspective(fov, aspect, near_p, far_p);
     }
+
     SetExposure(node.ReadFloat("Exposure", exposure_));
     priority_ = node.ReadInt("Priority", 0);
   }
