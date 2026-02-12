@@ -17,17 +17,31 @@ class BackgroundSetting {
     cubemap_ = {};
   }
 
-  void SetMode(BackgroundMode mode) { mode_ = mode; }
-  void SetClearColorValue(Color color) { clear_color_ = color; }
+  void SetMode(BackgroundMode mode) {
+    mode_ = mode;
+  }
+  void SetClearColorValue(Color color) {
+    clear_color_ = color;
+  }
 
   BackgroundConfig ToConfig() const;
 
-  BackgroundMode GetMode() const { return mode_; }
-  const Color& GetClearColor() const { return clear_color_; }
-  bool HasSkybox() const { return cubemap_.Get() != nullptr; }
+  BackgroundMode GetMode() const {
+    return mode_;
+  }
+  const Color& GetClearColor() const {
+    return clear_color_;
+  }
+  bool HasSkybox() const {
+    return cubemap_.Get() != nullptr;
+  }
+  const std::string& GetSkyboxPath() const {
+    return skybox_path_;
+  }
 
  private:
   BackgroundMode mode_ = BackgroundMode::ClearColor;
   Color clear_color_ = colors::DarkSlateGray;
+  std::string skybox_path_;
   AssetHandle<Texture> cubemap_;
 };

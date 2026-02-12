@@ -25,6 +25,7 @@
 #include <d3d12.h>
 
 #include <array>
+#include <optional>
 #include <span>
 #include <string_view>
 
@@ -105,6 +106,13 @@ inline std::string_view GetName(ShaderId id) {
 
 inline RSPreset GetRSPreset(ShaderId id) {
   return GetMetadata(id).rs_preset;
+}
+
+inline std::optional<ShaderId> FindIdByName(std::string_view name) {
+  for (const auto& meta : detail::METADATA_TABLE) {
+    if (meta.name == name) return meta.id;
+  }
+  return std::nullopt;
 }
 
 inline constexpr size_t GetShaderCount() {

@@ -4,6 +4,7 @@
 
 #include "Component/sprite_sheet_helper.h"
 #include "Framework/Math/Math.h"
+#include "Framework/Serialize/serialize_node.h"
 
 using Math::Vector2;
 
@@ -38,6 +39,9 @@ class SpriteSheetAnimator {
   bool IsLooping() const;
   uint32_t GetCurrentFrame() const;
   float GetProgress() const;
+
+  void Serialize(framework::SerializeNode& node) const;
+  void Deserialize(const framework::SerializeNode& node);
 
   void SetAnimationEndCallback(AnimationEndCallback callback);
 

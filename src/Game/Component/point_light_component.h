@@ -59,6 +59,13 @@ class PointLightComponent : public Component<PointLightComponent> {
     node.Write("Falloff", falloff_);
   }
 
+  void OnDeserialize(const framework::SerializeNode& node) override {
+    node.ReadVec3("Color", color_.x, color_.y, color_.z);
+    intensity_ = node.ReadFloat("Intensity", intensity_);
+    radius_ = node.ReadFloat("Radius", radius_);
+    falloff_ = node.ReadFloat("Falloff", falloff_);
+  }
+
   struct EditorData {
     Math::Vector3 color;
     float intensity;

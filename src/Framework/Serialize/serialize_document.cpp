@@ -13,6 +13,21 @@ SerializeNode& SerializeDocument::Root() {
   return root_;
 }
 
+const SerializeNode& SerializeDocument::Root() const {
+  return root_;
+}
+
+bool SerializeDocument::LoadFromFile(const std::filesystem::path& path) {
+  if (!std::filesystem::exists(path)) return false;
+  try {
+    YAML::Node loaded = YAML::LoadFile(path.string());
+    root_ = SerializeNode(std::make_unique<SerializeNode::Impl>(loaded));
+    return true;
+  } catch (const YAML::Exception&) {
+    return false;
+  }
+}
+
 std::string SerializeDocument::ToString() const {
   YAML::Emitter emitter;
   emitter << root_.GetImpl().node;

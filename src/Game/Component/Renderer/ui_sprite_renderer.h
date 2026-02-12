@@ -1,14 +1,17 @@
 #pragma once
 #include <optional>
 
+#include "Asset/asset_handle.h"
 #include "Component/component.h"
 #include "Component/pivot_type.h"
 #include "Component/render_settings.h"
 #include "Component/sprite_sheet_animator.h"
 #include "Framework/Math/Math.h"
 #include "Framework/Serialize/serialize_node.h"
+#include "Game/Asset/asset_manager.h"
 #include "Graphic/Frame/frame_packet.h"
 #include "Graphic/Resource/Texture/texture.h"
+#include "game_context.h"
 #include "game_object.h"
 
 using Math::Vector2;
@@ -17,7 +20,7 @@ using Math::Vector4;
 class UISpriteRenderer : public Component<UISpriteRenderer> {
  public:
   struct Props {
-    Texture* texture = nullptr;
+    std::string texture_path;
     Vector4 color = {1, 1, 1, 1};
     Vector2 size = {100, 100};
     int layer_id = 0;
@@ -28,7 +31,7 @@ class UISpriteRenderer : public Component<UISpriteRenderer> {
   }
 
   UISpriteRenderer(GameObject* owner, const Props& props) : Component(owner) {
-    if (props.texture) SetTexture(props.texture);
+    if (!props.texture_path.empty()) SetTexturePath(props.texture_path);
     SetColor(props.color);
     SetSize(props.size);
     if (props.layer_id != 0) SetLayerId(props.layer_id);
@@ -37,6 +40,21 @@ class UISpriteRenderer : public Component<UISpriteRenderer> {
 
   void SetTexture(Texture* tex) {
     texture_ = tex;
+    texture_path_.clear();
+    texture_handle_ = {};
+  }
+
+  void SetTexturePath(const std::string& path) {
+    texture_path_ = path;
+    if (path.empty()) {
+      texture_ = nullptr;
+      texture_handle_ = {};
+      return;
+    }
+    auto* context = GetOwner()->GetContext();
+    if (!context) return;
+    texture_handle_ = context->GetAssetManager().LoadTexture(path);
+    texture_ = texture_handle_.Get();
   }
   void SetColor(const Vector4& color) {
     color_ = color;
@@ -85,10 +103,40 @@ class UISpriteRenderer : public Component<UISpriteRenderer> {
   }
 
   void OnSerialize(framework::SerializeNode& node) const override {
+    if (!texture_path_.empty()) {
+      node.Write("Texture", texture_path_);
+    }
     node.WriteVec4("Color", color_.x, color_.y, color_.z, color_.w);
     node.WriteVec2("Size", size_.x, size_.y);
     node.WriteVec2("Pivot", ui_pivot_.x, ui_pivot_.y);
     node.Write("LayerId", layer_id_);
+    node.Write("BlendMode", static_cast<int>(render_settings_.blend_mode));
+    node.Write("SamplerType", static_cast<int>(render_settings_.sampler_type));
+    node.Write("RenderTags", static_cast<int>(render_tags_));
+    if (animator_) {
+      auto anim_node = node.BeginMap("Animator");
+      animator_->Serialize(anim_node);
+    }
+  }
+
+  void OnDeserialize(const framework::SerializeNode& node) override {
+    auto tex_path = node.ReadString("Texture");
+    if (!tex_path.empty()) {
+      SetTexturePath(tex_path);
+    }
+    node.ReadVec4("Color", color_.x, color_.y, color_.z, color_.w);
+    node.ReadVec2("Size", size_.x, size_.y);
+    node.ReadVec2("Pivot", ui_pivot_.x, ui_pivot_.y);
+    SetLayerId(node.ReadInt("LayerId", layer_id_));
+    render_settings_.blend_mode =
+      static_cast<Rendering::BlendMode>(node.ReadInt("BlendMode", static_cast<int>(render_settings_.blend_mode)));
+    render_settings_.sampler_type =
+      static_cast<Rendering::SamplerType>(node.ReadInt("SamplerType", static_cast<int>(render_settings_.sampler_type)));
+    render_tags_ = static_cast<RenderTagMask>(node.ReadInt("RenderTags", static_cast<int>(render_tags_)));
+    if (node.HasKey("Animator")) {
+      auto anim_node = node.GetMap("Animator");
+      GetAnimator().Deserialize(anim_node);
+    }
   }
 
   struct EditorData {
@@ -112,6 +160,8 @@ class UISpriteRenderer : public Component<UISpriteRenderer> {
 
  private:
   Texture* texture_ = nullptr;
+  std::string texture_path_;
+  AssetHandle<Texture> texture_handle_;
   Vector4 color_ = {1, 1, 1, 1};
   Vector2 size_ = {100, 100};
   Vector2 uv_offset_ = {0.0f, 0.0f};

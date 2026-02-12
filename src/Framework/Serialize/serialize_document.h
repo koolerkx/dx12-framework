@@ -13,8 +13,10 @@ class SerializeDocument {
   ~SerializeDocument();
 
   SerializeNode& Root();
+  const SerializeNode& Root() const;
   std::string ToString() const;
   bool SaveToFile(const std::filesystem::path& path) const;
+  bool LoadFromFile(const std::filesystem::path& path);
 
  private:
   SerializeNode root_;

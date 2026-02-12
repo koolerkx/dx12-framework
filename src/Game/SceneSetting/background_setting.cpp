@@ -5,6 +5,7 @@
 
 void BackgroundSetting::SetSkybox(const std::string& path, AssetManager& asset_manager) {
   mode_ = BackgroundMode::Skybox;
+  skybox_path_ = path;
   cubemap_ = asset_manager.LoadCubemap(path);
 }
 

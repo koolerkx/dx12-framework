@@ -152,6 +152,21 @@ class UITextRenderer : public Component<UITextRenderer> {
     node.WriteVec2("Pivot", text_pivot_.x, text_pivot_.y);
   }
 
+  void OnDeserialize(const framework::SerializeNode& node) override {
+    auto utf8 = node.ReadString("Text");
+    if (!utf8.empty()) SetText(utils::utf8_to_wstring(utf8));
+    SetFont(static_cast<Font::FontFamily>(node.ReadInt("FontFamily", static_cast<int>(font_family_))));
+    SetPixelSize(node.ReadFloat("PixelSize", pixel_size_));
+    node.ReadVec4("Color", color_.x, color_.y, color_.z, color_.w);
+    SetHorizontalAlign(static_cast<Text::HorizontalAlign>(node.ReadInt("HAlign", static_cast<int>(h_align_))));
+    SetVerticalAlign(static_cast<Text::VerticalAlign>(node.ReadInt("VAlign", static_cast<int>(v_align_))));
+    SetLineSpacing(node.ReadFloat("LineSpacing", line_spacing_));
+    SetLetterSpacing(node.ReadFloat("LetterSpacing", letter_spacing_));
+    SetUseKerning(node.ReadBool("UseKerning", use_kerning_));
+    SetLayerId(node.ReadInt("LayerId", layer_id_));
+    node.ReadVec2("Pivot", text_pivot_.x, text_pivot_.y);
+  }
+
   struct EditorData {
     std::wstring text;
     Font::FontFamily font_family;

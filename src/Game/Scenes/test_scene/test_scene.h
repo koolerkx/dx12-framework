@@ -1,9 +1,6 @@
 #pragma once
 
-#include "Asset/asset_handle.h"
 #include "scene.h"
-
-struct Texture;
 
 class TestScene : public IScene {
  public:
@@ -14,10 +11,6 @@ class TestScene : public IScene {
   void OnDebugDraw(DebugDrawer& drawer) override;
 
  private:
-  AssetHandle<Texture> texture_background_;
-  AssetHandle<Texture> texture_character_;
-  AssetHandle<Texture> texture_ao_;
-  AssetHandle<Texture> texture_additive_;
   GameObject* cube_object_ = nullptr;
   GameObject* cube_object2_ = nullptr;
   GameObject* pivot_cube_ = nullptr;

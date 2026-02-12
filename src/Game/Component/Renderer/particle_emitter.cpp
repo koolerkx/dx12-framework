@@ -10,7 +10,7 @@ ParticleEmitter::ParticleEmitter(GameObject* owner) : Component(owner), spawn_fn
 }
 
 ParticleEmitter::ParticleEmitter(GameObject* owner, const Props& props) : Component(owner) {
-  texture_ = props.texture;
+  if (!props.texture_path.empty()) SetTexturePath(props.texture_path);
   max_particles_ = props.max_particles;
   emit_rate_ = props.emit_rate;
   particle_lifetime_ = props.particle_lifetime;

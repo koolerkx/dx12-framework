@@ -118,6 +118,13 @@ const Mesh* AssetManager::GetDefaultMesh(DefaultMesh type) const {
   return nullptr;
 }
 
+std::optional<DefaultMesh> AssetManager::FindDefaultMeshType(const Mesh* mesh) const {
+  for (const auto& [type, ptr] : default_meshes_) {
+    if (ptr == mesh) return type;
+  }
+  return std::nullopt;
+}
+
 bool AssetManager::LoadFont(Font::FontFamily family, const std::string& fnt_path, const std::string& texture_path) {
   if (!impl_->font_manager) {
     Logger::LogFormat(LogLevel::Error, LogCategory::Game, Logger::Here(), "[AssetManager] Font manager not initialized");

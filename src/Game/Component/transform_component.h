@@ -34,6 +34,21 @@ class TransformComponent : public Component<TransformComponent> {
     node.WriteVec3("Anchor", local_anchor_.x, local_anchor_.y, local_anchor_.z);
   }
 
+  void OnDeserialize(const framework::SerializeNode& node) override {
+    Vector3 pos = local_pos_, rot = local_euler_degrees_, scale = local_scale_;
+    Vector3 pivot = local_pivot_, anchor = local_anchor_;
+    node.ReadVec3("Position", pos.x, pos.y, pos.z);
+    node.ReadVec3("Rotation", rot.x, rot.y, rot.z);
+    node.ReadVec3("Scale", scale.x, scale.y, scale.z);
+    node.ReadVec3("Pivot", pivot.x, pivot.y, pivot.z);
+    node.ReadVec3("Anchor", anchor.x, anchor.y, anchor.z);
+    SetPosition(pos);
+    SetRotationEulerDegree(rot);
+    SetScale(scale);
+    SetPivot(pivot);
+    SetAnchor(anchor);
+  }
+
   void OnDebugDraw(DebugDrawer& drawer) override {
     auto world = GetWorldMatrix();
     float cross_length = 0.3f;

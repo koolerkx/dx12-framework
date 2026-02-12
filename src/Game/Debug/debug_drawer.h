@@ -33,6 +33,8 @@ class DebugDrawer {
   struct CircleProps {
     int segments = 32;
     Vector3 normal = Vector3::Up;
+
+    CircleProps(int segments = 32, Vector3 normal = Vector3::Up) : segments(segments), normal(normal) {};
   };
   void DrawCircle(const Vector3& center, float radius, const Vector4& color, const CircleProps& props = {});
 

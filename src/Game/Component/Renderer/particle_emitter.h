@@ -4,13 +4,16 @@
 #include <random>
 #include <vector>
 
+#include "Asset/asset_handle.h"
 #include "Component/component.h"
 #include "Component/render_settings.h"
 #include "Component/transform_component.h"
 #include "Framework/Math/Math.h"
 #include "Framework/Serialize/serialize_node.h"
+#include "Game/Asset/asset_manager.h"
 #include "Graphic/Frame/frame_packet.h"
 #include "Graphic/Resource/Texture/texture.h"
+#include "game_context.h"
 #include "game_object.h"
 
 using Math::Matrix4;
@@ -44,7 +47,7 @@ class ParticleEmitter : public Component<ParticleEmitter> {
   };
 
   struct Props {
-    Texture* texture = nullptr;
+    std::string texture_path;
     size_t max_particles = 100;
     float emit_rate = 10.0f;
     float particle_lifetime = 2.0f;
@@ -62,7 +65,23 @@ class ParticleEmitter : public Component<ParticleEmitter> {
   ParticleEmitter(GameObject* owner);
   ParticleEmitter(GameObject* owner, const Props& props);
 
+  void SetTexturePath(const std::string& path) {
+    texture_path_ = path;
+    if (path.empty()) {
+      texture_ = nullptr;
+      texture_handle_ = {};
+      return;
+    }
+    auto* context = GetOwner()->GetContext();
+    if (!context) return;
+    texture_handle_ = context->GetAssetManager().LoadTexture(path);
+    texture_ = texture_handle_.Get();
+  }
+
   void OnSerialize(framework::SerializeNode& node) const override {
+    if (!texture_path_.empty()) {
+      node.Write("Texture", texture_path_);
+    }
     node.Write("MaxParticles", static_cast<uint32_t>(max_particles_));
     node.Write("EmitRate", emit_rate_);
     node.Write("ParticleLifetime", particle_lifetime_);
@@ -73,6 +92,26 @@ class ParticleEmitter : public Component<ParticleEmitter> {
     node.Write("SpeedVariation", speed_variation_);
     node.WriteVec3("Gravity", gravity_.x, gravity_.y, gravity_.z);
     node.Write("Loop", loop_);
+    node.Write("BlendMode", static_cast<int>(render_settings_.blend_mode));
+  }
+
+  void OnDeserialize(const framework::SerializeNode& node) override {
+    auto tex_path = node.ReadString("Texture");
+    if (!tex_path.empty()) {
+      SetTexturePath(tex_path);
+    }
+    max_particles_ = node.ReadUint("MaxParticles", static_cast<uint32_t>(max_particles_));
+    emit_rate_ = node.ReadFloat("EmitRate", emit_rate_);
+    particle_lifetime_ = node.ReadFloat("ParticleLifetime", particle_lifetime_);
+    node.ReadVec2("ParticleSize", particle_size_.x, particle_size_.y);
+    node.ReadVec4("StartColor", start_color_.x, start_color_.y, start_color_.z, start_color_.w);
+    node.ReadVec4("EndColor", end_color_.x, end_color_.y, end_color_.z, end_color_.w);
+    start_speed_ = node.ReadFloat("StartSpeed", start_speed_);
+    speed_variation_ = node.ReadFloat("SpeedVariation", speed_variation_);
+    node.ReadVec3("Gravity", gravity_.x, gravity_.y, gravity_.z);
+    loop_ = node.ReadBool("Loop", loop_);
+    render_settings_.blend_mode =
+      static_cast<Rendering::BlendMode>(node.ReadInt("BlendMode", static_cast<int>(render_settings_.blend_mode)));
   }
 
   void Play();
@@ -96,6 +135,8 @@ class ParticleEmitter : public Component<ParticleEmitter> {
   std::vector<Particle> particles_;
 
   Texture* texture_ = nullptr;
+  std::string texture_path_;
+  AssetHandle<Texture> texture_handle_;
   size_t max_particles_ = 100;
   float emit_rate_ = 10.0f;
   float particle_lifetime_ = 2.0f;

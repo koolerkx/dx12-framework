@@ -1,6 +1,5 @@
 #include "test_scene.h"
 
-#include "Asset/asset_manager.h"
 #include "Component/Renderer/mesh_renderer.h"
 #include "Component/Renderer/sprite_renderer.h"
 #include "Component/Renderer/text_renderer.h"
@@ -28,11 +27,6 @@ static float rotation_angle_ = 0.0f;
 static float rotation_speed_ = 15.0f;
 
 void TestScene::OnEnter(AssetManager& asset_manager) {
-  texture_background_ = asset_manager.LoadTexture("Content/textures/result_bg_1.png");
-  texture_character_ = asset_manager.LoadTexture("Content/textures/ship_J.png");
-  texture_ao_ = asset_manager.LoadTexture("Content/textures/metal_plate_ao_1k.png");
-  texture_additive_ = asset_manager.LoadTexture("Content/textures/sun_additive.png");
-
   GetBackgroundSetting().SetSkybox("Content/skybox/sunflowers_puresky_standard_cubemap_4k.hdr", asset_manager);
   auto& light = GetLightSetting();
   light.SetAzimuth(45.0f);
@@ -42,36 +36,36 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
 
   auto* terrain_plane = CreateGameObject("TerrainPlane", {.position = {0, -5, 0}, .scale = {20, 1, 20}});
   terrain_plane->AddComponent<MeshRenderer>(MeshRenderer::Props{
-    .mesh = asset_manager.GetDefaultMesh(DefaultMesh::Plane),
-    .texture = texture_background_.Get(),
+    .mesh_type = DefaultMesh::Plane,
+    .texture_path = "Content/textures/result_bg_1.png",
     .color = colors::White,
   });
 
   cube_object_ = CreateGameObject("Cube", {.scale = {2, 2, 2}});
   cube_object_->AddComponent<MeshRenderer>(MeshRenderer::Props{
-    .mesh = asset_manager.GetDefaultMesh(DefaultMesh::Cube),
-    .texture = texture_background_.Get(),
+    .mesh_type = DefaultMesh::Cube,
+    .texture_path = "Content/textures/result_bg_1.png",
     .color = colors::White,
   });
 
   cube_object2_ = CreateGameObject("Cube2", {.position = {1, 1, 1}});
   cube_object2_->SetParent(cube_object_);
   cube_object2_->AddComponent<MeshRenderer>(MeshRenderer::Props{
-    .mesh = asset_manager.GetDefaultMesh(DefaultMesh::Cube),
-    .texture = texture_background_.Get(),
+    .mesh_type = DefaultMesh::Cube,
+    .texture_path = "Content/textures/result_bg_1.png",
     .color = colors::White,
   });
 
   auto* cube_object3 = CreateGameObject("PivotCube2", {.position = {0, -5.0f, -3}, .anchor = {0, -0.5f, 0}});
   cube_object3->AddComponent<MeshRenderer>(MeshRenderer::Props{
-    .mesh = asset_manager.GetDefaultMesh(DefaultMesh::Cube),
-    .texture = texture_background_.Get(),
+    .mesh_type = DefaultMesh::Cube,
+    .texture_path = "Content/textures/result_bg_1.png",
     .color = colors::White,
   });
 
   auto* character_object = CreateGameObject("Character", {.position = {500, 500, 0}});
   character_object->AddComponent<UISpriteRenderer>(UISpriteRenderer::Props{
-    .texture = texture_character_.Get(),
+    .texture_path = "Content/textures/ship_J.png",
     .size = {150, 150},
   });
   character_object->AddComponent<CharacterMover>();
@@ -79,14 +73,14 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
   auto* character_object2 = CreateGameObject("Character2", {.position = {150, 150, 0}});
   character_object2->SetParent(character_object);
   character_object2->AddComponent<UISpriteRenderer>(UISpriteRenderer::Props{
-    .texture = texture_character_.Get(),
+    .texture_path = "Content/textures/ship_J.png",
     .size = {150, 150},
   });
   character_object2->AddComponent<CharacterMover>();
 
   auto* additive = CreateGameObject("Additive", {.position = {0, -3, -1}});
   additive->AddComponent<SpriteRenderer>(SpriteRenderer::Props{
-    .texture = texture_additive_.Get(),
+    .texture_path = "Content/textures/sun_additive.png",
     .color = colors::WithAlpha(colors::Lime, 0.5f),
     .size = {1, 1},
     .billboard_mode = Billboard::Mode::Spherical,
@@ -95,7 +89,7 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
 
   auto* animated_bg = CreateGameObject("AnimatedBackground", {.position = {0, -3, 0}});
   auto* bg_renderer = animated_bg->AddComponent<SpriteRenderer>(SpriteRenderer::Props{
-    .texture = texture_ao_.Get(),
+    .texture_path = "Content/textures/metal_plate_ao_1k.png",
     .color = colors::WithAlpha(colors::Red, 0.5f),
     .size = {15, 15},
     .pivot = {0.5f, 0.5f},
@@ -104,15 +98,15 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
 
   sphere_object_ = CreateGameObject("Sphere", {.position = {-4, 0, 0}});
   sphere_object_->AddComponent<MeshRenderer>(MeshRenderer::Props{
-    .mesh = asset_manager.GetDefaultMesh(DefaultMesh::Sphere),
-    .texture = texture_background_.Get(),
+    .mesh_type = DefaultMesh::Sphere,
+    .texture_path = "Content/textures/result_bg_1.png",
     .color = colors::White,
   });
 
   pivot_cube_ = CreateGameObject("PivotCube", {.position = {5, 0, 5}, .pivot = {0.5f, 0, 0}});
   pivot_cube_->AddComponent<MeshRenderer>(MeshRenderer::Props{
-    .mesh = asset_manager.GetDefaultMesh(DefaultMesh::Cube),
-    .texture = texture_background_.Get(),
+    .mesh_type = DefaultMesh::Cube,
+    .texture_path = "Content/textures/result_bg_1.png",
     .color = colors::White,
   });
 

@@ -1,36 +1,31 @@
 #include "cube_scene.h"
 
-#include "Asset/asset_manager.h"
 #include "Component/Renderer/mesh_renderer.h"
 #include "Component/Renderer/particle_emitter.h"
 #include "Component/camera_component.h"
 #include "Component/transform_component.h"
 #include "Debug/debug_drawer.h"
-#include "Frame/frame_packet.h"
 #include "Framework/Core/color.h"
 #include "Framework/Input/input.h"
 #include "Scripts/free_camera_controller.h"
 #include "scene_id.h"
 #include "scene_manager.h"
 
-void CubeScene::OnEnter(AssetManager& asset_manager) {
-  texture_ = asset_manager.LoadTexture("Content/textures/result_bg_1.png");
-  particle_texture_ = asset_manager.LoadTexture("Content/textures/sun_additive.png");
-
+void CubeScene::OnEnter(AssetManager&) {
   SetupCamera();
 
   GetBackgroundSetting().SetClearColorValue(colors::ColorFromHex("#18181B"));
 
   cube_ = CreateGameObject("Cube", {.scale = {0.5f, 0.5f, 0.5f}});
   cube_->AddComponent<MeshRenderer>(MeshRenderer::Props{
-    .mesh = asset_manager.GetDefaultMesh(DefaultMesh::Cube),
-    .texture = texture_.Get(),
+    .mesh_type = DefaultMesh::Cube,
+    .texture_path = "Content/textures/result_bg_1.png",
     .color = colors::White,
   });
 
   auto* particle_obj = CreateGameObject("Particles", {.position = {5, 3, 5}});
   auto* emitter = particle_obj->AddComponent<ParticleEmitter>(ParticleEmitter::Props{
-    .texture = particle_texture_.Get(),
+    .texture_path = "Content/textures/sun_additive.png",
     .max_particles = 2000,
     .emit_rate = 500.0f,
     .particle_lifetime = 2.0f,
@@ -45,7 +40,7 @@ void CubeScene::OnEnter(AssetManager& asset_manager) {
 
   auto* ring_obj = CreateGameObject("RingParticles", {.position = {-3, 0, -3}});
   auto* ring_emitter = ring_obj->AddComponent<ParticleEmitter>(ParticleEmitter::Props{
-    .texture = particle_texture_.Get(),
+    .texture_path = "Content/textures/sun_additive.png",
     .max_particles = 2000,
     .emit_rate = 500.0f,
     .particle_lifetime = 1.0f,

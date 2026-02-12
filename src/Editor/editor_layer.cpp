@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <filesystem>
 
 #include "Framework/Core/utils.h"
 #include "Game/Component/Renderer/mesh_renderer.h"
@@ -131,7 +132,15 @@ void EditorLayer::SetScene(IScene* scene) {
 }
 
 void EditorLayer::SubscribeEvents(EventBus& bus) {
-  event_scope_.Subscribe<SceneChangedEvent>(bus, [this](const SceneChangedEvent& e) { SetScene(e.new_scene); });
+  event_scope_.Subscribe<SceneChangedEvent>(bus, [this](const SceneChangedEvent& e) {
+    SetScene(e.new_scene);
+    if (!pending_load_path_.empty() && e.new_scene) {
+      save_status_success_ = SceneSerializer::Load(*e.new_scene, pending_load_path_, pending_load_scope_);
+      ApplyLoadedShadowSettings();
+      save_status_timer_ = 3.0f;
+      pending_load_path_.clear();
+    }
+  });
 }
 
 bool EditorLayer::WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -167,6 +176,7 @@ void EditorLayer::DrawMainMenu() {
 
   DrawSaveSceneModal();
   DrawDumpSettingModal();
+  DrawLoadSceneModal();
 
   if (save_status_timer_ > 0.0f) {
     save_status_timer_ -= ImGui::GetIO().DeltaTime;
@@ -190,7 +200,11 @@ void EditorLayer::DrawSceneMenu() {
         scene_->GetContext()->GetSceneManager()->RequestLoad(SceneId::EMPTY_SCENE);
       }
     }
-    ImGui::MenuItem("Load Scene", nullptr, false, false);
+    if (ImGui::MenuItem("Load Scene")) {
+      ScanSceneFiles();
+      selected_scene_index_ = -1;
+      show_load_scene_modal_ = true;
+    }
 
     ImGui::Separator();
 
@@ -270,6 +284,85 @@ void EditorLayer::DrawDumpSettingModal() {
       }
       ImGui::CloseCurrentPopup();
     }
+    ImGui::SameLine();
+    if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+      ImGui::CloseCurrentPopup();
+    }
+    ImGui::EndPopup();
+  }
+}
+
+void EditorLayer::ScanSceneFiles() {
+  scene_file_list_.clear();
+  auto scenes_dir = SceneSerializer::GetScenesDirectory();
+  if (!std::filesystem::exists(scenes_dir)) return;
+  for (auto& entry : std::filesystem::directory_iterator(scenes_dir)) {
+    auto filename = entry.path().filename().string();
+    if (filename.size() > 11 && filename.substr(filename.size() - 11) == ".scene.yaml") {
+      scene_file_list_.push_back(filename.substr(0, filename.size() - 11));
+    }
+  }
+  std::sort(scene_file_list_.begin(), scene_file_list_.end());
+}
+
+void EditorLayer::DrawLoadSceneModal() {
+  if (show_load_scene_modal_) {
+    ImGui::OpenPopup("Load Scene##modal");
+    show_load_scene_modal_ = false;
+  }
+
+  if (ImGui::BeginPopupModal("Load Scene##modal", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+    ImGui::Text("Select a scene file:");
+
+    ImVec2 list_size(300, 200);
+    if (ImGui::BeginChild("##scene_list", list_size, ImGuiChildFlags_Borders)) {
+      for (int i = 0; i < static_cast<int>(scene_file_list_.size()); ++i) {
+        bool selected = (i == selected_scene_index_);
+        if (ImGui::Selectable(scene_file_list_[i].c_str(), selected)) {
+          selected_scene_index_ = i;
+        }
+      }
+    }
+    ImGui::EndChild();
+
+    if (scene_file_list_.empty()) {
+      ImGui::TextDisabled("No scene files found in Content/scenes/");
+    }
+
+    ImGui::Separator();
+    ImGui::Text("Load Scope:");
+
+    static int scope_radio = 0;
+    ImGui::RadioButton("Both", &scope_radio, 0);
+    ImGui::SameLine();
+    ImGui::RadioButton("Scene Only", &scope_radio, 1);
+    ImGui::SameLine();
+    ImGui::RadioButton("Settings Only", &scope_radio, 2);
+
+    ImGui::Separator();
+
+    bool can_confirm = selected_scene_index_ >= 0 && selected_scene_index_ < static_cast<int>(scene_file_list_.size());
+    ImGui::BeginDisabled(!can_confirm);
+    if (ImGui::Button("Confirm", ImVec2(120, 0))) {
+      pending_load_path_ = scene_file_list_[selected_scene_index_];
+      pending_load_scope_ = static_cast<LoadScope>(scope_radio);
+
+      if (pending_load_scope_ == LoadScope::SettingsOnly) {
+        if (scene_) {
+          save_status_success_ = SceneSerializer::Load(*scene_, pending_load_path_, pending_load_scope_);
+          ApplyLoadedShadowSettings();
+        } else {
+          save_status_success_ = false;
+        }
+        save_status_timer_ = 3.0f;
+        pending_load_path_.clear();
+      } else if (scene_ && scene_->GetContext()) {
+        scene_->GetContext()->GetSceneManager()->RequestLoad(SceneId::BLANK_SCENE);
+      }
+
+      ImGui::CloseCurrentPopup();
+    }
+    ImGui::EndDisabled();
     ImGui::SameLine();
     if (ImGui::Button("Cancel", ImVec2(120, 0))) {
       ImGui::CloseCurrentPopup();
@@ -933,6 +1026,13 @@ void EditorLayer::ScaleExistingWindows(float ratio) {
       ScaleDockNodeRecursive(node, ratio);
     }
   }
+}
+
+void EditorLayer::ApplyLoadedShadowSettings() {
+  if (!save_status_success_ || !scene_) return;
+  auto& shadow = scene_->GetShadowSetting();
+  pending_cascade_count_ = shadow.GetCascadeCount();
+  pending_shadow_resolution_ = shadow.GetResolution();
 }
 
 void EditorLayer::UpdateScaling() {

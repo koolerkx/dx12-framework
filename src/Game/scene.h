@@ -92,7 +92,11 @@ class IScene {
   GameObject* CreateGameObject(const std::string& name = "GameObject", const TransformComponent::Props& transform = {});
   GameObject* FindGameObject(const std::string& name) const;
 
+  friend class SceneSerializer;
+
  public:
+  void ClearAllObjects();
+
   void SetSceneName(const std::string& name) {
     scene_name_ = name;
   }

@@ -137,3 +137,41 @@ void SpriteSheetAnimator::SetPlayDirection(PlayDirection direction) {
 void SpriteSheetAnimator::SetPlaySpeed(float speed) {
   play_speed_ = (std::max)(0.0f, speed);
 }
+
+void SpriteSheetAnimator::Serialize(framework::SerializeNode& node) const {
+  node.Write("SheetWidth", sheet_config_.sheet_size.x);
+  node.Write("SheetHeight", sheet_config_.sheet_size.y);
+  node.Write("FrameWidth", sheet_config_.frame_size.x);
+  node.Write("FrameHeight", sheet_config_.frame_size.y);
+  node.Write("Orientation", static_cast<int>(sheet_config_.orientation));
+  node.Write("PaddingX", sheet_config_.padding.x);
+  node.Write("PaddingY", sheet_config_.padding.y);
+  node.Write("MarginX", sheet_config_.margin.x);
+  node.Write("MarginY", sheet_config_.margin.y);
+  node.Write("FrameCount", frame_count_);
+  node.Write("FPS", 1.0f / seconds_per_frame_);
+  node.Write("Loop", loop_enabled_);
+  node.Write("Playing", is_playing_);
+  node.Write("PlaySpeed", play_speed_);
+  node.Write("PlayDirection", static_cast<int>(play_direction_));
+}
+
+void SpriteSheetAnimator::Deserialize(const framework::SerializeNode& node) {
+  sheet_config_.sheet_size.x = node.ReadUint("SheetWidth", 0);
+  sheet_config_.sheet_size.y = node.ReadUint("SheetHeight", 0);
+  sheet_config_.frame_size.x = node.ReadUint("FrameWidth", 0);
+  sheet_config_.frame_size.y = node.ReadUint("FrameHeight", 0);
+  sheet_config_.orientation = static_cast<SpriteSheet::Orientation>(node.ReadInt("Orientation", 0));
+  sheet_config_.padding.x = node.ReadUint("PaddingX", 0);
+  sheet_config_.padding.y = node.ReadUint("PaddingY", 0);
+  sheet_config_.margin.x = node.ReadUint("MarginX", 0);
+  sheet_config_.margin.y = node.ReadUint("MarginY", 0);
+  SetFrameCount(node.ReadUint("FrameCount", 1));
+  SetFramesPerSecond(node.ReadFloat("FPS", 10.0f));
+  SetLoopEnabled(node.ReadBool("Loop", true));
+  SetPlaySpeed(node.ReadFloat("PlaySpeed", 1.0f));
+  SetPlayDirection(static_cast<PlayDirection>(node.ReadInt("PlayDirection", 0)));
+  if (node.ReadBool("Playing", false)) {
+    is_playing_ = true;
+  }
+}

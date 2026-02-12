@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -49,6 +50,7 @@ class AssetManager {
   // AssetHandle<AudioClip> LoadAudio(const std::string& path);
 
   const Mesh* GetDefaultMesh(DefaultMesh type) const;
+  std::optional<DefaultMesh> FindDefaultMeshType(const Mesh* mesh) const;
 
   bool LoadFont(Font::FontFamily family, const std::string& fnt_path, const std::string& texture_path);
 

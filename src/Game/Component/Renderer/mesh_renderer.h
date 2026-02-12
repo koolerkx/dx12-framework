@@ -1,4 +1,6 @@
 #pragma once
+#include "Asset/asset_handle.h"
+#include "Asset/asset_manager.h"
 #include "Component/component.h"
 #include "Component/render_settings.h"
 #include "Component/transform_component.h"
@@ -11,15 +13,41 @@
 #include "Graphic/Resource/mesh.h"
 #include "game_context.h"
 #include "game_object.h"
+#include "scene.h"
+
 
 using Math::Vector3;
 using Math::Vector4;
 
+inline std::string DefaultMeshToString(DefaultMesh type) {
+  switch (type) {
+    case DefaultMesh::Quad:
+      return "Quad";
+    case DefaultMesh::Cube:
+      return "Cube";
+    case DefaultMesh::Plane:
+      return "Plane";
+    case DefaultMesh::Rect:
+      return "Rect";
+    case DefaultMesh::Sphere:
+      return "Sphere";
+  }
+  return "Cube";
+}
+
+inline DefaultMesh ParseDefaultMesh(const std::string& name) {
+  if (name == "Quad") return DefaultMesh::Quad;
+  if (name == "Plane") return DefaultMesh::Plane;
+  if (name == "Rect") return DefaultMesh::Rect;
+  if (name == "Sphere") return DefaultMesh::Sphere;
+  return DefaultMesh::Cube;
+}
+
 class MeshRenderer : public Component<MeshRenderer> {
  public:
   struct Props {
-    const Mesh* mesh = nullptr;
-    Texture* texture = nullptr;
+    DefaultMesh mesh_type = DefaultMesh::Cube;
+    std::string texture_path;
     Vector4 color = {1, 1, 1, 1};
     Graphics::ShaderId shader_id = Graphics::Basic3DShader::ID;
     RenderLayer render_layer = RenderLayer::Opaque;
@@ -34,8 +62,8 @@ class MeshRenderer : public Component<MeshRenderer> {
   using Component::Component;
 
   MeshRenderer(GameObject* owner, const Props& props) : Component(owner) {
-    if (props.mesh) SetMesh(props.mesh);
-    if (props.texture) SetTexture(props.texture);
+    SetDefaultMesh(props.mesh_type);
+    if (!props.texture_path.empty()) SetTexturePath(props.texture_path);
     SetColor(props.color);
     SetShaderId(props.shader_id);
     SetRenderLayer(props.render_layer);
@@ -49,10 +77,33 @@ class MeshRenderer : public Component<MeshRenderer> {
 
   void SetMesh(const Mesh* mesh) {
     mesh_ = mesh;
+    mesh_type_name_.clear();
+  }
+
+  void SetDefaultMesh(DefaultMesh type) {
+    auto* context = GetOwner()->GetContext();
+    if (!context) return;
+    mesh_ = context->GetAssetManager().GetDefaultMesh(type);
+    mesh_type_name_ = DefaultMeshToString(type);
   }
 
   void SetTexture(Texture* texture) {
     texture_ = texture;
+    texture_path_.clear();
+    texture_handle_ = {};
+  }
+
+  void SetTexturePath(const std::string& path) {
+    texture_path_ = path;
+    if (path.empty()) {
+      texture_ = nullptr;
+      texture_handle_ = {};
+      return;
+    }
+    auto* context = GetOwner()->GetContext();
+    if (!context) return;
+    texture_handle_ = context->GetAssetManager().LoadTexture(path);
+    texture_ = texture_handle_.Get();
   }
 
   void SetColor(const Vector4& color) {
@@ -112,18 +163,64 @@ class MeshRenderer : public Component<MeshRenderer> {
     return shader_id_;
   }
 
-  // TOOD: Implement render tags and render setting
   void OnSerialize(framework::SerializeNode& node) const override {
+    if (!mesh_type_name_.empty()) {
+      node.Write("MeshType", mesh_type_name_);
+    }
+    if (!texture_path_.empty()) {
+      node.Write("Texture", texture_path_);
+    }
     node.WriteVec4("Color", color_.x, color_.y, color_.z, color_.w);
     auto shader_name = ShaderRegistry::GetName(shader_id_);
     node.Write("Shader", std::string(shader_name));
     node.Write("RenderLayer", render_layer_ == RenderLayer::Opaque ? "Opaque" : "Transparent");
+    node.Write("BlendMode", static_cast<int>(render_settings_.blend_mode));
+    node.Write("SamplerType", static_cast<int>(render_settings_.sampler_type));
+    node.Write("DepthTest", render_settings_.depth_test);
+    node.Write("DepthWrite", render_settings_.depth_write);
+    node.Write("DoubleSided", render_settings_.double_sided);
+    node.Write("RenderTags", static_cast<int>(render_tags_));
     node.Write("SpecularIntensity", specular_intensity_);
     node.Write("SpecularPower", specular_power_);
     node.Write("RimIntensity", rim_intensity_);
     node.Write("RimPower", rim_power_);
     node.WriteVec3("RimColor", rim_color_.x, rim_color_.y, rim_color_.z);
     node.Write("RimShadowAffected", rim_shadow_affected_);
+  }
+
+  void OnDeserialize(const framework::SerializeNode& node) override {
+    auto mesh_type_str = node.ReadString("MeshType", "Cube");
+    auto* context = GetOwner()->GetContext();
+    if (context) {
+      mesh_ = context->GetAssetManager().GetDefaultMesh(ParseDefaultMesh(mesh_type_str));
+      mesh_type_name_ = mesh_type_str;
+    }
+    auto tex_path = node.ReadString("Texture");
+    if (!tex_path.empty()) {
+      SetTexturePath(tex_path);
+    }
+    node.ReadVec4("Color", color_.x, color_.y, color_.z, color_.w);
+    auto shader_name = node.ReadString("Shader");
+    if (!shader_name.empty()) {
+      auto id = ShaderRegistry::FindIdByName(shader_name);
+      if (id) shader_id_ = *id;
+    }
+    auto layer_str = node.ReadString("RenderLayer", "Opaque");
+    render_layer_ = (layer_str == "Opaque") ? RenderLayer::Opaque : RenderLayer::Transparent;
+    render_settings_.blend_mode =
+      static_cast<Rendering::BlendMode>(node.ReadInt("BlendMode", static_cast<int>(render_settings_.blend_mode)));
+    render_settings_.sampler_type =
+      static_cast<Rendering::SamplerType>(node.ReadInt("SamplerType", static_cast<int>(render_settings_.sampler_type)));
+    render_settings_.depth_test = node.ReadBool("DepthTest", render_settings_.depth_test);
+    render_settings_.depth_write = node.ReadBool("DepthWrite", render_settings_.depth_write);
+    render_settings_.double_sided = node.ReadBool("DoubleSided", render_settings_.double_sided);
+    render_tags_ = static_cast<RenderTagMask>(node.ReadInt("RenderTags", static_cast<int>(render_tags_)));
+    specular_intensity_ = node.ReadFloat("SpecularIntensity", specular_intensity_);
+    specular_power_ = node.ReadFloat("SpecularPower", specular_power_);
+    rim_intensity_ = node.ReadFloat("RimIntensity", rim_intensity_);
+    rim_power_ = node.ReadFloat("RimPower", rim_power_);
+    node.ReadVec3("RimColor", rim_color_.x, rim_color_.y, rim_color_.z);
+    rim_shadow_affected_ = node.ReadBool("RimShadowAffected", rim_shadow_affected_);
   }
 
   struct EditorData {
@@ -204,6 +301,9 @@ class MeshRenderer : public Component<MeshRenderer> {
  private:
   const Mesh* mesh_ = nullptr;
   Texture* texture_ = nullptr;
+  std::string texture_path_;
+  AssetHandle<Texture> texture_handle_;
+  std::string mesh_type_name_;
   Graphics::ShaderId shader_id_ = Graphics::Basic3DShader::ID;
   Rendering::RenderSettings render_settings_ = Rendering::RenderSettings::Opaque();
   Vector4 color_ = {1.0f, 1.0f, 1.0f, 1.0f};

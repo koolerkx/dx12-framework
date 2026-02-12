@@ -32,6 +32,25 @@ class CameraComponent : public Component<CameraComponent> {
     node.Write("NearPlane", near_plane_);
     node.Write("FarPlane", far_plane_);
     node.Write("Exposure", exposure_);
+    node.Write("Priority", priority_);
+  }
+
+  void OnDeserialize(const framework::SerializeNode& node) override {
+    auto proj_str = node.ReadString("ProjectionType", "Perspective");
+    float fov = node.ReadFloat("FOV", fov_);
+    float aspect = node.ReadFloat("AspectRatio", aspect_ratio_);
+    float near_p = node.ReadFloat("NearPlane", near_plane_);
+    float far_p = node.ReadFloat("FarPlane", far_plane_);
+
+    if (proj_str == "Orthographic") {
+      float w = node.ReadFloat("OrthoWidth", ortho_width_);
+      float h = node.ReadFloat("OrthoHeight", ortho_height_);
+      SetOrthographic(w, h, near_p, far_p);
+    } else {
+      SetPerspective(fov, aspect, near_p, far_p);
+    }
+    SetExposure(node.ReadFloat("Exposure", exposure_));
+    priority_ = node.ReadInt("Priority", 0);
   }
 
   void SetPerspective(float fov_radians, float aspect_ratio, float near_plane, float far_plane);
@@ -60,6 +79,13 @@ class CameraComponent : public Component<CameraComponent> {
     exposure_ = exposure;
   }
 
+  int GetPriority() const {
+    return priority_;
+  }
+  void SetPriority(int priority) {
+    priority_ = priority;
+  }
+
  private:
   void UpdateProjectionMatrix();
 
@@ -75,6 +101,7 @@ class CameraComponent : public Component<CameraComponent> {
   float near_plane_ = 0.1f;
   float far_plane_ = 1000.0f;
   float exposure_ = 1.0f;
+  int priority_ = 0;
 
   Math::Matrix4 projection_matrix_;
   bool is_dirty_ = true;

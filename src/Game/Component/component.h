@@ -71,6 +71,8 @@ class IComponentBase {
   }
   virtual void OnSerialize(framework::SerializeNode& /*node*/) const {
   }
+  virtual void OnDeserialize(const framework::SerializeNode& /*node*/) {
+  }
 
   const framework::UUID& GetUUID() const {
     return uuid_;

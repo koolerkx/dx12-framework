@@ -9,6 +9,17 @@
 IScene::IScene() = default;
 IScene::~IScene() = default;
 
+void IScene::ClearAllObjects() {
+  for (auto& obj : game_objects_) {
+    obj->DetachFromHierarchy();
+  }
+  camera_setting_.Clear();
+  ui_camera_setting_.Clear();
+  gameobject_uuid_map_.clear();
+  component_uuid_map_.clear();
+  game_objects_.clear();
+}
+
 GameObject* IScene::CreateGameObject(const std::string& name, const TransformComponent::Props& transform) {
   if (FindGameObject(name)) {
     Logger::LogFormat(LogLevel::Warn, LogCategory::Game, Logger::Here(), "GameObject with name '{}' already exists in scene", name);

@@ -5,8 +5,13 @@
 #include <d3d12.h>
 #include <imgui.h>
 
+#include <string>
+#include <vector>
+
 #include "Framework/Event/event_scope.hpp"
 #include "Graphic/Descriptor/descriptor_heap_allocator.h"
+
+enum class LoadScope : uint8_t;
 
 class EventBus;
 class Graphic;
@@ -51,6 +56,7 @@ class EditorLayer {
   void DrawSceneMenu();
   void DrawSaveSceneModal();
   void DrawDumpSettingModal();
+  void DrawLoadSceneModal();
   void DrawGameObjectNode(GameObject* go);
   void DrawSceneSettings();
   void DrawDebugPanel();
@@ -59,6 +65,8 @@ class EditorLayer {
   void RebuildFontAtlas(float scale);
   void ScaleExistingWindows(float ratio);
   void UpdateScaling();
+  void ScanSceneFiles();
+  void ApplyLoadedShadowSettings();
 
   Graphic* graphic_ = nullptr;
   IScene* scene_ = nullptr;
@@ -92,4 +100,11 @@ class EditorLayer {
   char scene_name_buffer_[256] = "Untitled";
   float save_status_timer_ = 0.0f;
   bool save_status_success_ = false;
+
+  // Load scene state
+  bool show_load_scene_modal_ = false;
+  std::string pending_load_path_;
+  LoadScope pending_load_scope_{};
+  int selected_scene_index_ = -1;
+  std::vector<std::string> scene_file_list_;
 };
