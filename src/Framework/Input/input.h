@@ -35,12 +35,20 @@ class InputSystem {
   }
 
   void Update() {
+    if (!enabled_) {
+      keyboard_handler_.ClearState();
+      mouse_handler_.ClearState();
+      gamepad_handler_.ClearState();
+      return;
+    }
     keyboard_handler_.Update(game_input_.Get());
     mouse_handler_.Update(game_input_.Get(), hwnd_);
     gamepad_handler_.Update(game_input_.Get());
   }
 
-  // Keyboard methods - delegate to keyboard handler
+  void SetEnabled(bool enabled) { enabled_ = enabled; }
+  bool IsEnabled() const { return enabled_; }
+
   bool GetKey(Keyboard::KeyCode key) const {
     return keyboard_handler_.GetKey(key);
   }
@@ -164,6 +172,7 @@ class InputSystem {
   }
 
  private:
+  bool enabled_ = true;
   ComPtr<IGameInput> game_input_;
   HWND hwnd_ = nullptr;
 

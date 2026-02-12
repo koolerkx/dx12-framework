@@ -13,6 +13,15 @@ class MouseHandler {
   MouseHandler() = default;
   ~MouseHandler() = default;
 
+  void ClearState() {
+    prev_mouse_buttons_ = curr_mouse_buttons_;
+    curr_mouse_buttons_ = GameInputMouseNone;
+    mouse_dx_ = 0;
+    mouse_dy_ = 0;
+    wheel_dx_ = 0;
+    wheel_dy_ = 0;
+  }
+
   void Update(IGameInput* gameInput, HWND hwnd) {
     prev_mouse_buttons_ = curr_mouse_buttons_;
     curr_mouse_buttons_ = GameInputMouseNone;

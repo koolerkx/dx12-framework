@@ -37,6 +37,20 @@ class GamepadHandler {
     }
   }
 
+  void ClearState() {
+    for (int i = 0; i < MAX_GAMEPADS; ++i) {
+      if (!gamepads_[i].connected) continue;
+      gamepads_[i].prev_buttons = gamepads_[i].curr_buttons;
+      gamepads_[i].curr_buttons = GameInputGamepadNone;
+      gamepads_[i].left_trigger = 0.0f;
+      gamepads_[i].right_trigger = 0.0f;
+      gamepads_[i].left_stick_x = 0.0f;
+      gamepads_[i].left_stick_y = 0.0f;
+      gamepads_[i].right_stick_x = 0.0f;
+      gamepads_[i].right_stick_y = 0.0f;
+    }
+  }
+
   void Update(IGameInput* gameInput) {
     for (int i = 0; i < MAX_GAMEPADS; ++i) {
       if (!gamepads_[i].connected || !gamepads_[i].device) {

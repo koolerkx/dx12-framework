@@ -13,6 +13,12 @@ class KeyboardHandler {
   KeyboardHandler() = default;
   ~KeyboardHandler() = default;
 
+  void ClearState() {
+    memcpy(prev_keys_, curr_keys_, sizeof(curr_keys_));
+    memset(curr_keys_, 0, sizeof(curr_keys_));
+    pressed_keys_.clear();
+  }
+
   void Update(IGameInput* gameInput) {
     memcpy(prev_keys_, curr_keys_, sizeof(curr_keys_));
     memset(curr_keys_, 0, sizeof(curr_keys_));

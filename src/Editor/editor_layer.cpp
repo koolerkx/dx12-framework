@@ -102,6 +102,11 @@ void EditorLayer::BeginFrame() {
   ImGui_ImplWin32_NewFrame();
   UpdateScaling();
   ImGui::NewFrame();
+
+  if (scene_ && scene_->GetContext() && scene_->GetContext()->GetInput()) {
+    const auto& io = ImGui::GetIO();
+    scene_->GetContext()->GetInput()->SetEnabled(!io.WantCaptureKeyboard);
+  }
 }
 
 void EditorLayer::Render(ID3D12GraphicsCommandList* cmd) {

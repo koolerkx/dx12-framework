@@ -88,12 +88,12 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
   InputEventGenerator event_generator(inputSystem, *event_bus);
 
   const std::function<void(float dt)> OnUpdate = [&]([[maybe_unused]] float dt) {
-    inputSystem.Update();
-    event_generator.Update();
-
 #ifdef ENABLE_EDITOR
     editor.BeginFrame();
 #endif
+
+    inputSystem.Update();
+    event_generator.Update();
 
     game.OnUpdate(dt);
     game.OnRender();
