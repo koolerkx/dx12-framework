@@ -1,6 +1,3 @@
-include(fetch)
-FetchContent_BASE(uuid_v4 https://github.com/crashoz/uuid_v4.git v1.0.0 EXCLUDE_FROM_ALL)
-
 add_library(framework STATIC
   Core/types.h
   Core/utils.h
@@ -36,6 +33,12 @@ add_library(framework STATIC
   Font/text_layout.h
   Font/text_layout.cpp
 
+  # Model
+  Model/model_types.h
+  Model/model_data.h
+  Model/node_hierarchy.h
+  Model/model_loader.h
+
   # Error
   Error/framework_bootstrap_log.h
   Error/framework_bootstrap_log.cpp
@@ -67,6 +70,8 @@ add_library(framework STATIC
   Serialize/serialize_document.cpp
 )
 
+include(fetch)
+
 set(YAML_CPP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(YAML_CPP_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
 set(YAML_CPP_BUILD_CONTRIB OFF CACHE BOOL "" FORCE)
@@ -78,6 +83,31 @@ target_link_libraries(framework PUBLIC
   GameInput.lib
   yaml-cpp::yaml-cpp
 )
+
+FetchContent_BASE(uuid_v4 https://github.com/crashoz/uuid_v4.git v1.0.0 EXCLUDE_FROM_ALL)
+
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE STRING "MSVC Runtime Library")
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(ASSIMP_INSTALL OFF CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "" FORCE)
+set(ASSIMP_NO_EXPORT ON CACHE BOOL "" FORCE)
+# set(ASSIMP_BUILD_ZLIB OFF CACHE BOOL "" FORCE)
+set(ASSIMP_WARNINGS_AS_ERRORS OFF CACHE BOOL "" FORCE)
+
+set(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT OFF CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_FBX_IMPORTER ON CACHE BOOL "" FORCE)
+# set(ASSIMP_BUILD_GLTF_IMPORTER ON CACHE BOOL "" FORCE) # GLB/GLIF
+# set(ASSIMP_BUILD_OBJ_IMPORTER ON CACHE BOOL "" FORCE)
+# set(ASSIMP_BUILD_BLEND_IMPORTER ON CACHE BOOL "" FORCE)
+# set(ASSIMP_BUILD_USD_IMPORTER ON CACHE BOOL "" FORCE) # USD/USDA/USDC/USDZ
+
+FetchContent_BASE(assimp https://github.com/assimp/assimp.git v6.0.2)
+set_target_properties(assimp PROPERTIES MSVC_DEBUG_INFORMATION_FORMAT "ProgramDatabase") # Zi
+# set_target_properties(assimp PROPERTIES MSVC_DEBUG_INFORMATION_FORMAT "Embedded") # Z7
+
+target_link_libraries(framework PUBLIC assimp)
+
 
 set_msvc_runtime(framework)
 
