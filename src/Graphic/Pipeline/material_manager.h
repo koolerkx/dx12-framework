@@ -33,12 +33,20 @@ class MaterialManager {
   // Get default render settings for a shader
   static Rendering::RenderSettings GetDefaultSettings(Graphics::ShaderId shader_id);
 
+  void SetWireframeOverride(bool enabled) {
+    wireframe_override_ = enabled;
+  }
+  bool IsWireframeOverride() const {
+    return wireframe_override_;
+  }
+
   // Frame lifecycle
   void OnFrameEnd();
 
  private:
   ID3D12Device* device_ = nullptr;
   ShaderManager* shader_manager_ = nullptr;
+  bool wireframe_override_ = false;
 
   // === Unified LRU Cache ===
   struct CacheEntry {

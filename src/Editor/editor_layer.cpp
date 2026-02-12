@@ -112,6 +112,7 @@ void EditorLayer::Render(ID3D12GraphicsCommandList* cmd) {
   if (show_inspector_) DrawInspector();
   if (show_scene_settings_) DrawSceneSettings();
   if (show_debug_) DrawDebugPanel();
+  if (show_editor_settings_) DrawEditorSettings();
   if (show_render_pipeline_) DrawRenderPipelinePanel(cmd);
   if (show_shadow_map_) DrawShadowMapPanel(cmd);
 
@@ -170,6 +171,7 @@ void EditorLayer::DrawMainMenu() {
       ImGui::MenuItem("Inspector", nullptr, &show_inspector_);
       ImGui::MenuItem("Scene Settings", nullptr, &show_scene_settings_);
       ImGui::MenuItem("Debug", nullptr, &show_debug_);
+      ImGui::MenuItem("Editor Settings", nullptr, &show_editor_settings_);
       ImGui::MenuItem("Render Pipeline", nullptr, &show_render_pipeline_);
       ImGui::EndMenu();
     }
@@ -559,24 +561,24 @@ void EditorLayer::DrawInspector() {
 
 void EditorLayer::DrawTransformInspector(TransformComponent* transform) {
   Math::Vector3 position = transform->GetPosition();
-  if (ImGui::DragFloat3("Position", &position.x, 0.1f)) transform->SetPosition(position);
+  if (ImGui::DragFloat3("Position", &position.x, transform_position_snap_)) transform->SetPosition(position);
 
   Math::Vector3 euler_deg = transform->GetRotationDegrees();
   auto wrap = [](float deg) { return std::fmod(std::fmod(deg, 360.0f) + 540.0f, 360.0f) - 180.0f; };
   Math::Vector3 display_deg = {wrap(euler_deg.x), wrap(euler_deg.y), wrap(euler_deg.z)};
-  if (ImGui::DragFloat3("Rotation", &display_deg.x, 0.5f)) {
+  if (ImGui::DragFloat3("Rotation", &display_deg.x, transform_rotation_snap_)) {
     Math::Vector3 delta = display_deg - Math::Vector3{wrap(euler_deg.x), wrap(euler_deg.y), wrap(euler_deg.z)};
     transform->SetRotationEulerDegree(euler_deg + delta);
   }
 
   Math::Vector3 scale = transform->GetScale();
-  if (ImGui::DragFloat3("Scale", &scale.x, 0.01f)) transform->SetScale(scale);
+  if (ImGui::DragFloat3("Scale", &scale.x, transform_scale_snap_)) transform->SetScale(scale);
 
   Math::Vector3 pivot = transform->GetPivot();
-  if (ImGui::DragFloat3("Pivot", &pivot.x, 0.1f)) transform->SetPivot(pivot);
+  if (ImGui::DragFloat3("Pivot", &pivot.x, transform_position_snap_)) transform->SetPivot(pivot);
 
   Math::Vector3 anchor = transform->GetAnchor();
-  if (ImGui::DragFloat3("Anchor", &anchor.x, 0.1f)) transform->SetAnchor(anchor);
+  if (ImGui::DragFloat3("Anchor", &anchor.x, transform_position_snap_)) transform->SetAnchor(anchor);
 }
 
 void EditorLayer::DrawSpriteRendererInspector(SpriteRenderer* renderer) {
@@ -849,6 +851,10 @@ void EditorLayer::DrawDebugPanel() {
     graphic_->SetVSync(vsync);
   }
 
+  if (ImGui::Checkbox("Wireframe", &wireframe_mode_)) {
+    graphic_->SetWireframeMode(wireframe_mode_);
+  }
+
   if (ImGui::Combo("Display View", &current, kDisplayViewNames, IM_ARRAYSIZE(kDisplayViewNames))) {
     hdr_dbg.debug_view = (current == 1);
     depth_cfg.enabled = (current == 2);
@@ -870,6 +876,18 @@ void EditorLayer::DrawDebugPanel() {
       debug_drawer_->SetGlobalOpacity(debug_draw_opacity_);
     }
     ImGui::EndDisabled();
+  }
+
+  ImGui::End();
+}
+
+void EditorLayer::DrawEditorSettings() {
+  ImGui::Begin("Editor Settings", &show_editor_settings_);
+
+  if (ImGui::CollapsingHeader("Transform Snap", ImGuiTreeNodeFlags_DefaultOpen)) {
+    ImGui::DragFloat("Position Snap", &transform_position_snap_, 0.01f, 0.001f, 10.0f, "%.3f");
+    ImGui::DragFloat("Rotation Snap", &transform_rotation_snap_, 0.1f, 0.01f, 45.0f, "%.2f");
+    ImGui::DragFloat("Scale Snap", &transform_scale_snap_, 0.001f, 0.001f, 1.0f, "%.3f");
   }
 
   ImGui::End();

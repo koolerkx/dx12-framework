@@ -157,6 +157,13 @@ class Graphic {
     return depth_preview_config_;
   }
 
+  void SetWireframeMode(bool enabled) {
+    if (render_services_) render_services_->GetMaterialManager().SetWireframeOverride(enabled);
+  }
+  bool IsWireframeMode() {
+    return render_services_ ? render_services_->GetMaterialManager().IsWireframeOverride() : false;
+  }
+
   using OverlayRenderFunc = std::function<void(ID3D12GraphicsCommandList*)>;
   void SetOverlayRenderer(OverlayRenderFunc renderer);
 

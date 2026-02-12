@@ -20,6 +20,7 @@ struct RenderSettings {
   bool depth_test = false;
   bool depth_write = false;
   bool double_sided = false;
+  bool wireframe = false;
   RenderTargetFormat render_target_format = RenderTargetFormat::HDR;  // Default to HDR for scene passes
 
   void Validate() const {
@@ -32,7 +33,7 @@ struct RenderSettings {
 
   uint32_t GetCacheKey() const {
     // Generate bitfield-based cache key
-    // Layout: [blend_mode:2][sampler_type:3][depth_test:1][depth_write:1][double_sided:1][render_target_format:1]
+    // Layout: [blend_mode:2][sampler_type:3][depth_test:1][depth_write:1][double_sided:1][render_target_format:1][wireframe:1]
     uint32_t key = 0;
 
     key |= (static_cast<uint32_t>(blend_mode) & 0x3);                 // bits 0-1
@@ -41,6 +42,7 @@ struct RenderSettings {
     key |= (depth_write ? 1u : 0u) << 6;                              // bit 6
     key |= (double_sided ? 1u : 0u) << 7;                             // bit 7
     key |= (static_cast<uint32_t>(render_target_format) & 0x1) << 8;  // bit 8
+    key |= (wireframe ? 1u : 0u) << 9;                                // bit 9
 
     return key;
   }

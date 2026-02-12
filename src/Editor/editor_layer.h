@@ -65,6 +65,7 @@ class EditorLayer {
   void DrawSceneSettings();
   void DrawPlayControls();
   void DrawDebugPanel();
+  void DrawEditorSettings();
   void DrawRenderPipelinePanel(ID3D12GraphicsCommandList* cmd);
   void DrawShadowMapPanel(ID3D12GraphicsCommandList* cmd);
   void RebuildFontAtlas(float scale);
@@ -87,6 +88,7 @@ class EditorLayer {
   bool show_debug_ = true;
   bool show_render_pipeline_ = true;
   bool show_shadow_map_ = false;
+  bool show_editor_settings_ = false;
 
   float ui_scale_ = 1.0f;
   UINT last_scaled_width_ = 0;
@@ -96,6 +98,11 @@ class EditorLayer {
 
   bool debug_draw_enabled_ = true;
   float debug_draw_opacity_ = 1.0f;
+  bool wireframe_mode_ = false;
+
+  float transform_position_snap_ = 0.1f;
+  float transform_rotation_snap_ = 0.5f;
+  float transform_scale_snap_ = 0.01f;
 
   uint32_t pending_shadow_resolution_ = 0;
   uint32_t pending_cascade_count_ = 0;

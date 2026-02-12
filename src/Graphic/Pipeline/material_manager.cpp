@@ -51,8 +51,10 @@ Rendering::RenderSettings MaterialManager::GetDefaultSettings(Graphics::ShaderId
 }
 
 Material* MaterialManager::GetOrCreateMaterial(Graphics::ShaderId shader_id, const Rendering::RenderSettings& settings) {
-  settings.Validate();
-  uint64_t key = GenerateCacheKey(shader_id, settings);
+  Rendering::RenderSettings setting_override = settings;
+  if (wireframe_override_) setting_override.wireframe = true;
+  setting_override.Validate();
+  uint64_t key = GenerateCacheKey(shader_id, setting_override);
 
   // Read lock first (fast path)
   {
@@ -74,7 +76,7 @@ Material* MaterialManager::GetOrCreateMaterial(Graphics::ShaderId shader_id, con
 
   // Create new material
   CacheEntry entry;
-  entry.material = std::make_unique<Material>(CreateMaterialInternal(shader_id, settings));
+  entry.material = std::make_unique<Material>(CreateMaterialInternal(shader_id, setting_override));
   entry.last_used_frame = current_frame_;
 
   if (!entry.material || !entry.material->IsValid()) {
@@ -157,6 +159,7 @@ Material MaterialManager::CreateMaterialInternal(Graphics::ShaderId shader_id, c
                .SetRenderTargetFormat(rtv_format)
                .SetDepthStencilFormat(dsv_format)
                .SetPrimitiveTopology(primitive_topology)
+               .SetFillMode(settings.wireframe ? D3D12_FILL_MODE_WIREFRAME : D3D12_FILL_MODE_SOLID)
                .Build(device_);
 
   if (!pso) {
