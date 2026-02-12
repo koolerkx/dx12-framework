@@ -17,6 +17,7 @@
 #include "Game/Component/Renderer/ui_text_renderer.h"
 #include "Game/Component/camera_component.h"
 #include "Game/Component/component.h"
+#include "Game/Component/model_component.h"
 #include "Game/Component/point_light_component.h"
 #include "Game/Scenes/test_scene/character_mover_component.h"
 #include "Game/Scripts/free_camera_controller.h"
@@ -37,6 +38,7 @@ const std::unordered_map<std::string, ComponentFactory>& GetComponentFactories()
     {"UISpriteRenderer", [](GameObject* o) { return o->AddComponent<UISpriteRenderer>(); }},
     {"ParticleEmitter", [](GameObject* o) { return o->AddComponent<ParticleEmitter>(); }},
     {"PointLightComponent", [](GameObject* o) { return o->AddComponent<PointLightComponent>(); }},
+    {"ModelComponent", [](GameObject* o) { return o->AddComponent<ModelComponent>(); }},
     {"FreeCameraController", [](GameObject* o) { return o->AddComponent<FreeCameraController>(); }},
     {"CharacterMover", [](GameObject* o) { return o->AddComponent<CharacterMover>(); }},
   };
@@ -62,7 +64,7 @@ bool SceneSerializer::SaveScene(const IScene& scene, const std::string& name) {
   auto entities = root.BeginSequence("Entities");
 
   for (const auto& go : scene.GetGameObjects()) {
-    if (!go) continue;
+    if (!go || go->IsTransient()) continue;
 
     auto entity = entities.AddSequenceElement();
     entity.Write("UUID", go->GetUUID().ToString());

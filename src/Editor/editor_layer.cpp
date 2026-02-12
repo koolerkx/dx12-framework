@@ -11,6 +11,7 @@
 
 #include "Framework/Core/utils.h"
 #include "Game/Component/Renderer/mesh_renderer.h"
+#include "Game/Component/model_component.h"
 #include "Game/Component/Renderer/sprite_renderer.h"
 #include "Game/Component/Renderer/text_renderer.h"
 #include "Game/Component/Renderer/ui_sprite_renderer.h"
@@ -518,6 +519,8 @@ void EditorLayer::DrawInspector() {
         if (ImGui::CollapsingHeader("TextRenderer")) DrawTextRendererInspector(text_r);
       } else if (auto* ui_text = dynamic_cast<UITextRenderer*>(comp.get())) {
         if (ImGui::CollapsingHeader("UITextRenderer")) DrawUITextRendererInspector(ui_text);
+      } else if (auto* model = dynamic_cast<ModelComponent*>(comp.get())) {
+        if (ImGui::CollapsingHeader("ModelComponent")) DrawModelComponentInspector(model);
       } else if (auto* mesh = dynamic_cast<MeshRenderer*>(comp.get())) {
         if (ImGui::CollapsingHeader("MeshRenderer")) DrawMeshRendererInspector(mesh);
       } else if (auto* camera = dynamic_cast<CameraComponent*>(comp.get())) {
@@ -906,6 +909,23 @@ void EditorLayer::DrawShadowMapPanel(ID3D12GraphicsCommandList* cmd) {
   ImGui::End();
 }
 
+void EditorLayer::DrawModelComponentInspector(ModelComponent* model) {
+  auto* data = model->GetModelData().get();
+  ImGui::Text("Model: %s", data ? data->path.c_str() : "None");
+  if (data) {
+    ImGui::Text("Sub-meshes: %d", static_cast<int>(data->sub_meshes.size()));
+    ImGui::Text("Materials: %d", static_cast<int>(data->surface_materials.size()));
+    ImGui::Text("Textures: %d", static_cast<int>(data->textures.size()));
+  }
+
+  auto shader_name = ShaderRegistry::GetName(model->GetShaderId());
+  ImGui::Text("Shader: %.*s", static_cast<int>(shader_name.size()), shader_name.data());
+  ImGui::Text("Model Scale: %.3f", model->GetModelScale());
+  if (data) {
+    ImGui::Text("Min Y: %.3f", data->min_y);
+  }
+}
+
 void EditorLayer::DrawMeshRendererInspector(MeshRenderer* renderer) {
   const Mesh* mesh = renderer->GetMesh();
   ImGui::Text("Mesh: %s", mesh ? "Loaded" : "None");
@@ -981,6 +1001,7 @@ void EditorLayer::DrawMeshRendererInspector(MeshRenderer* renderer) {
   if (has_emissive_map && ImGui::IsItemHovered()) {
     ImGui::SetTooltip("Multiplied with emissive map");
   }
+  ImGui::SliderFloat("Emissive Intensity", &data.emissive_intensity, 0.0f, 10.0f);
 
   ImGui::Text("Normal Map: %s", renderer->GetNormalTexture() ? "Loaded" : "None");
   ImGui::Text("MR Map: %s", has_mr_map ? "Loaded" : "None");

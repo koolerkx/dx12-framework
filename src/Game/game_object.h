@@ -106,6 +106,9 @@ class GameObject {
   void Destroy();
   bool IsPendingDestroy() const;
 
+  void SetTransient(bool transient) { transient_ = transient; }
+  bool IsTransient() const { return transient_; }
+
   void DetachFromHierarchy();
 
  protected:
@@ -131,6 +134,7 @@ class GameObject {
   std::string name_;
   bool is_started_ = false;
   bool is_pending_destroy_ = false;
+  bool transient_ = false;
 
   IScene* scene_ = nullptr;
   GameObject* parent_ = nullptr;

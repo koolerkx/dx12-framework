@@ -15,7 +15,6 @@
 #include "game_object.h"
 #include "scene.h"
 
-
 using Math::Vector3;
 using Math::Vector4;
 
@@ -48,7 +47,7 @@ class MeshRenderer : public Component<MeshRenderer> {
   struct Props {
     DefaultMesh mesh_type = DefaultMesh::Cube;
     const Mesh* mesh = nullptr;
-    std::string texture_path;
+    std::string texture_path = "";
     Texture* texture = nullptr;
     Vector4 color = {1, 1, 1, 1};
     Graphics::ShaderId shader_id = Graphics::Basic3DShader::ID;
@@ -65,6 +64,7 @@ class MeshRenderer : public Component<MeshRenderer> {
     float metallic = 0.0f;
     float roughness = 0.5f;
     Vector3 emissive_color = {0, 0, 0};
+    float emissive_intensity = 1.0f;
   };
 
   using Component::Component;
@@ -95,6 +95,7 @@ class MeshRenderer : public Component<MeshRenderer> {
     SetMetallic(props.metallic);
     SetRoughness(props.roughness);
     SetEmissiveColor(props.emissive_color);
+    SetEmissiveIntensity(props.emissive_intensity);
   }
 
   void SetMesh(const Mesh* mesh) {
@@ -184,6 +185,12 @@ class MeshRenderer : public Component<MeshRenderer> {
   void SetEmissiveColor(const Vector3& color) {
     emissive_color_ = color;
   }
+  void SetEmissiveIntensity(float intensity) {
+    emissive_intensity_ = intensity;
+  }
+  float GetEmissiveIntensity() const {
+    return emissive_intensity_;
+  }
   void SetRenderTags(RenderTagMask tags) {
     render_tags_ = tags;
   }
@@ -241,6 +248,7 @@ class MeshRenderer : public Component<MeshRenderer> {
     node.Write("Metallic", metallic_);
     node.Write("Roughness", roughness_);
     node.WriteVec3("EmissiveColor", emissive_color_.x, emissive_color_.y, emissive_color_.z);
+    node.Write("EmissiveIntensity", emissive_intensity_);
   }
 
   void OnDeserialize(const framework::SerializeNode& node) override {
@@ -279,6 +287,7 @@ class MeshRenderer : public Component<MeshRenderer> {
     metallic_ = node.ReadFloat("Metallic", metallic_);
     roughness_ = node.ReadFloat("Roughness", roughness_);
     node.ReadVec3("EmissiveColor", emissive_color_.x, emissive_color_.y, emissive_color_.z);
+    emissive_intensity_ = node.ReadFloat("EmissiveIntensity", emissive_intensity_);
   }
 
   struct EditorData {
@@ -295,6 +304,7 @@ class MeshRenderer : public Component<MeshRenderer> {
     float metallic;
     float roughness;
     Vector3 emissive_color;
+    float emissive_intensity;
   };
 
   EditorData GetEditorData() const {
@@ -310,7 +320,8 @@ class MeshRenderer : public Component<MeshRenderer> {
       rim_shadow_affected_,
       metallic_,
       roughness_,
-      emissive_color_};
+      emissive_color_,
+      emissive_intensity_};
   }
 
   void ApplyEditorData(const EditorData& data) {
@@ -327,6 +338,7 @@ class MeshRenderer : public Component<MeshRenderer> {
     metallic_ = data.metallic;
     roughness_ = data.roughness;
     emissive_color_ = data.emissive_color;
+    emissive_intensity_ = data.emissive_intensity;
   }
 
   void OnRender(FramePacket& packet) override {
@@ -364,9 +376,9 @@ class MeshRenderer : public Component<MeshRenderer> {
     cmd.material_instance.has_emissive_map = (emissive_texture_ != nullptr);
     cmd.material_instance.metallic_factor = metallic_;
     cmd.material_instance.roughness_factor = roughness_;
-    cmd.material_instance.emissive_factor[0] = emissive_color_.x;
-    cmd.material_instance.emissive_factor[1] = emissive_color_.y;
-    cmd.material_instance.emissive_factor[2] = emissive_color_.z;
+    cmd.material_instance.emissive_factor[0] = emissive_color_.x * emissive_intensity_;
+    cmd.material_instance.emissive_factor[1] = emissive_color_.y * emissive_intensity_;
+    cmd.material_instance.emissive_factor[2] = emissive_color_.z * emissive_intensity_;
 
     Vector3 worldPos = transform->GetWorldPosition();
     Vector3 camPos = packet.main_camera.position;
@@ -400,6 +412,7 @@ class MeshRenderer : public Component<MeshRenderer> {
   float metallic_ = 0.0f;
   float roughness_ = 0.5f;
   Vector3 emissive_color_ = {0.0f, 0.0f, 0.0f};
+  float emissive_intensity_ = 1.0f;
 
   RenderLayer render_layer_ = RenderLayer::Opaque;
   RenderTagMask render_tags_ = static_cast<uint32_t>(RenderTag::CastShadow | RenderTag::ReceiveShadow | RenderTag::Lit);

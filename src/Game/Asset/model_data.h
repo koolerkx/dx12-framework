@@ -34,4 +34,5 @@ struct ModelData {
   std::vector<ModelSurfaceMaterial> surface_materials;
   std::vector<ModelSubMeshEntry> sub_meshes;
   Model::Node root_node;
+  float min_y = 0.0f;
 };

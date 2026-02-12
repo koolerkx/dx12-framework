@@ -1,6 +1,7 @@
 #include "asset_manager.h"
 
 #include <filesystem>
+#include <limits>
 #include <optional>
 
 #include "Framework/Logging/logger.h"
@@ -205,10 +206,15 @@ std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path) {
 
   std::vector<uint32_t> mesh_material_indices;
   uint32_t mesh_counter = 0;
+  float global_min_y = (std::numeric_limits<float>::max)();
 
   auto mesh_cb = [&](const Model::MeshData<Graphics::Vertex::ModelVertex>& mesh_data) -> const Mesh* {
     std::string key = path + "#" + mesh_data.name + "_" + std::to_string(mesh_counter++);
     mesh_material_indices.push_back(mesh_data.material_index);
+
+    for (const auto& vertex : mesh_data.vertices) {
+      if (vertex.position.y < global_min_y) global_min_y = vertex.position.y;
+    }
 
     if (auto* existing = mesh_registry.Find(key)) {
       return existing;
@@ -236,6 +242,7 @@ std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path) {
   model_data->textures = std::move(result.texture_handles);
   model_data->surface_materials = std::move(result.surface_material_handles);
   model_data->root_node = std::move(result.root_node);
+  model_data->min_y = (global_min_y < (std::numeric_limits<float>::max)()) ? global_min_y : 0.0f;
 
   auto resolve_texture = [&](const std::vector<std::optional<uint32_t>>& indices, uint32_t mat_idx) -> std::shared_ptr<Texture> {
     if (mat_idx < indices.size()) {

@@ -9,6 +9,11 @@
 [Ll]og
 
 tmp
+nul
+
+# Model file, we manually sync
+Content/models/
+
 
 # shader
 *.cso

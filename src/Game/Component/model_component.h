@@ -11,6 +11,8 @@
 #include "Framework/Model/node_hierarchy.h"
 #include "Graphic/Frame/render_layer.h"
 #include "Graphic/Pipeline/shader_descriptors.h"
+#include "Graphic/Pipeline/shader_registry.h"
+#include "game_context.h"
 #include "game_object.h"
 #include "scene.h"
 
@@ -21,19 +23,27 @@ class ModelComponent : public Component<ModelComponent> {
     Graphics::ShaderId shader_id = Graphics::PBRShader::ID;
     RenderLayer render_layer = RenderLayer::Opaque;
     bool split_mesh_to_children = false;
+    float model_scale = 1.0f;
+    bool anchor_to_ground = false;
   };
+
+  using Component::Component;
 
   ModelComponent(GameObject* owner, const Props& props)
       : Component(owner),
         model_(props.model),
         shader_id_(props.shader_id),
         render_layer_(props.render_layer),
-        split_mesh_to_children_(props.split_mesh_to_children) {
+        split_mesh_to_children_(props.split_mesh_to_children),
+        model_scale_(props.model_scale),
+        anchor_to_ground_(props.anchor_to_ground) {
+    if (model_) model_path_ = model_->path;
   }
 
   void OnStart() override {
     if (model_) {
       BuildNodeTree(model_->root_node, GetOwner());
+      ApplyGroundAnchor();
     }
   }
 
@@ -43,10 +53,12 @@ class ModelComponent : public Component<ModelComponent> {
 
   void LoadModel(std::shared_ptr<ModelData> model) {
     model_ = std::move(model);
+    if (model_) model_path_ = model_->path;
     if (GetOwner()->IsStarted()) {
       ClearChildren();
       if (model_) {
         BuildNodeTree(model_->root_node, GetOwner());
+        ApplyGroundAnchor();
       }
     }
   }
@@ -55,24 +67,70 @@ class ModelComponent : public Component<ModelComponent> {
     return model_;
   }
 
+  Graphics::ShaderId GetShaderId() const { return shader_id_; }
+  float GetModelScale() const { return model_scale_; }
+
+  void OnSerialize(framework::SerializeNode& node) const override {
+    node.Write("ModelPath", model_path_);
+    auto shader_name = ShaderRegistry::GetName(shader_id_);
+    node.Write("Shader", std::string(shader_name));
+    node.Write("RenderLayer", render_layer_ == RenderLayer::Opaque ? "Opaque" : "Transparent");
+    node.Write("SplitMesh", split_mesh_to_children_);
+    node.Write("ModelScale", model_scale_);
+    node.Write("AnchorToGround", anchor_to_ground_);
+  }
+
+  void OnDeserialize(const framework::SerializeNode& node) override {
+    model_path_ = node.ReadString("ModelPath");
+    if (!model_path_.empty()) {
+      auto* context = GetOwner()->GetContext();
+      if (context) {
+        auto model = context->GetAssetManager().LoadModel(model_path_);
+        if (model) model_ = std::move(model);
+      }
+    }
+    auto shader_name = node.ReadString("Shader", "PBR");
+    if (!shader_name.empty()) {
+      auto id = ShaderRegistry::FindIdByName(shader_name);
+      if (id) shader_id_ = *id;
+    }
+    auto layer_str = node.ReadString("RenderLayer", "Opaque");
+    render_layer_ = (layer_str == "Opaque") ? RenderLayer::Opaque : RenderLayer::Transparent;
+    split_mesh_to_children_ = node.ReadBool("SplitMesh", false);
+    model_scale_ = node.ReadFloat("ModelScale", 1.0f);
+    anchor_to_ground_ = node.ReadBool("AnchorToGround", false);
+  }
+
  private:
-  void BuildNodeTree(const Model::Node& node, GameObject* parent) {
+  void ApplyGroundAnchor() {
+    if (!anchor_to_ground_ || !model_) return;
+    auto* transform = GetOwner()->GetTransform();
+    if (!transform) return;
+    auto anchor = transform->GetAnchor();
+    anchor.y = model_->min_y * model_scale_;
+    transform->SetAnchor(anchor);
+  }
+
+  void BuildNodeTree(const Model::Node& node, GameObject* parent, bool is_root = true) {
     for (const auto& child_node : node.children) {
       auto* scene = GetOwner()->GetScene();
 
+      float scale_factor = (is_root && model_scale_ != 1.0f) ? model_scale_ : 1.0f;
+
       TransformComponent::Props transform_props;
       transform_props.position = {
-        child_node.transform.translation.x,
-        child_node.transform.translation.y,
-        child_node.transform.translation.z,
+        child_node.transform.translation.x * scale_factor,
+        child_node.transform.translation.y * scale_factor,
+        child_node.transform.translation.z * scale_factor,
       };
       transform_props.scale = {
-        child_node.transform.scale.x,
-        child_node.transform.scale.y,
-        child_node.transform.scale.z,
+        child_node.transform.scale.x * scale_factor,
+        child_node.transform.scale.y * scale_factor,
+        child_node.transform.scale.z * scale_factor,
       };
 
       auto* child_go = scene->CreateGameObject(child_node.name, transform_props);
+      child_go->SetTransient(true);
       child_go->SetParent(parent);
 
       auto& rot = child_node.transform.rotation;
@@ -110,6 +168,7 @@ class ModelComponent : public Component<ModelComponent> {
           if (split_mesh_to_children_) {
             std::string mesh_name = child_node.name + "_mesh" + std::to_string(i);
             auto* mesh_go = scene->CreateGameObject(mesh_name);
+            mesh_go->SetTransient(true);
             mesh_go->SetParent(child_go);
             mesh_go->AddComponent<MeshRenderer>(renderer_props);
             created_children_.push_back(mesh_go);
@@ -119,7 +178,7 @@ class ModelComponent : public Component<ModelComponent> {
         }
       }
 
-      BuildNodeTree(child_node, child_go);
+      BuildNodeTree(child_node, child_go, false);
     }
   }
 
@@ -133,8 +192,11 @@ class ModelComponent : public Component<ModelComponent> {
   }
 
   std::shared_ptr<ModelData> model_;
+  std::string model_path_;
   Graphics::ShaderId shader_id_ = Graphics::PBRShader::ID;
   RenderLayer render_layer_ = RenderLayer::Opaque;
   bool split_mesh_to_children_ = false;
+  float model_scale_ = 1.0f;
+  bool anchor_to_ground_ = false;
   std::vector<GameObject*> created_children_;
 };

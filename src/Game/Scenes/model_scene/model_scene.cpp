@@ -53,10 +53,7 @@ void ModelScene::OnEnter(AssetManager& asset_manager) {
     }
 
     auto* obj = CreateGameObject(entry.path, {.position = {entry.x_offset, 0, 0}});
-    obj->AddComponent<ModelComponent>(ModelComponent::Props{
-      .model = model_data,
-      .split_mesh_to_children = entry.split_mesh_to_children,
-    });
+    obj->AddComponent<ModelComponent>(ModelComponent::Props{.model = model_data, .split_mesh_to_children = entry.split_mesh_to_children});
 
     Logger::LogFormat(LogLevel::Info,
       LogCategory::Game,
