@@ -73,6 +73,7 @@ class EditorLayer {
   void DrawPlayControls();
   void DrawDebugPanel();
   void DrawEditorSettings();
+  void DrawPostFxPanel();
   void DrawRenderPipelinePanel(ID3D12GraphicsCommandList* cmd);
   void DrawShadowMapPanel(ID3D12GraphicsCommandList* cmd);
   void RebuildFontAtlas(float scale);
@@ -99,6 +100,7 @@ class EditorLayer {
   bool show_inspector_ = true;
   bool show_scene_settings_ = true;
   bool show_debug_ = true;
+  bool show_postfx_ = true;
   bool show_render_pipeline_ = true;
   bool show_shadow_map_ = false;
   bool show_editor_settings_ = false;

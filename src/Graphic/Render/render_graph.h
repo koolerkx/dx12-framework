@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "Frame/frame_packet.h"
@@ -22,6 +23,8 @@ struct CreateRenderTextureProps {
   uint32_t height;
   ID3D12Device* device;
   Color clear_color = colors::Black;
+  float scale_factor = 1.0f;
+  bool fixed_size = false;
 };
 
 struct CreateDepthBufferProps {
@@ -45,6 +48,7 @@ class RenderGraph {
   RenderGraphHandle ImportBackbuffer(const char* name);
 
   uint32_t GetSrvIndex(RenderGraphHandle handle) const;
+  std::pair<uint32_t, uint32_t> GetTextureSize(RenderGraphHandle handle) const;
   D3D12_GPU_DESCRIPTOR_HANDLE GetSrvGpuHandle(RenderGraphHandle handle) const;
   void TransitionForRead(ID3D12GraphicsCommandList* cmd, RenderGraphHandle handle);
 
@@ -68,6 +72,7 @@ class RenderGraph {
     DepthBuffer* depth_buffer = nullptr;
     bool externally_referenced = false;
     bool fixed_size = false;
+    float scale_factor = 1.0f;
   };
 
   struct PassNode {

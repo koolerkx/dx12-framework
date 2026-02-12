@@ -132,6 +132,7 @@ void EditorLayer::Render(ID3D12GraphicsCommandList* cmd) {
   if (show_scene_settings_) DrawSceneSettings();
   if (show_debug_) DrawDebugPanel();
   if (show_editor_settings_) DrawEditorSettings();
+  if (show_postfx_) DrawPostFxPanel();
   if (show_render_pipeline_) DrawRenderPipelinePanel(cmd);
   if (show_shadow_map_) DrawShadowMapPanel(cmd);
 
@@ -195,6 +196,7 @@ void EditorLayer::DrawMainMenu() {
       ImGui::MenuItem("Scene Settings", nullptr, &show_scene_settings_);
       ImGui::MenuItem("Debug", nullptr, &show_debug_);
       ImGui::MenuItem("Editor Settings", nullptr, &show_editor_settings_);
+      ImGui::MenuItem("Post FX", nullptr, &show_postfx_);
       ImGui::MenuItem("Render Pipeline", nullptr, &show_render_pipeline_);
       ImGui::EndMenu();
     }
@@ -1040,6 +1042,31 @@ void EditorLayer::DrawEditorSettings() {
     ImGui::DragFloat("Position Snap", &transform_position_snap_, 0.01f, 0.001f, 10.0f, "%.3f");
     ImGui::DragFloat("Rotation Snap", &transform_rotation_snap_, 0.1f, 0.01f, 45.0f, "%.2f");
     ImGui::DragFloat("Scale Snap", &transform_scale_snap_, 0.001f, 0.001f, 1.0f, "%.3f");
+  }
+
+  ImGui::End();
+}
+
+void EditorLayer::DrawPostFxPanel() {
+  ImGui::Begin("Post FX", &show_postfx_);
+
+  auto& bloom = graphic_->GetBloomConfig();
+
+  if (ImGui::CollapsingHeader("Bloom", ImGuiTreeNodeFlags_DefaultOpen)) {
+    bool prev_enabled = bloom.enabled;
+    uint32_t prev_mip_levels = bloom.mip_levels;
+
+    ImGui::Checkbox("Enabled##bloom", &bloom.enabled);
+    int mip = static_cast<int>(bloom.mip_levels);
+    if (ImGui::SliderInt("Mip Levels", &mip, 1, 8)) {
+      bloom.mip_levels = static_cast<uint32_t>(mip);
+    }
+    ImGui::SliderFloat("Threshold", &bloom.threshold, 0.0f, 5.0f, "%.2f");
+    ImGui::SliderFloat("Intensity", &bloom.intensity, 0.0f, 2.0f, "%.2f");
+
+    if (bloom.enabled != prev_enabled || bloom.mip_levels != prev_mip_levels) {
+      graphic_->RebuildRenderPipeline();
+    }
   }
 
   ImGui::End();

@@ -11,7 +11,9 @@ ToneMapPass::ToneMapPass(const ToneMapPassProps& props)
       material_manager_(props.material_manager),
       shader_manager_(props.shader_manager),
       hdr_handle_(props.hdr_handle),
-      debug_(props.debug) {
+      bloom_handle_(props.bloom_handle),
+      debug_(props.debug),
+      bloom_config_(props.bloom_config) {
   setup_ = props.pass_setup;
   if (!CreatePipelineObjects()) {
     Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[ToneMapPass] Failed to create pipeline objects");
@@ -55,10 +57,26 @@ void ToneMapPass::Execute(const RenderFrameContext& frame, const FramePacket& pa
     float exposure;
     uint32_t debug_mode;
     uint32_t hdr_srv_index;
-    uint32_t padding = 0;
-  } cb_data = {.exposure = packet.main_camera.exposure,
+    uint32_t bloom_srv_index;
+    float bloom_intensity;
+    uint32_t padding[3] = {};
+  };
+  static_assert(sizeof(ToneMapCB) == 32);
+
+  uint32_t bloom_srv = 0xFFFFFFFF;
+  float bloom_intensity = 0.0f;
+  if (bloom_handle_ != RenderGraphHandle::Invalid && bloom_config_) {
+    bloom_srv = frame.render_graph->GetSrvIndex(bloom_handle_);
+    bloom_intensity = bloom_config_->intensity;
+  }
+
+  ToneMapCB cb_data = {
+    .exposure = packet.main_camera.exposure,
     .debug_mode = debug_->debug_view ? 1u : 0u,
-    .hdr_srv_index = frame.render_graph->GetSrvIndex(hdr_handle_)};
+    .hdr_srv_index = frame.render_graph->GetSrvIndex(hdr_handle_),
+    .bloom_srv_index = bloom_srv,
+    .bloom_intensity = bloom_intensity,
+  };
 
   auto cb_alloc = frame.object_cb_allocator->Allocate<ToneMapCB>();
   memcpy(cb_alloc.cpu_ptr, &cb_data, sizeof(ToneMapCB));

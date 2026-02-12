@@ -191,6 +191,36 @@ struct PBRShader {
   }
 };
 
+struct PostProcessBloomDownsampleShader {
+  static constexpr ShaderId ID = 12;
+  using VertexType = Vertex::Empty;
+
+  static constexpr RSPreset RS_PRESET = RSPreset::Standard;
+  static constexpr std::string_view NAME = "BloomDownsample";
+  static constexpr std::wstring_view VS_PATH = L"Content/shaders/fullscreen.vs.cso";
+  static constexpr std::wstring_view PS_PATH = L"Content/shaders/bloom_downsample.ps.cso";
+  static constexpr ShaderRenderHints HINTS = {};
+
+  static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
+    return VertexType::GetInputLayout();
+  }
+};
+
+struct PostProcessBloomUpsampleShader {
+  static constexpr ShaderId ID = 13;
+  using VertexType = Vertex::Empty;
+
+  static constexpr RSPreset RS_PRESET = RSPreset::Standard;
+  static constexpr std::string_view NAME = "BloomUpsample";
+  static constexpr std::wstring_view VS_PATH = L"Content/shaders/fullscreen.vs.cso";
+  static constexpr std::wstring_view PS_PATH = L"Content/shaders/bloom_upsample.ps.cso";
+  static constexpr ShaderRenderHints HINTS = {};
+
+  static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
+    return VertexType::GetInputLayout();
+  }
+};
+
 // Shader Registration
 using AllShaders = std::tuple<SpriteShader,
   SpriteInstancedShader,
@@ -201,7 +231,9 @@ using AllShaders = std::tuple<SpriteShader,
   PostProcessDepthViewShader,
   PostProcessBlitShader,
   ShadowDepthShader,
-  PBRShader>;
+  PBRShader,
+  PostProcessBloomDownsampleShader,
+  PostProcessBloomUpsampleShader>;
 
 [[maybe_unused]] constexpr size_t SHADER_COUNT = std::tuple_size_v<AllShaders>;
 

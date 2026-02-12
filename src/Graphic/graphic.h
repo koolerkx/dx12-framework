@@ -156,6 +156,9 @@ class Graphic {
   DepthViewConfig& GetDepthPreviewConfig() {
     return depth_preview_config_;
   }
+  BloomConfig& GetBloomConfig() {
+    return bloom_config_;
+  }
 
   void SetWireframeMode(bool enabled) {
     if (render_services_) render_services_->GetMaterialManager().SetWireframeOverride(enabled);
@@ -183,6 +186,8 @@ class Graphic {
   HdrDebug hdr_debug_;
   DepthViewConfig depth_view_config_;
   DepthViewConfig depth_preview_config_ = {.enabled = true, .near_plane = 0.1f, .far_plane = 1000.0f};
+  BloomConfig bloom_config_;
+  bool pending_pipeline_rebuild_ = false;
 
   ShadowFrameData shadow_frame_data_;
   RenderGraphHandle shadow_depth_handles_[ShadowCascadeConfig::MAX_CASCADES];
@@ -219,6 +224,7 @@ class Graphic {
   void BuildRenderPipeline();
 
  public:
+  void RebuildRenderPipeline();
   void SetShadowMapResolution(uint32_t resolution);
   void SetCascadeCount(uint32_t count);
   const ShadowFrameData& GetShadowFrameData() const {

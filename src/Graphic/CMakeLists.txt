@@ -104,6 +104,9 @@ add_library(graphic STATIC
 
   Render/shadow_pass.h
   Render/shadow_pass.cpp
+
+  Render/bloom_pass_group.h
+  Render/bloom_pass_group.cpp
 )
 
 target_link_libraries(graphic PUBLIC framework)
@@ -132,6 +135,8 @@ target_add_hlsl_auto(graphic "6.6"
   "${CMAKE_SOURCE_DIR}/shaders/shadow_depth.vs.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/pbr.vs.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/pbr.ps.hlsl"
+  "${CMAKE_SOURCE_DIR}/shaders/bloom_downsample.ps.hlsl"
+  "${CMAKE_SOURCE_DIR}/shaders/bloom_upsample.ps.hlsl"
 )
 
 # manually add shaders files

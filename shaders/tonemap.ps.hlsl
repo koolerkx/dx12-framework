@@ -26,7 +26,9 @@ struct ToneMapCB {
   float exposure;
   uint debugMode;
   uint hdrSrvIndex;
-  uint _padding;
+  uint bloomSrvIndex;
+  float bloomIntensity;
+  uint3 _padding;
 };
 ConstantBuffer<ToneMapCB> g_ToneMapCB : register(b2);
 
@@ -44,6 +46,13 @@ float4 main(PSIN input) : SV_TARGET {
 
   if (g_ToneMapCB.debugMode == 1) {
     return float4(hdr_color / 16.0, 1.0);
+  }
+
+  if (g_ToneMapCB.bloomSrvIndex != 0xFFFFFFFF) {
+    float3 bloom = g_Textures[g_ToneMapCB.bloomSrvIndex]
+                       .Sample(g_Samplers[0], input.uv)
+                       .rgb;
+    hdr_color += bloom * g_ToneMapCB.bloomIntensity;
   }
 
   float3 exposed = hdr_color * g_ToneMapCB.exposure;

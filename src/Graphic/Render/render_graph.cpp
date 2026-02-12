@@ -32,7 +32,8 @@ RenderGraphHandle RenderGraph::CreateRenderTexture(const CreateRenderTextureProp
   rt->SetDebugName(props.name);
 
   auto index = static_cast<uint16_t>(resources_.size());
-  resources_.push_back({props.name, RenderGraphResourceType::RenderTexture, rt.get(), nullptr});
+  ResourceEntry entry{props.name, RenderGraphResourceType::RenderTexture, rt.get(), nullptr, false, props.fixed_size, props.scale_factor};
+  resources_.push_back(entry);
   owned_render_textures_.push_back(std::move(rt));
   return static_cast<RenderGraphHandle>(index);
 }
@@ -68,6 +69,19 @@ uint32_t RenderGraph::GetSrvIndex(RenderGraphHandle handle) const {
       return 0;
   }
   return 0;
+}
+
+std::pair<uint32_t, uint32_t> RenderGraph::GetTextureSize(RenderGraphHandle handle) const {
+  const auto& entry = GetEntry(handle);
+  switch (entry.type) {
+    case RenderGraphResourceType::RenderTexture:
+      return {entry.render_texture->GetWidth(), entry.render_texture->GetHeight()};
+    case RenderGraphResourceType::DepthBuffer:
+      return {entry.depth_buffer->GetWidth(), entry.depth_buffer->GetHeight()};
+    case RenderGraphResourceType::Backbuffer:
+      return {swapchain_->GetWidth(), swapchain_->GetHeight()};
+  }
+  return {0, 0};
 }
 
 D3D12_GPU_DESCRIPTOR_HANDLE RenderGraph::GetSrvGpuHandle(RenderGraphHandle handle) const {
@@ -231,21 +245,24 @@ void RenderGraph::FinalizeFrame(ID3D12GraphicsCommandList* cmd) {
 }
 
 void RenderGraph::Resize(ID3D12Device* device, uint32_t width, uint32_t height) {
-  for (auto& rt : owned_render_textures_) {
-    rt->SafeRelease(*heap_manager_);
-    rt->Initialize(device, width, height, *heap_manager_);
-  }
-  for (size_t i = 0; i < owned_depth_buffers_.size(); ++i) {
-    bool is_fixed = false;
-    for (const auto& entry : resources_) {
-      if (entry.type == RenderGraphResourceType::DepthBuffer && entry.depth_buffer == owned_depth_buffers_[i].get()) {
-        is_fixed = entry.fixed_size;
+  for (auto& entry : resources_) {
+    if (entry.fixed_size) continue;
+
+    uint32_t scaled_width = (std::max)(static_cast<uint32_t>(width * entry.scale_factor), 1u);
+    uint32_t scaled_height = (std::max)(static_cast<uint32_t>(height * entry.scale_factor), 1u);
+
+    switch (entry.type) {
+      case RenderGraphResourceType::RenderTexture:
+        entry.render_texture->SafeRelease(*heap_manager_);
+        entry.render_texture->Initialize(device, scaled_width, scaled_height, *heap_manager_);
         break;
-      }
+      case RenderGraphResourceType::DepthBuffer:
+        entry.depth_buffer->SafeRelease(*heap_manager_);
+        entry.depth_buffer->Initialize(device, scaled_width, scaled_height, *heap_manager_);
+        break;
+      case RenderGraphResourceType::Backbuffer:
+        break;
     }
-    if (is_fixed) continue;
-    owned_depth_buffers_[i]->SafeRelease(*heap_manager_);
-    owned_depth_buffers_[i]->Initialize(device, width, height, *heap_manager_);
   }
 }
 

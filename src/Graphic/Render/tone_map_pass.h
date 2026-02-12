@@ -12,6 +12,8 @@ struct ID3D12Device;
 class MaterialManager;
 class ShaderManager;
 
+struct BloomConfig;
+
 struct ToneMapPassProps {
   ID3D12Device* device;
   MaterialManager* material_manager;
@@ -19,6 +21,8 @@ struct ToneMapPassProps {
   PassSetup pass_setup;
   RenderGraphHandle hdr_handle;
   const HdrDebug* debug;
+  RenderGraphHandle bloom_handle = RenderGraphHandle::Invalid;
+  const BloomConfig* bloom_config = nullptr;
 };
 
 class ToneMapPass : public IRenderPass {
@@ -41,5 +45,7 @@ class ToneMapPass : public IRenderPass {
   ComPtr<ID3D12PipelineState> pipeline_state_;
 
   RenderGraphHandle hdr_handle_ = RenderGraphHandle::Invalid;
+  RenderGraphHandle bloom_handle_ = RenderGraphHandle::Invalid;
   const HdrDebug* debug_ = nullptr;
+  const BloomConfig* bloom_config_ = nullptr;
 };

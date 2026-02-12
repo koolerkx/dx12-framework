@@ -15,6 +15,7 @@
 #include "Framework/Math/Math.h"
 #include "Presentation/swapchain_manager.h"
 #include "Render/blit_pass.h"
+#include "Render/bloom_pass_group.h"
 #include "Render/debug_pass.h"
 #include "Render/depth_view_pass.h"
 #include "Render/material_pass.h"
@@ -240,6 +241,25 @@ void Graphic::BuildRenderPipeline() {
 
   render_graph_->AddPass(std::make_unique<DebugPass>(debug_line_renderer_.get(), &render_services_->GetMaterialManager(), scene_setup));
 
+  RenderGraphHandle bloom_output = RenderGraphHandle::Invalid;
+  if (bloom_config_.enabled) {
+    BloomPassGroup bloom_group;
+    bloom_group.Build(*render_graph_,
+      scene_rt,
+      {
+        .device = device_.Get(),
+        .shader_manager = &render_services_->GetShaderManager(),
+        .config = &bloom_config_,
+        .screen_width = frame_buffer_width_,
+        .screen_height = frame_buffer_height_,
+      });
+    bloom_output = bloom_group.GetBloomOutput();
+  }
+
+  if (bloom_output != RenderGraphHandle::Invalid) {
+    tonemap_setup.resource_reads.push_back(bloom_output);
+  }
+
   render_graph_->AddPass(std::make_unique<ToneMapPass>(ToneMapPassProps{
     .device = device_.Get(),
     .material_manager = &render_services_->GetMaterialManager(),
@@ -247,6 +267,8 @@ void Graphic::BuildRenderPipeline() {
     .pass_setup = tonemap_setup,
     .hdr_handle = scene_rt,
     .debug = &hdr_debug_,
+    .bloom_handle = bloom_output,
+    .bloom_config = &bloom_config_,
   }));
 
   PassSetup depth_preview_setup;
@@ -383,6 +405,14 @@ void Graphic::Shutdown() {
 }
 
 RenderFrameContext Graphic::BeginFrame() {
+  if (pending_pipeline_rebuild_) {
+    pending_pipeline_rebuild_ = false;
+    WaitForGpuIdle();
+    render_graph_->Shutdown();
+    BuildRenderPipeline();
+    if (overlay_renderer_) SetOverlayRenderer(std::move(overlay_renderer_));
+  }
+
   uint32_t frame_index = presentation_context_->GetCurrentBackBufferIndex();
 
   if (debug_line_renderer_) {
@@ -475,13 +505,12 @@ void Graphic::SetShadowMapResolution(uint32_t resolution) {
 void Graphic::SetCascadeCount(uint32_t count) {
   count = std::clamp(count, 1u, ShadowCascadeConfig::MAX_CASCADES);
   if (count == active_cascade_count_) return;
-  WaitForGpuIdle();
   active_cascade_count_ = count;
-  render_graph_ = std::make_unique<RenderGraph>();
-  render_graph_->SetSwapChain(&presentation_context_->GetSwapChainManager());
-  render_graph_->SetHeapManager(&descriptor_heap_manager_);
-  BuildRenderPipeline();
-  if (overlay_renderer_) SetOverlayRenderer(std::move(overlay_renderer_));
+  RebuildRenderPipeline();
+}
+
+void Graphic::RebuildRenderPipeline() {
+  pending_pipeline_rebuild_ = true;
 }
 
 void Graphic::AddDebugLine(const Vector3& start, const Vector3& end, const Vector4& color) {
