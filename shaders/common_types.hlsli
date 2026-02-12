@@ -14,4 +14,12 @@ struct VS_IN_3D {
   float4 color : COLOR;
 };
 
+struct VS_IN_PBR {
+  float3 position : POSITION;
+  float3 normal : NORMAL;
+  float2 uv : TEXCOORD;
+  float4 color : COLOR;
+  float4 tangent : TANGENT;
+};
+
 #endif

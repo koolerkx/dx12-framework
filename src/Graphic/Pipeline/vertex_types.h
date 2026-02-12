@@ -159,6 +159,27 @@ struct ShadowVertex {
 };
 static_assert(sizeof(ShadowVertex) == 12);
 
+struct ModelVertex {
+  Vector3 position;
+  Vector3 normal;
+  Vector2 texcoord;
+  Vector4 color;
+  Vector4 tangent;
+
+  static constexpr std::array INPUT_LAYOUT = {
+    D3D12_INPUT_ELEMENT_DESC{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+    D3D12_INPUT_ELEMENT_DESC{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+    D3D12_INPUT_ELEMENT_DESC{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+    D3D12_INPUT_ELEMENT_DESC{"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+    D3D12_INPUT_ELEMENT_DESC{"TANGENT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 48, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+  };
+
+  static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
+    return {INPUT_LAYOUT.data(), INPUT_LAYOUT.size()};
+  }
+};
+static_assert(sizeof(ModelVertex) == 64);
+
 using LineVertex = PositionColor;
 using SpriteVertex = PositionTexCoordColor;
 using Basic3DVertex = PositionNormalTexCoordColor;

@@ -145,12 +145,17 @@ void MaterialRenderer::RecordSingle(RenderCommandList& cmd, const DrawCommand& d
   mat.albedo_texture_index = mi.albedo_texture_index;
   mat.normal_texture_index = mi.normal_texture_index;
   mat.metallic_roughness_index = mi.metallic_roughness_index;
-  mat.flags = (mi.use_alpha_test ? 1u : 0u) | (mi.double_sided ? 2u : 0u) | (mi.rim_shadow_affected ? 4u : 0u);
+  mat.flags = (mi.use_alpha_test ? 1u : 0u) | (mi.double_sided ? 2u : 0u) | (mi.rim_shadow_affected ? 4u : 0u) |
+              (mi.has_normal_map ? 8u : 0u) | (mi.has_metallic_roughness_map ? 16u : 0u) | (mi.has_emissive_map ? 32u : 0u);
   mat.specular_intensity = mi.specular_intensity;
   mat.specular_power = mi.specular_power;
   mat.rim_intensity = mi.rim_intensity;
   mat.rim_power = mi.rim_power;
   mat.rim_color = Vector3(mi.rim_color[0], mi.rim_color[1], mi.rim_color[2]);
+  mat.emissive_texture_index = mi.emissive_texture_index;
+  mat.metallic_factor = mi.metallic_factor;
+  mat.roughness_factor = mi.roughness_factor;
+  mat.emissive_factor = Vector3(mi.emissive_factor[0], mi.emissive_factor[1], mi.emissive_factor[2]);
   cmd.SetMaterialConstants(mat);
 
   ObjectCB obj_data = {};
@@ -179,12 +184,17 @@ void MaterialRenderer::RecordInstanced(RenderCommandList& cmd, const DrawCommand
   mat.albedo_texture_index = mi.albedo_texture_index;
   mat.normal_texture_index = mi.normal_texture_index;
   mat.metallic_roughness_index = mi.metallic_roughness_index;
-  mat.flags = (mi.use_alpha_test ? 1u : 0u) | (mi.double_sided ? 2u : 0u) | (mi.rim_shadow_affected ? 4u : 0u);
+  mat.flags = (mi.use_alpha_test ? 1u : 0u) | (mi.double_sided ? 2u : 0u) | (mi.rim_shadow_affected ? 4u : 0u) |
+              (mi.has_normal_map ? 8u : 0u) | (mi.has_metallic_roughness_map ? 16u : 0u) | (mi.has_emissive_map ? 32u : 0u);
   mat.specular_intensity = mi.specular_intensity;
   mat.specular_power = mi.specular_power;
   mat.rim_intensity = mi.rim_intensity;
   mat.rim_power = mi.rim_power;
   mat.rim_color = Vector3(mi.rim_color[0], mi.rim_color[1], mi.rim_color[2]);
+  mat.emissive_texture_index = mi.emissive_texture_index;
+  mat.metallic_factor = mi.metallic_factor;
+  mat.roughness_factor = mi.roughness_factor;
+  mat.emissive_factor = Vector3(mi.emissive_factor[0], mi.emissive_factor[1], mi.emissive_factor[2]);
   cmd.SetMaterialConstants(mat);
 
   ObjectCB obj_data = {};

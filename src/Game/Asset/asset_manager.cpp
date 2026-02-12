@@ -1,9 +1,15 @@
 #include "asset_manager.h"
 
+#include <filesystem>
+#include <optional>
+
 #include "Framework/Logging/logger.h"
+#include "Framework/Model/model_loader.h"
+#include "Graphic/Pipeline/vertex_types.h"
 #include "Graphic/Resource/Font/sprite_font_manager.h"
 #include "Graphic/Resource/Texture/texture_manager.h"
 #include "Graphic/Resource/mesh_factory.h"
+#include "Graphic/Resource/mesh_registry.h"
 #include "Graphic/graphic.h"
 #include "text_mesh_handle.h"
 
@@ -12,7 +18,6 @@ class AssetManager::Impl {
   Graphic* graphic = nullptr;
   TextureManager* texture_manager = nullptr;
   Font::SpriteFontManager* font_manager = nullptr;
-  // Todo: ModelManager* model_manager = nullptr;
   // Todo: AudioManager* audio_manager = nullptr;
 };
 
@@ -28,6 +33,7 @@ bool AssetManager::Initialize(Graphic* graphic) {
   impl_->texture_manager = &graphic->GetTextureManager();
   impl_->font_manager = &graphic->GetSpriteFontManager();
   CreateDefaultMeshes();
+  default_white_texture_ = impl_->texture_manager->LoadTextureSRGB("Content/textures/white.png");
   return true;
 }
 
@@ -72,39 +78,20 @@ void AssetManager::CreateDefaultMeshes() {
   if (!impl_->graphic) return;
 
   ID3D12Device* device = impl_->graphic->GetDevice();
+  auto& registry = impl_->graphic->GetMeshRegistry();
 
-  // Create and own Quad mesh
-  auto quad_mesh = std::make_unique<Mesh>();
-  if (MeshFactory::CreateQuad(device, *quad_mesh)) {
-    default_meshes_[DefaultMesh::Quad] = quad_mesh.get();
-    owned_default_meshes_[DefaultMesh::Quad] = std::move(quad_mesh);
-  }
+  auto register_default = [&](DefaultMesh type, const std::string& key, auto create_fn) {
+    auto mesh = std::make_unique<Mesh>();
+    if (create_fn(device, *mesh)) {
+      default_meshes_[type] = registry.Register(key, std::move(mesh));
+    }
+  };
 
-  // Create and own Cube mesh
-  auto cube_mesh = std::make_unique<Mesh>();
-  if (MeshFactory::CreateCube(device, *cube_mesh)) {
-    default_meshes_[DefaultMesh::Cube] = cube_mesh.get();
-    owned_default_meshes_[DefaultMesh::Cube] = std::move(cube_mesh);
-  }
-
-  auto rect_mesh = std::make_unique<Mesh>();
-  if (MeshFactory::CreateRect(device, *rect_mesh)) {
-    default_meshes_[DefaultMesh::Rect] = rect_mesh.get();
-    owned_default_meshes_[DefaultMesh::Rect] = std::move(rect_mesh);
-  }
-
-  // Create and own Plane mesh (10x10 subdivisions for terrain)
-  auto plane_mesh = std::make_unique<Mesh>();
-  if (MeshFactory::CreatePlane(device, *plane_mesh, 10, 10)) {
-    default_meshes_[DefaultMesh::Plane] = plane_mesh.get();
-    owned_default_meshes_[DefaultMesh::Plane] = std::move(plane_mesh);
-  }
-
-  auto sphere_mesh = std::make_unique<Mesh>();
-  if (MeshFactory::CreateSphere(device, *sphere_mesh, 32, 16)) {
-    default_meshes_[DefaultMesh::Sphere] = sphere_mesh.get();
-    owned_default_meshes_[DefaultMesh::Sphere] = std::move(sphere_mesh);
-  }
+  register_default(DefaultMesh::Quad, "default:quad", [](auto* d, auto& m) { return MeshFactory::CreateQuad(d, m); });
+  register_default(DefaultMesh::Cube, "default:cube", [](auto* d, auto& m) { return MeshFactory::CreateCube(d, m); });
+  register_default(DefaultMesh::Rect, "default:rect", [](auto* d, auto& m) { return MeshFactory::CreateRect(d, m); });
+  register_default(DefaultMesh::Plane, "default:plane", [](auto* d, auto& m) { return MeshFactory::CreatePlane(d, m, 10, 10); });
+  register_default(DefaultMesh::Sphere, "default:sphere", [](auto* d, auto& m) { return MeshFactory::CreateSphere(d, m, 32, 16); });
 }
 
 const Mesh* AssetManager::GetDefaultMesh(DefaultMesh type) const {
@@ -123,6 +110,162 @@ std::optional<DefaultMesh> AssetManager::FindDefaultMeshType(const Mesh* mesh) c
     if (ptr == mesh) return type;
   }
   return std::nullopt;
+}
+
+std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path) {
+  auto cache_it = model_cache_.find(path);
+  if (cache_it != model_cache_.end()) {
+    return cache_it->second;
+  }
+
+  auto* texture_manager = impl_->texture_manager;
+  auto* device = impl_->graphic->GetDevice();
+  auto& mesh_registry = impl_->graphic->GetMeshRegistry();
+
+  using Loader = Model::ModelLoader<const Mesh*, std::shared_ptr<Texture>, ModelSurfaceMaterial>;
+
+  std::filesystem::path model_dir = std::filesystem::path(path).parent_path();
+
+  auto load_texture_by_usage = [&](const std::string& tex_path, bool is_color) -> std::shared_ptr<Texture> {
+    return is_color ? texture_manager->LoadTextureSRGB(tex_path) : texture_manager->LoadTextureLinear(tex_path);
+  };
+
+  auto texture_cb = [&](const Model::TextureRef& tex_ref) -> std::shared_ptr<Texture> {
+    bool is_color = tex_ref.type == Model::TextureType::Color;
+
+    if (tex_ref.embedded.has_value()) {
+      auto& emb = *tex_ref.embedded;
+      std::string cache_key = path + "#emb_" + tex_ref.path;
+
+      std::shared_ptr<Texture> texture;
+      if (emb.is_compressed) {
+        texture = texture_manager->LoadTextureFromMemory(cache_key, emb.data.data(), emb.data.size(), is_color);
+      } else {
+        texture = texture_manager->LoadTextureFromRawPixels(cache_key, emb.data.data(), emb.width, emb.height, is_color);
+      }
+
+      if (!texture) {
+        Logger::LogFormat(LogLevel::Error,
+          LogCategory::Game,
+          Logger::Here(),
+          "[AssetManager] Failed to load embedded texture '{}' from model '{}'",
+          tex_ref.path,
+          path);
+      }
+      return texture ? texture : default_white_texture_;
+    }
+
+    std::filesystem::path tex_path(tex_ref.path);
+
+    // attempt using the path exactly as specified by the model (may be absolute or relative)
+    auto texture = load_texture_by_usage(tex_ref.path, is_color);
+
+    if (!texture) {
+      // attempt by resolving the model-relative path (model directory + path)
+      std::string relative_str = (model_dir / tex_path).string();
+      texture = load_texture_by_usage(relative_str, is_color);
+    }
+
+    if (!texture && tex_path.has_filename()) {
+      // attempt using only the filename inside the model's directory
+      std::string filename_str = (model_dir / tex_path.filename()).string();
+      texture = load_texture_by_usage(filename_str, is_color);
+    }
+
+    if (!texture) {
+      Logger::LogFormat(LogLevel::Error,
+        LogCategory::Game,
+        Logger::Here(),
+        "[AssetManager] Failed to load texture '{}' for model '{}'",
+        tex_ref.path,
+        path);
+      return default_white_texture_;
+    }
+    return texture;
+  };
+
+  std::vector<std::optional<uint32_t>> material_albedo_texture_indices;
+  std::vector<std::optional<uint32_t>> material_normal_texture_indices;
+  std::vector<std::optional<uint32_t>> material_metallic_roughness_indices;
+  std::vector<std::optional<uint32_t>> material_emissive_texture_indices;
+
+  auto material_cb = [&](const Model::SurfaceMaterialData& mat) -> ModelSurfaceMaterial {
+    material_albedo_texture_indices.push_back(mat.base_color_texture_index);
+    material_normal_texture_indices.push_back(mat.normal_texture_index);
+    material_metallic_roughness_indices.push_back(mat.metallic_roughness_texture_index);
+    material_emissive_texture_indices.push_back(mat.emissive_texture_index);
+    return ModelSurfaceMaterial{
+      .base_color_factor = mat.base_color_factor,
+      .emissive_factor = mat.emissive_factor,
+      .metallic_factor = mat.metallic_factor,
+      .roughness_factor = mat.roughness_factor,
+      .is_double_sided = mat.is_double_sided,
+    };
+  };
+
+  std::vector<uint32_t> mesh_material_indices;
+  uint32_t mesh_counter = 0;
+
+  auto mesh_cb = [&](const Model::MeshData<Graphics::Vertex::ModelVertex>& mesh_data) -> const Mesh* {
+    std::string key = path + "#" + mesh_data.name + "_" + std::to_string(mesh_counter++);
+    mesh_material_indices.push_back(mesh_data.material_index);
+
+    if (auto* existing = mesh_registry.Find(key)) {
+      return existing;
+    }
+
+    auto mesh = std::make_unique<Mesh>();
+    if (!mesh->Create(device, mesh_data.vertices.data(), mesh_data.vertices.size(), mesh_data.indices.data(), mesh_data.indices.size())) {
+      Logger::LogFormat(LogLevel::Error, LogCategory::Game, Logger::Here(), "[AssetManager] Failed to create mesh: {}", key);
+      return nullptr;
+    }
+    return mesh_registry.Register(key, std::move(mesh));
+  };
+
+  auto result = Loader::Load<Graphics::Vertex::ModelVertex, const Mesh*, ModelSurfaceMaterial, std::shared_ptr<Texture>>(
+    path, texture_cb, material_cb, mesh_cb);
+
+  if (!result.success) {
+    Logger::LogFormat(
+      LogLevel::Error, LogCategory::Game, Logger::Here(), "[AssetManager] Failed to load model: {} - {}", path, result.error_message);
+    return nullptr;
+  }
+
+  auto model_data = std::make_shared<ModelData>();
+  model_data->path = path;
+  model_data->textures = std::move(result.texture_handles);
+  model_data->surface_materials = std::move(result.surface_material_handles);
+  model_data->root_node = std::move(result.root_node);
+
+  auto resolve_texture = [&](const std::vector<std::optional<uint32_t>>& indices, uint32_t mat_idx) -> std::shared_ptr<Texture> {
+    if (mat_idx < indices.size()) {
+      auto tex_idx = indices[mat_idx];
+      if (tex_idx.has_value() && *tex_idx < model_data->textures.size()) {
+        return model_data->textures[*tex_idx];
+      }
+    }
+    return nullptr;
+  };
+
+  model_data->sub_meshes.reserve(result.mesh_handles.size());
+  for (size_t i = 0; i < result.mesh_handles.size(); ++i) {
+    if (!result.mesh_handles[i]) continue;
+
+    uint32_t mat_idx = mesh_material_indices[i];
+
+    ModelSubMeshEntry entry;
+    entry.mesh = result.mesh_handles[i];
+    entry.surface_material_index = mat_idx;
+    entry.albedo_texture = resolve_texture(material_albedo_texture_indices, mat_idx);
+    entry.normal_texture = resolve_texture(material_normal_texture_indices, mat_idx);
+    entry.metallic_roughness_texture = resolve_texture(material_metallic_roughness_indices, mat_idx);
+    entry.emissive_texture = resolve_texture(material_emissive_texture_indices, mat_idx);
+
+    model_data->sub_meshes.push_back(entry);
+  }
+
+  model_cache_[path] = model_data;
+  return model_data;
 }
 
 bool AssetManager::LoadFont(Font::FontFamily family, const std::string& fnt_path, const std::string& texture_path) {

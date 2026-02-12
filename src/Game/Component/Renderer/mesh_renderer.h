@@ -47,7 +47,9 @@ class MeshRenderer : public Component<MeshRenderer> {
  public:
   struct Props {
     DefaultMesh mesh_type = DefaultMesh::Cube;
+    const Mesh* mesh = nullptr;
     std::string texture_path;
+    Texture* texture = nullptr;
     Vector4 color = {1, 1, 1, 1};
     Graphics::ShaderId shader_id = Graphics::Basic3DShader::ID;
     RenderLayer render_layer = RenderLayer::Opaque;
@@ -57,13 +59,27 @@ class MeshRenderer : public Component<MeshRenderer> {
     float rim_power = 4.0f;
     Vector3 rim_color = {1, 1, 1};
     bool rim_shadow_affected = false;
+    Texture* normal_texture = nullptr;
+    Texture* metallic_roughness_texture = nullptr;
+    Texture* emissive_texture = nullptr;
+    float metallic = 0.0f;
+    float roughness = 0.5f;
+    Vector3 emissive_color = {0, 0, 0};
   };
 
   using Component::Component;
 
   MeshRenderer(GameObject* owner, const Props& props) : Component(owner) {
-    SetDefaultMesh(props.mesh_type);
-    if (!props.texture_path.empty()) SetTexturePath(props.texture_path);
+    if (props.mesh) {
+      SetMesh(props.mesh);
+    } else {
+      SetDefaultMesh(props.mesh_type);
+    }
+    if (props.texture) {
+      SetTexture(props.texture);
+    } else if (!props.texture_path.empty()) {
+      SetTexturePath(props.texture_path);
+    }
     SetColor(props.color);
     SetShaderId(props.shader_id);
     SetRenderLayer(props.render_layer);
@@ -73,6 +89,12 @@ class MeshRenderer : public Component<MeshRenderer> {
     SetRimPower(props.rim_power);
     SetRimColor(props.rim_color);
     SetRimShadowAffected(props.rim_shadow_affected);
+    if (props.normal_texture) SetNormalTexture(props.normal_texture);
+    if (props.metallic_roughness_texture) SetMetallicRoughnessTexture(props.metallic_roughness_texture);
+    if (props.emissive_texture) SetEmissiveTexture(props.emissive_texture);
+    SetMetallic(props.metallic);
+    SetRoughness(props.roughness);
+    SetEmissiveColor(props.emissive_color);
   }
 
   void SetMesh(const Mesh* mesh) {
@@ -144,6 +166,24 @@ class MeshRenderer : public Component<MeshRenderer> {
   void SetRimShadowAffected(bool affected) {
     rim_shadow_affected_ = affected;
   }
+  void SetNormalTexture(Texture* texture) {
+    normal_texture_ = texture;
+  }
+  void SetMetallicRoughnessTexture(Texture* texture) {
+    metallic_roughness_texture_ = texture;
+  }
+  void SetEmissiveTexture(Texture* texture) {
+    emissive_texture_ = texture;
+  }
+  void SetMetallic(float metallic) {
+    metallic_ = metallic;
+  }
+  void SetRoughness(float roughness) {
+    roughness_ = roughness;
+  }
+  void SetEmissiveColor(const Vector3& color) {
+    emissive_color_ = color;
+  }
   void SetRenderTags(RenderTagMask tags) {
     render_tags_ = tags;
   }
@@ -161,6 +201,18 @@ class MeshRenderer : public Component<MeshRenderer> {
 
   Graphics::ShaderId GetShaderId() const {
     return shader_id_;
+  }
+
+  Texture* GetMetallicRoughnessTexture() const {
+    return metallic_roughness_texture_;
+  }
+
+  Texture* GetEmissiveTexture() const {
+    return emissive_texture_;
+  }
+
+  Texture* GetNormalTexture() const {
+    return normal_texture_;
   }
 
   void OnSerialize(framework::SerializeNode& node) const override {
@@ -186,6 +238,9 @@ class MeshRenderer : public Component<MeshRenderer> {
     node.Write("RimPower", rim_power_);
     node.WriteVec3("RimColor", rim_color_.x, rim_color_.y, rim_color_.z);
     node.Write("RimShadowAffected", rim_shadow_affected_);
+    node.Write("Metallic", metallic_);
+    node.Write("Roughness", roughness_);
+    node.WriteVec3("EmissiveColor", emissive_color_.x, emissive_color_.y, emissive_color_.z);
   }
 
   void OnDeserialize(const framework::SerializeNode& node) override {
@@ -221,6 +276,9 @@ class MeshRenderer : public Component<MeshRenderer> {
     rim_power_ = node.ReadFloat("RimPower", rim_power_);
     node.ReadVec3("RimColor", rim_color_.x, rim_color_.y, rim_color_.z);
     rim_shadow_affected_ = node.ReadBool("RimShadowAffected", rim_shadow_affected_);
+    metallic_ = node.ReadFloat("Metallic", metallic_);
+    roughness_ = node.ReadFloat("Roughness", roughness_);
+    node.ReadVec3("EmissiveColor", emissive_color_.x, emissive_color_.y, emissive_color_.z);
   }
 
   struct EditorData {
@@ -234,6 +292,9 @@ class MeshRenderer : public Component<MeshRenderer> {
     float rim_power;
     Vector3 rim_color;
     bool rim_shadow_affected;
+    float metallic;
+    float roughness;
+    Vector3 emissive_color;
   };
 
   EditorData GetEditorData() const {
@@ -246,7 +307,10 @@ class MeshRenderer : public Component<MeshRenderer> {
       rim_intensity_,
       rim_power_,
       rim_color_,
-      rim_shadow_affected_};
+      rim_shadow_affected_,
+      metallic_,
+      roughness_,
+      emissive_color_};
   }
 
   void ApplyEditorData(const EditorData& data) {
@@ -260,6 +324,9 @@ class MeshRenderer : public Component<MeshRenderer> {
     rim_power_ = data.rim_power;
     rim_color_ = data.rim_color;
     rim_shadow_affected_ = data.rim_shadow_affected;
+    metallic_ = data.metallic;
+    roughness_ = data.roughness;
+    emissive_color_ = data.emissive_color;
   }
 
   void OnRender(FramePacket& packet) override {
@@ -278,7 +345,8 @@ class MeshRenderer : public Component<MeshRenderer> {
 
     cmd.material = material_mgr.GetOrCreateMaterial(shader_id_, render_settings_);
     cmd.material_instance.material = cmd.material;
-    cmd.material_instance.albedo_texture_index = texture_ ? texture_->GetBindlessIndex() : 0;
+    Texture* effective_texture = texture_ ? texture_ : context->GetAssetManager().GetDefaultWhiteTexture();
+    cmd.material_instance.albedo_texture_index = effective_texture ? effective_texture->GetBindlessIndex() : 0;
     cmd.material_instance.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
     cmd.material_instance.specular_intensity = specular_intensity_;
     cmd.material_instance.specular_power = specular_power_;
@@ -288,6 +356,17 @@ class MeshRenderer : public Component<MeshRenderer> {
     cmd.material_instance.rim_color[1] = rim_color_.y;
     cmd.material_instance.rim_color[2] = rim_color_.z;
     cmd.material_instance.rim_shadow_affected = rim_shadow_affected_;
+    cmd.material_instance.normal_texture_index = normal_texture_ ? normal_texture_->GetBindlessIndex() : 0;
+    cmd.material_instance.metallic_roughness_index = metallic_roughness_texture_ ? metallic_roughness_texture_->GetBindlessIndex() : 0;
+    cmd.material_instance.emissive_texture_index = emissive_texture_ ? emissive_texture_->GetBindlessIndex() : 0;
+    cmd.material_instance.has_normal_map = (normal_texture_ != nullptr);
+    cmd.material_instance.has_metallic_roughness_map = (metallic_roughness_texture_ != nullptr);
+    cmd.material_instance.has_emissive_map = (emissive_texture_ != nullptr);
+    cmd.material_instance.metallic_factor = metallic_;
+    cmd.material_instance.roughness_factor = roughness_;
+    cmd.material_instance.emissive_factor[0] = emissive_color_.x;
+    cmd.material_instance.emissive_factor[1] = emissive_color_.y;
+    cmd.material_instance.emissive_factor[2] = emissive_color_.z;
 
     Vector3 worldPos = transform->GetWorldPosition();
     Vector3 camPos = packet.main_camera.position;
@@ -314,6 +393,13 @@ class MeshRenderer : public Component<MeshRenderer> {
   float rim_power_ = 4.0f;
   Vector3 rim_color_ = {1.0f, 1.0f, 1.0f};
   bool rim_shadow_affected_ = false;
+
+  Texture* normal_texture_ = nullptr;
+  Texture* metallic_roughness_texture_ = nullptr;
+  Texture* emissive_texture_ = nullptr;
+  float metallic_ = 0.0f;
+  float roughness_ = 0.5f;
+  Vector3 emissive_color_ = {0.0f, 0.0f, 0.0f};
 
   RenderLayer render_layer_ = RenderLayer::Opaque;
   RenderTagMask render_tags_ = static_cast<uint32_t>(RenderTag::CastShadow | RenderTag::ReceiveShadow | RenderTag::Lit);

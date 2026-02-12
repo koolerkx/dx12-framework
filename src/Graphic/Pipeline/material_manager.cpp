@@ -77,13 +77,11 @@ Material* MaterialManager::GetOrCreateMaterial(Graphics::ShaderId shader_id, con
   entry.material = std::make_unique<Material>(CreateMaterialInternal(shader_id, settings));
   entry.last_used_frame = current_frame_;
 
-  // Validate material before caching
   if (!entry.material || !entry.material->IsValid()) {
-    Logger::LogFormat(LogLevel::Error,
-      LogCategory::Resource,
-      Logger::Here(),
-      "[MaterialManager] Failed to create valid material for ShaderId: {}",
-      shader_id);
+    Logger::LogFormat(
+      LogLevel::Error, LogCategory::Resource, Logger::Here(), "[MaterialManager] Failed to create material for ShaderId: {}", shader_id);
+    entry.material.reset();
+    unified_cache_[key] = std::move(entry);
     return nullptr;
   }
 

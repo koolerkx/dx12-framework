@@ -374,6 +374,7 @@ void Graphic::Shutdown() {
     render_graph_->Shutdown();
   }
 
+  mesh_registry_.Clear();
   render_services_.reset();
   presentation_context_.reset();
 

@@ -42,9 +42,11 @@ void IScene::StartAllObjects() {
 }
 
 void IScene::FlushPendingStarts() {
-  for (auto& obj : game_objects_) {
-    if (!obj->IsStarted()) {
-      obj->Start();
+  // Index-based loop: OnStart may create new GameObjects (e.g. ModelComponent),
+  // which appends to game_objects_ and would invalidate range-for iterators.
+  for (size_t i = 0; i < game_objects_.size(); ++i) {
+    if (!game_objects_[i]->IsStarted()) {
+      game_objects_[i]->Start();
     }
   }
 }

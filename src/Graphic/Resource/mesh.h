@@ -31,6 +31,7 @@
 #include <d3d12.h>
 
 #include <cstdint>
+#include <type_traits>
 #include <vector>
 
 #include "Command/buffer.h"
@@ -43,8 +44,9 @@ class Mesh {
     int32_t baseVertexLocation;
   };
 
-  template <typename VertexType>
-  bool Create(ID3D12Device* device, const VertexType* vertices, size_t vertexCount, const uint16_t* indices, size_t indexCount) {
+  template <typename VertexType, typename IndexType = uint16_t>
+  bool Create(ID3D12Device* device, const VertexType* vertices, size_t vertexCount, const IndexType* indices, size_t indexCount) {
+    static_assert(std::is_same_v<IndexType, uint16_t> || std::is_same_v<IndexType, uint32_t>, "IndexType must be uint16_t or uint32_t");
     if (!vertexBuffer_.Create(device, vertices, vertexCount)) {
       return false;
     }

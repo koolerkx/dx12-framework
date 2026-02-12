@@ -187,6 +187,21 @@ void GameObject::NotifyComponentAdded(IComponentBase* component) {
   }
 }
 
+GameObject* GameObject::FindChild(const std::string& name) const {
+  for (auto* child : children_) {
+    if (child->GetName() == name) return child;
+  }
+  return nullptr;
+}
+
+GameObject* GameObject::FindChildRecursive(const std::string& name) const {
+  for (auto* child : children_) {
+    if (child->GetName() == name) return child;
+    if (auto* found = child->FindChildRecursive(name)) return found;
+  }
+  return nullptr;
+}
+
 void GameObject::SetUUID(const framework::UUID& uuid) {
   if (scene_) {
     scene_->UnregisterGameObject(this);

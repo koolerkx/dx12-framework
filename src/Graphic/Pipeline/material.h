@@ -97,6 +97,15 @@ struct MaterialInstance {
   float rim_color[3] = {1.0f, 1.0f, 1.0f};
   bool rim_shadow_affected = false;
 
+  // PBR parameters
+  uint32_t emissive_texture_index = 0;
+  float metallic_factor = 0.0f;
+  float roughness_factor = 0.5f;
+  float emissive_factor[3] = {0.0f, 0.0f, 0.0f};
+  bool has_normal_map = false;
+  bool has_metallic_roughness_map = false;
+  bool has_emissive_map = false;
+
   // Helpers
   bool IsValid() const {
     return material != nullptr && material->IsValid();

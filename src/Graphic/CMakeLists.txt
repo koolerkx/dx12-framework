@@ -45,6 +45,7 @@ add_library(graphic STATIC
 
   Resource/mesh.h
   Resource/mesh.cpp
+  Resource/mesh_registry.h
   Resource/render_services.h
   Resource/render_services.cpp
   Resource/Texture/texture.h
@@ -129,6 +130,8 @@ target_add_hlsl_auto(graphic "6.6"
   "${CMAKE_SOURCE_DIR}/shaders/depthview.ps.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/blit.ps.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/shadow_depth.vs.hlsl"
+  "${CMAKE_SOURCE_DIR}/shaders/pbr.vs.hlsl"
+  "${CMAKE_SOURCE_DIR}/shaders/pbr.ps.hlsl"
 )
 
 # manually add shaders files

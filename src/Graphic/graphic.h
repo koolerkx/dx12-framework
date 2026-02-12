@@ -29,6 +29,7 @@
 #include "Resource/Buffer/structured_buffer.h"
 #include "Resource/Font/sprite_font_manager.h"
 #include "Resource/Texture/texture_manager.h"
+#include "Resource/mesh_registry.h"
 #include "Resource/render_services.h"
 
 class Graphic {
@@ -82,6 +83,10 @@ class Graphic {
 
   Font::SpriteFontManager& GetSpriteFontManager() {
     return render_services_->GetFontManager();
+  }
+
+  MeshRegistry& GetMeshRegistry() {
+    return mesh_registry_;
   }
 
   ID3D12Device* GetDevice() const {
@@ -166,6 +171,7 @@ class Graphic {
   ComPtr<ID3D12CommandQueue> command_queue_ = nullptr;
 
   DescriptorHeapManager descriptor_heap_manager_;
+  MeshRegistry mesh_registry_;
 
   HdrDebug hdr_debug_;
   DepthViewConfig depth_view_config_;

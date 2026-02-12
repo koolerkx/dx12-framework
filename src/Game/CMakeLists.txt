@@ -15,6 +15,7 @@ add_library(game STATIC
     Asset/asset_handle.h
     Asset/asset_manager.h
     Asset/asset_manager.cpp
+    Asset/model_data.h
     Asset/text_mesh_handle.h
 
     game_object.h
@@ -35,6 +36,7 @@ add_library(game STATIC
     Component/pivot_type.cpp
     Component/sprite_sheet_helper.h
     Component/sprite_sheet_helper.cpp
+    Component/model_component.h
     Component/Renderer/mesh_renderer.h
     Component/Renderer/sprite_renderer.h
     Component/Renderer/sprite_renderer.cpp
@@ -68,6 +70,9 @@ add_library(game STATIC
 
     Scenes/cube_scene/cube_scene.h
     Scenes/cube_scene/cube_scene.cpp
+
+    Scenes/model_scene/model_scene.h
+    Scenes/model_scene/model_scene.cpp
 
     Scenes/test_scene/test_scene.h
     Scenes/test_scene/test_scene.cpp

@@ -177,6 +177,9 @@ void TestScene::OnPostUpdate(float dt) {
   if (input && input->GetKeyDown(Keyboard::KeyCode::F1)) {
     GetContext()->GetSceneManager()->RequestLoad(SceneId::CUBE_SCENE);
   }
+  if (input && input->GetKeyDown(Keyboard::KeyCode::F2)) {
+    GetContext()->GetSceneManager()->RequestLoad(SceneId::MODEL_SCENE);
+  }
 }
 
 void TestScene::OnDebugDraw(DebugDrawer& drawer) {

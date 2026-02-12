@@ -80,6 +80,12 @@ struct alignas(256) MaterialCB {
   float rim_intensity;
   float rim_power;
   Vector3 rim_color;
-  float _padding;
+  float _pad0;
+  uint32_t emissive_texture_index;
+  float metallic_factor;
+  float roughness_factor;
+  float _pad1;
+  Vector3 emissive_factor;
+  float _pad2;
 };
 static_assert(sizeof(MaterialCB) == 256);

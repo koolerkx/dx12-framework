@@ -964,6 +964,28 @@ void EditorLayer::DrawMeshRendererInspector(MeshRenderer* renderer) {
   ImGui::ColorEdit3("Rim Color", &data.rim_color.x);
   ImGui::Checkbox("Rim Shadow Affected", &data.rim_shadow_affected);
 
+  ImGui::SeparatorText("PBR");
+
+  bool has_mr_map = (renderer->GetMetallicRoughnessTexture() != nullptr);
+  ImGui::SliderFloat("Metallic", &data.metallic, 0.0f, 1.0f);
+  if (has_mr_map && ImGui::IsItemHovered()) {
+    ImGui::SetTooltip("Multiplied with metallic-roughness map");
+  }
+  ImGui::SliderFloat("Roughness", &data.roughness, 0.0f, 1.0f);
+  if (has_mr_map && ImGui::IsItemHovered()) {
+    ImGui::SetTooltip("Multiplied with metallic-roughness map");
+  }
+
+  bool has_emissive_map = (renderer->GetEmissiveTexture() != nullptr);
+  ImGui::ColorEdit3("Emissive", &data.emissive_color.x);
+  if (has_emissive_map && ImGui::IsItemHovered()) {
+    ImGui::SetTooltip("Multiplied with emissive map");
+  }
+
+  ImGui::Text("Normal Map: %s", renderer->GetNormalTexture() ? "Loaded" : "None");
+  ImGui::Text("MR Map: %s", has_mr_map ? "Loaded" : "None");
+  ImGui::Text("Emissive Map: %s", has_emissive_map ? "Loaded" : "None");
+
   renderer->ApplyEditorData(data);
 }
 

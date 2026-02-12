@@ -52,6 +52,9 @@ class GameObject {
     return children_;
   }
 
+  GameObject* FindChild(const std::string& name) const;
+  GameObject* FindChildRecursive(const std::string& name) const;
+
   // RTTI
   template <typename T, typename... Args>
   T* AddComponent(Args&&... args) {

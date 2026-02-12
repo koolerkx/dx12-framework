@@ -19,7 +19,13 @@ struct MaterialData {
   float rimIntensity;
   float rimPower;
   float3 rimColor;
-  float _padding;
+  float _pad0;
+  uint emissiveTextureIndex;
+  float metallicFactor;
+  float roughnessFactor;
+  float _pad1;
+  float3 emissiveFactor;
+  float _pad2;
 };
 ConstantBuffer<MaterialData> g_MaterialData : register(MATERIAL_CB_SLOT);
 

@@ -62,6 +62,16 @@ class TextureManager {
     return LoadTexture(utils::utf8_to_wstring(path), usage);
   }
 
+  std::shared_ptr<Texture> LoadTextureFromMemory(
+    const std::string& cache_key,
+    const uint8_t* data, size_t size,
+    bool force_srgb);
+
+  std::shared_ptr<Texture> LoadTextureFromRawPixels(
+    const std::string& cache_key,
+    const uint8_t* pixels, uint32_t width, uint32_t height,
+    bool force_srgb);
+
   std::shared_ptr<Texture> LoadCubemapFromCrossHDR(const std::wstring& path);
   std::shared_ptr<Texture> LoadCubemapFromCrossHDR(const std::string& path) {
     return LoadCubemapFromCrossHDR(utils::utf8_to_wstring(path));
@@ -106,8 +116,9 @@ class TextureManager {
     std::vector<D3D12_SUBRESOURCE_DATA> subresources;
   };
 
-  // NEW: Added force_srgb parameter
   bool LoadAndGenerateMipmaps(const std::wstring& path, DirectX::ScratchImage& mipChain, bool force_srgb);
+  bool LoadFromMemoryAndGenerateMipmaps(const uint8_t* data, size_t size, DirectX::ScratchImage& mipChain, bool force_srgb);
+  bool LoadFromRawPixelsAndGenerateMipmaps(const uint8_t* pixels, uint32_t width, uint32_t height, DirectX::ScratchImage& mipChain, bool force_srgb);
 
   // NEW: Added use_srgb parameter
   bool CreateTextureResource(const DirectX::TexMetadata& metadata, ComPtr<ID3D12Resource>& texture, bool use_srgb);

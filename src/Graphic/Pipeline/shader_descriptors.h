@@ -176,6 +176,21 @@ struct ShadowDepthShader {
   }
 };
 
+struct PBRShader {
+  static constexpr ShaderId ID = 11;
+  using VertexType = Vertex::ModelVertex;
+
+  static constexpr RSPreset RS_PRESET = RSPreset::Standard;
+  static constexpr std::string_view NAME = "PBR";
+  static constexpr std::wstring_view VS_PATH = L"Content/shaders/pbr.vs.cso";
+  static constexpr std::wstring_view PS_PATH = L"Content/shaders/pbr.ps.cso";
+  static constexpr ShaderRenderHints HINTS = {};
+
+  static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
+    return VertexType::GetInputLayout();
+  }
+};
+
 // Shader Registration
 using AllShaders = std::tuple<SpriteShader,
   SpriteInstancedShader,
@@ -185,7 +200,8 @@ using AllShaders = std::tuple<SpriteShader,
   SkyboxShader,
   PostProcessDepthViewShader,
   PostProcessBlitShader,
-  ShadowDepthShader>;
+  ShadowDepthShader,
+  PBRShader>;
 
 [[maybe_unused]] constexpr size_t SHADER_COUNT = std::tuple_size_v<AllShaders>;
 
