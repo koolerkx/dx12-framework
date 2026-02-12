@@ -22,6 +22,10 @@ void FreeCameraController::OnUpdate(float dt) {
   ApplyRotation(input_state, dt);
 }
 
+void FreeCameraController::OnDebugUpdate(float dt) {
+  OnUpdate(dt);
+}
+
 FreeCameraController::InputState FreeCameraController::GatherInput(InputSystem* input) const {
   InputState state;
 

@@ -6,7 +6,7 @@
 #include "Component/transform_component.h"
 #include "Debug/debug_drawer.h"
 #include "Framework/Core/color.h"
-#include "Framework/Input/input.h"
+#include "Framework/Event/input_events.h"
 #include "Scripts/free_camera_controller.h"
 #include "scene_id.h"
 #include "scene_manager.h"
@@ -62,16 +62,16 @@ void CubeScene::OnEnter(AssetManager&) {
     },
   });
   ring_emitter->Play();
+
+  auto& bus = *GetContext()->GetEventBus();
+  GetEventScope().Subscribe<KeyDownEvent>(bus, [this](const KeyDownEvent& e) {
+    if (e.key == Keyboard::KeyCode::F1) GetContext()->GetSceneManager()->RequestLoad(SceneId::TEST_SCENE);
+  });
 }
 
 void CubeScene::OnPostUpdate(float dt) {
   rotation_angle_ += 30.0f * dt;
   cube_->GetComponent<TransformComponent>()->SetRotationEulerDegree({0.0f, rotation_angle_, 0.0f});
-
-  auto* input = GetContext()->GetInput();
-  if (input && input->GetKeyDown(Keyboard::KeyCode::F1)) {
-    GetContext()->GetSceneManager()->RequestLoad(SceneId::TEST_SCENE);
-  }
 }
 
 void CubeScene::OnExit() {

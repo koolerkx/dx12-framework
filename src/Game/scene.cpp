@@ -85,6 +85,34 @@ void IScene::FixedUpdate(float dt) {
   OnPostFixedUpdate(dt);
 }
 
+void IScene::DebugUpdate(float dt) {
+  FlushPendingStarts();
+  OnDebugUpdate(dt);
+  DebugUpdateRootObjects(dt);
+  CleanupDestroyedObjects();
+}
+
+void IScene::DebugFixedUpdate(float dt) {
+  OnDebugFixedUpdate(dt);
+  DebugFixedUpdateRootObjects(dt);
+}
+
+void IScene::DebugUpdateRootObjects(float dt) {
+  for (auto& obj : game_objects_) {
+    if (obj->GetParent() == nullptr) {
+      obj->DebugUpdate(dt);
+    }
+  }
+}
+
+void IScene::DebugFixedUpdateRootObjects(float dt) {
+  for (auto& obj : game_objects_) {
+    if (obj->GetParent() == nullptr) {
+      obj->DebugFixedUpdate(dt);
+    }
+  }
+}
+
 void IScene::Render(FramePacket& packet) {
   auto* active_camera = camera_setting_.GetActive();
   if (active_camera) {
@@ -203,6 +231,19 @@ GameObject* IScene::FindGameObjectByUUID(const framework::UUID& uuid) const {
 IComponentBase* IScene::FindComponentByUUID(const framework::UUID& uuid) const {
   auto it = component_uuid_map_.find(uuid);
   return it != component_uuid_map_.end() ? it->second : nullptr;
+}
+
+void IScene::ProcessPendingLifecycle() {
+  FlushPendingStarts();
+  CleanupDestroyedObjects();
+}
+
+void IScene::ResetAllComponents() {
+  for (auto& obj : game_objects_) {
+    for (auto& comp : obj->GetComponents()) {
+      if (comp->IsStarted()) comp->OnReset();
+    }
+  }
 }
 
 void IScene::CleanupDestroyedObjects() {

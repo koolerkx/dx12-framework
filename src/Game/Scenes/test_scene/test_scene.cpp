@@ -12,14 +12,14 @@
 #include "Component/transform_component.h"
 #include "Debug/debug_drawer.h"
 #include "Framework/Core/color.h"
-#include "Framework/Input/input.h"
+#include "Framework/Event/input_events.h"
 #include "Framework/Logging/logger.h"
 #include "Framework/Math/Math.h"
 #include "Scenes/test_scene/character_mover_component.h"
 #include "Scripts/free_camera_controller.h"
-#include "scene_id.h"
 #include "scene_manager.h"
 #include "test_scene.h"
+
 
 using Math::Vector3;
 
@@ -164,6 +164,12 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
     .pivot = {0.5f, 0.5f},
     .double_sided = true,
   });
+
+  auto& bus = *GetContext()->GetEventBus();
+  GetEventScope().Subscribe<KeyDownEvent>(bus, [this](const KeyDownEvent& e) {
+    if (e.key == Keyboard::KeyCode::F1) GetContext()->GetSceneManager()->RequestLoad(SceneId::CUBE_SCENE);
+    if (e.key == Keyboard::KeyCode::F2) GetContext()->GetSceneManager()->RequestLoad(SceneId::MODEL_SCENE);
+  });
 }
 
 void TestScene::OnPostUpdate(float dt) {
@@ -172,14 +178,6 @@ void TestScene::OnPostUpdate(float dt) {
   cube_object_->GetComponent<TransformComponent>()->SetRotationEulerDegree({0.0f, rotation_angle_, 0.0f});
   cube_object2_->GetComponent<TransformComponent>()->SetRotationEulerDegree({0.0f, rotation_angle_, 0.0f});
   pivot_cube_->GetComponent<TransformComponent>()->SetRotationEulerDegree({0.0f, rotation_angle_, 0.0f});
-
-  auto* input = GetContext()->GetInput();
-  if (input && input->GetKeyDown(Keyboard::KeyCode::F1)) {
-    GetContext()->GetSceneManager()->RequestLoad(SceneId::CUBE_SCENE);
-  }
-  if (input && input->GetKeyDown(Keyboard::KeyCode::F2)) {
-    GetContext()->GetSceneManager()->RequestLoad(SceneId::MODEL_SCENE);
-  }
 }
 
 void TestScene::OnDebugDraw(DebugDrawer& drawer) {

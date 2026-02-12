@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "Framework/Event/event_scope.hpp"
 #include "Graphic/Frame/frame_packet.h"
 #include "SceneSetting/active_camera_setting.h"
 #include "SceneSetting/active_ui_camera_setting.h"
@@ -34,6 +35,12 @@ class IScene {
   virtual void OnPostFixedUpdate(float /*dt*/) {
   }
 
+  // When not Playing (Paused/Stopped)
+  virtual void OnDebugUpdate(float /*dt*/) {
+  }
+  virtual void OnDebugFixedUpdate(float /*dt*/) {
+  }
+
   // Override this to add custom rendering
   virtual void OnRender(FramePacket& /*packet*/) {
   }
@@ -47,6 +54,8 @@ class IScene {
   void Exit();
   void Update(float dt);
   void FixedUpdate(float dt);
+  void DebugUpdate(float dt);
+  void DebugFixedUpdate(float dt);
   void Render(FramePacket& packet);
   void DebugDraw(DebugDrawer& drawer);
 
@@ -110,8 +119,16 @@ class IScene {
   GameObject* FindGameObjectByUUID(const framework::UUID& uuid) const;
   IComponentBase* FindComponentByUUID(const framework::UUID& uuid) const;
 
+  void ProcessPendingLifecycle();
+  void ResetAllComponents();
+
   void DestroyGameObject(GameObject* obj);
   void DestroyGameObject(const std::string& name);
+
+ protected:
+  EventScope& GetEventScope() {
+    return event_scope_;
+  }
 
  private:
   void RegisterGameObject(GameObject* obj);
@@ -132,11 +149,14 @@ class IScene {
   bool is_started_ = false;
 
   GameContext* context_ = nullptr;
+  EventScope event_scope_;
 
   void FlushPendingStarts();
   void CleanupDestroyedObjects();
   void UpdateRootObjects(float dt);
   void FixedUpdateRootObjects(float dt);
+  void DebugUpdateRootObjects(float dt);
+  void DebugFixedUpdateRootObjects(float dt);
   void RenderRootObjects(FramePacket& packet);
   void DebugDrawRootObjects(DebugDrawer& drawer);
   void StartAllObjects();

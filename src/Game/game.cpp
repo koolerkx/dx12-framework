@@ -16,7 +16,9 @@ Game::~Game() {
   Shutdown();
 }
 
-void Game::Initialize() {
+void Game::Initialize(const Props& props) {
+  context_ = props.context;
+
   if (context_ && context_->GetGraphic()) {
     asset_manager_.Initialize(context_->GetGraphic());
     context_->SetAssetManager(&asset_manager_);
@@ -28,6 +30,11 @@ void Game::Initialize() {
   }
 
   context_->SetSceneManager(&scene_manager_);
+  context_->SetPlayStateSource(&play_state_);
+
+  if (props.auto_play) {
+    play_state_ = PlayState::Playing;
+  }
 
   scene_manager_.Register<TestScene>(SceneId::TEST_SCENE);
   scene_manager_.Register<CubeScene>(SceneId::CUBE_SCENE);
@@ -47,18 +54,42 @@ void Game::Shutdown() {
   scene_manager_.Shutdown(context_ ? context_->GetGraphic() : nullptr);
 }
 
+void Game::Play() {
+  if (play_state_ == PlayState::Playing) return;
+  play_state_ = PlayState::Playing;
+}
+
+void Game::Pause() {
+  if (play_state_ != PlayState::Playing) return;
+  play_state_ = PlayState::Paused;
+}
+
+void Game::Stop() {
+  if (play_state_ == PlayState::Stopped) return;
+  IScene* scene = scene_manager_.GetCurrentScene();
+  if (scene) scene->ResetAllComponents();
+  play_state_ = PlayState::Stopped;
+}
+
 void Game::OnUpdate(float dt) {
   scene_manager_.ProcessPending(asset_manager_, context_, context_ ? context_->GetGraphic() : nullptr);
   IScene* scene = scene_manager_.GetCurrentScene();
-  if (scene) {
+  if (!scene) return;
+
+  if (play_state_ == PlayState::Playing) {
     scene->Update(dt);
+  } else {
+    scene->DebugUpdate(dt);
   }
 }
 
 void Game::OnFixedUpdate(float dt) {
   IScene* scene = scene_manager_.GetCurrentScene();
-  if (scene) {
+  if (!scene) return;
+  if (play_state_ == PlayState::Playing) {
     scene->FixedUpdate(dt);
+  } else {
+    scene->DebugFixedUpdate(dt);
   }
 }
 

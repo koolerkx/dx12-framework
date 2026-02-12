@@ -7,7 +7,6 @@ class ModelScene : public IScene {
   void OnEnter(AssetManager& asset_manager) override;
   void OnExit() override;
   void OnDebugDraw(DebugDrawer& drawer) override;
-  void OnPostUpdate(float dt) override;
 
  private:
   void SetupCamera();

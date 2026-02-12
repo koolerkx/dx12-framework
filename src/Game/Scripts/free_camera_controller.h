@@ -25,6 +25,7 @@ class FreeCameraController : public BehaviorComponent<FreeCameraController> {
   }
 
   void OnUpdate(float dt) override;
+  void OnDebugUpdate(float dt) override;
 
   void SetMovementSpeed(float speed) {
     movement_speed_ = speed;

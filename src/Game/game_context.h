@@ -4,6 +4,7 @@
 #include "Framework/Event/event_bus.hpp"
 #include "Framework/Input/input.h"
 #include "Graphic/graphic.h"
+#include "play_state.h"
 
 class SceneManager;
 
@@ -53,6 +54,13 @@ class GameContext {
     scene_manager_ = scene_manager;
   }
 
+  PlayState GetPlayState() const {
+    return play_state_ ? *play_state_ : PlayState::Stopped;
+  }
+  void SetPlayStateSource(PlayState* play_state) {
+    play_state_ = play_state;
+  }
+
  private:
   InputSystem* input_ = nullptr;
   Graphic* graphic_ = nullptr;
@@ -60,4 +68,5 @@ class GameContext {
   AssetManager* asset_manager_ = nullptr;
   DebugDrawer* debug_drawer_ = nullptr;
   SceneManager* scene_manager_ = nullptr;
+  PlayState* play_state_ = nullptr;
 };

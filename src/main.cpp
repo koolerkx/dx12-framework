@@ -71,11 +71,16 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
   context.SetEventBus(event_bus);
 
   Game game;
-  game.SetContext(&context);
-  game.Initialize();
+  game.Initialize({
+    .context = &context,
+#ifndef ENABLE_EDITOR
+    .auto_play = true,
+#endif
+  });
 
 #ifdef ENABLE_EDITOR
   editor.SubscribeEvents(*event_bus);
+  editor.SetGame(&game);
   editor.SetScene(game.GetCurrentScene());
   editor.SetDebugDrawer(context.GetDebugDrawer());
 #endif

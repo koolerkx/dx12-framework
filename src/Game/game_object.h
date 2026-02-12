@@ -21,6 +21,8 @@ class GameObject {
   void Start();
   void Update(float dt);
   void FixedUpdate(float dt);
+  void DebugUpdate(float dt);
+  void DebugFixedUpdate(float dt);
   void Render(FramePacket& packet);
   void DebugDraw(DebugDrawer& drawer);
 
@@ -106,6 +108,10 @@ class GameObject {
   void Destroy();
   bool IsPendingDestroy() const;
 
+  void SetActive(bool active) { active_ = active; }
+  bool IsActive() const { return active_; }
+  bool IsActiveInHierarchy() const;
+
   void SetTransient(bool transient) { transient_ = transient; }
   bool IsTransient() const { return transient_; }
 
@@ -135,6 +141,7 @@ class GameObject {
   bool is_started_ = false;
   bool is_pending_destroy_ = false;
   bool transient_ = false;
+  bool active_ = true;
 
   IScene* scene_ = nullptr;
   GameObject* parent_ = nullptr;

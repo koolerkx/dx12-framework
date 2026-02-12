@@ -10,7 +10,7 @@
 #include "Component/transform_component.h"
 #include "Debug/debug_drawer.h"
 #include "Framework/Core/color.h"
-#include "Framework/Input/input.h"
+#include "Framework/Event/input_events.h"
 #include "Framework/Logging/logger.h"
 #include "Scripts/free_camera_controller.h"
 #include "scene_id.h"
@@ -62,13 +62,11 @@ void ModelScene::OnEnter(AssetManager& asset_manager) {
       entry.path,
       model_data->sub_meshes.size());
   }
-}
 
-void ModelScene::OnPostUpdate(float /*dt*/) {
-  auto* input = GetContext()->GetInput();
-  if (input && input->GetKeyDown(Keyboard::KeyCode::F2)) {
-    GetContext()->GetSceneManager()->RequestLoad(SceneId::TEST_SCENE);
-  }
+  auto& bus = *GetContext()->GetEventBus();
+  GetEventScope().Subscribe<KeyDownEvent>(bus, [this](const KeyDownEvent& e) {
+    if (e.key == Keyboard::KeyCode::F2) GetContext()->GetSceneManager()->RequestLoad(SceneId::TEST_SCENE);
+  });
 }
 
 void ModelScene::OnDebugDraw(DebugDrawer& drawer) {

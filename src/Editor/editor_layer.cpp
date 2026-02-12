@@ -22,6 +22,7 @@
 #include "Game/Debug/debug_drawer.h"
 #include "Game/Serialization/scene_serializer.h"
 #include "Game/game_object.h"
+#include "Game/game.h"
 #include "Game/scene.h"
 #include "Game/scene_events.h"
 #include "Game/scene_id.h"
@@ -395,6 +396,9 @@ void EditorLayer::DrawHierarchy() {
 void EditorLayer::DrawGameObjectNode(GameObject* go) {
   if (!go) return;
 
+  bool inactive = !go->IsActive();
+  if (inactive) ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
+
   ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
   if (go->GetChildren().empty()) flags |= ImGuiTreeNodeFlags_Leaf;
   if (go == selected_object_) flags |= ImGuiTreeNodeFlags_Selected;
@@ -409,6 +413,8 @@ void EditorLayer::DrawGameObjectNode(GameObject* go) {
     }
     ImGui::TreePop();
   }
+
+  if (inactive) ImGui::PopStyleColor();
 }
 
 namespace {
@@ -495,7 +501,10 @@ void EditorLayer::DrawInspector() {
   ImGui::Begin("Inspector");
 
   if (selected_object_) {
-    ImGui::Text("Name: %s", selected_object_->GetName().c_str());
+    bool active = selected_object_->IsActive();
+    if (ImGui::Checkbox("##Active", &active)) selected_object_->SetActive(active);
+    ImGui::SameLine();
+    ImGui::Text("%s", selected_object_->GetName().c_str());
     ImGui::TextDisabled("UUID: %s", selected_object_->GetUUID().ToString().c_str());
     ImGui::Separator();
 
@@ -797,8 +806,35 @@ void EditorLayer::DrawSceneSettings() {
   ImGui::End();
 }
 
+void EditorLayer::DrawPlayControls() {
+  auto state = game_->GetPlayState();
+
+  ImGui::BeginDisabled(state == PlayState::Playing);
+  if (ImGui::Button("Play")) game_->Play();
+  ImGui::EndDisabled();
+
+  ImGui::SameLine();
+  ImGui::BeginDisabled(state != PlayState::Playing);
+  if (ImGui::Button("Pause")) game_->Pause();
+  ImGui::EndDisabled();
+
+  ImGui::SameLine();
+  ImGui::BeginDisabled(state == PlayState::Stopped);
+  if (ImGui::Button("Stop")) game_->Stop();
+  ImGui::EndDisabled();
+
+  ImGui::SameLine();
+  static constexpr const char* PLAY_STATE_LABELS[] = {"Stopped", "Playing", "Paused"};
+  ImGui::TextDisabled("(%s)", PLAY_STATE_LABELS[static_cast<int>(state)]);
+}
+
 void EditorLayer::DrawDebugPanel() {
   ImGui::Begin("Debug");
+
+  if (game_) {
+    DrawPlayControls();
+    ImGui::Separator();
+  }
 
   auto& depth_cfg = graphic_->GetDepthViewConfig();
   auto& hdr_dbg = graphic_->GetHdrDebug();

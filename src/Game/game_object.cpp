@@ -26,6 +26,11 @@ GameContext* GameObject::GetContext() const {
   return scene_ ? scene_->GetContext() : nullptr;
 }
 
+bool GameObject::IsActiveInHierarchy() const {
+  if (!active_) return false;
+  return parent_ ? parent_->IsActiveInHierarchy() : true;
+}
+
 void GameObject::Init() {
   OnInit();
 }
@@ -37,6 +42,7 @@ void GameObject::Start() {
 }
 
 void GameObject::Update(float dt) {
+  if (!active_) return;
   FlushPendingStarts();
 
   const size_t count = components_.size();
@@ -51,6 +57,7 @@ void GameObject::Update(float dt) {
 }
 
 void GameObject::FixedUpdate(float dt) {
+  if (!active_) return;
   const size_t count = components_.size();
   for (size_t i = 0; i < count; ++i) {
     if (components_[i]->is_started_ && components_[i]->IsEnabled()) {
@@ -62,7 +69,35 @@ void GameObject::FixedUpdate(float dt) {
   }
 }
 
+void GameObject::DebugUpdate(float dt) {
+  if (!active_) return;
+  FlushPendingStarts();
+  const size_t count = components_.size();
+  for (size_t i = 0; i < count; ++i) {
+    if (components_[i]->is_started_ && components_[i]->IsEnabled()) {
+      components_[i]->OnDebugUpdate(dt);
+    }
+  }
+  for (auto* child : children_) {
+    child->DebugUpdate(dt);
+  }
+}
+
+void GameObject::DebugFixedUpdate(float dt) {
+  if (!active_) return;
+  const size_t count = components_.size();
+  for (size_t i = 0; i < count; ++i) {
+    if (components_[i]->is_started_ && components_[i]->IsEnabled()) {
+      components_[i]->OnDebugFixedUpdate(dt);
+    }
+  }
+  for (auto* child : children_) {
+    child->DebugFixedUpdate(dt);
+  }
+}
+
 void GameObject::Render(FramePacket& packet) {
+  if (!active_) return;
   const size_t count = components_.size();
   for (size_t i = 0; i < count; ++i) {
     if (components_[i]->is_started_ && components_[i]->IsEnabled()) {
@@ -75,6 +110,7 @@ void GameObject::Render(FramePacket& packet) {
 }
 
 void GameObject::DebugDraw(DebugDrawer& drawer) {
+  if (!active_) return;
   const size_t count = components_.size();
   for (size_t i = 0; i < count; ++i) {
     auto& comp = components_[i];
@@ -92,6 +128,7 @@ void GameObject::FlushPendingStarts() {
   for (size_t i = 0; i < count; ++i) {
     if (!components_[i]->is_started_) {
       components_[i]->is_started_ = true;
+      components_[i]->OnReset();
       components_[i]->OnStart();
     }
   }

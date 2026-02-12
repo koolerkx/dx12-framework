@@ -14,6 +14,7 @@
 enum class LoadScope : uint8_t;
 
 class EventBus;
+class Game;
 class Graphic;
 class IScene;
 class GameObject;
@@ -36,6 +37,7 @@ class EditorLayer {
   void BeginFrame();
   void Render(ID3D12GraphicsCommandList* cmd);
   void SetScene(IScene* scene);
+  void SetGame(Game* game) { game_ = game; }
   void SetDebugDrawer(DebugDrawer* drawer);
   void SubscribeEvents(EventBus& bus);
   bool WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -61,6 +63,7 @@ class EditorLayer {
   void DrawLoadSceneModal();
   void DrawGameObjectNode(GameObject* go);
   void DrawSceneSettings();
+  void DrawPlayControls();
   void DrawDebugPanel();
   void DrawRenderPipelinePanel(ID3D12GraphicsCommandList* cmd);
   void DrawShadowMapPanel(ID3D12GraphicsCommandList* cmd);
@@ -70,6 +73,7 @@ class EditorLayer {
   void ScanSceneFiles();
   void ApplyLoadedShadowSettings();
 
+  Game* game_ = nullptr;
   Graphic* graphic_ = nullptr;
   IScene* scene_ = nullptr;
   DebugDrawer* debug_drawer_ = nullptr;

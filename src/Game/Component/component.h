@@ -52,6 +52,11 @@ class IComponentBase {
   // Every fixed timestep, gated by enabled and started
   virtual void OnFixedUpdate(float /*dt*/) {
   }
+  // When not Playing (Paused/Stopped), gated by enabled and started
+  virtual void OnDebugUpdate(float /*dt*/) {
+  }
+  virtual void OnDebugFixedUpdate(float /*dt*/) {
+  }
   // Every frame render pass, gated by enabled and started
   virtual void OnRender(FramePacket& /*packet*/) {
   }

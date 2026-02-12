@@ -70,6 +70,10 @@ bool SceneSerializer::SaveScene(const IScene& scene, const std::string& name) {
     entity.Write("UUID", go->GetUUID().ToString());
     entity.Write("Name", go->GetName());
 
+    if (!go->IsActive()) {
+      entity.Write("Active", false);
+    }
+
     if (go->GetParent()) {
       entity.Write("ParentUUID", go->GetParent()->GetUUID().ToString());
     }
@@ -181,6 +185,7 @@ bool SceneSerializer::LoadScene(IScene& scene, const std::string& name) {
     auto uuid_str = entity_node.ReadString("UUID");
 
     auto* go = scene.CreateGameObject(obj_name, {});
+    go->SetActive(entity_node.ReadBool("Active", true));
     if (!uuid_str.empty()) {
       go->SetUUID(framework::UUID::FromString(uuid_str));
     }
