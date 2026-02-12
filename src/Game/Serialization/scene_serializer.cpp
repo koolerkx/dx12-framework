@@ -54,9 +54,16 @@ ShadowAlgorithm ParseShadowAlgorithm(const std::string& name) {
   return ShadowAlgorithm::PCF3x3;
 }
 
+bool IsExcluded(const GameObject* go, const std::unordered_set<GameObject*>& excluded) {
+  for (auto* current = go; current; current = current->GetParent())
+    if (excluded.contains(const_cast<GameObject*>(current))) return true;
+  return false;
+}
+
 }  // namespace
 
-bool SceneSerializer::SaveScene(const IScene& scene, const std::string& name) {
+bool SceneSerializer::SaveScene(const IScene& scene, const std::string& name,
+                                const std::unordered_set<GameObject*>& excluded) {
   framework::SerializeDocument doc;
   auto& root = doc.Root();
   root.Write("SceneName", name);
@@ -65,6 +72,7 @@ bool SceneSerializer::SaveScene(const IScene& scene, const std::string& name) {
 
   for (const auto& go : scene.GetGameObjects()) {
     if (!go || go->IsTransient()) continue;
+    if (!excluded.empty() && IsExcluded(go.get(), excluded)) continue;
 
     auto entity = entities.AddSequenceElement();
     entity.Write("UUID", go->GetUUID().ToString());
@@ -156,8 +164,9 @@ bool SceneSerializer::DumpSettings(const IScene& scene, const std::string& name)
   return doc.SaveToFile(path);
 }
 
-bool SceneSerializer::SaveAndDump(const IScene& scene, const std::string& name) {
-  bool scene_ok = SaveScene(scene, name);
+bool SceneSerializer::SaveAndDump(const IScene& scene, const std::string& name,
+                                  const std::unordered_set<GameObject*>& excluded) {
+  bool scene_ok = SaveScene(scene, name, excluded);
   bool settings_ok = DumpSettings(scene, name);
   return scene_ok && settings_ok;
 }

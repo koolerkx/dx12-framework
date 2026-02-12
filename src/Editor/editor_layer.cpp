@@ -244,6 +244,7 @@ void EditorLayer::DrawSaveSceneModal() {
   if (show_save_scene_modal_) {
     ImGui::OpenPopup(save_and_dump_ ? "Save + Dump##modal" : "Save Scene##modal");
     show_save_scene_modal_ = false;
+    save_excluded_objects_.clear();
   }
 
   const char* popup_id = save_and_dump_ ? "Save + Dump##modal" : "Save Scene##modal";
@@ -251,11 +252,39 @@ void EditorLayer::DrawSaveSceneModal() {
     ImGui::Text("Scene Name:");
     ImGui::InputText("##scene_name", scene_name_buffer_, sizeof(scene_name_buffer_));
 
+    ImGui::Separator();
+
+    ImGui::Text("Include GameObjects:");
+    ImGui::SameLine();
+    if (ImGui::SmallButton("All")) {
+      save_excluded_objects_.clear();
+    }
+    ImGui::SameLine();
+    if (ImGui::SmallButton("None")) {
+      if (scene_) {
+        for (const auto& go : scene_->GetGameObjects()) {
+          if (go && !go->IsTransient()) save_excluded_objects_.insert(go.get());
+        }
+      }
+    }
+
+    ImGui::BeginChild("##go_tree", ImVec2(300, 200), ImGuiChildFlags_Borders);
+    if (scene_) {
+      for (const auto& go : scene_->GetGameObjects()) {
+        if (!go || go->GetParent() != nullptr || go->IsTransient()) continue;
+        DrawSaveExclusionTree(go.get(), false);
+      }
+    }
+    ImGui::EndChild();
+
+    ImGui::Separator();
+
     if (ImGui::Button("Confirm", ImVec2(120, 0))) {
       if (scene_ && scene_name_buffer_[0] != '\0') {
         std::string name(scene_name_buffer_);
         scene_->SetSceneName(name);
-        bool ok = save_and_dump_ ? SceneSerializer::SaveAndDump(*scene_, name) : SceneSerializer::SaveScene(*scene_, name);
+        bool ok = save_and_dump_ ? SceneSerializer::SaveAndDump(*scene_, name, save_excluded_objects_)
+                                 : SceneSerializer::SaveScene(*scene_, name, save_excluded_objects_);
         save_status_success_ = ok;
         save_status_timer_ = 3.0f;
       }
@@ -266,6 +295,44 @@ void EditorLayer::DrawSaveSceneModal() {
       ImGui::CloseCurrentPopup();
     }
     ImGui::EndPopup();
+  }
+}
+
+void EditorLayer::DrawSaveExclusionTree(GameObject* go, bool parent_excluded) {
+  if (!go) return;
+
+  bool self_excluded = save_excluded_objects_.contains(go);
+  bool effectively_excluded = parent_excluded || self_excluded;
+
+  ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth;
+  if (go->GetChildren().empty()) flags |= ImGuiTreeNodeFlags_Leaf;
+
+  if (parent_excluded) {
+    bool disabled_check = false;
+    ImGui::BeginDisabled();
+    ImGui::Checkbox(("##excl_" + go->GetName()).c_str(), &disabled_check);
+    ImGui::EndDisabled();
+  } else {
+    bool included = !self_excluded;
+    if (ImGui::Checkbox(("##excl_" + go->GetName()).c_str(), &included)) {
+      if (included)
+        save_excluded_objects_.erase(go);
+      else
+        save_excluded_objects_.insert(go);
+    }
+  }
+
+  ImGui::SameLine();
+
+  if (effectively_excluded) ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
+  bool open = ImGui::TreeNodeEx(static_cast<void*>(go), flags, "%s", go->GetName().c_str());
+  if (effectively_excluded) ImGui::PopStyleColor();
+
+  if (open) {
+    for (auto* child : go->GetChildren()) {
+      if (child && !child->IsTransient()) DrawSaveExclusionTree(child, effectively_excluded);
+    }
+    ImGui::TreePop();
   }
 }
 
@@ -343,6 +410,18 @@ void EditorLayer::DrawLoadSceneModal() {
     ImGui::SameLine();
     ImGui::RadioButton("Settings Only", &scope_radio, 2);
 
+    static int load_mode_radio = 0;
+    bool scope_has_scene = scope_radio != 2;
+    if (!scope_has_scene) load_mode_radio = 0;
+
+    if (scope_has_scene) {
+      ImGui::Separator();
+      ImGui::Text("Load Mode:");
+      ImGui::RadioButton("New Scene", &load_mode_radio, 0);
+      ImGui::SameLine();
+      ImGui::RadioButton("Add to Current", &load_mode_radio, 1);
+    }
+
     ImGui::Separator();
 
     bool can_confirm = selected_scene_index_ >= 0 && selected_scene_index_ < static_cast<int>(scene_file_list_.size());
@@ -350,11 +429,13 @@ void EditorLayer::DrawLoadSceneModal() {
     if (ImGui::Button("Confirm", ImVec2(120, 0))) {
       pending_load_path_ = scene_file_list_[selected_scene_index_];
       pending_load_scope_ = static_cast<LoadScope>(scope_radio);
+      pending_load_additive_ = load_mode_radio == 1;
 
-      if (pending_load_scope_ == LoadScope::SettingsOnly) {
+      bool load_into_current = pending_load_scope_ == LoadScope::SettingsOnly || pending_load_additive_;
+      if (load_into_current) {
         if (scene_) {
           save_status_success_ = SceneSerializer::Load(*scene_, pending_load_path_, pending_load_scope_);
-          ApplyLoadedShadowSettings();
+          if (pending_load_scope_ != LoadScope::SceneOnly) ApplyLoadedShadowSettings();
         } else {
           save_status_success_ = false;
         }
@@ -506,7 +587,13 @@ void EditorLayer::DrawInspector() {
     bool active = selected_object_->IsActive();
     if (ImGui::Checkbox("##Active", &active)) selected_object_->SetActive(active);
     ImGui::SameLine();
-    ImGui::Text("%s", selected_object_->GetName().c_str());
+    char name_buf[256];
+    snprintf(name_buf, sizeof(name_buf), "%s", selected_object_->GetName().c_str());
+    ImGui::SetNextItemWidth(-1);
+    if (ImGui::InputText("##Name", name_buf, sizeof(name_buf), ImGuiInputTextFlags_EnterReturnsTrue) ||
+        (!ImGui::IsItemActive() && ImGui::IsItemDeactivatedAfterEdit())) {
+      selected_object_->SetName(name_buf);
+    }
     ImGui::TextDisabled("UUID: %s", selected_object_->GetUUID().ToString().c_str());
     ImGui::Separator();
 

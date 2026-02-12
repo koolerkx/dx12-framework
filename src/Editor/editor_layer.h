@@ -6,6 +6,7 @@
 #include <imgui.h>
 
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include "Framework/Event/event_scope.hpp"
@@ -59,6 +60,7 @@ class EditorLayer {
   void DrawMainMenu();
   void DrawSceneMenu();
   void DrawSaveSceneModal();
+  void DrawSaveExclusionTree(GameObject* go, bool parent_excluded);
   void DrawDumpSettingModal();
   void DrawLoadSceneModal();
   void DrawGameObjectNode(GameObject* go);
@@ -111,6 +113,7 @@ class EditorLayer {
   bool show_dump_setting_modal_ = false;
   bool save_and_dump_ = false;
   char scene_name_buffer_[256] = "Untitled";
+  std::unordered_set<GameObject*> save_excluded_objects_;
   float save_status_timer_ = 0.0f;
   bool save_status_success_ = false;
 
@@ -118,6 +121,7 @@ class EditorLayer {
   bool show_load_scene_modal_ = false;
   std::string pending_load_path_;
   LoadScope pending_load_scope_{};
+  bool pending_load_additive_ = false;
   int selected_scene_index_ = -1;
   std::vector<std::string> scene_file_list_;
 };

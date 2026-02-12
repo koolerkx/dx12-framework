@@ -97,6 +97,10 @@ class GameObject {
     return name_;
   }
 
+  void SetName(std::string name) {
+    name_ = std::move(name);
+  }
+
   const std::vector<std::unique_ptr<IComponentBase>>& GetComponents() const {
     return components_;
   }
@@ -108,12 +112,20 @@ class GameObject {
   void Destroy();
   bool IsPendingDestroy() const;
 
-  void SetActive(bool active) { active_ = active; }
-  bool IsActive() const { return active_; }
+  void SetActive(bool active) {
+    active_ = active;
+  }
+  bool IsActive() const {
+    return active_;
+  }
   bool IsActiveInHierarchy() const;
 
-  void SetTransient(bool transient) { transient_ = transient; }
-  bool IsTransient() const { return transient_; }
+  void SetTransient(bool transient) {
+    transient_ = transient;
+  }
+  bool IsTransient() const {
+    return transient_;
+  }
 
   void DetachFromHierarchy();
 
