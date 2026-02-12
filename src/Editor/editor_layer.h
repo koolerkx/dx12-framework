@@ -11,7 +11,9 @@
 
 #include "Framework/Event/event_scope.hpp"
 #include "Graphic/Descriptor/descriptor_heap_allocator.h"
+#include "Graphic/Pipeline/shader_types.h"
 
+enum class DefaultMesh;
 enum class LoadScope : uint8_t;
 
 class EventBus;
@@ -38,7 +40,9 @@ class EditorLayer {
   void BeginFrame();
   void Render(ID3D12GraphicsCommandList* cmd);
   void SetScene(IScene* scene);
-  void SetGame(Game* game) { game_ = game; }
+  void SetGame(Game* game) {
+    game_ = game;
+  }
   void SetDebugDrawer(DebugDrawer* drawer);
   void SubscribeEvents(EventBus& bus);
   bool WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -64,6 +68,7 @@ class EditorLayer {
   void DrawDumpSettingModal();
   void DrawLoadSceneModal();
   void DrawGameObjectNode(GameObject* go);
+  void DrawAddModelModal();
   void DrawSceneSettings();
   void DrawPlayControls();
   void DrawDebugPanel();
@@ -74,6 +79,12 @@ class EditorLayer {
   void ScaleExistingWindows(float ratio);
   void UpdateScaling();
   void ScanSceneFiles();
+  void ScanModelFiles();
+  void ScanTextureFiles();
+  int CountPointLightsInScene() const;
+  void CreateMeshGameObject(const char* name, DefaultMesh mesh, Graphics::ShaderId shader);
+  void ApplyPendingModelCreation();
+  void ResolveDirtyRenderers();
   void ApplyLoadedShadowSettings();
 
   Game* game_ = nullptr;
@@ -116,6 +127,17 @@ class EditorLayer {
   std::unordered_set<GameObject*> save_excluded_objects_;
   float save_status_timer_ = 0.0f;
   bool save_status_success_ = false;
+
+  GameObject* pending_delete_ = nullptr;
+
+  bool show_add_model_modal_ = false;
+  std::vector<std::string> model_file_list_;
+  int selected_model_index_ = -1;
+
+  std::vector<std::string> texture_file_list_;
+  std::vector<MeshRenderer*> dirty_renderers_;
+
+  std::string pending_model_path_;
 
   // Load scene state
   bool show_load_scene_modal_ = false;

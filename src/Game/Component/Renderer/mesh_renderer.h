@@ -42,6 +42,48 @@ inline DefaultMesh ParseDefaultMesh(const std::string& name) {
   return DefaultMesh::Cube;
 }
 
+struct TextureBinding {
+  Texture* texture = nullptr;
+  std::string path;
+  AssetHandle<Texture> handle;
+
+  void SetDirect(Texture* tex) {
+    texture = tex;
+    path.clear();
+    handle = {};
+  }
+
+  void Clear() {
+    texture = nullptr;
+    path.clear();
+    handle = {};
+  }
+
+  template <typename LoadFn>
+  void LoadByPath(const std::string& p, LoadFn&& load_fn) {
+    if (p.empty()) {
+      Clear();
+      return;
+    }
+    path = p;
+    handle = load_fn(p);
+    texture = handle.Get();
+  }
+
+  void Serialize(framework::SerializeNode& node, const char* key) const {
+    if (!path.empty()) node.Write(key, path);
+  }
+
+  template <typename LoadFn>
+  void Deserialize(const framework::SerializeNode& node, const char* key, LoadFn&& load_fn) {
+    auto p = node.ReadString(key);
+    if (p.empty()) return;
+    LoadByPath(p, std::forward<LoadFn>(load_fn));
+  }
+};
+
+enum class TextureSlot : uint8_t { Albedo, Normal, MetallicRoughness, Emissive };
+
 class MeshRenderer : public Component<MeshRenderer> {
  public:
   struct Props {
@@ -110,33 +152,136 @@ class MeshRenderer : public Component<MeshRenderer> {
     mesh_type_name_ = DefaultMeshToString(type);
   }
 
+  // --- Texture: immediate setters (game code) ---
+
   void SetTexture(Texture* texture) {
-    texture_ = texture;
-    texture_path_.clear();
-    texture_handle_ = {};
+    albedo_.SetDirect(texture);
+  }
+  void SetNormalTexture(Texture* texture) {
+    normal_.SetDirect(texture);
+  }
+  void SetMetallicRoughnessTexture(Texture* texture) {
+    metallic_roughness_.SetDirect(texture);
+  }
+  void SetEmissiveTexture(Texture* texture) {
+    emissive_.SetDirect(texture);
   }
 
   void SetTexturePath(const std::string& path) {
-    texture_path_ = path;
     if (path.empty()) {
-      texture_ = nullptr;
-      texture_handle_ = {};
+      albedo_.Clear();
       return;
     }
     auto* context = GetOwner()->GetContext();
     if (!context) return;
-    texture_handle_ = context->GetAssetManager().LoadTexture(path);
-    texture_ = texture_handle_.Get();
+    albedo_.LoadByPath(path, [&](const std::string& p) { return context->GetAssetManager().LoadTexture(p); });
   }
+  void SetNormalTexturePath(const std::string& path) {
+    if (path.empty()) {
+      normal_.Clear();
+      return;
+    }
+    auto* context = GetOwner()->GetContext();
+    if (!context) return;
+    normal_.LoadByPath(path, [&](const std::string& p) { return context->GetAssetManager().LoadTextureLinear(p); });
+  }
+  void SetMetallicRoughnessPath(const std::string& path) {
+    if (path.empty()) {
+      metallic_roughness_.Clear();
+      return;
+    }
+    auto* context = GetOwner()->GetContext();
+    if (!context) return;
+    metallic_roughness_.LoadByPath(path, [&](const std::string& p) { return context->GetAssetManager().LoadTextureLinear(p); });
+  }
+  void SetEmissivePath(const std::string& path) {
+    if (path.empty()) {
+      emissive_.Clear();
+      return;
+    }
+    auto* context = GetOwner()->GetContext();
+    if (!context) return;
+    emissive_.LoadByPath(path, [&](const std::string& p) { return context->GetAssetManager().LoadTexture(p); });
+  }
+
+  // --- Texture: deferred loading (editor / mid-frame safe) ---
+
+  void RequestTextureChange(TextureSlot slot, const std::string& path) {
+    pending_texture_requests_.push_back({slot, path});
+  }
+
+  bool ResolvePendingTextures() {
+    if (pending_texture_requests_.empty()) return false;
+    auto* context = GetOwner()->GetContext();
+    auto resolve_binding = [&](TextureBinding& binding, const std::string& path, bool linear) {
+      if (path.empty()) {
+        binding.Clear();
+        return;
+      }
+      if (!context) return;
+      auto& assets = context->GetAssetManager();
+      binding.LoadByPath(path, [&](const std::string& p) { return linear ? assets.LoadTextureLinear(p) : assets.LoadTexture(p); });
+    };
+    for (auto& req : pending_texture_requests_) {
+      switch (req.slot) {
+        case TextureSlot::Albedo:
+          resolve_binding(albedo_, req.path, false);
+          break;
+        case TextureSlot::Normal:
+          resolve_binding(normal_, req.path, true);
+          break;
+        case TextureSlot::MetallicRoughness:
+          resolve_binding(metallic_roughness_, req.path, true);
+          break;
+        case TextureSlot::Emissive:
+          resolve_binding(emissive_, req.path, false);
+          break;
+      }
+    }
+    pending_texture_requests_.clear();
+    return true;
+  }
+
+  bool HasPendingTextureRequests() const {
+    return !pending_texture_requests_.empty();
+  }
+
+  // --- Texture: getters ---
+
+  Texture* GetTexture() const {
+    return albedo_.texture;
+  }
+  Texture* GetNormalTexture() const {
+    return normal_.texture;
+  }
+  Texture* GetMetallicRoughnessTexture() const {
+    return metallic_roughness_.texture;
+  }
+  Texture* GetEmissiveTexture() const {
+    return emissive_.texture;
+  }
+
+  const std::string& GetTexturePath() const {
+    return albedo_.path;
+  }
+  const std::string& GetNormalTexturePath() const {
+    return normal_.path;
+  }
+  const std::string& GetMetallicRoughnessPath() const {
+    return metallic_roughness_.path;
+  }
+  const std::string& GetEmissivePath() const {
+    return emissive_.path;
+  }
+
+  // --- Other properties ---
 
   void SetColor(const Vector4& color) {
     color_ = color;
   }
-
   void SetRenderSettings(const Rendering::RenderSettings& settings) {
     render_settings_ = settings;
   }
-
   void SetShaderId(Graphics::ShaderId shader_id) {
     shader_id_ = shader_id;
   }
@@ -167,15 +312,6 @@ class MeshRenderer : public Component<MeshRenderer> {
   void SetRimShadowAffected(bool affected) {
     rim_shadow_affected_ = affected;
   }
-  void SetNormalTexture(Texture* texture) {
-    normal_texture_ = texture;
-  }
-  void SetMetallicRoughnessTexture(Texture* texture) {
-    metallic_roughness_texture_ = texture;
-  }
-  void SetEmissiveTexture(Texture* texture) {
-    emissive_texture_ = texture;
-  }
   void SetMetallic(float metallic) {
     metallic_ = metallic;
   }
@@ -197,38 +333,20 @@ class MeshRenderer : public Component<MeshRenderer> {
   void AddRenderTag(RenderTag tag) {
     render_tags_ |= static_cast<uint32_t>(tag);
   }
-
   const Mesh* GetMesh() const {
     return mesh_;
   }
-
-  Texture* GetTexture() const {
-    return texture_;
-  }
-
   Graphics::ShaderId GetShaderId() const {
     return shader_id_;
   }
 
-  Texture* GetMetallicRoughnessTexture() const {
-    return metallic_roughness_texture_;
-  }
-
-  Texture* GetEmissiveTexture() const {
-    return emissive_texture_;
-  }
-
-  Texture* GetNormalTexture() const {
-    return normal_texture_;
-  }
+  // --- Serialization ---
 
   void OnSerialize(framework::SerializeNode& node) const override {
     if (!mesh_type_name_.empty()) {
       node.Write("MeshType", mesh_type_name_);
     }
-    if (!texture_path_.empty()) {
-      node.Write("Texture", texture_path_);
-    }
+    albedo_.Serialize(node, "Texture");
     node.WriteVec4("Color", color_.x, color_.y, color_.z, color_.w);
     auto shader_name = ShaderRegistry::GetName(shader_id_);
     node.Write("Shader", std::string(shader_name));
@@ -249,6 +367,9 @@ class MeshRenderer : public Component<MeshRenderer> {
     node.Write("Roughness", roughness_);
     node.WriteVec3("EmissiveColor", emissive_color_.x, emissive_color_.y, emissive_color_.z);
     node.Write("EmissiveIntensity", emissive_intensity_);
+    normal_.Serialize(node, "NormalTexture");
+    metallic_roughness_.Serialize(node, "MetallicRoughnessTexture");
+    emissive_.Serialize(node, "EmissiveTexture");
   }
 
   void OnDeserialize(const framework::SerializeNode& node) override {
@@ -288,7 +409,16 @@ class MeshRenderer : public Component<MeshRenderer> {
     roughness_ = node.ReadFloat("Roughness", roughness_);
     node.ReadVec3("EmissiveColor", emissive_color_.x, emissive_color_.y, emissive_color_.z);
     emissive_intensity_ = node.ReadFloat("EmissiveIntensity", emissive_intensity_);
+
+    auto& assets = context->GetAssetManager();
+    auto load_srgb = [&](const std::string& p) { return assets.LoadTexture(p); };
+    auto load_linear = [&](const std::string& p) { return assets.LoadTextureLinear(p); };
+    normal_.Deserialize(node, "NormalTexture", load_linear);
+    metallic_roughness_.Deserialize(node, "MetallicRoughnessTexture", load_linear);
+    emissive_.Deserialize(node, "EmissiveTexture", load_srgb);
   }
+
+  // --- Editor data ---
 
   struct EditorData {
     Vector4 color;
@@ -341,6 +471,8 @@ class MeshRenderer : public Component<MeshRenderer> {
     emissive_intensity_ = data.emissive_intensity;
   }
 
+  // --- Render ---
+
   void OnRender(FramePacket& packet) override {
     if (!mesh_) return;
 
@@ -357,7 +489,7 @@ class MeshRenderer : public Component<MeshRenderer> {
 
     cmd.material = material_mgr.GetOrCreateMaterial(shader_id_, render_settings_);
     cmd.material_instance.material = cmd.material;
-    Texture* effective_texture = texture_ ? texture_ : context->GetAssetManager().GetDefaultWhiteTexture();
+    Texture* effective_texture = albedo_.texture ? albedo_.texture : context->GetAssetManager().GetDefaultWhiteTexture();
     cmd.material_instance.albedo_texture_index = effective_texture ? effective_texture->GetBindlessIndex() : 0;
     cmd.material_instance.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
     cmd.material_instance.specular_intensity = specular_intensity_;
@@ -368,12 +500,12 @@ class MeshRenderer : public Component<MeshRenderer> {
     cmd.material_instance.rim_color[1] = rim_color_.y;
     cmd.material_instance.rim_color[2] = rim_color_.z;
     cmd.material_instance.rim_shadow_affected = rim_shadow_affected_;
-    cmd.material_instance.normal_texture_index = normal_texture_ ? normal_texture_->GetBindlessIndex() : 0;
-    cmd.material_instance.metallic_roughness_index = metallic_roughness_texture_ ? metallic_roughness_texture_->GetBindlessIndex() : 0;
-    cmd.material_instance.emissive_texture_index = emissive_texture_ ? emissive_texture_->GetBindlessIndex() : 0;
-    cmd.material_instance.has_normal_map = (normal_texture_ != nullptr);
-    cmd.material_instance.has_metallic_roughness_map = (metallic_roughness_texture_ != nullptr);
-    cmd.material_instance.has_emissive_map = (emissive_texture_ != nullptr);
+    cmd.material_instance.normal_texture_index = normal_.texture ? normal_.texture->GetBindlessIndex() : 0;
+    cmd.material_instance.metallic_roughness_index = metallic_roughness_.texture ? metallic_roughness_.texture->GetBindlessIndex() : 0;
+    cmd.material_instance.emissive_texture_index = emissive_.texture ? emissive_.texture->GetBindlessIndex() : 0;
+    cmd.material_instance.has_normal_map = (normal_.texture != nullptr);
+    cmd.material_instance.has_metallic_roughness_map = (metallic_roughness_.texture != nullptr);
+    cmd.material_instance.has_emissive_map = (emissive_.texture != nullptr);
     cmd.material_instance.metallic_factor = metallic_;
     cmd.material_instance.roughness_factor = roughness_;
     cmd.material_instance.emissive_factor[0] = emissive_color_.x * emissive_intensity_;
@@ -391,9 +523,7 @@ class MeshRenderer : public Component<MeshRenderer> {
 
  private:
   const Mesh* mesh_ = nullptr;
-  Texture* texture_ = nullptr;
-  std::string texture_path_;
-  AssetHandle<Texture> texture_handle_;
+  TextureBinding albedo_;
   std::string mesh_type_name_;
   Graphics::ShaderId shader_id_ = Graphics::Basic3DShader::ID;
   Rendering::RenderSettings render_settings_ = Rendering::RenderSettings::Opaque();
@@ -406,9 +536,9 @@ class MeshRenderer : public Component<MeshRenderer> {
   Vector3 rim_color_ = {1.0f, 1.0f, 1.0f};
   bool rim_shadow_affected_ = false;
 
-  Texture* normal_texture_ = nullptr;
-  Texture* metallic_roughness_texture_ = nullptr;
-  Texture* emissive_texture_ = nullptr;
+  TextureBinding normal_;
+  TextureBinding metallic_roughness_;
+  TextureBinding emissive_;
   float metallic_ = 0.0f;
   float roughness_ = 0.5f;
   Vector3 emissive_color_ = {0.0f, 0.0f, 0.0f};
@@ -416,4 +546,10 @@ class MeshRenderer : public Component<MeshRenderer> {
 
   RenderLayer render_layer_ = RenderLayer::Opaque;
   RenderTagMask render_tags_ = static_cast<uint32_t>(RenderTag::CastShadow | RenderTag::ReceiveShadow | RenderTag::Lit);
+
+  struct PendingTextureRequest {
+    TextureSlot slot;
+    std::string path;
+  };
+  std::vector<PendingTextureRequest> pending_texture_requests_;
 };

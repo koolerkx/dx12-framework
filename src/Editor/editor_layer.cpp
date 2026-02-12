@@ -10,28 +10,31 @@
 #include <filesystem>
 
 #include "Framework/Core/utils.h"
+#include "Game/Asset/asset_manager.h"
 #include "Game/Component/Renderer/mesh_renderer.h"
-#include "Game/Component/model_component.h"
 #include "Game/Component/Renderer/sprite_renderer.h"
 #include "Game/Component/Renderer/text_renderer.h"
 #include "Game/Component/Renderer/ui_sprite_renderer.h"
 #include "Game/Component/Renderer/ui_text_renderer.h"
 #include "Game/Component/camera_component.h"
+#include "Game/Component/model_component.h"
 #include "Game/Component/point_light_component.h"
 #include "Game/Component/transform_component.h"
 #include "Game/Debug/debug_drawer.h"
 #include "Game/Serialization/scene_serializer.h"
-#include "Game/game_object.h"
 #include "Game/game.h"
+#include "Game/game_context.h"
+#include "Game/game_object.h"
 #include "Game/scene.h"
 #include "Game/scene_events.h"
 #include "Game/scene_id.h"
 #include "Game/scene_manager.h"
 #include "Graphic/Descriptor/descriptor_heap_manager.h"
+#include "Graphic/Frame/frame_packet.h"
+#include "Graphic/Pipeline/shader_descriptors.h"
 #include "Graphic/Pipeline/shader_registry.h"
 #include "Graphic/Render/render_graph.h"
 #include "Graphic/graphic.h"
-
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -85,6 +88,17 @@ void EditorLayer::Shutdown(Graphic& graphic) {
 }
 
 void EditorLayer::BeginFrame() {
+  if (pending_delete_ && scene_) {
+    if (selected_object_ == pending_delete_ || GameObject::IsDescendantOf(selected_object_, pending_delete_)) {
+      selected_object_ = nullptr;
+    }
+    scene_->DestroyGameObject(pending_delete_);
+    pending_delete_ = nullptr;
+  }
+
+  ResolveDirtyRenderers();
+  ApplyPendingModelCreation();
+
   if (pending_cascade_count_ > 0 && scene_) {
     graphic_->WaitForGpuIdle();
     graphic_->SetCascadeCount(pending_cascade_count_);
@@ -137,6 +151,10 @@ void EditorLayer::SetScene(IScene* scene) {
   if (scene_ == scene) return;
   scene_ = scene;
   selected_object_ = nullptr;
+  pending_delete_ = nullptr;
+  dirty_renderers_.clear();
+  pending_model_path_.clear();
+  ScanTextureFiles();
 }
 
 void EditorLayer::SubscribeEvents(EventBus& bus) {
@@ -186,6 +204,7 @@ void EditorLayer::DrawMainMenu() {
   DrawSaveSceneModal();
   DrawDumpSettingModal();
   DrawLoadSceneModal();
+  DrawAddModelModal();
 
   if (save_status_timer_ > 0.0f) {
     save_status_timer_ -= ImGui::GetIO().DeltaTime;
@@ -472,6 +491,40 @@ void EditorLayer::DrawHierarchy() {
   ImGui::Begin("Hierarchy");
 
   if (scene_) {
+    if (ImGui::SmallButton("+")) {
+      ImGui::OpenPopup("##AddGameObject");
+    }
+
+    if (ImGui::BeginPopup("##AddGameObject")) {
+      if (ImGui::BeginMenu("Add Mesh")) {
+        if (ImGui::MenuItem("Basic Cube")) CreateMeshGameObject("Cube", DefaultMesh::Cube, Graphics::Basic3DShader::ID);
+        if (ImGui::MenuItem("Basic Sphere")) CreateMeshGameObject("Sphere", DefaultMesh::Sphere, Graphics::Basic3DShader::ID);
+        if (ImGui::MenuItem("Basic Plane")) CreateMeshGameObject("Plane", DefaultMesh::Plane, Graphics::Basic3DShader::ID);
+        ImGui::Separator();
+        if (ImGui::MenuItem("PBR Cube")) CreateMeshGameObject("Cube", DefaultMesh::Cube, Graphics::PBRShader::ID);
+        if (ImGui::MenuItem("PBR Sphere")) CreateMeshGameObject("Sphere", DefaultMesh::Sphere, Graphics::PBRShader::ID);
+        if (ImGui::MenuItem("PBR Plane")) CreateMeshGameObject("Plane", DefaultMesh::Plane, Graphics::PBRShader::ID);
+        ImGui::EndMenu();
+      }
+      if (ImGui::MenuItem("Add Model...")) {
+        ScanModelFiles();
+        show_add_model_modal_ = true;
+      }
+      int light_count = CountPointLightsInScene();
+      bool can_add = light_count < MAX_POINT_LIGHTS;
+      if (ImGui::MenuItem("Add Point Light", nullptr, false, can_add)) {
+        auto* go = scene_->CreateGameObject("PointLight");
+        go->AddComponent<PointLightComponent>(PointLightComponent::Props{});
+        selected_object_ = go;
+      }
+      if (!can_add) {
+        ImGui::SetItemTooltip("Max %d point lights reached", MAX_POINT_LIGHTS);
+      }
+      ImGui::EndPopup();
+    }
+
+    ImGui::Separator();
+
     for (const auto& go : scene_->GetGameObjects()) {
       if (!go || go->GetParent() != nullptr) continue;
       DrawGameObjectNode(go.get());
@@ -494,6 +547,13 @@ void EditorLayer::DrawGameObjectNode(GameObject* go) {
   bool open = ImGui::TreeNodeEx(static_cast<void*>(go), flags, "%s", go->GetName().c_str());
 
   if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) selected_object_ = go;
+
+  if (ImGui::BeginPopupContextItem()) {
+    if (ImGui::MenuItem("Delete")) {
+      pending_delete_ = go;
+    }
+    ImGui::EndPopup();
+  }
 
   if (open) {
     for (auto* child : go->GetChildren()) {
@@ -1076,8 +1136,44 @@ void EditorLayer::DrawMeshRendererInspector(MeshRenderer* renderer) {
   const Mesh* mesh = renderer->GetMesh();
   ImGui::Text("Mesh: %s", mesh ? "Loaded" : "None");
 
-  Texture* texture = renderer->GetTexture();
-  ImGui::Text("Texture: %s", texture ? "Loaded" : "None");
+  auto DrawTexturePicker = [&](const char* label,
+                             const std::string& current_path,
+                             Texture* current_tex,
+                             TextureSlot slot,
+                             const char* clear_id,
+                             const char* none_label = "(None)") {
+    bool is_embedded = current_path.empty() && current_tex != nullptr;
+    if (is_embedded) {
+      ImGui::Text("%s: (Embedded)", label);
+      return;
+    }
+    std::string preview = current_path.empty() ? none_label : current_path;
+    if (ImGui::BeginCombo(label, preview.c_str())) {
+      if (ImGui::Selectable("(None)", current_path.empty())) {
+        renderer->RequestTextureChange(slot, "");
+        dirty_renderers_.push_back(renderer);
+      }
+      for (const auto& tex : texture_file_list_) {
+        std::string full_path = "Content/textures/" + tex;
+        bool is_selected = (current_path == full_path);
+        if (ImGui::Selectable(tex.c_str(), is_selected)) {
+          renderer->RequestTextureChange(slot, full_path);
+          dirty_renderers_.push_back(renderer);
+        }
+      }
+      ImGui::EndCombo();
+    }
+    if (!current_path.empty()) {
+      ImGui::SameLine();
+      if (ImGui::SmallButton(clear_id)) {
+        renderer->RequestTextureChange(slot, "");
+        dirty_renderers_.push_back(renderer);
+      }
+    }
+  };
+
+  DrawTexturePicker(
+    "Texture", renderer->GetTexturePath(), renderer->GetTexture(), TextureSlot::Albedo, "X##clear_tex", "(None - White Fallback)");
 
   auto shader_name = ShaderRegistry::GetName(renderer->GetShaderId());
   ImGui::Text("Shader: %.*s", static_cast<int>(shader_name.size()), shader_name.data());
@@ -1130,28 +1226,39 @@ void EditorLayer::DrawMeshRendererInspector(MeshRenderer* renderer) {
   ImGui::ColorEdit3("Rim Color", &data.rim_color.x);
   ImGui::Checkbox("Rim Shadow Affected", &data.rim_shadow_affected);
 
-  ImGui::SeparatorText("PBR");
+  bool is_pbr = (renderer->GetShaderId() == Graphics::PBRShader::ID);
 
-  bool has_mr_map = (renderer->GetMetallicRoughnessTexture() != nullptr);
-  ImGui::SliderFloat("Metallic", &data.metallic, 0.0f, 1.0f);
-  if (has_mr_map && ImGui::IsItemHovered()) {
-    ImGui::SetTooltip("Multiplied with metallic-roughness map");
-  }
-  ImGui::SliderFloat("Roughness", &data.roughness, 0.0f, 1.0f);
-  if (has_mr_map && ImGui::IsItemHovered()) {
-    ImGui::SetTooltip("Multiplied with metallic-roughness map");
-  }
+  if (is_pbr) {
+    ImGui::SeparatorText("PBR");
 
-  bool has_emissive_map = (renderer->GetEmissiveTexture() != nullptr);
-  ImGui::ColorEdit3("Emissive", &data.emissive_color.x);
-  if (has_emissive_map && ImGui::IsItemHovered()) {
-    ImGui::SetTooltip("Multiplied with emissive map");
-  }
-  ImGui::SliderFloat("Emissive Intensity", &data.emissive_intensity, 0.0f, 10.0f);
+    bool has_mr_map = (renderer->GetMetallicRoughnessTexture() != nullptr);
+    ImGui::SliderFloat("Metallic", &data.metallic, 0.0f, 1.0f);
+    if (has_mr_map && ImGui::IsItemHovered()) {
+      ImGui::SetTooltip("Multiplied with metallic-roughness map");
+    }
+    ImGui::SliderFloat("Roughness", &data.roughness, 0.0f, 1.0f);
+    if (has_mr_map && ImGui::IsItemHovered()) {
+      ImGui::SetTooltip("Multiplied with metallic-roughness map");
+    }
 
-  ImGui::Text("Normal Map: %s", renderer->GetNormalTexture() ? "Loaded" : "None");
-  ImGui::Text("MR Map: %s", has_mr_map ? "Loaded" : "None");
-  ImGui::Text("Emissive Map: %s", has_emissive_map ? "Loaded" : "None");
+    bool has_emissive_map = (renderer->GetEmissiveTexture() != nullptr);
+    ImGui::ColorEdit3("Emissive", &data.emissive_color.x);
+    if (has_emissive_map && ImGui::IsItemHovered()) {
+      ImGui::SetTooltip("Multiplied with emissive map");
+    }
+    ImGui::SliderFloat("Emissive Intensity", &data.emissive_intensity, 0.0f, 10.0f);
+
+    ImGui::SeparatorText("PBR Textures");
+
+    DrawTexturePicker("Normal Map", renderer->GetNormalTexturePath(), renderer->GetNormalTexture(), TextureSlot::Normal, "X##clear_normal");
+    DrawTexturePicker("MR Map",
+      renderer->GetMetallicRoughnessPath(),
+      renderer->GetMetallicRoughnessTexture(),
+      TextureSlot::MetallicRoughness,
+      "X##clear_mr");
+    DrawTexturePicker(
+      "Emissive Map", renderer->GetEmissivePath(), renderer->GetEmissiveTexture(), TextureSlot::Emissive, "X##clear_emissive");
+  }
 
   renderer->ApplyEditorData(data);
 }
@@ -1217,6 +1324,30 @@ void EditorLayer::ScaleExistingWindows(float ratio) {
   }
 }
 
+void EditorLayer::ResolveDirtyRenderers() {
+  for (auto* renderer : dirty_renderers_) {
+    if (renderer && !renderer->GetOwner()->IsPendingDestroy()) {
+      renderer->ResolvePendingTextures();
+    }
+  }
+  dirty_renderers_.clear();
+}
+
+void EditorLayer::ApplyPendingModelCreation() {
+  if (pending_model_path_.empty() || !scene_ || !scene_->GetContext()) return;
+  std::string path = "Content/models/" + pending_model_path_;
+  auto model_data = scene_->GetContext()->GetAssetManager().LoadModel(path);
+  if (model_data) {
+    auto* go = scene_->CreateGameObject(pending_model_path_);
+    go->AddComponent<ModelComponent>(ModelComponent::Props{
+      .model = model_data,
+      .shader_id = Graphics::PBRShader::ID,
+    });
+    selected_object_ = go;
+  }
+  pending_model_path_.clear();
+}
+
 void EditorLayer::ApplyLoadedShadowSettings() {
   if (!save_status_success_ || !scene_) return;
   auto& shadow = scene_->GetShadowSetting();
@@ -1242,4 +1373,86 @@ void EditorLayer::UpdateScaling() {
 
   last_scaled_width_ = width;
   ui_scale_ = scale;
+}
+
+void EditorLayer::CreateMeshGameObject(const char* name, DefaultMesh mesh, Graphics::ShaderId shader) {
+  if (!scene_) return;
+  auto* go = scene_->CreateGameObject(name);
+  go->AddComponent<MeshRenderer>(MeshRenderer::Props{
+    .mesh_type = mesh,
+    .shader_id = shader,
+  });
+  selected_object_ = go;
+}
+
+void EditorLayer::DrawAddModelModal() {
+  if (show_add_model_modal_) {
+    ImGui::OpenPopup("Add Model##modal");
+    show_add_model_modal_ = false;
+  }
+
+  if (ImGui::BeginPopupModal("Add Model##modal", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+    ImGui::Text("Select a model:");
+    if (ImGui::BeginChild("##model_list", ImVec2(300, 200), ImGuiChildFlags_Borders)) {
+      for (int i = 0; i < static_cast<int>(model_file_list_.size()); ++i) {
+        if (ImGui::Selectable(model_file_list_[i].c_str(), i == selected_model_index_)) selected_model_index_ = i;
+      }
+    }
+    ImGui::EndChild();
+
+    if (model_file_list_.empty()) {
+      ImGui::TextDisabled("No model files found in Content/models/");
+    }
+
+    ImGui::Separator();
+
+    bool has_selection = selected_model_index_ >= 0 && selected_model_index_ < static_cast<int>(model_file_list_.size());
+    ImGui::BeginDisabled(!has_selection);
+    if (ImGui::Button("Add", ImVec2(120, 0))) {
+      pending_model_path_ = model_file_list_[selected_model_index_];
+      ImGui::CloseCurrentPopup();
+    }
+    ImGui::EndDisabled();
+    ImGui::SameLine();
+    if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+      ImGui::CloseCurrentPopup();
+    }
+    ImGui::EndPopup();
+  }
+}
+
+void EditorLayer::ScanModelFiles() {
+  model_file_list_.clear();
+  selected_model_index_ = -1;
+  std::filesystem::path dir("Content/models");
+  if (!std::filesystem::exists(dir)) return;
+  for (auto& entry : std::filesystem::directory_iterator(dir)) {
+    auto ext = entry.path().extension().string();
+    if (ext == ".fbx" || ext == ".obj" || ext == ".gltf") {
+      model_file_list_.push_back(entry.path().filename().string());
+    }
+  }
+  std::sort(model_file_list_.begin(), model_file_list_.end());
+}
+
+void EditorLayer::ScanTextureFiles() {
+  texture_file_list_.clear();
+  std::filesystem::path dir("Content/textures");
+  if (!std::filesystem::exists(dir)) return;
+  for (auto& entry : std::filesystem::directory_iterator(dir)) {
+    auto ext = entry.path().extension().string();
+    if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".tga" || ext == ".bmp") {
+      texture_file_list_.push_back(entry.path().filename().string());
+    }
+  }
+  std::sort(texture_file_list_.begin(), texture_file_list_.end());
+}
+
+int EditorLayer::CountPointLightsInScene() const {
+  if (!scene_) return 0;
+  int count = 0;
+  for (const auto& go : scene_->GetGameObjects()) {
+    if (go && !go->IsPendingDestroy() && go->GetComponent<PointLightComponent>()) ++count;
+  }
+  return count;
 }

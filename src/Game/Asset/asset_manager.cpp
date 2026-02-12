@@ -47,6 +47,11 @@ AssetHandle<Texture> AssetManager::LoadTexture(const std::string& path) {
   return AssetHandle<Texture>(texture, path);
 }
 
+AssetHandle<Texture> AssetManager::LoadTextureLinear(const std::string& path) {
+  auto texture = impl_->texture_manager->LoadTextureLinear(path);
+  return AssetHandle<Texture>(texture, path);
+}
+
 AssetHandle<Texture> AssetManager::LoadCubemap(const std::string& path) {
   auto texture = impl_->texture_manager->LoadCubemapFromCrossHDR(path);
   return AssetHandle<Texture>(texture, path);
