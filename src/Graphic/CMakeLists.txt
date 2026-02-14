@@ -128,6 +128,11 @@ add_library(graphic STATIC
 
   Render/linear_depth_view_pass.h
   Render/linear_depth_view_pass.cpp
+
+  Render/ssao_pass_group.h
+  Render/ssao_pass_group.cpp
+
+  Rendering/ssao_config.h
 )
 
 target_link_libraries(graphic PUBLIC framework)
@@ -162,6 +167,8 @@ target_add_hlsl_auto(graphic "6.6"
   "${CMAKE_SOURCE_DIR}/shaders/depth_normal.ps.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/normal_view.ps.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/linear_depth_view.ps.hlsl"
+  "${CMAKE_SOURCE_DIR}/shaders/ssao.ps.hlsl"
+  "${CMAKE_SOURCE_DIR}/shaders/ssao_blur.ps.hlsl"
 )
 
 # manually add shaders files

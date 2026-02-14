@@ -40,4 +40,6 @@ struct RenderFrameContext {
 
   D3D12_GPU_VIRTUAL_ADDRESS point_light_srv = 0;
   uint32_t point_light_count = 0;
+
+  uint32_t ssao_srv_index = UINT32_MAX;
 };

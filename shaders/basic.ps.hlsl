@@ -51,7 +51,8 @@ float4 main(PSIN input) : SV_TARGET {
     float rim = pow(1.0 - saturate(dot(N, V)), g_MaterialData.rimPower);
     float3 rimLight =
         g_MaterialData.rimColor * g_MaterialData.rimIntensity * rim;
-    if (g_MaterialData.flags & 4u) rimLight *= shadow;
+    if (g_MaterialData.flags & 4u)
+      rimLight *= shadow;
 
     float3 pointDiffuse = float3(0, 0, 0);
     float3 pointSpecular = float3(0, 0, 0);
@@ -62,7 +63,15 @@ float4 main(PSIN input) : SV_TARGET {
           pointDiffuse, pointSpecular);
     }
 
-    baseColor.rgb = baseColor.rgb * (diffuse + ambient + pointDiffuse) +
+    float ao = 1.0;
+    if (g_LightingCB.ssaoSrvIndex != 0xFFFFFFFF) {
+      float2 screenUV = input.position.xy / g_FrameCB.screenSize;
+      ao = g_Textures[g_LightingCB.ssaoSrvIndex]
+               .Sample(g_Samplers[4], screenUV)
+               .r;
+    }
+
+    baseColor.rgb = baseColor.rgb * ((diffuse + ambient + pointDiffuse) * ao) +
                     specular + pointSpecular + rimLight;
   }
 

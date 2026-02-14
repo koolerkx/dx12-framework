@@ -40,6 +40,8 @@ struct alignas(256) LightingCB {
   float ambientIntensity;
   Vector3 ambientColor;
   uint32_t pointLightCount;
+  uint32_t ssaoSrvIndex;
+  uint32_t _padding[3];
 };
 static_assert(sizeof(LightingCB) == 256);
 

@@ -24,6 +24,7 @@
 #include "Render/preview_group.h"
 #include "Render/shadow_pass_group.h"
 #include "Render/skybox_pass.h"
+#include "Render/ssao_pass_group.h"
 
 using Math::Vector3;
 using Math::Vector4;
@@ -161,6 +162,16 @@ void Graphic::BuildRenderPipeline() {
   PrepassGroup prepass;
   prepass.Build(*render_graph_, {.context = ctx});
 
+  ssao_handle_ = RenderGraphHandle::Invalid;
+  if (ssao_config_.enabled) {
+    SSAOPassGroup ssao_group;
+    ssao_group.Build(*render_graph_, prepass.GetNormalDepthRT(), {
+      .context = ctx,
+      .config = &ssao_config_,
+    });
+    ssao_handle_ = ssao_group.GetAOTexture();
+  }
+
   auto scene_rt = render_graph_->CreateRenderTexture({
     .name = "scene_rt",
     .format = DXGI_FORMAT_R16G16B16A16_FLOAT,
@@ -181,6 +192,9 @@ void Graphic::BuildRenderPipeline() {
   scene_setup.resource_writes = {scene_rt};
   scene_setup.depth = scene_depth;
   scene_setup.resource_reads = shadow_group.GetShadowMaps();
+  if (ssao_handle_ != RenderGraphHandle::Invalid) {
+    scene_setup.resource_reads.push_back(ssao_handle_);
+  }
 
   render_graph_->AddPass(std::make_unique<SkyboxPass>(device_.Get(), &render_services_->GetShaderManager(), scene_setup));
 
@@ -255,6 +269,7 @@ void Graphic::BuildRenderPipeline() {
   preview_handles_.scene_rt = scene_rt;
   preview_handles_.tonemap_rt = postfx.GetLdrOutput();
   preview_handles_.normal_depth_rt = prepass.GetNormalDepthRT();
+  preview_handles_.ssao_rt = ssao_handle_;
   preview_handles_.depth_preview_rt = preview_output.depth_preview_rt;
   preview_handles_.normal_preview_rt = preview_output.normal_preview_rt;
   preview_handles_.linear_depth_preview_rt = preview_output.linear_depth_preview_rt;
@@ -418,7 +433,8 @@ RenderFrameContext Graphic::BeginFrame() {
     .screen_height = frame_buffer_height_,
     .render_graph = render_graph_.get(),
     .shadow_data = &shadow_frame_data_,
-    .point_light_srv = point_light_buffers_[frame_index].GetGPUAddress()};
+    .point_light_srv = point_light_buffers_[frame_index].GetGPUAddress(),
+    .ssao_srv_index = (ssao_handle_ != RenderGraphHandle::Invalid) ? render_graph_->GetSrvIndex(ssao_handle_) : UINT32_MAX};
 }
 
 void Graphic::EndFrame(const RenderFrameContext& frame) {

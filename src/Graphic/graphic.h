@@ -26,6 +26,7 @@
 #include "Render/render_graph.h"
 #include "Render/render_graph_handle.h"
 #include "Rendering/hdr_config.h"
+#include "Rendering/ssao_config.h"
 #include "Resource/Buffer/structured_buffer.h"
 #include "Resource/Font/sprite_font_manager.h"
 #include "Resource/Texture/texture_manager.h"
@@ -138,6 +139,7 @@ class Graphic {
     RenderGraphHandle normal_depth_rt = RenderGraphHandle::Invalid;
     RenderGraphHandle normal_preview_rt = RenderGraphHandle::Invalid;
     RenderGraphHandle linear_depth_preview_rt = RenderGraphHandle::Invalid;
+    RenderGraphHandle ssao_rt = RenderGraphHandle::Invalid;
     RenderGraphHandle shadow_maps[ShadowCascadeConfig::MAX_CASCADES];
     uint32_t shadow_map_count = 0;
   };
@@ -161,6 +163,9 @@ class Graphic {
   }
   BloomConfig& GetBloomConfig() {
     return bloom_config_;
+  }
+  SSAOConfig& GetSSAOConfig() {
+    return ssao_config_;
   }
 
   void SetWireframeMode(bool enabled) {
@@ -190,6 +195,8 @@ class Graphic {
   DepthViewConfig depth_view_config_;
   DepthViewConfig depth_preview_config_ = {.enabled = true, .near_plane = 0.1f, .far_plane = 1000.0f};
   BloomConfig bloom_config_;
+  SSAOConfig ssao_config_;
+  RenderGraphHandle ssao_handle_ = RenderGraphHandle::Invalid;
   bool pending_pipeline_rebuild_ = false;
 
   ShadowFrameData shadow_frame_data_;

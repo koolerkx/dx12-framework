@@ -266,6 +266,36 @@ struct PostProcessLinearDepthViewShader {
   }
 };
 
+struct PostProcessSSAOShader {
+  static constexpr ShaderId ID = 17;
+  using VertexType = Vertex::Empty;
+
+  static constexpr RSPreset RS_PRESET = RSPreset::Standard;
+  static constexpr std::string_view NAME = "SSAO";
+  static constexpr std::wstring_view VS_PATH = L"Content/shaders/fullscreen.vs.cso";
+  static constexpr std::wstring_view PS_PATH = L"Content/shaders/ssao.ps.cso";
+  static constexpr ShaderRenderHints HINTS = {};
+
+  static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
+    return VertexType::GetInputLayout();
+  }
+};
+
+struct PostProcessSSAOBlurShader {
+  static constexpr ShaderId ID = 18;
+  using VertexType = Vertex::Empty;
+
+  static constexpr RSPreset RS_PRESET = RSPreset::Standard;
+  static constexpr std::string_view NAME = "SSAOBlur";
+  static constexpr std::wstring_view VS_PATH = L"Content/shaders/fullscreen.vs.cso";
+  static constexpr std::wstring_view PS_PATH = L"Content/shaders/ssao_blur.ps.cso";
+  static constexpr ShaderRenderHints HINTS = {};
+
+  static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
+    return VertexType::GetInputLayout();
+  }
+};
+
 // Shader Registration
 using AllShaders = std::tuple<SpriteShader,
   SpriteInstancedShader,
@@ -281,7 +311,9 @@ using AllShaders = std::tuple<SpriteShader,
   PostProcessBloomUpsampleShader,
   DepthNormalShader,
   PostProcessNormalViewShader,
-  PostProcessLinearDepthViewShader>;
+  PostProcessLinearDepthViewShader,
+  PostProcessSSAOShader,
+  PostProcessSSAOBlurShader>;
 
 [[maybe_unused]] constexpr size_t SHADER_COUNT = std::tuple_size_v<AllShaders>;
 

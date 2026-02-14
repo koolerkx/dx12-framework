@@ -12,6 +12,8 @@ struct LightingCB {
   float ambientIntensity;
   float3 ambientColor;
   uint pointLightCount;
+  uint ssaoSrvIndex;
+  uint3 _padding;
 };
 ConstantBuffer<LightingCB> g_LightingCB : register(LIGHTING_CB_SLOT);
 

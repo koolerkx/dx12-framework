@@ -1076,6 +1076,23 @@ void EditorLayer::DrawPostFxPanel() {
     }
   }
 
+  auto& ssao = graphic_->GetSSAOConfig();
+
+  if (ImGui::CollapsingHeader("SSAO", ImGuiTreeNodeFlags_DefaultOpen)) {
+    bool prev_enabled = ssao.enabled;
+    ImGui::Checkbox("Enabled##ssao", &ssao.enabled);
+    ImGui::SliderFloat("Radius##ssao", &ssao.radius, 0.01f, 2.0f, "%.3f");
+    ImGui::SliderFloat("Bias##ssao", &ssao.bias, 0.0f, 0.1f, "%.4f");
+    ImGui::SliderFloat("Intensity##ssao", &ssao.intensity, 0.0f, 5.0f, "%.2f");
+    int samples = static_cast<int>(ssao.sample_count);
+    if (ImGui::SliderInt("Samples##ssao", &samples, 8, 32)) {
+      ssao.sample_count = static_cast<uint32_t>(samples);
+    }
+    if (ssao.enabled != prev_enabled) {
+      graphic_->RebuildRenderPipeline();
+    }
+  }
+
   ImGui::End();
 }
 

@@ -120,6 +120,12 @@ float4 main(PSIN input) : SV_TARGET {
   float3 ambient =
       g_LightingCB.ambientColor * g_LightingCB.ambientIntensity * albedo;
 
+  float ao = 1.0;
+  if (g_LightingCB.ssaoSrvIndex != 0xFFFFFFFF) {
+    float2 screenUV = input.position.xy / g_FrameCB.screenSize;
+    ao =
+        g_Textures[g_LightingCB.ssaoSrvIndex].Sample(g_Samplers[4], screenUV).r;
+  }
   // Point lights (Lambertian diffuse)
   float3 pointDiffuse = float3(0, 0, 0);
   float3 pointSpecular = float3(0, 0, 0);
@@ -146,7 +152,7 @@ float4 main(PSIN input) : SV_TARGET {
     emissive *= emissiveTex;
   }
 
-  float3 finalColor = directional + ambient + pointDiffuse + pointSpecular +
-                      rimLight + emissive;
+  float3 finalColor = (directional + ambient + pointDiffuse) * ao +
+                      pointSpecular + rimLight + emissive;
   return float4(finalColor, baseColor.a);
 }
