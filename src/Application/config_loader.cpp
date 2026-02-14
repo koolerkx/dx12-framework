@@ -49,6 +49,15 @@ void LoadOutlineConfig(const framework::SerializeNode& node, OutlineConfig& outl
   node.ReadVec3("Color", outline.outline_color[0], outline.outline_color[1], outline.outline_color[2]);
 }
 
+void LoadVignetteConfig(const framework::SerializeNode& node, VignetteConfig& vignette) {
+  vignette.enabled = node.ReadBool("Enabled", vignette.enabled);
+  vignette.intensity = node.ReadFloat("Intensity", vignette.intensity);
+  vignette.radius = node.ReadFloat("Radius", vignette.radius);
+  vignette.softness = node.ReadFloat("Softness", vignette.softness);
+  vignette.roundness = node.ReadFloat("Roundness", vignette.roundness);
+  node.ReadVec3("Color", vignette.vignette_color[0], vignette.vignette_color[1], vignette.vignette_color[2]);
+}
+
 void LoadSceneDefaults(const framework::SerializeNode& root, SceneDefaults& defaults) {
   if (root.HasKey("Light")) {
     auto light = root.GetMap("Light");
@@ -101,6 +110,7 @@ AppConfig ConfigLoader::LoadFromFile(const std::filesystem::path& path) {
   if (root.HasKey("SSAO")) LoadSSAOConfig(root.GetMap("SSAO"), config.ssao);
   if (root.HasKey("SMAA")) LoadSMAAConfig(root.GetMap("SMAA"), config.smaa);
   if (root.HasKey("Outline")) LoadOutlineConfig(root.GetMap("Outline"), config.outline);
+  if (root.HasKey("Vignette")) LoadVignetteConfig(root.GetMap("Vignette"), config.vignette);
 
   if (root.HasKey("SceneDefaults")) {
     LoadSceneDefaults(root.GetMap("SceneDefaults"), config.scene_defaults);

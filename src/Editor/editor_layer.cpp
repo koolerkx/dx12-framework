@@ -1093,6 +1093,21 @@ void EditorLayer::DrawPostFxPanel() {
     }
   }
 
+  auto& vignette = graphic_->GetVignetteConfig();
+
+  if (ImGui::CollapsingHeader("Vignette", ImGuiTreeNodeFlags_DefaultOpen)) {
+    bool prev_enabled = vignette.enabled;
+    ImGui::Checkbox("Enabled##vignette", &vignette.enabled);
+    ImGui::SliderFloat("Intensity##vignette", &vignette.intensity, 0.0f, 1.0f, "%.2f");
+    ImGui::SliderFloat("Radius##vignette", &vignette.radius, 0.0f, 1.0f, "%.2f");
+    ImGui::SliderFloat("Softness##vignette", &vignette.softness, 0.0f, 1.0f, "%.2f");
+    ImGui::SliderFloat("Roundness##vignette", &vignette.roundness, 0.0f, 1.0f, "%.2f");
+    ImGui::ColorEdit3("Color##vignette", vignette.vignette_color);
+    if (vignette.enabled != prev_enabled) {
+      graphic_->RebuildRenderPipeline();
+    }
+  }
+
   auto& outline = graphic_->GetOutlineConfig();
 
   if (ImGui::CollapsingHeader("Outline", ImGuiTreeNodeFlags_DefaultOpen)) {

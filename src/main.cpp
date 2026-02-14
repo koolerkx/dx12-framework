@@ -49,6 +49,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
       .ssao = config.ssao,
       .smaa = config.smaa,
       .outline = config.outline,
+      .vignette = config.vignette,
   };
   if (!graphic.Initialize(app.GetHwnd(), config.window_width, config.window_height, graphic_props)) {
     throw std::runtime_error("Failed to initialize graphics system");

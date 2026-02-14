@@ -6,6 +6,7 @@
 #include "Graphic/Rendering/outline_config.h"
 #include "Graphic/Rendering/smaa_config.h"
 #include "Graphic/Rendering/ssao_config.h"
+#include "Graphic/Rendering/vignette_config.h"
 
 struct AppConfig {
   uint32_t window_width = 1920;
@@ -15,5 +16,6 @@ struct AppConfig {
   SSAOConfig ssao;
   SMAAConfig smaa;
   OutlineConfig outline;
+  VignetteConfig vignette;
   SceneDefaults scene_defaults;
 };

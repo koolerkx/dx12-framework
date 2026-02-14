@@ -28,6 +28,7 @@
 #include "Rendering/hdr_config.h"
 #include "Rendering/outline_config.h"
 #include "Rendering/smaa_config.h"
+#include "Rendering/vignette_config.h"
 #include "Rendering/ssao_config.h"
 #include "Resource/Buffer/structured_buffer.h"
 #include "Resource/Font/sprite_font_manager.h"
@@ -43,6 +44,7 @@ class Graphic {
     SSAOConfig ssao;
     SMAAConfig smaa;
     OutlineConfig outline;
+    VignetteConfig vignette;
   };
 
   Graphic() = default;
@@ -179,6 +181,9 @@ class Graphic {
   OutlineConfig& GetOutlineConfig() {
     return outline_config_;
   }
+  VignetteConfig& GetVignetteConfig() {
+    return vignette_config_;
+  }
 
   void SetWireframeMode(bool enabled) {
     if (render_services_) render_services_->GetMaterialManager().SetWireframeOverride(enabled);
@@ -210,6 +215,7 @@ class Graphic {
   SSAOConfig ssao_config_;
   SMAAConfig smaa_config_;
   OutlineConfig outline_config_;
+  VignetteConfig vignette_config_;
   RenderGraphHandle ssao_handle_ = RenderGraphHandle::Invalid;
   bool pending_pipeline_rebuild_ = false;
 

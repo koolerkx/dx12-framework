@@ -25,6 +25,7 @@
 #include "Render/shadow_pass_group.h"
 #include "Render/skybox_pass.h"
 #include "Render/outline_pass.h"
+#include "Render/vignette_pass.h"
 #include "Render/smaa_pass_group.h"
 #include "Render/ssao_pass_group.h"
 
@@ -43,6 +44,7 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
   ssao_config_ = props.ssao;
   smaa_config_ = props.smaa;
   outline_config_ = props.outline;
+  vignette_config_ = props.vignette;
 
   std::wstring init_error_caption = L"Graphic Initialization Error";
 
@@ -238,6 +240,15 @@ void Graphic::BuildRenderPipeline() {
       .config = &outline_config_,
     });
     ldr_output = outline_group.GetOutput();
+  }
+
+  if (vignette_config_.enabled) {
+    VignettePassGroup vignette_group;
+    vignette_group.Build(*render_graph_, ldr_output, {
+      .context = ctx,
+      .config = &vignette_config_,
+    });
+    ldr_output = vignette_group.GetOutput();
   }
 
   RenderGraphHandle blit_source = ldr_output;

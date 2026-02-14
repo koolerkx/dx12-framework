@@ -18,6 +18,14 @@ SSAO:
 SMAA:
   Enabled: true
 
+Vignette:
+  Enabled: false
+  Intensity: 0.75
+  Radius: 0.75
+  Softness: 0.4
+  Roundness: 0.15
+  Color: [0.0, 0.0, 0.0]
+
 Outline:
   Enabled: true
   DepthWeight: 1.0
