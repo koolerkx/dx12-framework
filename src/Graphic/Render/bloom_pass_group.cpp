@@ -4,6 +4,7 @@
 #include <format>
 #include <vector>
 
+#include "Command/render_command_list.h"
 #include "Core/types.h"
 #include "Framework/Logging/logger.h"
 #include "Pipeline/pipeline_state_builder.h"
@@ -11,7 +12,6 @@
 #include "Pipeline/shader_manager.h"
 #include "Render/render_graph.h"
 #include "Rendering/hdr_config.h"
-
 
 namespace {
 
@@ -75,9 +75,13 @@ class BloomDownsamplePass : public IRenderPass {
   void Execute(const RenderFrameContext& frame, const FramePacket&) override {
     if (!pipeline_state_) return;
 
-    auto* cmd = frame.command_list;
-    cmd->SetPipelineState(pipeline_state_.Get());
-    cmd->SetGraphicsRootSignature(shader_manager_->GetRootSignature(Graphics::RSPreset::Standard));
+    RenderCommandList cmd(frame.command_list, frame.dynamic_allocator, frame.frame_cb, frame.object_cb_allocator);
+
+    frame.command_list->SetPipelineState(pipeline_state_.Get());
+    frame.command_list->SetGraphicsRootSignature(shader_manager_->GetRootSignature(Graphics::RSPreset::Standard));
+
+    cmd.BindGlobalSRVTable(frame.global_heap_manager);
+    cmd.BindSamplerTable(frame.global_heap_manager);
 
     auto [src_w, src_h] = frame.render_graph->GetTextureSize(source_handle_);
 
@@ -88,12 +92,11 @@ class BloomDownsamplePass : public IRenderPass {
       .threshold = config_ ? config_->threshold : 0.0f,
     };
 
-    auto cb_alloc = frame.object_cb_allocator->Allocate<BloomDownCB>();
-    memcpy(cb_alloc.cpu_ptr, &cb_data, sizeof(BloomDownCB));
-    cmd->SetGraphicsRootConstantBufferView(2, cb_alloc.gpu_ptr);
+    constexpr auto POST_PROCESS_CB = RootSlot::ConstantBuffer::Light;
+    cmd.SetConstantBufferOverride(POST_PROCESS_CB, cb_data);
 
-    cmd->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    cmd->DrawInstanced(3, 1, 0, 0);
+    frame.command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    frame.command_list->DrawInstanced(3, 1, 0, 0);
   }
 
  private:
@@ -145,9 +148,13 @@ class BloomUpsamplePass : public IRenderPass {
   void Execute(const RenderFrameContext& frame, const FramePacket&) override {
     if (!pipeline_state_) return;
 
-    auto* cmd = frame.command_list;
-    cmd->SetPipelineState(pipeline_state_.Get());
-    cmd->SetGraphicsRootSignature(shader_manager_->GetRootSignature(Graphics::RSPreset::Standard));
+    RenderCommandList cmd(frame.command_list, frame.dynamic_allocator, frame.frame_cb, frame.object_cb_allocator);
+
+    frame.command_list->SetPipelineState(pipeline_state_.Get());
+    frame.command_list->SetGraphicsRootSignature(shader_manager_->GetRootSignature(Graphics::RSPreset::Standard));
+
+    cmd.BindGlobalSRVTable(frame.global_heap_manager);
+    cmd.BindSamplerTable(frame.global_heap_manager);
 
     auto [src_w, src_h] = frame.render_graph->GetTextureSize(source_handle_);
 
@@ -157,12 +164,11 @@ class BloomUpsamplePass : public IRenderPass {
       .texel_size_y = 1.0f / static_cast<float>(src_h),
     };
 
-    auto cb_alloc = frame.object_cb_allocator->Allocate<BloomUpCB>();
-    memcpy(cb_alloc.cpu_ptr, &cb_data, sizeof(BloomUpCB));
-    cmd->SetGraphicsRootConstantBufferView(2, cb_alloc.gpu_ptr);
+    constexpr auto POST_PROCESS_CB = RootSlot::ConstantBuffer::Light;
+    cmd.SetConstantBufferOverride(POST_PROCESS_CB, cb_data);
 
-    cmd->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    cmd->DrawInstanced(3, 1, 0, 0);
+    frame.command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    frame.command_list->DrawInstanced(3, 1, 0, 0);
   }
 
  private:

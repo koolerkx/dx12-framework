@@ -54,9 +54,8 @@ void NormalViewPass::Execute(const RenderFrameContext& frame, const FramePacket&
     uint32_t padding[3] = {};
   } cb_data = {.src_srv_index = frame.render_graph->GetSrvIndex(source_handle_)};
 
-  auto cb_alloc = frame.object_cb_allocator->Allocate<NormalViewCB>();
-  memcpy(cb_alloc.cpu_ptr, &cb_data, sizeof(NormalViewCB));
-  frame.command_list->SetGraphicsRootConstantBufferView(2, cb_alloc.gpu_ptr);
+  constexpr auto POST_PROCESS_CB = RootSlot::ConstantBuffer::Light;
+  cmd.SetConstantBufferOverride(POST_PROCESS_CB, cb_data);
 
   frame.command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
   frame.command_list->DrawInstanced(3, 1, 0, 0);

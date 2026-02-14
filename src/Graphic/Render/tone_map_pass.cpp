@@ -1,5 +1,6 @@
 #include "tone_map_pass.h"
 
+#include "Command/render_command_list.h"
 #include "Framework/Logging/logger.h"
 #include "Pipeline/material_manager.h"
 #include "Pipeline/pipeline_state_builder.h"
@@ -48,10 +49,14 @@ bool ToneMapPass::CreatePipelineObjects() {
 void ToneMapPass::Execute(const RenderFrameContext& frame, const FramePacket& packet) {
   (void)packet;
 
-  frame.command_list->SetPipelineState(pipeline_state_.Get());
+  RenderCommandList cmd(frame.command_list, frame.dynamic_allocator, frame.frame_cb, frame.object_cb_allocator);
 
   auto* root_signature = shader_manager_->GetRootSignature(Graphics::RSPreset::Standard);
   frame.command_list->SetGraphicsRootSignature(root_signature);
+  frame.command_list->SetPipelineState(pipeline_state_.Get());
+
+  cmd.BindGlobalSRVTable(frame.global_heap_manager);
+  cmd.BindSamplerTable(frame.global_heap_manager);
 
   struct ToneMapCB {
     float exposure;
@@ -78,9 +83,8 @@ void ToneMapPass::Execute(const RenderFrameContext& frame, const FramePacket& pa
     .bloom_intensity = bloom_intensity,
   };
 
-  auto cb_alloc = frame.object_cb_allocator->Allocate<ToneMapCB>();
-  memcpy(cb_alloc.cpu_ptr, &cb_data, sizeof(ToneMapCB));
-  frame.command_list->SetGraphicsRootConstantBufferView(2, cb_alloc.gpu_ptr);
+  constexpr auto POST_PROCESS_CB = RootSlot::ConstantBuffer::Light;
+  cmd.SetConstantBufferOverride(POST_PROCESS_CB, cb_data);
 
   frame.command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
   frame.command_list->DrawInstanced(3, 1, 0, 0);

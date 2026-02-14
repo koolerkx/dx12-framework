@@ -62,9 +62,8 @@ void LinearDepthViewPass::Execute(const RenderFrameContext& frame, const FramePa
     .far_plane = config_->far_plane,
   };
 
-  auto cb_alloc = frame.object_cb_allocator->Allocate<LinearDepthViewCB>();
-  memcpy(cb_alloc.cpu_ptr, &cb_data, sizeof(LinearDepthViewCB));
-  frame.command_list->SetGraphicsRootConstantBufferView(2, cb_alloc.gpu_ptr);
+  constexpr auto POST_PROCESS_CB = RootSlot::ConstantBuffer::Light;
+  cmd.SetConstantBufferOverride(POST_PROCESS_CB, cb_data);
 
   frame.command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
   frame.command_list->DrawInstanced(3, 1, 0, 0);

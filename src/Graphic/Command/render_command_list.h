@@ -123,6 +123,14 @@ class RenderCommandList {
     cmd_->SetGraphicsRootConstantBufferView(RootSlot::ToIndex(RootSlot::ConstantBuffer::Material), allocation.gpu_ptr);
   }
 
+  template <typename T>
+  void SetConstantBufferOverride(RootSlot::ConstantBuffer slot, const T& data) {
+    auto allocation = object_allocator_->Allocate<T>();
+    if (!allocation.cpu_ptr) return;
+    memcpy(allocation.cpu_ptr, &data, sizeof(T));
+    cmd_->SetGraphicsRootConstantBufferView(RootSlot::ToIndex(slot), allocation.gpu_ptr);
+  }
+
   void SetPointLightSRV(D3D12_GPU_VIRTUAL_ADDRESS address) {
     cmd_->SetGraphicsRootShaderResourceView(RootSlot::ToIndex(RootSlot::ShaderResource::PointLights), address);
   }

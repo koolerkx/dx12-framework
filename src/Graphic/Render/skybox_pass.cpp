@@ -149,9 +149,8 @@ void SkyboxPass::Execute(const RenderFrameContext& frame, const FramePacket& pac
   static_assert(sizeof(SkyboxCB) == 16);
 
   SkyboxCB skybox_cb = {srv_index, {}};
-  auto skybox_alloc = frame.object_cb_allocator->Allocate<SkyboxCB>();
-  memcpy(skybox_alloc.cpu_ptr, &skybox_cb, sizeof(SkyboxCB));
-  frame.command_list->SetGraphicsRootConstantBufferView(RootSlot::ToIndex(RootSlot::ConstantBuffer::Light), skybox_alloc.gpu_ptr);
+  constexpr auto SKYBOX_CB = RootSlot::ConstantBuffer::Light;
+  cmd.SetConstantBufferOverride(SKYBOX_CB, skybox_cb);
 
   if (bg.mode == BackgroundMode::ClearColor) {
     ObjectCB object_cb = {};
