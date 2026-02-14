@@ -108,6 +108,18 @@ add_library(graphic STATIC
   Render/bloom_pass_group.h
   Render/bloom_pass_group.cpp
 
+  Render/pass_group.h
+  Render/pass_group.cpp
+  Render/pipeline_context.h
+  Render/shadow_pass_group.h
+  Render/shadow_pass_group.cpp
+  Render/prepass_group.h
+  Render/prepass_group.cpp
+  Render/post_process_group.h
+  Render/post_process_group.cpp
+  Render/preview_group.h
+  Render/preview_group.cpp
+
   Render/depth_normal_pass.h
   Render/depth_normal_pass.cpp
 

@@ -15,16 +15,15 @@
 #include "Framework/Math/Math.h"
 #include "Presentation/swapchain_manager.h"
 #include "Render/blit_pass.h"
-#include "Render/bloom_pass_group.h"
 #include "Render/debug_pass.h"
-#include "Render/depth_normal_pass.h"
 #include "Render/depth_view_pass.h"
-#include "Render/linear_depth_view_pass.h"
 #include "Render/material_pass.h"
-#include "Render/normal_view_pass.h"
-#include "Render/shadow_pass.h"
+#include "Render/pipeline_context.h"
+#include "Render/post_process_group.h"
+#include "Render/prepass_group.h"
+#include "Render/preview_group.h"
+#include "Render/shadow_pass_group.h"
 #include "Render/skybox_pass.h"
-#include "Render/tone_map_pass.h"
 
 using Math::Vector3;
 using Math::Vector4;
@@ -147,6 +146,20 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
 
 void Graphic::BuildRenderPipeline() {
   auto backbuffer = render_graph_->ImportBackbuffer("backbuffer");
+  PipelineContext ctx{device_.Get(), &render_services_->GetShaderManager(),
+                      frame_buffer_width_, frame_buffer_height_};
+
+  ShadowPassGroup shadow_group;
+  shadow_group.Build(*render_graph_, {
+    .context = ctx,
+    .cascade_count = active_cascade_count_,
+    .resolution = shadow_frame_data_.shadow_map_resolution,
+    .shadow_data = &shadow_frame_data_,
+    .shadow_depth_handles = shadow_depth_handles_,
+  });
+
+  PrepassGroup prepass;
+  prepass.Build(*render_graph_, {.context = ctx});
 
   auto scene_rt = render_graph_->CreateRenderTexture({
     .name = "scene_rt",
@@ -164,134 +177,10 @@ void Graphic::BuildRenderPipeline() {
     .device = device_.Get(),
   });
 
-  auto tonemap_rt = render_graph_->CreateRenderTexture({
-    .name = "tonemap_rt",
-    .format = DXGI_FORMAT_R8G8B8A8_UNORM,
-    .width = frame_buffer_width_,
-    .height = frame_buffer_height_,
-    .device = device_.Get(),
-  });
-
-  auto depth_preview_rt = render_graph_->CreateRenderTexture({
-    .name = "depth_preview_rt",
-    .format = DXGI_FORMAT_R8G8B8A8_UNORM,
-    .width = frame_buffer_width_,
-    .height = frame_buffer_height_,
-    .device = device_.Get(),
-  });
-
-  static constexpr const char* SHADOW_DEPTH_NAMES[] = {"shadow_depth_0", "shadow_depth_1", "shadow_depth_2", "shadow_depth_3"};
-
-  std::vector<RenderGraphHandle> shadow_reads;
-  for (uint32_t i = 0; i < active_cascade_count_; ++i) {
-    auto handle = render_graph_->CreateDepthBuffer({
-      .name = SHADOW_DEPTH_NAMES[i],
-      .width = shadow_frame_data_.shadow_map_resolution,
-      .height = shadow_frame_data_.shadow_map_resolution,
-      .device = device_.Get(),
-      .fixed_size = true,
-    });
-    shadow_depth_handles_[i] = handle;
-    shadow_reads.push_back(handle);
-
-    PassSetup shadow_setup;
-    shadow_setup.depth = handle;
-
-    render_graph_->AddPass(std::make_unique<ShadowPass>(ShadowPass::Props{
-      .device = device_.Get(),
-      .shader_manager = &render_services_->GetShaderManager(),
-      .pass_setup = shadow_setup,
-      .shadow_data = &shadow_frame_data_,
-      .cascade_index = i,
-    }));
-  }
-
-  auto normal_depth_rt = render_graph_->CreateRenderTexture({
-    .name = "normal_depth_rt",
-    .format = DXGI_FORMAT_R16G16B16A16_FLOAT,
-    .width = frame_buffer_width_,
-    .height = frame_buffer_height_,
-    .device = device_.Get(),
-  });
-
-  auto prepass_depth = render_graph_->CreateDepthBuffer({
-    .name = "prepass_depth",
-    .width = frame_buffer_width_,
-    .height = frame_buffer_height_,
-    .device = device_.Get(),
-  });
-
-  auto normal_preview_rt = render_graph_->CreateRenderTexture({
-    .name = "normal_preview_rt",
-    .format = DXGI_FORMAT_R8G8B8A8_UNORM,
-    .width = frame_buffer_width_,
-    .height = frame_buffer_height_,
-    .device = device_.Get(),
-  });
-
-  auto linear_depth_preview_rt = render_graph_->CreateRenderTexture({
-    .name = "linear_depth_preview_rt",
-    .format = DXGI_FORMAT_R8G8B8A8_UNORM,
-    .width = frame_buffer_width_,
-    .height = frame_buffer_height_,
-    .device = device_.Get(),
-  });
-
-  preview_handles_.scene_rt = scene_rt;
-  preview_handles_.depth_preview_rt = depth_preview_rt;
-  preview_handles_.tonemap_rt = tonemap_rt;
-  preview_handles_.normal_depth_rt = normal_depth_rt;
-  preview_handles_.normal_preview_rt = normal_preview_rt;
-  preview_handles_.linear_depth_preview_rt = linear_depth_preview_rt;
-  preview_handles_.shadow_map_count = active_cascade_count_;
-  for (uint32_t i = 0; i < active_cascade_count_; ++i) {
-    preview_handles_.shadow_maps[i] = shadow_depth_handles_[i];
-  }
-
-  PassSetup depth_normal_setup;
-  depth_normal_setup.resource_writes = {normal_depth_rt};
-  depth_normal_setup.depth = prepass_depth;
-
-  render_graph_->AddPass(std::make_unique<DepthNormalPass>(DepthNormalPass::Props{
-    .device = device_.Get(),
-    .shader_manager = &render_services_->GetShaderManager(),
-    .pass_setup = depth_normal_setup,
-  }));
-
-  PassSetup normal_view_setup;
-  normal_view_setup.resource_writes = {normal_preview_rt};
-  normal_view_setup.resource_reads = {normal_depth_rt};
-
-  render_graph_->AddPass(std::make_unique<NormalViewPass>(NormalViewPassProps{
-    .device = device_.Get(),
-    .shader_manager = &render_services_->GetShaderManager(),
-    .pass_setup = normal_view_setup,
-    .source_handle = normal_depth_rt,
-  }));
-
-  PassSetup linear_depth_view_setup;
-  linear_depth_view_setup.resource_writes = {linear_depth_preview_rt};
-  linear_depth_view_setup.resource_reads = {normal_depth_rt};
-
-  render_graph_->AddPass(std::make_unique<LinearDepthViewPass>(LinearDepthViewPassProps{
-    .device = device_.Get(),
-    .shader_manager = &render_services_->GetShaderManager(),
-    .pass_setup = linear_depth_view_setup,
-    .source_handle = normal_depth_rt,
-    .config = &depth_preview_config_,
-  }));
-
   PassSetup scene_setup;
   scene_setup.resource_writes = {scene_rt};
   scene_setup.depth = scene_depth;
-  scene_setup.resource_reads = shadow_reads;
-
-  PassSetup backbuffer_setup;
-  backbuffer_setup.resource_writes = {backbuffer};
-
-  PassSetup tonemap_setup;
-  tonemap_setup.resource_writes = {tonemap_rt};
-  tonemap_setup.resource_reads = {scene_rt};
+  scene_setup.resource_reads = shadow_group.GetShadowMaps();
 
   render_graph_->AddPass(std::make_unique<SkyboxPass>(device_.Get(), &render_services_->GetShaderManager(), scene_setup));
 
@@ -311,58 +200,33 @@ void Graphic::BuildRenderPipeline() {
 
   render_graph_->AddPass(std::make_unique<DebugPass>(debug_line_renderer_.get(), &render_services_->GetMaterialManager(), scene_setup));
 
-  RenderGraphHandle bloom_output = RenderGraphHandle::Invalid;
-  if (bloom_config_.enabled) {
-    BloomPassGroup bloom_group;
-    bloom_group.Build(*render_graph_,
-      scene_rt,
-      {
-        .device = device_.Get(),
-        .shader_manager = &render_services_->GetShaderManager(),
-        .config = &bloom_config_,
-        .screen_width = frame_buffer_width_,
-        .screen_height = frame_buffer_height_,
-      });
-    bloom_output = bloom_group.GetBloomOutput();
-  }
-
-  if (bloom_output != RenderGraphHandle::Invalid) {
-    tonemap_setup.resource_reads.push_back(bloom_output);
-  }
-
-  render_graph_->AddPass(std::make_unique<ToneMapPass>(ToneMapPassProps{
-    .device = device_.Get(),
+  PostProcessGroup postfx;
+  postfx.Build(*render_graph_, scene_rt, {
+    .context = ctx,
     .material_manager = &render_services_->GetMaterialManager(),
-    .shader_manager = &render_services_->GetShaderManager(),
-    .pass_setup = tonemap_setup,
-    .hdr_handle = scene_rt,
-    .debug = &hdr_debug_,
-    .bloom_handle = bloom_output,
     .bloom_config = &bloom_config_,
-  }));
-
-  PassSetup depth_preview_setup;
-  depth_preview_setup.resource_writes = {depth_preview_rt};
-  depth_preview_setup.resource_reads = {scene_depth};
-
-  render_graph_->AddPass(std::make_unique<DepthViewPass>(DepthViewPassProps{
-    .device = device_.Get(),
-    .shader_manager = &render_services_->GetShaderManager(),
-    .pass_setup = depth_preview_setup,
-    .depth_handle = scene_depth,
-    .config = &depth_preview_config_,
-  }));
+    .hdr_debug = &hdr_debug_,
+  });
 
   PassSetup blit_setup;
   blit_setup.resource_writes = {backbuffer};
-  blit_setup.resource_reads = {tonemap_rt};
+  blit_setup.resource_reads = {postfx.GetLdrOutput()};
 
   render_graph_->AddPass(std::make_unique<BlitPass>(BlitPassProps{
     .device = device_.Get(),
     .shader_manager = &render_services_->GetShaderManager(),
     .pass_setup = blit_setup,
-    .source_handle = tonemap_rt,
+    .source_handle = postfx.GetLdrOutput(),
   }));
+
+  PreviewGroup::Output preview_output;
+  if (preview_pipeline_active_) {
+    PreviewGroup preview;
+    preview.Build(*render_graph_,
+      {.normal_depth_rt = prepass.GetNormalDepthRT(), .scene_depth = scene_depth},
+      {.context = ctx, .depth_preview_config = &depth_preview_config_});
+    preview_output = preview.GetOutput();
+  }
 
   PassSetup depth_view_setup;
   depth_view_setup.resource_writes = {backbuffer};
@@ -376,6 +240,9 @@ void Graphic::BuildRenderPipeline() {
     .config = &depth_view_config_,
   }));
 
+  PassSetup backbuffer_setup;
+  backbuffer_setup.resource_writes = {backbuffer};
+
   auto ui_camera_from_packet = [](const RenderFrameContext&, const FramePacket& packet) { return packet.ui_camera; };
   render_graph_->AddPass(std::make_unique<MaterialPass>(MaterialPass::MaterialPassProps{
     .name = "UI Pass",
@@ -384,6 +251,17 @@ void Graphic::BuildRenderPipeline() {
     .pass_setup = backbuffer_setup,
     .camera = ui_camera_from_packet,
   }));
+
+  preview_handles_.scene_rt = scene_rt;
+  preview_handles_.tonemap_rt = postfx.GetLdrOutput();
+  preview_handles_.normal_depth_rt = prepass.GetNormalDepthRT();
+  preview_handles_.depth_preview_rt = preview_output.depth_preview_rt;
+  preview_handles_.normal_preview_rt = preview_output.normal_preview_rt;
+  preview_handles_.linear_depth_preview_rt = preview_output.linear_depth_preview_rt;
+  preview_handles_.shadow_map_count = active_cascade_count_;
+  for (uint32_t i = 0; i < active_cascade_count_; ++i) {
+    preview_handles_.shadow_maps[i] = shadow_depth_handles_[i];
+  }
 }
 
 bool Graphic::ResizeBuffers(UINT width, UINT height) {

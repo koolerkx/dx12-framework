@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstring>
 #include <queue>
 #include <ranges>
 #include <unordered_set>
@@ -131,15 +132,31 @@ void RenderGraph::BeginFrame() {
 void RenderGraph::Execute(const RenderFrameContext& frame, const FramePacket& packet) {
   if (!compiled_) Compile();
 
+  const char* current_group = nullptr;
+
   for (uint32_t idx : execution_order_) {
     auto& pass = passes_[idx];
     if (!pass) continue;
+
+    const char* group = pass->GetGroupName();
+    bool same_group = (group == current_group) || (group && current_group && std::strcmp(group, current_group) == 0);
+    if (!same_group) {
+      if (current_group) frame.command_list->EndEvent();
+      if (group) {
+        auto wide = utils::utf8_to_wstring(group);
+        auto bytes = static_cast<UINT>((wide.size() + 1) * sizeof(wchar_t));
+        frame.command_list->BeginEvent(0, wide.c_str(), bytes);
+      }
+      current_group = group;
+    }
 
     utils::CommandListEventGroup(frame.command_list, utils::utf8_to_wstring(pass->GetName()).c_str(), [&]() {
       ApplyPassSetup(frame.command_list, pass->GetPassSetup());
       pass->Execute(frame, packet);
     });
   }
+
+  if (current_group) frame.command_list->EndEvent();
 }
 
 void RenderGraph::ApplyPassSetup(ID3D12GraphicsCommandList* cmd, const PassSetup& setup) {

@@ -2,6 +2,7 @@
 
 #include <cstdint>
 
+#include "Render/pass_group.h"
 #include "Render/render_graph_handle.h"
 
 struct BloomConfig;
@@ -17,8 +18,10 @@ struct BloomBuildProps {
   uint32_t screen_height;
 };
 
-class BloomPassGroup {
+class BloomPassGroup : public PassGroup {
  public:
+  explicit BloomPassGroup(const char* group_name) : PassGroup(group_name) {}
+
   static constexpr uint32_t MAX_MIP_LEVELS = 8u;
 
   void Build(RenderGraph& graph, RenderGraphHandle scene_hdr, const BloomBuildProps& props);

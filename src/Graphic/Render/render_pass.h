@@ -23,6 +23,15 @@ class IRenderPass {
     return setup_;
   }
 
+  void SetGroupName(const char* name) {
+    group_name_ = name;
+  }
+
+  const char* GetGroupName() const {
+    return group_name_;
+  }
+
  protected:
   PassSetup setup_;
+  const char* group_name_ = nullptr;
 };

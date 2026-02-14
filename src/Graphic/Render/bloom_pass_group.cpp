@@ -241,8 +241,7 @@ void BloomPassGroup::Build(RenderGraph& graph, RenderGraphHandle scene_hdr, cons
     setup.resource_writes = {mip_handles[i]};
     setup.resource_reads = {source};
 
-    graph.AddPass(
-      std::make_unique<BloomDownsamplePass>(props.device, props.shader_manager, setup, source, threshold_config, DOWN_NAMES[i]));
+    AddPass(graph, std::make_unique<BloomDownsamplePass>(props.device, props.shader_manager, setup, source, threshold_config, DOWN_NAMES[i]));
   }
 
   for (uint32_t i = 0; i < mip_count - 1; ++i) {
@@ -253,7 +252,7 @@ void BloomPassGroup::Build(RenderGraph& graph, RenderGraphHandle scene_hdr, cons
     setup.resource_writes = {mip_handles[dst_mip]};
     setup.resource_reads = {mip_handles[src_mip]};
 
-    graph.AddPass(std::make_unique<BloomUpsamplePass>(props.device, props.shader_manager, setup, mip_handles[src_mip], UP_NAMES[i]));
+    AddPass(graph, std::make_unique<BloomUpsamplePass>(props.device, props.shader_manager, setup, mip_handles[src_mip], UP_NAMES[i]));
   }
 
   bloom_output_ = mip_handles[0];
