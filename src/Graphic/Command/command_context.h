@@ -34,7 +34,7 @@ class CommandContext {
 
   void Execute();
 
-  void ExecuteSync(ID3D12Fence* fence, std::function<void(ID3D12GraphicsCommandList*)> recorder);
+  void Submit(std::function<void(ID3D12GraphicsCommandList*)> recorder);
 
  private:
   CommandContext() = default;

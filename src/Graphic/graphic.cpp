@@ -522,5 +522,8 @@ void Graphic::AddDebugLine(const Vector3& start, const Vector3& end, const Vecto
 }
 
 void Graphic::ExecuteSync(std::function<void(ID3D12GraphicsCommandList*)> cb) {
-  command_context_->ExecuteSync(frame_synchronizer_->GetFence(), cb);
+  command_context_->Submit(std::move(cb));
+  auto& fence_manager = frame_synchronizer_->GetFenceManager();
+  UINT64 value = fence_manager.SignalFence(command_queue_.Get());
+  fence_manager.WaitForFenceValue(value);
 }

@@ -94,7 +94,7 @@ void CommandContext::Execute() {
   queue_->ExecuteCommandLists(1, lists);
 }
 
-void CommandContext::ExecuteSync(ID3D12Fence* fence, std::function<void(ID3D12GraphicsCommandList*)> recorder) {
+void CommandContext::Submit(std::function<void(ID3D12GraphicsCommandList*)> recorder) {
   utility_allocator_->Reset();
   command_list_->Reset(utility_allocator_.Get(), nullptr);
 
@@ -103,20 +103,6 @@ void CommandContext::ExecuteSync(ID3D12Fence* fence, std::function<void(ID3D12Gr
   command_list_->Close();
   ID3D12CommandList* lists[] = {command_list_.Get()};
   queue_->ExecuteCommandLists(1, lists);
-
-  if (fence) {
-    uint64_t current_value = fence->GetCompletedValue();
-    uint64_t signal_value = current_value + 1;
-
-    queue_->Signal(fence, signal_value);
-
-    HANDLE event = CreateEventW(nullptr, FALSE, FALSE, nullptr);
-    if (event) {
-      fence->SetEventOnCompletion(signal_value, event);
-      WaitForSingleObject(event, INFINITE);
-      CloseHandle(event);
-    }
-  }
 }
 
 }  // namespace gfx
