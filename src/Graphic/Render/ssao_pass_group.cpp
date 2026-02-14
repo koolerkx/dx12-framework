@@ -98,14 +98,17 @@ class SSAOPass : public IRenderPass {
   const SSAOConfig* config_;
 };
 
+enum class BlurDirection : uint8_t { Horizontal, Vertical };
+
 class SSAOBlurPass : public IRenderPass {
  public:
   SSAOBlurPass(ID3D12Device* device,
     ShaderManager* shader_manager,
     const PassSetup& pass_setup,
     RenderGraphHandle ao_handle,
-    RenderGraphHandle normal_depth_handle)
-      : shader_manager_(shader_manager), ao_handle_(ao_handle), normal_depth_handle_(normal_depth_handle) {
+    RenderGraphHandle normal_depth_handle,
+    BlurDirection direction)
+      : shader_manager_(shader_manager), ao_handle_(ao_handle), normal_depth_handle_(normal_depth_handle), direction_(direction) {
     setup_ = pass_setup;
 
     auto* vs = shader_manager->GetVertexShader<Graphics::PostProcessSSAOBlurShader>();
@@ -120,13 +123,13 @@ class SSAOBlurPass : public IRenderPass {
                           .SetVertexShader(vs)
                           .SetPixelShader(ps)
                           .SetRenderTargetFormat(DXGI_FORMAT_R8_UNORM)
-                          .SetName(L"SSAOBlur_PSO")
+                          .SetName(direction == BlurDirection::Horizontal ? L"SSAOBlurH_PSO" : L"SSAOBlurV_PSO")
                           .Build(device);
     }
   }
 
   const char* GetName() const override {
-    return "SSAO Blur Pass";
+    return direction_ == BlurDirection::Horizontal ? "SSAO Blur H Pass" : "SSAO Blur V Pass";
   }
 
   void Execute(const RenderFrameContext& frame, const FramePacket&) override {
@@ -141,12 +144,14 @@ class SSAOBlurPass : public IRenderPass {
     cmd.BindSamplerTable(frame.global_heap_manager);
 
     auto [w, h] = frame.render_graph->GetTextureSize(ao_handle_);
+    float inv_w = 1.0f / static_cast<float>(w);
+    float inv_h = 1.0f / static_cast<float>(h);
 
     SSAOBlurCB cb_data{
       .ao_srv_index = frame.render_graph->GetSrvIndex(ao_handle_),
       .normal_depth_srv_index = frame.render_graph->GetSrvIndex(normal_depth_handle_),
-      .texel_size_x = 1.0f / static_cast<float>(w),
-      .texel_size_y = 1.0f / static_cast<float>(h),
+      .texel_size_x = direction_ == BlurDirection::Horizontal ? inv_w : 0.0f,
+      .texel_size_y = direction_ == BlurDirection::Vertical ? inv_h : 0.0f,
     };
 
     constexpr auto POST_PROCESS_CB = RootSlot::ConstantBuffer::Light;
@@ -161,40 +166,67 @@ class SSAOBlurPass : public IRenderPass {
   ComPtr<ID3D12PipelineState> pipeline_state_;
   RenderGraphHandle ao_handle_;
   RenderGraphHandle normal_depth_handle_;
+  BlurDirection direction_;
 };
 
 }  // namespace
 
 void SSAOPassGroup::Build(RenderGraph& graph, RenderGraphHandle normal_depth_rt, const SSAOBuildProps& props) {
+  // SSAO focus on low frequency, half resolution help improve performance while not much quality is lost
+  uint32_t half_width = props.context.width / 2;
+  uint32_t half_height = props.context.height / 2;
+  constexpr float HALF_RES_SCALE = 0.5f;
+
   auto raw_ao = graph.CreateRenderTexture({
     .name = "ssao_raw_rt",
     .format = DXGI_FORMAT_R8_UNORM,
-    .width = props.context.width,
-    .height = props.context.height,
+    .width = half_width,
+    .height = half_height,
     .device = props.context.device,
     .clear_color = colors::White,
+    .scale_factor = HALF_RES_SCALE,
+  });
+
+  // separate horizontal and vertical blur to improve performance
+  auto blur_h_rt = graph.CreateRenderTexture({
+    .name = "ssao_blur_h_rt",
+    .format = DXGI_FORMAT_R8_UNORM,
+    .width = half_width,
+    .height = half_height,
+    .device = props.context.device,
+    .clear_color = colors::White,
+    .scale_factor = HALF_RES_SCALE,
   });
 
   blurred_ao_ = graph.CreateRenderTexture({
     .name = "ssao_blurred_rt",
     .format = DXGI_FORMAT_R8_UNORM,
-    .width = props.context.width,
-    .height = props.context.height,
+    .width = half_width,
+    .height = half_height,
     .device = props.context.device,
     .clear_color = colors::White,
+    .scale_factor = HALF_RES_SCALE,
   });
 
   PassSetup ssao_setup;
   ssao_setup.resource_writes = {raw_ao};
   ssao_setup.resource_reads = {normal_depth_rt};
 
-  AddPass(graph, std::make_unique<SSAOPass>(
-    props.context.device, props.context.shader_manager, ssao_setup, normal_depth_rt, props.config));
+  AddPass(graph, std::make_unique<SSAOPass>(props.context.device, props.context.shader_manager, ssao_setup, normal_depth_rt, props.config));
 
-  PassSetup blur_setup;
-  blur_setup.resource_writes = {blurred_ao_};
-  blur_setup.resource_reads = {raw_ao, normal_depth_rt};
+  PassSetup blur_h_setup;
+  blur_h_setup.resource_writes = {blur_h_rt};
+  blur_h_setup.resource_reads = {raw_ao, normal_depth_rt};
 
-  AddPass(graph, std::make_unique<SSAOBlurPass>(
-    props.context.device, props.context.shader_manager, blur_setup, raw_ao, normal_depth_rt));
+  AddPass(graph,
+    std::make_unique<SSAOBlurPass>(
+      props.context.device, props.context.shader_manager, blur_h_setup, raw_ao, normal_depth_rt, BlurDirection::Horizontal));
+
+  PassSetup blur_v_setup;
+  blur_v_setup.resource_writes = {blurred_ao_};
+  blur_v_setup.resource_reads = {blur_h_rt, normal_depth_rt};
+
+  AddPass(graph,
+    std::make_unique<SSAOBlurPass>(
+      props.context.device, props.context.shader_manager, blur_v_setup, blur_h_rt, normal_depth_rt, BlurDirection::Vertical));
 }
