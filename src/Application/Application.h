@@ -54,6 +54,9 @@ class Application {
     resize_callback_ = callback;
   }
 
+  using FullscreenCallback = std::function<void(bool is_fullscreen)>;
+  void SetFullscreenCallback(FullscreenCallback callback) { fullscreen_callback_ = std::move(callback); }
+
   using WndProcHook = std::function<bool(HWND, UINT, WPARAM, LPARAM)>;
   void SetWndProcHook(WndProcHook hook) { wndproc_hook_ = std::move(hook); }
 
@@ -75,8 +78,9 @@ class Application {
   DWORD window_style_cache_ = 0;
   RECT window_rect_cache_ = {};
 
-  // Resize callback
+  // Callbacks
   ResizeCallback resize_callback_;
+  FullscreenCallback fullscreen_callback_;
 
   WndProcHook wndproc_hook_;
 

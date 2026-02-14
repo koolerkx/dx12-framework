@@ -147,6 +147,7 @@ bool Application::SetBorderlessFullscreen(bool enable) {
     }
 
     is_borderless_fullscreen_ = true;
+    if (fullscreen_callback_) fullscreen_callback_(true);
 
   } else {
     // Restore window style
@@ -175,6 +176,7 @@ bool Application::SetBorderlessFullscreen(bool enable) {
     }
 
     is_borderless_fullscreen_ = false;
+    if (fullscreen_callback_) fullscreen_callback_(false);
   }
 
   return true;
