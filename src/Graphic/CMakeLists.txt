@@ -135,8 +135,12 @@ add_library(graphic STATIC
   Render/smaa_pass_group.h
   Render/smaa_pass_group.cpp
 
+  Render/outline_pass.h
+  Render/outline_pass.cpp
+
   Rendering/ssao_config.h
   Rendering/smaa_config.h
+  Rendering/outline_config.h
 )
 
 target_link_libraries(graphic PUBLIC framework)
@@ -176,6 +180,7 @@ target_add_hlsl_auto(graphic "6.6"
   "${CMAKE_SOURCE_DIR}/shaders/smaa_edge.ps.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/smaa_blend_weight.ps.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/smaa_neighborhood.ps.hlsl"
+  "${CMAKE_SOURCE_DIR}/shaders/outline.ps.hlsl"
 )
 
 # manually add shaders files

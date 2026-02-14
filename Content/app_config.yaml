@@ -18,6 +18,15 @@ SSAO:
 SMAA:
   Enabled: true
 
+Outline:
+  Enabled: true
+  DepthWeight: 1.0
+  NormalWeight: 1.0
+  EdgeThreshold: 0.1
+  DepthFalloff: 0.01
+  Thickness: 1.0
+  Color: [0.0, 0.0, 0.0]
+
 SceneDefaults:
   Light:
     Azimuth: 45.0

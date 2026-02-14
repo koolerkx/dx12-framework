@@ -39,6 +39,16 @@ void LoadSMAAConfig(const framework::SerializeNode& node, SMAAConfig& smaa) {
   smaa.enabled = node.ReadBool("Enabled", smaa.enabled);
 }
 
+void LoadOutlineConfig(const framework::SerializeNode& node, OutlineConfig& outline) {
+  outline.enabled = node.ReadBool("Enabled", outline.enabled);
+  outline.depth_weight = node.ReadFloat("DepthWeight", outline.depth_weight);
+  outline.normal_weight = node.ReadFloat("NormalWeight", outline.normal_weight);
+  outline.edge_threshold = node.ReadFloat("EdgeThreshold", outline.edge_threshold);
+  outline.depth_falloff = node.ReadFloat("DepthFalloff", outline.depth_falloff);
+  outline.thickness = node.ReadFloat("Thickness", outline.thickness);
+  node.ReadVec3("Color", outline.outline_color[0], outline.outline_color[1], outline.outline_color[2]);
+}
+
 void LoadSceneDefaults(const framework::SerializeNode& root, SceneDefaults& defaults) {
   if (root.HasKey("Light")) {
     auto light = root.GetMap("Light");
@@ -90,6 +100,7 @@ AppConfig ConfigLoader::LoadFromFile(const std::filesystem::path& path) {
   if (root.HasKey("Bloom")) LoadBloomConfig(root.GetMap("Bloom"), config.bloom);
   if (root.HasKey("SSAO")) LoadSSAOConfig(root.GetMap("SSAO"), config.ssao);
   if (root.HasKey("SMAA")) LoadSMAAConfig(root.GetMap("SMAA"), config.smaa);
+  if (root.HasKey("Outline")) LoadOutlineConfig(root.GetMap("Outline"), config.outline);
 
   if (root.HasKey("SceneDefaults")) {
     LoadSceneDefaults(root.GetMap("SceneDefaults"), config.scene_defaults);

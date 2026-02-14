@@ -3,6 +3,7 @@
 
 #include "Game/scene_defaults.h"
 #include "Graphic/Rendering/hdr_config.h"
+#include "Graphic/Rendering/outline_config.h"
 #include "Graphic/Rendering/smaa_config.h"
 #include "Graphic/Rendering/ssao_config.h"
 
@@ -13,5 +14,6 @@ struct AppConfig {
   BloomConfig bloom;
   SSAOConfig ssao;
   SMAAConfig smaa;
+  OutlineConfig outline;
   SceneDefaults scene_defaults;
 };

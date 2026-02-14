@@ -341,6 +341,21 @@ struct PostProcessSMAANeighborhoodShader {
   }
 };
 
+struct PostProcessOutlineShader {
+  static constexpr ShaderId ID = 22;
+  using VertexType = Vertex::Empty;
+
+  static constexpr RSPreset RS_PRESET = RSPreset::Standard;
+  static constexpr std::string_view NAME = "Outline";
+  static constexpr std::wstring_view VS_PATH = L"Content/shaders/fullscreen.vs.cso";
+  static constexpr std::wstring_view PS_PATH = L"Content/shaders/outline.ps.cso";
+  static constexpr ShaderRenderHints HINTS = {};
+
+  static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
+    return VertexType::GetInputLayout();
+  }
+};
+
 // Shader Registration
 using AllShaders = std::tuple<SpriteShader,
   SpriteInstancedShader,
@@ -361,7 +376,8 @@ using AllShaders = std::tuple<SpriteShader,
   PostProcessSSAOBlurShader,
   PostProcessSMAAEdgeShader,
   PostProcessSMAABlendWeightShader,
-  PostProcessSMAANeighborhoodShader>;
+  PostProcessSMAANeighborhoodShader,
+  PostProcessOutlineShader>;
 
 [[maybe_unused]] constexpr size_t SHADER_COUNT = std::tuple_size_v<AllShaders>;
 

@@ -24,6 +24,7 @@
 #include "Render/preview_group.h"
 #include "Render/shadow_pass_group.h"
 #include "Render/skybox_pass.h"
+#include "Render/outline_pass.h"
 #include "Render/smaa_pass_group.h"
 #include "Render/ssao_pass_group.h"
 
@@ -41,6 +42,7 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
   bloom_config_ = props.bloom;
   ssao_config_ = props.ssao;
   smaa_config_ = props.smaa;
+  outline_config_ = props.outline;
 
   std::wstring init_error_caption = L"Graphic Initialization Error";
 
@@ -226,11 +228,23 @@ void Graphic::BuildRenderPipeline() {
     .hdr_debug = &hdr_debug_,
   });
 
-  RenderGraphHandle blit_source = postfx.GetLdrOutput();
+  RenderGraphHandle ldr_output = postfx.GetLdrOutput();
+
+  if (outline_config_.enabled) {
+    OutlinePassGroup outline_group;
+    outline_group.Build(*render_graph_, ldr_output,
+                        prepass.GetNormalDepthRT(), {
+      .context = ctx,
+      .config = &outline_config_,
+    });
+    ldr_output = outline_group.GetOutput();
+  }
+
+  RenderGraphHandle blit_source = ldr_output;
 
   if (smaa_config_.enabled) {
     SMAAPassGroup smaa_group;
-    smaa_group.Build(*render_graph_, postfx.GetLdrOutput(), {
+    smaa_group.Build(*render_graph_, ldr_output, {
       .context = ctx,
       .texture_manager = &render_services_->GetTextureManager(),
       .config = &smaa_config_,

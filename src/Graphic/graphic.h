@@ -26,6 +26,7 @@
 #include "Render/render_graph.h"
 #include "Render/render_graph_handle.h"
 #include "Rendering/hdr_config.h"
+#include "Rendering/outline_config.h"
 #include "Rendering/smaa_config.h"
 #include "Rendering/ssao_config.h"
 #include "Resource/Buffer/structured_buffer.h"
@@ -41,6 +42,7 @@ class Graphic {
     BloomConfig bloom;
     SSAOConfig ssao;
     SMAAConfig smaa;
+    OutlineConfig outline;
   };
 
   Graphic() = default;
@@ -174,6 +176,9 @@ class Graphic {
   SMAAConfig& GetSMAAConfig() {
     return smaa_config_;
   }
+  OutlineConfig& GetOutlineConfig() {
+    return outline_config_;
+  }
 
   void SetWireframeMode(bool enabled) {
     if (render_services_) render_services_->GetMaterialManager().SetWireframeOverride(enabled);
@@ -204,6 +209,7 @@ class Graphic {
   BloomConfig bloom_config_;
   SSAOConfig ssao_config_;
   SMAAConfig smaa_config_;
+  OutlineConfig outline_config_;
   RenderGraphHandle ssao_handle_ = RenderGraphHandle::Invalid;
   bool pending_pipeline_rebuild_ = false;
 

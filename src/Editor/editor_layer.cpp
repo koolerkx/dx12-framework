@@ -1093,6 +1093,22 @@ void EditorLayer::DrawPostFxPanel() {
     }
   }
 
+  auto& outline = graphic_->GetOutlineConfig();
+
+  if (ImGui::CollapsingHeader("Outline", ImGuiTreeNodeFlags_DefaultOpen)) {
+    bool prev_enabled = outline.enabled;
+    ImGui::Checkbox("Enabled##outline", &outline.enabled);
+    ImGui::SliderFloat("Depth Weight##outline", &outline.depth_weight, 0.0f, 5.0f, "%.2f");
+    ImGui::SliderFloat("Normal Weight##outline", &outline.normal_weight, 0.0f, 5.0f, "%.2f");
+    ImGui::SliderFloat("Edge Threshold##outline", &outline.edge_threshold, 0.0f, 1.0f, "%.3f");
+    ImGui::SliderFloat("Depth Falloff##outline", &outline.depth_falloff, 0.0f, 1.0f, "%.3f");
+    ImGui::SliderFloat("Thickness##outline", &outline.thickness, 0.5f, 5.0f, "%.1f");
+    ImGui::ColorEdit3("Color##outline", outline.outline_color);
+    if (outline.enabled != prev_enabled) {
+      graphic_->RebuildRenderPipeline();
+    }
+  }
+
   ImGui::End();
 }
 
