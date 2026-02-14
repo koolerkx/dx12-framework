@@ -28,6 +28,8 @@ struct DrawCommand {
 
   RenderLayer layer = RenderLayer::Opaque;
   RenderTagMask tags = 0;
+  bool depth_test = true;
+  bool depth_write = true;
 
   [[nodiscard]] bool IsInstanced() const {
     return !instances.empty();

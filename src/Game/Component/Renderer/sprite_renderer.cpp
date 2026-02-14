@@ -115,5 +115,7 @@ void SpriteRenderer::OnRender(FramePacket& packet) {
 
   cmd.layer = render_layer_;
   cmd.tags = render_tags_;
+  cmd.depth_test = render_settings_.depth_test;
+  cmd.depth_write = render_settings_.depth_write;
   packet.AddCommand(std::move(cmd));
 }

@@ -78,6 +78,8 @@ void ParticleEmitter::OnRender(FramePacket& packet) {
 
   cmd.depth = Vector3::DistanceSquared(GetOwner()->GetTransform()->GetWorldPosition(), packet.main_camera.position);
   cmd.layer = RenderLayer::Transparent;
+  cmd.depth_test = render_settings_.depth_test;
+  cmd.depth_write = render_settings_.depth_write;
   packet.AddCommand(std::move(cmd));
 }
 
