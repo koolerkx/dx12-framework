@@ -132,7 +132,11 @@ add_library(graphic STATIC
   Render/ssao_pass_group.h
   Render/ssao_pass_group.cpp
 
+  Render/smaa_pass_group.h
+  Render/smaa_pass_group.cpp
+
   Rendering/ssao_config.h
+  Rendering/smaa_config.h
 )
 
 target_link_libraries(graphic PUBLIC framework)
@@ -169,6 +173,9 @@ target_add_hlsl_auto(graphic "6.6"
   "${CMAKE_SOURCE_DIR}/shaders/linear_depth_view.ps.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/ssao.ps.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/ssao_blur.ps.hlsl"
+  "${CMAKE_SOURCE_DIR}/shaders/smaa_edge.ps.hlsl"
+  "${CMAKE_SOURCE_DIR}/shaders/smaa_blend_weight.ps.hlsl"
+  "${CMAKE_SOURCE_DIR}/shaders/smaa_neighborhood.ps.hlsl"
 )
 
 # manually add shaders files

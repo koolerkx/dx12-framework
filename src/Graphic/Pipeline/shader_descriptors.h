@@ -296,6 +296,51 @@ struct PostProcessSSAOBlurShader {
   }
 };
 
+struct PostProcessSMAAEdgeShader {
+  static constexpr ShaderId ID = 19;
+  using VertexType = Vertex::Empty;
+
+  static constexpr RSPreset RS_PRESET = RSPreset::Standard;
+  static constexpr std::string_view NAME = "SMAAEdge";
+  static constexpr std::wstring_view VS_PATH = L"Content/shaders/fullscreen.vs.cso";
+  static constexpr std::wstring_view PS_PATH = L"Content/shaders/smaa_edge.ps.cso";
+  static constexpr ShaderRenderHints HINTS = {};
+
+  static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
+    return VertexType::GetInputLayout();
+  }
+};
+
+struct PostProcessSMAABlendWeightShader {
+  static constexpr ShaderId ID = 20;
+  using VertexType = Vertex::Empty;
+
+  static constexpr RSPreset RS_PRESET = RSPreset::Standard;
+  static constexpr std::string_view NAME = "SMAABlendWeight";
+  static constexpr std::wstring_view VS_PATH = L"Content/shaders/fullscreen.vs.cso";
+  static constexpr std::wstring_view PS_PATH = L"Content/shaders/smaa_blend_weight.ps.cso";
+  static constexpr ShaderRenderHints HINTS = {};
+
+  static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
+    return VertexType::GetInputLayout();
+  }
+};
+
+struct PostProcessSMAANeighborhoodShader {
+  static constexpr ShaderId ID = 21;
+  using VertexType = Vertex::Empty;
+
+  static constexpr RSPreset RS_PRESET = RSPreset::Standard;
+  static constexpr std::string_view NAME = "SMAANeighborhood";
+  static constexpr std::wstring_view VS_PATH = L"Content/shaders/fullscreen.vs.cso";
+  static constexpr std::wstring_view PS_PATH = L"Content/shaders/smaa_neighborhood.ps.cso";
+  static constexpr ShaderRenderHints HINTS = {};
+
+  static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
+    return VertexType::GetInputLayout();
+  }
+};
+
 // Shader Registration
 using AllShaders = std::tuple<SpriteShader,
   SpriteInstancedShader,
@@ -313,7 +358,10 @@ using AllShaders = std::tuple<SpriteShader,
   PostProcessNormalViewShader,
   PostProcessLinearDepthViewShader,
   PostProcessSSAOShader,
-  PostProcessSSAOBlurShader>;
+  PostProcessSSAOBlurShader,
+  PostProcessSMAAEdgeShader,
+  PostProcessSMAABlendWeightShader,
+  PostProcessSMAANeighborhoodShader>;
 
 [[maybe_unused]] constexpr size_t SHADER_COUNT = std::tuple_size_v<AllShaders>;
 

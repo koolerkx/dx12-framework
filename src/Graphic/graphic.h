@@ -26,6 +26,7 @@
 #include "Render/render_graph.h"
 #include "Render/render_graph_handle.h"
 #include "Rendering/hdr_config.h"
+#include "Rendering/smaa_config.h"
 #include "Rendering/ssao_config.h"
 #include "Resource/Buffer/structured_buffer.h"
 #include "Resource/Font/sprite_font_manager.h"
@@ -167,6 +168,9 @@ class Graphic {
   SSAOConfig& GetSSAOConfig() {
     return ssao_config_;
   }
+  SMAAConfig& GetSMAAConfig() {
+    return smaa_config_;
+  }
 
   void SetWireframeMode(bool enabled) {
     if (render_services_) render_services_->GetMaterialManager().SetWireframeOverride(enabled);
@@ -196,6 +200,7 @@ class Graphic {
   DepthViewConfig depth_preview_config_ = {.enabled = true, .near_plane = 0.1f, .far_plane = 1000.0f};
   BloomConfig bloom_config_;
   SSAOConfig ssao_config_;
+  SMAAConfig smaa_config_;
   RenderGraphHandle ssao_handle_ = RenderGraphHandle::Invalid;
   bool pending_pipeline_rebuild_ = false;
 

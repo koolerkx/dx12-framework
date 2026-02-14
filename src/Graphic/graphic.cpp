@@ -24,6 +24,7 @@
 #include "Render/preview_group.h"
 #include "Render/shadow_pass_group.h"
 #include "Render/skybox_pass.h"
+#include "Render/smaa_pass_group.h"
 #include "Render/ssao_pass_group.h"
 
 using Math::Vector3;
@@ -222,15 +223,27 @@ void Graphic::BuildRenderPipeline() {
     .hdr_debug = &hdr_debug_,
   });
 
+  RenderGraphHandle blit_source = postfx.GetLdrOutput();
+
+  if (smaa_config_.enabled) {
+    SMAAPassGroup smaa_group;
+    smaa_group.Build(*render_graph_, postfx.GetLdrOutput(), {
+      .context = ctx,
+      .texture_manager = &render_services_->GetTextureManager(),
+      .config = &smaa_config_,
+    });
+    blit_source = smaa_group.GetOutput();
+  }
+
   PassSetup blit_setup;
   blit_setup.resource_writes = {backbuffer};
-  blit_setup.resource_reads = {postfx.GetLdrOutput()};
+  blit_setup.resource_reads = {blit_source};
 
   render_graph_->AddPass(std::make_unique<BlitPass>(BlitPassProps{
     .device = device_.Get(),
     .shader_manager = &render_services_->GetShaderManager(),
     .pass_setup = blit_setup,
-    .source_handle = postfx.GetLdrOutput(),
+    .source_handle = blit_source,
   }));
 
   PreviewGroup::Output preview_output;
