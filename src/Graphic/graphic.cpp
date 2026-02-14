@@ -38,6 +38,9 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
   frame_buffer_width_ = frame_buffer_width;
   frame_buffer_height_ = frame_buffer_height;
   enable_vsync_ = props.enable_vsync;
+  bloom_config_ = props.bloom;
+  ssao_config_ = props.ssao;
+  smaa_config_ = props.smaa;
 
   std::wstring init_error_caption = L"Graphic Initialization Error";
 

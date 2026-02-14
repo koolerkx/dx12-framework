@@ -11,6 +11,7 @@ add_library(game STATIC
 
     scene.h
     scene.cpp
+    scene_defaults.h
 
     Asset/asset_handle.h
     Asset/asset_manager.h

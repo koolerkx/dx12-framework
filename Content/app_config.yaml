@@ -1,0 +1,41 @@
+WindowWidth: 1920
+WindowHeight: 1080
+VSync: false
+
+Bloom:
+  Enabled: true
+  MipLevels: 5
+  Threshold: 1.0
+  Intensity: 0.5
+
+SSAO:
+  Enabled: true
+  Radius: 0.5 # Larger = wider/softer occlusion spread
+  Bias: 0.025 # Larger = reduces false darkening on flat surfaces
+  Intensity: 1.0 # Larger = darker occlusion shadows
+  SampleCount: 16 # 8-32, higher = less noise but slower
+
+SMAA:
+  Enabled: true
+
+SceneDefaults:
+  Light:
+    Azimuth: 45.0
+    Elevation: 45.0
+    Intensity: 0.8
+    Color: [1.0, 1.0, 1.0]
+    AmbientIntensity: 0.2
+    AmbientColor: [1.0, 1.0, 1.0]
+  Shadow:
+    Enabled: true
+    Resolution: 2048
+    CascadeCount: 3 # 1-4
+    Algorithm: PCSS # Hard | PCF3x3 | PoissonDisk | RotatedPoissonDisk | PCSS
+    ShadowDistance: 100.0
+    LightDistance: 100.0
+    CascadeBlendRange: 0.1
+    ShadowColor: [0.0, 0.0, 0.0]
+    LightSize: 5.0 # PCSS softness factor
+  Background:
+    Mode: ClearColor # ClearColor | Skybox
+    ClearColor: [0.184, 0.310, 0.310, 1.0]

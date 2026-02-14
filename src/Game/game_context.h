@@ -5,6 +5,7 @@
 #include "Framework/Input/input.h"
 #include "Graphic/graphic.h"
 #include "play_state.h"
+#include "scene_defaults.h"
 
 class SceneManager;
 
@@ -61,6 +62,13 @@ class GameContext {
     play_state_ = play_state;
   }
 
+  const SceneDefaults& GetSceneDefaults() const {
+    return scene_defaults_;
+  }
+  void SetSceneDefaults(const SceneDefaults& defaults) {
+    scene_defaults_ = defaults;
+  }
+
  private:
   InputSystem* input_ = nullptr;
   Graphic* graphic_ = nullptr;
@@ -69,4 +77,5 @@ class GameContext {
   DebugDrawer* debug_drawer_ = nullptr;
   SceneManager* scene_manager_ = nullptr;
   PlayState* play_state_ = nullptr;
+  SceneDefaults scene_defaults_;
 };

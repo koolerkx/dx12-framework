@@ -5,6 +5,7 @@
 #include "Asset/asset_manager.h"
 #include "Graphic/Frame/frame_packet.h"
 #include "play_state.h"
+#include "scene_defaults.h"
 #include "scene_manager.h"
 
 class GameContext;
@@ -17,6 +18,7 @@ class Game {
   struct Props {
     GameContext* context = nullptr;
     bool auto_play = false;
+    SceneDefaults scene_defaults;
   };
 
   void Initialize(const Props& props);

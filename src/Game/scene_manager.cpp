@@ -27,6 +27,7 @@ void SceneManager::ProcessPending(AssetManager& asset_manager, GameContext* cont
   }
 
   new_scene->SetContext(context);
+  new_scene->ApplyDefaults(context->GetSceneDefaults());
   new_scene->Enter(asset_manager);
   current_scene_ = std::move(new_scene);
 

@@ -2,6 +2,9 @@ set(APP_SOURCES
     main.cpp
     Application/Application.h
     Application/Application.cpp
+    Application/app_config.h
+    Application/config_loader.h
+    Application/config_loader.cpp
     Application/timer_updater.h
     Application/timer_updater.cpp
 )

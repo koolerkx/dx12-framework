@@ -13,6 +13,7 @@
 #include "SceneSetting/shadow_setting.h"
 #include "game_context.h"
 #include "game_object.h"
+#include "scene_defaults.h"
 
 class AssetManager;
 class DebugDrawer;
@@ -49,7 +50,8 @@ class IScene {
   virtual void OnDebugDraw(DebugDrawer& /*drawer*/) {
   }
 
-  // System Update Functions, this update game objects and components
+  void ApplyDefaults(const SceneDefaults& defaults);
+
   void Enter(AssetManager& asset_manager);
   void Exit();
   void Update(float dt);

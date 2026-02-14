@@ -38,6 +38,9 @@ class Graphic {
  public:
   struct GraphicInitProps {
     bool enable_vsync = true;
+    BloomConfig bloom;
+    SSAOConfig ssao;
+    SMAAConfig smaa;
   };
 
   Graphic() = default;

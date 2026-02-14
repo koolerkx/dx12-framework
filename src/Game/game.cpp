@@ -31,6 +31,7 @@ void Game::Initialize(const Props& props) {
 
   context_->SetSceneManager(&scene_manager_);
   context_->SetPlayStateSource(&play_state_);
+  context_->SetSceneDefaults(props.scene_defaults);
 
   if (props.auto_play) {
     play_state_ = PlayState::Playing;

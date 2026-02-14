@@ -51,6 +51,29 @@ void IScene::FlushPendingStarts() {
   }
 }
 
+void IScene::ApplyDefaults(const SceneDefaults& defaults) {
+  light_setting_.SetAzimuth(defaults.light_azimuth);
+  light_setting_.SetElevation(defaults.light_elevation);
+  light_setting_.SetIntensity(defaults.light_intensity);
+  light_setting_.SetDirectionalColor({defaults.light_color[0], defaults.light_color[1], defaults.light_color[2]});
+  light_setting_.SetAmbientIntensity(defaults.ambient_intensity);
+  light_setting_.SetAmbientColor({defaults.ambient_color[0], defaults.ambient_color[1], defaults.ambient_color[2]});
+
+  shadow_setting_.SetEnabled(defaults.shadow_enabled);
+  shadow_setting_.SetResolution(defaults.shadow_resolution);
+  shadow_setting_.SetCascadeCount(defaults.shadow_cascade_count);
+  shadow_setting_.SetAlgorithm(defaults.shadow_algorithm);
+  shadow_setting_.SetShadowDistance(defaults.shadow_distance);
+  shadow_setting_.SetLightDistance(defaults.light_distance);
+  shadow_setting_.SetCascadeBlendRange(defaults.cascade_blend_range);
+  shadow_setting_.SetShadowColor({defaults.shadow_color[0], defaults.shadow_color[1], defaults.shadow_color[2]});
+  shadow_setting_.SetLightSize(defaults.light_size);
+
+  background_setting_.SetMode(defaults.background_mode);
+  background_setting_.SetClearColorValue(
+    {defaults.clear_color[0], defaults.clear_color[1], defaults.clear_color[2], defaults.clear_color[3]});
+}
+
 void IScene::Enter(AssetManager& asset_manager) {
   OnEnter(asset_manager);
   StartAllObjects();

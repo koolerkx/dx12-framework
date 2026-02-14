@@ -17,15 +17,13 @@
 #include "Framework/Input/input.h"
 #include "Framework/Logging/logger.h"
 #include "Framework/Logging/sinks.h"
+#include "Application/config_loader.h"
 #include "Game/game.h"
 #include "Game/game_context.h"
 #include "Graphic/graphic.h"
 
 template <typename T>
 using ComPtr = Microsoft::WRL::ComPtr<T>;
-
-constexpr int window_width = 1920;
-constexpr int window_height = 1080;
 
 void InitializeLogger();
 
@@ -40,11 +38,18 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
   InitializeLogger();
   Logger::LogFormat(LogLevel::Info, LogCategory::Core, Logger::Here(), "Application starting...");
 
-  Application app(hInstance, window_width, window_height);
+  AppConfig config = ConfigLoader::LoadFromFile("Content/app_config.yaml");
+
+  Application app(hInstance, config.window_width, config.window_height);
   Graphic graphic;
 
-  Graphic::GraphicInitProps graphic_props{.enable_vsync = false};
-  if (!graphic.Initialize(app.GetHwnd(), window_width, window_height, graphic_props)) {
+  Graphic::GraphicInitProps graphic_props{
+      .enable_vsync = config.vsync,
+      .bloom = config.bloom,
+      .ssao = config.ssao,
+      .smaa = config.smaa,
+  };
+  if (!graphic.Initialize(app.GetHwnd(), config.window_width, config.window_height, graphic_props)) {
     throw std::runtime_error("Failed to initialize graphics system");
   }
 
@@ -79,6 +84,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
 #ifndef ENABLE_EDITOR
     .auto_play = true,
 #endif
+    .scene_defaults = config.scene_defaults,
   });
 
 #ifdef ENABLE_EDITOR
