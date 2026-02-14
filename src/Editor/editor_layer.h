@@ -104,6 +104,7 @@ class EditorLayer {
   bool show_render_pipeline_ = true;
   bool show_shadow_map_ = false;
   bool show_editor_settings_ = false;
+  bool imgui_visible_ = true;
 
   float ui_scale_ = 1.0f;
   UINT last_scaled_width_ = 0;

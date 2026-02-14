@@ -10,6 +10,9 @@
 #include <filesystem>
 
 #include "Framework/Core/utils.h"
+#include "Framework/Event/event_bus.hpp"
+#include "Framework/Event/input_events.h"
+#include "Framework/Input/keyboard.h"
 #include "Game/Asset/asset_manager.h"
 #include "Game/Component/Renderer/mesh_renderer.h"
 #include "Game/Component/Renderer/sprite_renderer.h"
@@ -124,24 +127,26 @@ void EditorLayer::BeginFrame() {
 }
 
 void EditorLayer::Render(ID3D12GraphicsCommandList* cmd) {
-  bool prev_pipeline = show_render_pipeline_;
-  bool prev_shadow = show_shadow_map_;
+  if (imgui_visible_) {
+    bool prev_pipeline = show_render_pipeline_;
+    bool prev_shadow = show_shadow_map_;
 
-  DrawDockSpace();
-  DrawMainMenu();
-  if (show_performance_) DrawFpsCounter();
-  if (show_hierarchy_) DrawHierarchy();
-  if (show_inspector_) DrawInspector();
-  if (show_scene_settings_) DrawSceneSettings();
-  if (show_debug_) DrawDebugPanel();
-  if (show_editor_settings_) DrawEditorSettings();
-  if (show_postfx_) DrawPostFxPanel();
+    DrawDockSpace();
+    DrawMainMenu();
+    if (show_performance_) DrawFpsCounter();
+    if (show_hierarchy_) DrawHierarchy();
+    if (show_inspector_) DrawInspector();
+    if (show_scene_settings_) DrawSceneSettings();
+    if (show_debug_) DrawDebugPanel();
+    if (show_editor_settings_) DrawEditorSettings();
+    if (show_postfx_) DrawPostFxPanel();
 
-  if (show_render_pipeline_) DrawRenderPipelinePanel(cmd);
-  if (show_shadow_map_) DrawShadowMapPanel(cmd);
+    if (show_render_pipeline_) DrawRenderPipelinePanel(cmd);
+    if (show_shadow_map_) DrawShadowMapPanel(cmd);
 
-  if (show_render_pipeline_ != prev_pipeline) graphic_->SetPreviewPipelineActive(show_render_pipeline_);
-  if (show_shadow_map_ != prev_shadow) graphic_->SetPreviewShadowActive(show_shadow_map_);
+    if (show_render_pipeline_ != prev_pipeline) graphic_->SetPreviewPipelineActive(show_render_pipeline_);
+    if (show_shadow_map_ != prev_shadow) graphic_->SetPreviewShadowActive(show_shadow_map_);
+  }
 
   ImGui::Render();
   ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), cmd);
@@ -166,6 +171,12 @@ void EditorLayer::SetScene(IScene* scene) {
 }
 
 void EditorLayer::SubscribeEvents(EventBus& bus) {
+  event_scope_.Subscribe<KeyDownEvent>(bus, [this](const KeyDownEvent& e) {
+    if (e.key == Keyboard::KeyCode::F10) {
+      imgui_visible_ = !imgui_visible_;
+    }
+  });
+
   event_scope_.Subscribe<SceneChangedEvent>(bus, [this](const SceneChangedEvent& e) {
     SetScene(e.new_scene);
     if (!pending_load_path_.empty() && e.new_scene) {
@@ -178,6 +189,11 @@ void EditorLayer::SubscribeEvents(EventBus& bus) {
 }
 
 bool EditorLayer::WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+  // reserve for toggle imgui
+  if (msg == WM_SYSKEYDOWN && wParam == VK_F10) return true;
+
+  if (!imgui_visible_) return false;
+
   if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wParam, lParam)) return true;
 
   const ImGuiIO& io = ImGui::GetIO();
