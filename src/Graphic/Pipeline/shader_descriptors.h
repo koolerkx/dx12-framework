@@ -221,6 +221,51 @@ struct PostProcessBloomUpsampleShader {
   }
 };
 
+struct DepthNormalShader {
+  static constexpr ShaderId ID = 14;
+  using VertexType = Vertex::DepthNormalVertex;
+
+  static constexpr RSPreset RS_PRESET = RSPreset::Standard;
+  static constexpr std::string_view NAME = "DepthNormal";
+  static constexpr std::wstring_view VS_PATH = L"Content/shaders/depth_normal.vs.cso";
+  static constexpr std::wstring_view PS_PATH = L"Content/shaders/depth_normal.ps.cso";
+  static constexpr ShaderRenderHints HINTS = {};
+
+  static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
+    return VertexType::GetInputLayout();
+  }
+};
+
+struct PostProcessNormalViewShader {
+  static constexpr ShaderId ID = 15;
+  using VertexType = Vertex::Empty;
+
+  static constexpr RSPreset RS_PRESET = RSPreset::Standard;
+  static constexpr std::string_view NAME = "NormalView";
+  static constexpr std::wstring_view VS_PATH = L"Content/shaders/fullscreen.vs.cso";
+  static constexpr std::wstring_view PS_PATH = L"Content/shaders/normal_view.ps.cso";
+  static constexpr ShaderRenderHints HINTS = {};
+
+  static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
+    return VertexType::GetInputLayout();
+  }
+};
+
+struct PostProcessLinearDepthViewShader {
+  static constexpr ShaderId ID = 16;
+  using VertexType = Vertex::Empty;
+
+  static constexpr RSPreset RS_PRESET = RSPreset::Standard;
+  static constexpr std::string_view NAME = "LinearDepthView";
+  static constexpr std::wstring_view VS_PATH = L"Content/shaders/fullscreen.vs.cso";
+  static constexpr std::wstring_view PS_PATH = L"Content/shaders/linear_depth_view.ps.cso";
+  static constexpr ShaderRenderHints HINTS = {};
+
+  static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
+    return VertexType::GetInputLayout();
+  }
+};
+
 // Shader Registration
 using AllShaders = std::tuple<SpriteShader,
   SpriteInstancedShader,
@@ -233,7 +278,10 @@ using AllShaders = std::tuple<SpriteShader,
   ShadowDepthShader,
   PBRShader,
   PostProcessBloomDownsampleShader,
-  PostProcessBloomUpsampleShader>;
+  PostProcessBloomUpsampleShader,
+  DepthNormalShader,
+  PostProcessNormalViewShader,
+  PostProcessLinearDepthViewShader>;
 
 [[maybe_unused]] constexpr size_t SHADER_COUNT = std::tuple_size_v<AllShaders>;
 

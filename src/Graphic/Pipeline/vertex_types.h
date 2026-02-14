@@ -180,6 +180,21 @@ struct ModelVertex {
 };
 static_assert(sizeof(ModelVertex) == 64);
 
+struct DepthNormalVertex {
+  Vector3 position;
+  Vector3 normal;
+
+  static constexpr std::array INPUT_LAYOUT = {
+    D3D12_INPUT_ELEMENT_DESC{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+    D3D12_INPUT_ELEMENT_DESC{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+  };
+
+  static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
+    return {INPUT_LAYOUT.data(), INPUT_LAYOUT.size()};
+  }
+};
+static_assert(sizeof(DepthNormalVertex) == 24);
+
 using LineVertex = PositionColor;
 using SpriteVertex = PositionTexCoordColor;
 using Basic3DVertex = PositionNormalTexCoordColor;

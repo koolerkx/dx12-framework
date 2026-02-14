@@ -107,6 +107,15 @@ add_library(graphic STATIC
 
   Render/bloom_pass_group.h
   Render/bloom_pass_group.cpp
+
+  Render/depth_normal_pass.h
+  Render/depth_normal_pass.cpp
+
+  Render/normal_view_pass.h
+  Render/normal_view_pass.cpp
+
+  Render/linear_depth_view_pass.h
+  Render/linear_depth_view_pass.cpp
 )
 
 target_link_libraries(graphic PUBLIC framework)
@@ -137,6 +146,10 @@ target_add_hlsl_auto(graphic "6.6"
   "${CMAKE_SOURCE_DIR}/shaders/pbr.ps.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/bloom_downsample.ps.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/bloom_upsample.ps.hlsl"
+  "${CMAKE_SOURCE_DIR}/shaders/depth_normal.vs.hlsl"
+  "${CMAKE_SOURCE_DIR}/shaders/depth_normal.ps.hlsl"
+  "${CMAKE_SOURCE_DIR}/shaders/normal_view.ps.hlsl"
+  "${CMAKE_SOURCE_DIR}/shaders/linear_depth_view.ps.hlsl"
 )
 
 # manually add shaders files

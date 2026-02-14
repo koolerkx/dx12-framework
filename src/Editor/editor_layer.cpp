@@ -124,6 +124,9 @@ void EditorLayer::BeginFrame() {
 }
 
 void EditorLayer::Render(ID3D12GraphicsCommandList* cmd) {
+  bool prev_pipeline = show_render_pipeline_;
+  bool prev_shadow = show_shadow_map_;
+
   DrawDockSpace();
   DrawMainMenu();
   if (show_performance_) DrawFpsCounter();
@@ -133,8 +136,12 @@ void EditorLayer::Render(ID3D12GraphicsCommandList* cmd) {
   if (show_debug_) DrawDebugPanel();
   if (show_editor_settings_) DrawEditorSettings();
   if (show_postfx_) DrawPostFxPanel();
+
   if (show_render_pipeline_) DrawRenderPipelinePanel(cmd);
   if (show_shadow_map_) DrawShadowMapPanel(cmd);
+
+  if (show_render_pipeline_ != prev_pipeline) graphic_->SetPreviewPipelineActive(show_render_pipeline_);
+  if (show_shadow_map_ != prev_shadow) graphic_->SetPreviewShadowActive(show_shadow_map_);
 
   ImGui::Render();
   ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), cmd);
@@ -1087,6 +1094,8 @@ void EditorLayer::DrawRenderPipelinePanel(ID3D12GraphicsCommandList* cmd) {
   };
   Entry entries[] = {
     {"Scene RT", handles.scene_rt},
+    {"Normal", handles.normal_preview_rt},
+    {"Linear Depth", handles.linear_depth_preview_rt},
     {"Depth", handles.depth_preview_rt},
     {"ToneMapping", handles.tonemap_rt},
   };

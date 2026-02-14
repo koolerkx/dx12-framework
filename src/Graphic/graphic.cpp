@@ -17,8 +17,11 @@
 #include "Render/blit_pass.h"
 #include "Render/bloom_pass_group.h"
 #include "Render/debug_pass.h"
+#include "Render/depth_normal_pass.h"
 #include "Render/depth_view_pass.h"
+#include "Render/linear_depth_view_pass.h"
 #include "Render/material_pass.h"
+#include "Render/normal_view_pass.h"
 #include "Render/shadow_pass.h"
 #include "Render/skybox_pass.h"
 #include "Render/tone_map_pass.h"
@@ -203,13 +206,80 @@ void Graphic::BuildRenderPipeline() {
     }));
   }
 
+  auto normal_depth_rt = render_graph_->CreateRenderTexture({
+    .name = "normal_depth_rt",
+    .format = DXGI_FORMAT_R16G16B16A16_FLOAT,
+    .width = frame_buffer_width_,
+    .height = frame_buffer_height_,
+    .device = device_.Get(),
+  });
+
+  auto prepass_depth = render_graph_->CreateDepthBuffer({
+    .name = "prepass_depth",
+    .width = frame_buffer_width_,
+    .height = frame_buffer_height_,
+    .device = device_.Get(),
+  });
+
+  auto normal_preview_rt = render_graph_->CreateRenderTexture({
+    .name = "normal_preview_rt",
+    .format = DXGI_FORMAT_R8G8B8A8_UNORM,
+    .width = frame_buffer_width_,
+    .height = frame_buffer_height_,
+    .device = device_.Get(),
+  });
+
+  auto linear_depth_preview_rt = render_graph_->CreateRenderTexture({
+    .name = "linear_depth_preview_rt",
+    .format = DXGI_FORMAT_R8G8B8A8_UNORM,
+    .width = frame_buffer_width_,
+    .height = frame_buffer_height_,
+    .device = device_.Get(),
+  });
+
   preview_handles_.scene_rt = scene_rt;
   preview_handles_.depth_preview_rt = depth_preview_rt;
   preview_handles_.tonemap_rt = tonemap_rt;
+  preview_handles_.normal_depth_rt = normal_depth_rt;
+  preview_handles_.normal_preview_rt = normal_preview_rt;
+  preview_handles_.linear_depth_preview_rt = linear_depth_preview_rt;
   preview_handles_.shadow_map_count = active_cascade_count_;
   for (uint32_t i = 0; i < active_cascade_count_; ++i) {
     preview_handles_.shadow_maps[i] = shadow_depth_handles_[i];
   }
+
+  PassSetup depth_normal_setup;
+  depth_normal_setup.resource_writes = {normal_depth_rt};
+  depth_normal_setup.depth = prepass_depth;
+
+  render_graph_->AddPass(std::make_unique<DepthNormalPass>(DepthNormalPass::Props{
+    .device = device_.Get(),
+    .shader_manager = &render_services_->GetShaderManager(),
+    .pass_setup = depth_normal_setup,
+  }));
+
+  PassSetup normal_view_setup;
+  normal_view_setup.resource_writes = {normal_preview_rt};
+  normal_view_setup.resource_reads = {normal_depth_rt};
+
+  render_graph_->AddPass(std::make_unique<NormalViewPass>(NormalViewPassProps{
+    .device = device_.Get(),
+    .shader_manager = &render_services_->GetShaderManager(),
+    .pass_setup = normal_view_setup,
+    .source_handle = normal_depth_rt,
+  }));
+
+  PassSetup linear_depth_view_setup;
+  linear_depth_view_setup.resource_writes = {linear_depth_preview_rt};
+  linear_depth_view_setup.resource_reads = {normal_depth_rt};
+
+  render_graph_->AddPass(std::make_unique<LinearDepthViewPass>(LinearDepthViewPassProps{
+    .device = device_.Get(),
+    .shader_manager = &render_services_->GetShaderManager(),
+    .pass_setup = linear_depth_view_setup,
+    .source_handle = normal_depth_rt,
+    .config = &depth_preview_config_,
+  }));
 
   PassSetup scene_setup;
   scene_setup.resource_writes = {scene_rt};
@@ -350,13 +420,35 @@ void Graphic::WaitForGpuIdle() {
 void Graphic::SetOverlayRenderer(OverlayRenderFunc renderer) {
   overlay_renderer_ = std::move(renderer);
   if (overlay_renderer_) {
+    MarkActivePreviewResources();
+  }
+}
+
+void Graphic::MarkActivePreviewResources() {
+  if (preview_pipeline_active_) {
     render_graph_->MarkExternallyReferenced(preview_handles_.scene_rt);
     render_graph_->MarkExternallyReferenced(preview_handles_.depth_preview_rt);
     render_graph_->MarkExternallyReferenced(preview_handles_.tonemap_rt);
+    render_graph_->MarkExternallyReferenced(preview_handles_.normal_preview_rt);
+    render_graph_->MarkExternallyReferenced(preview_handles_.linear_depth_preview_rt);
+  }
+  if (preview_shadow_active_) {
     for (uint32_t i = 0; i < preview_handles_.shadow_map_count; ++i) {
       render_graph_->MarkExternallyReferenced(preview_handles_.shadow_maps[i]);
     }
   }
+}
+
+void Graphic::SetPreviewPipelineActive(bool active) {
+  if (preview_pipeline_active_ == active) return;
+  preview_pipeline_active_ = active;
+  RebuildRenderPipeline();
+}
+
+void Graphic::SetPreviewShadowActive(bool active) {
+  if (preview_shadow_active_ == active) return;
+  preview_shadow_active_ = active;
+  // RebuildRenderPipeline(); // Shadow always in pipeline
 }
 
 void Graphic::Shutdown() {

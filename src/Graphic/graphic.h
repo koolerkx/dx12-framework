@@ -135,6 +135,9 @@ class Graphic {
     RenderGraphHandle scene_rt = RenderGraphHandle::Invalid;
     RenderGraphHandle depth_preview_rt = RenderGraphHandle::Invalid;
     RenderGraphHandle tonemap_rt = RenderGraphHandle::Invalid;
+    RenderGraphHandle normal_depth_rt = RenderGraphHandle::Invalid;
+    RenderGraphHandle normal_preview_rt = RenderGraphHandle::Invalid;
+    RenderGraphHandle linear_depth_preview_rt = RenderGraphHandle::Invalid;
     RenderGraphHandle shadow_maps[ShadowCascadeConfig::MAX_CASCADES];
     uint32_t shadow_map_count = 0;
   };
@@ -220,11 +223,16 @@ class Graphic {
   bool use_bindless_sampler_ = false;
 
   OverlayRenderFunc overlay_renderer_;
+  bool preview_pipeline_active_ = true;
+  bool preview_shadow_active_ = false;
 
   void BuildRenderPipeline();
+  void MarkActivePreviewResources();
 
  public:
   void RebuildRenderPipeline();
+  void SetPreviewPipelineActive(bool active);
+  void SetPreviewShadowActive(bool active);
   void SetShadowMapResolution(uint32_t resolution);
   void SetCascadeCount(uint32_t count);
   const ShadowFrameData& GetShadowFrameData() const {
