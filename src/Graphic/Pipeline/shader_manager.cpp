@@ -119,31 +119,33 @@ bool ShaderManager::CreateStandardRS() {
     constexpr uint32_t SRV_CAPACITY = 4096;
     constexpr uint32_t SAMPLER_CAPACITY = 2048;
 
-    rs_presets_[static_cast<size_t>(Graphics::RSPreset::Standard)] = RootSignatureBuilder()
-                                                                       .AllowInputLayout()
-                                                                       // Fixed CBV slots
-                                                                       .AddRootCBV(0, 0)  // Slot 0: Frame (b0)
-                                                                       .AddRootCBV(1, 0)  // Slot 1: Object (b1)
-                                                                       .AddRootCBV(2, 0)  // Slot 2: Light (b2)
-                                                                       // Material data (texture indices, etc)
-                                                                       .AddRootCBV(3, 0)  // Slot 3: Material (b3)
-                                                                       // Shadow mapping data
-                                                                       .AddRootCBV(4, 0)  // Slot 4: Shadow (b4)
-                                                                       // Global bindless texture array
-                                                                       .AddDescriptorTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
-                                                                         SRV_CAPACITY,
-                                                                         0,                            // register(t0)
-                                                                         1,                            // space1
-                                                                         D3D12_SHADER_VISIBILITY_ALL)  // Slot 5: GlobalSRVs
-                                                                       // Bindless sampler array
-                                                                       .AddDescriptorTable(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER,
-                                                                         SAMPLER_CAPACITY,
-                                                                         0,                              // register(s0)
-                                                                         0,                              // space0
-                                                                         D3D12_SHADER_VISIBILITY_PIXEL)  // Slot 6: Samplers
-                                                                       // Point light structured buffer
-                                                                       .AddRootSRV(0, 2)  // Slot 7: PointLights (t0, space2)
-                                                                       .Build(device_);
+    rs_presets_[static_cast<size_t>(Graphics::RSPreset::Standard)] =
+      RootSignatureBuilder()
+        .AllowInputLayout()
+        // Fixed CBV slots
+        .AddRootCBV(0, 0)  // Slot 0: Frame (b0)
+        .AddRootCBV(1, 0)  // Slot 1: Object (b1)
+        .AddRootCBV(2, 0)  // Slot 2: Light (b2)
+        // Material data (texture indices, etc)
+        .AddRootCBV(3, 0)  // Slot 3: Material (b3)
+        // Shadow mapping data
+        .AddRootCBV(4, 0)  // Slot 4: Shadow (b4)
+        // Global bindless texture array
+        .AddDescriptorTable(D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+          SRV_CAPACITY,
+          0,                            // register(t0)
+          1,                            // space1
+          D3D12_SHADER_VISIBILITY_ALL)  // Slot 5: GlobalSRVs
+        // Bindless sampler array
+        .AddDescriptorTable(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER,
+          SAMPLER_CAPACITY,
+          0,                              // register(s0)
+          0,                              // space0
+          D3D12_SHADER_VISIBILITY_PIXEL)  // Slot 6: Samplers
+        // Point light structured buffer
+        .AddRootSRV(0, 2)  // Slot 7: PointLights (t0, space2)
+        .AddStaticSampler(SamplerPresets::CreateComparisonSampler(0).SetRegisterSpace(2))
+        .Build(device_);
 
     if (!rs_presets_[static_cast<size_t>(Graphics::RSPreset::Standard)]) {
       Logger::LogFormat(LogLevel::Error, LogCategory::Resource, Logger::Here(), "[ShaderManager] Failed to create Standard RS");

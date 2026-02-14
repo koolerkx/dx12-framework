@@ -65,6 +65,11 @@ class SamplerBuilder {
     return *this;
   }
 
+  SamplerBuilder& SetRegisterSpace(UINT space) {
+    desc_.RegisterSpace = space;
+    return *this;
+  }
+
   const D3D12_STATIC_SAMPLER_DESC& Get() const {
     return desc_;
   }

@@ -5,6 +5,8 @@
 #define SHADOW_CB_SLOT b4
 #endif
 
+SamplerComparisonState g_ShadowCmpSampler : register(s0, space2);
+
 #define SHADOW_SAMPLER_INDEX 3
 
 #define SHADOW_ALGO_HARD 0
@@ -57,11 +59,9 @@ float SampleShadowHard(float3 projCoords, uint cascade) {
       projCoords.y < 0.0 || projCoords.y > 1.0)
     return 1.0;
 
-  float depth = g_Textures[g_ShadowCB.shadowMapIndex[cascade]]
-                    .Sample(g_Samplers[SHADOW_SAMPLER_INDEX], projCoords.xy)
-                    .r;
-  return (projCoords.z - g_ShadowCB.cascadeDepthBias[cascade] > depth) ? 0.0
-                                                                       : 1.0;
+  return g_Textures[g_ShadowCB.shadowMapIndex[cascade]].SampleCmpLevelZero(
+      g_ShadowCmpSampler, projCoords.xy,
+      projCoords.z - g_ShadowCB.cascadeDepthBias[cascade]);
 }
 
 static const float2 POISSON_DISK[16] = {
@@ -91,15 +91,12 @@ float SampleShadowPoisson(float3 projCoords, uint cascade) {
   float texelSize = 1.0 / float(g_ShadowCB.shadowMapResolution);
   float shadow = 0.0;
 
+  float biasedDepth = projCoords.z - g_ShadowCB.cascadeDepthBias[cascade];
+
   [unroll] for (uint i = 0; i < POISSON_SAMPLE_COUNT; ++i) {
     float2 offset = POISSON_DISK[i] * texelSize * POISSON_SPREAD;
-    float depth =
-        g_Textures[g_ShadowCB.shadowMapIndex[cascade]]
-            .Sample(g_Samplers[SHADOW_SAMPLER_INDEX], projCoords.xy + offset)
-            .r;
-    shadow += (projCoords.z - g_ShadowCB.cascadeDepthBias[cascade] > depth)
-                  ? 0.0
-                  : 1.0;
+    shadow += g_Textures[g_ShadowCB.shadowMapIndex[cascade]].SampleCmpLevelZero(
+        g_ShadowCmpSampler, projCoords.xy + offset, biasedDepth);
   }
   return shadow / float(POISSON_SAMPLE_COUNT);
 }
@@ -118,15 +115,12 @@ float SampleShadowRotatedPoisson(float3 projCoords, uint cascade,
 
   float shadow = 0.0;
 
+  float biasedDepth = projCoords.z - g_ShadowCB.cascadeDepthBias[cascade];
+
   [unroll] for (uint i = 0; i < POISSON_SAMPLE_COUNT; ++i) {
     float2 offset = mul(rotation, POISSON_DISK[i]) * texelSize * POISSON_SPREAD;
-    float depth =
-        g_Textures[g_ShadowCB.shadowMapIndex[cascade]]
-            .Sample(g_Samplers[SHADOW_SAMPLER_INDEX], projCoords.xy + offset)
-            .r;
-    shadow += (projCoords.z - g_ShadowCB.cascadeDepthBias[cascade] > depth)
-                  ? 0.0
-                  : 1.0;
+    shadow += g_Textures[g_ShadowCB.shadowMapIndex[cascade]].SampleCmpLevelZero(
+        g_ShadowCmpSampler, projCoords.xy + offset, biasedDepth);
   }
   return shadow / float(POISSON_SAMPLE_COUNT);
 }
@@ -139,16 +133,14 @@ float SampleShadowPCF3x3(float3 projCoords, uint cascade) {
   float texelSize = 1.0 / float(g_ShadowCB.shadowMapResolution);
   float shadow = 0.0;
 
+  float biasedDepth = projCoords.z - g_ShadowCB.cascadeDepthBias[cascade];
+
   [unroll] for (int x = -1; x <= 1; ++x) {
     [unroll] for (int y = -1; y <= 1; ++y) {
       float2 offset = float2(x, y) * texelSize;
-      float depth =
-          g_Textures[g_ShadowCB.shadowMapIndex[cascade]]
-              .Sample(g_Samplers[SHADOW_SAMPLER_INDEX], projCoords.xy + offset)
-              .r;
-      shadow += (projCoords.z - g_ShadowCB.cascadeDepthBias[cascade] > depth)
-                    ? 0.0
-                    : 1.0;
+      shadow +=
+          g_Textures[g_ShadowCB.shadowMapIndex[cascade]].SampleCmpLevelZero(
+              g_ShadowCmpSampler, projCoords.xy + offset, biasedDepth);
     }
   }
   return shadow / 9.0;
@@ -194,11 +186,8 @@ float SampleShadowPCSS(float3 projCoords, uint cascade, float2 screenPos) {
   float shadow = 0.0;
   [unroll] for (uint j = 0; j < POISSON_SAMPLE_COUNT; ++j) {
     float2 offset = mul(rotation, POISSON_DISK[j]) * filterRadius;
-    float depth =
-        g_Textures[g_ShadowCB.shadowMapIndex[cascade]]
-            .Sample(g_Samplers[SHADOW_SAMPLER_INDEX], projCoords.xy + offset)
-            .r;
-    shadow += (receiverDepth > depth) ? 0.0 : 1.0;
+    shadow += g_Textures[g_ShadowCB.shadowMapIndex[cascade]].SampleCmpLevelZero(
+        g_ShadowCmpSampler, projCoords.xy + offset, receiverDepth);
   }
   return shadow / float(POISSON_SAMPLE_COUNT);
 }
