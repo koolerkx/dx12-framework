@@ -10,18 +10,32 @@ Executable output is typically located in: `{ProjectDir}/out/build/<preset>/<Con
 
 (Note: x86/32-bit builds are intentionally not supported, focusing only on x64 as the standard for modern Windows development.)
 
+### Targets
+
+| Target       | Description                           | CMake Option       |
+| ------------ | ------------------------------------- | ------------------ |
+| `app`        | Main application                      | —                  |
+| `app_editor` | Application with ImGui editor overlay | `ENABLE_EDITOR=ON` |
+
 ### Generator: `Ninja` (For development)
 
-| Build       | Config (設定 CMAKE_BUILD_TYPE) | Build (指向資料夾)                    |
-| ----------- | ------------------------------ | ------------------------------------- |
-| x64 Debug   | `cmake --preset x64-debug`     | `cmake --build out/build/x64-debug`   |
-| x64 Release | `cmake --preset x64-release`   | `cmake --build out/build/x64-release` |
+| Preset                | Config                               | Build                                         |
+| --------------------- | ------------------------------------ | --------------------------------------------- |
+| x64 Debug             | `cmake --preset x64-debug`           | `cmake --build out/build/x64-debug`           |
+| x64 Release           | `cmake --preset x64-release`         | `cmake --build out/build/x64-release`         |
+| x64 Debug (Editor)    | `cmake --preset x64-debug-editor`    | `cmake --build out/build/x64-debug-editor`    |
+| x64 Release (Editor)  | `cmake --preset x64-release-editor`  | `cmake --build out/build/x64-release-editor`  |
+| x64 Debug (RenderDoc) | `cmake --preset x64-debug-renderdoc` | `cmake --build out/build/x64-debug-renderdoc` |
+
+Note: The x64 Debug (RenderDoc) built with DLL.
 
 ### Generator: `Visual Studio` (For the solution file)
 
-The config Generate solution, only need execute once.
+The config generates the solution, only needs to be executed once.
 
-| Build       | Config                  | Build                                   |
-| ----------- | ----------------------- | --------------------------------------- |
-| x64 Debug   | `cmake --preset vs-x64` | `cmake --build --preset vs-x64-debug`   |
-| x64 Release | `cmake --preset vs-x64` | `cmake --build --preset vs-x64-release` |
+| Preset               | Config                         | Build                                          |
+| -------------------- | ------------------------------ | ---------------------------------------------- |
+| x64 Debug            | `cmake --preset vs-x64`        | `cmake --build --preset vs-x64-debug`          |
+| x64 Release          | `cmake --preset vs-x64`        | `cmake --build --preset vs-x64-release`        |
+| x64 Debug (Editor)   | `cmake --preset vs-x64-editor` | `cmake --build --preset vs-x64-editor-debug`   |
+| x64 Release (Editor) | `cmake --preset vs-x64-editor` | `cmake --build --preset vs-x64-editor-release` |
