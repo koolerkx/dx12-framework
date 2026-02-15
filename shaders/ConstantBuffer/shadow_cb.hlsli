@@ -1,13 +1,15 @@
 #ifndef SHADOW_CB_HLSLI
 #define SHADOW_CB_HLSLI
 
+#include "ConstantBuffer/sampler.hlsli"
+
 #ifndef SHADOW_CB_SLOT
 #define SHADOW_CB_SLOT b4
 #endif
 
 SamplerComparisonState g_ShadowCmpSampler : register(s0, space2);
 
-#define SHADOW_SAMPLER_INDEX 3
+#define SHADOW_SAMPLER_INDEX SAMPLER_POINT_CLAMP
 
 #define SHADOW_ALGO_HARD 0
 #define SHADOW_ALGO_PCF3X3 1

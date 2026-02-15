@@ -11,7 +11,7 @@ struct SSAOCB {
 ConstantBuffer<SSAOCB> g_SSAOCB : register(b2);
 
 Texture2D g_Textures[] : register(t0, space1);
-SamplerState g_Samplers[] : register(s0, space0);
+#include "ConstantBuffer/sampler.hlsli"
 
 struct PSIN {
   float4 position : SV_POSITION;
@@ -53,7 +53,7 @@ float3 ReconstructViewPosition(float2 uv, float viewZ) {
 
 float4 main(PSIN input) : SV_TARGET {
   float4 normalDepth =
-      g_Textures[g_SSAOCB.normalDepthSrvIndex].Sample(g_Samplers[4], input.uv);
+      g_Textures[g_SSAOCB.normalDepthSrvIndex].Sample(g_Samplers[SAMPLER_LINEAR_CLAMP], input.uv);
   float3 viewNormal = normalize(normalDepth.xyz);
   float viewZ = normalDepth.w;
 
@@ -93,7 +93,7 @@ float4 main(PSIN input) : SV_TARGET {
     validSamples++;
 
     float sampledZ = g_Textures[g_SSAOCB.normalDepthSrvIndex]
-                         .SampleLevel(g_Samplers[4], sampleUV, 0)
+                         .SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], sampleUV, 0)
                          .w;
 
     float rangeCheck = smoothstep(

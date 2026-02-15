@@ -15,7 +15,7 @@ struct FogCB {
 ConstantBuffer<FogCB> g_FogCB : register(b2);
 
 Texture2D g_Textures[] : register(t0, space1);
-SamplerState g_Samplers[] : register(s0, space0);
+#include "ConstantBuffer/sampler.hlsli"
 
 struct PSIN {
   float4 position : SV_POSITION;
@@ -32,11 +32,11 @@ float3 ReconstructViewPosition(float2 uv, float viewZ) {
 
 float4 main(PSIN input) : SV_TARGET {
   float3 sceneColor = g_Textures[g_FogCB.sceneSrvIndex]
-                          .SampleLevel(g_Samplers[4], input.uv, 0)
+                          .SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], input.uv, 0)
                           .rgb;
 
   float viewZ = g_Textures[g_FogCB.depthSrvIndex]
-                    .SampleLevel(g_Samplers[4], input.uv, 0)
+                    .SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], input.uv, 0)
                     .w;
 
   if (viewZ <= 0.0 || viewZ > g_FogCB.maxDistance * 2.0) {

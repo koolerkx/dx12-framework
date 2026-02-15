@@ -3,10 +3,7 @@
 #define SMAA_COMMON_HLSLI
 
 Texture2D g_Textures[] : register(t0, space1);
-SamplerState g_Samplers[] : register(s0, space0);
-
-static const uint SAMPLER_POINT_CLAMP = 3;
-static const uint SAMPLER_LINEAR_CLAMP = 4;
+#include "ConstantBuffer/sampler.hlsli"
 
 #define SMAA_CUSTOM_SL
 #define SMAA_PRESET_HIGH

@@ -33,7 +33,7 @@ struct ToneMapCB {
 ConstantBuffer<ToneMapCB> g_ToneMapCB : register(b2);
 
 Texture2D g_Textures[] : register(t0, space1);
-SamplerState g_Samplers[] : register(s0, space0);
+#include "ConstantBuffer/sampler.hlsli"
 
 struct PSIN {
   float4 position : SV_POSITION;
@@ -42,7 +42,7 @@ struct PSIN {
 
 float4 main(PSIN input) : SV_TARGET {
   float3 hdr_color =
-      g_Textures[g_ToneMapCB.hdrSrvIndex].Sample(g_Samplers[0], input.uv).rgb;
+      g_Textures[g_ToneMapCB.hdrSrvIndex].Sample(g_Samplers[SAMPLER_POINT_WRAP], input.uv).rgb;
 
   if (g_ToneMapCB.debugMode == 1) {
     return float4(hdr_color / 16.0, 1.0);
@@ -50,7 +50,7 @@ float4 main(PSIN input) : SV_TARGET {
 
   if (g_ToneMapCB.bloomSrvIndex != 0xFFFFFFFF) {
     float3 bloom = g_Textures[g_ToneMapCB.bloomSrvIndex]
-                       .Sample(g_Samplers[0], input.uv)
+                       .Sample(g_Samplers[SAMPLER_POINT_WRAP], input.uv)
                        .rgb;
     hdr_color += bloom * g_ToneMapCB.bloomIntensity;
   }

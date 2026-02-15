@@ -14,7 +14,7 @@ struct PSIN {
 };
 
 Texture2D g_Textures[] : register(t0, space1);
-SamplerState g_Samplers[] : register(s0, space0);
+#include "ConstantBuffer/sampler.hlsli"
 
 #include "ConstantBuffer/shadow_cb.hlsli"
 
@@ -48,18 +48,18 @@ float4 main(PSIN input) : SV_TARGET {
       g_Samplers[g_ObjectCB.samplerIndex], input.uv);
   float4 baseColor = albedoTex * input.color * g_ObjectCB.color;
 
-  if ((g_ObjectCB.flags & 2u) && baseColor.a < 0.5) {
+  if ((g_ObjectCB.flags & OBJECT_FLAG_OPAQUE) && baseColor.a < 0.5) {
     discard;
   }
 
-  if (!(g_ObjectCB.flags & 1u)) {
+  if (!(g_ObjectCB.flags & OBJECT_FLAG_LIT)) {
     return baseColor;
   }
 
   float3 N = normalize(input.worldNormal);
 
   // Normal mapping
-  if (g_MaterialData.flags & 8u) {
+  if (g_MaterialData.flags & MATERIAL_FLAG_HAS_NORMAL_MAP) {
     float3 T = normalize(input.worldTangent);
     float3 B = normalize(input.worldBitangent);
     float3x3 TBN = float3x3(T, B, N);
@@ -75,7 +75,7 @@ float4 main(PSIN input) : SV_TARGET {
   float roughness = g_MaterialData.roughnessFactor;
 
   // Metallic-roughness map (glTF: G=roughness, B=metallic)
-  if (g_MaterialData.flags & 16u) {
+  if (g_MaterialData.flags & MATERIAL_FLAG_HAS_METALLIC_ROUGHNESS) {
     float4 mrSample = g_Textures[g_MaterialData.metallicRoughnessIndex].Sample(
         g_Samplers[g_ObjectCB.samplerIndex], input.uv);
     metallic *= mrSample.b;
@@ -98,7 +98,7 @@ float4 main(PSIN input) : SV_TARGET {
 
   // Shadow
   float shadow = 1.0;
-  if (g_ObjectCB.flags & 4u) {
+  if (g_ObjectCB.flags & OBJECT_FLAG_RECEIVE_SHADOW) {
     shadow = CalculateShadow(input.worldPos, N, input.position.xy);
   }
   float3 shadowTint = lerp(g_ShadowCB.shadowColor, float3(1, 1, 1), shadow);
@@ -124,7 +124,7 @@ float4 main(PSIN input) : SV_TARGET {
   if (g_LightingCB.ssaoSrvIndex != 0xFFFFFFFF) {
     float2 screenUV = input.position.xy / g_FrameCB.screenSize;
     ao =
-        g_Textures[g_LightingCB.ssaoSrvIndex].Sample(g_Samplers[4], screenUV).r;
+        g_Textures[g_LightingCB.ssaoSrvIndex].Sample(g_Samplers[SAMPLER_LINEAR_CLAMP], screenUV).r;
   }
   // Point lights (Lambertian diffuse)
   float3 pointDiffuse = float3(0, 0, 0);
@@ -140,11 +140,11 @@ float4 main(PSIN input) : SV_TARGET {
   // Rim light
   float rim = pow(1.0 - saturate(dot(N, V)), g_MaterialData.rimPower);
   float3 rimLight = g_MaterialData.rimColor * g_MaterialData.rimIntensity * rim;
-  if (g_MaterialData.flags & 4u) rimLight *= shadow;
+  if (g_MaterialData.flags & MATERIAL_FLAG_RIM_SHADOW_AFFECTED) rimLight *= shadow;
 
   // Emissive
   float3 emissive = g_MaterialData.emissiveFactor;
-  if (g_MaterialData.flags & 32u) {
+  if (g_MaterialData.flags & MATERIAL_FLAG_HAS_EMISSIVE) {
     float3 emissiveTex =
         g_Textures[g_MaterialData.emissiveTextureIndex]
             .Sample(g_Samplers[g_ObjectCB.samplerIndex], input.uv)

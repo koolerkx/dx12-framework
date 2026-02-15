@@ -6,7 +6,7 @@ struct BloomUpCB {
 ConstantBuffer<BloomUpCB> g_CB : register(b2);
 
 Texture2D g_Textures[] : register(t0, space1);
-SamplerState g_Samplers[] : register(s0, space0);
+#include "ConstantBuffer/sampler.hlsli"
 
 struct PSIN {
   float4 position : SV_POSITION;
@@ -15,7 +15,7 @@ struct PSIN {
 
 float4 main(PSIN input) : SV_TARGET {
   Texture2D src = g_Textures[g_CB.sourceSrvIndex];
-  SamplerState samp = g_Samplers[4];
+  SamplerState samp = g_Samplers[SAMPLER_LINEAR_CLAMP];
   float2 uv = input.uv;
   float2 offset = g_CB.texelSize * 0.5;
 

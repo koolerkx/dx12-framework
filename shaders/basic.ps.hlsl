@@ -12,7 +12,7 @@ struct PSIN {
 };
 
 Texture2D g_Textures[] : register(t0, space1);
-SamplerState g_Samplers[] : register(s0, space0);
+#include "ConstantBuffer/sampler.hlsli"
 
 #include "ConstantBuffer/shadow_cb.hlsli"
 
@@ -22,17 +22,17 @@ float4 main(PSIN input) : SV_TARGET {
 
   float4 baseColor = tex * input.color * g_ObjectCB.color;
 
-  if ((g_ObjectCB.flags & 2u) && baseColor.a < 0.5) {
+  if ((g_ObjectCB.flags & OBJECT_FLAG_OPAQUE) && baseColor.a < 0.5) {
     discard;
   }
 
-  if (g_ObjectCB.flags & 1u) {
+  if (g_ObjectCB.flags & OBJECT_FLAG_LIT) {
     float3 N = normalize(input.worldNormal);
     float3 L = normalize(-g_LightingCB.lightDirection);
     float NdotL = saturate(dot(N, L));
 
     float shadow = 1.0;
-    if (g_ObjectCB.flags & 4u) {
+    if (g_ObjectCB.flags & OBJECT_FLAG_RECEIVE_SHADOW) {
       shadow = CalculateShadow(input.worldPos, N, input.position.xy);
     }
 
@@ -51,7 +51,7 @@ float4 main(PSIN input) : SV_TARGET {
     float rim = pow(1.0 - saturate(dot(N, V)), g_MaterialData.rimPower);
     float3 rimLight =
         g_MaterialData.rimColor * g_MaterialData.rimIntensity * rim;
-    if (g_MaterialData.flags & 4u)
+    if (g_MaterialData.flags & MATERIAL_FLAG_RIM_SHADOW_AFFECTED)
       rimLight *= shadow;
 
     float3 pointDiffuse = float3(0, 0, 0);
@@ -67,7 +67,7 @@ float4 main(PSIN input) : SV_TARGET {
     if (g_LightingCB.ssaoSrvIndex != 0xFFFFFFFF) {
       float2 screenUV = input.position.xy / g_FrameCB.screenSize;
       ao = g_Textures[g_LightingCB.ssaoSrvIndex]
-               .Sample(g_Samplers[4], screenUV)
+               .Sample(g_Samplers[SAMPLER_LINEAR_CLAMP], screenUV)
                .r;
     }
 

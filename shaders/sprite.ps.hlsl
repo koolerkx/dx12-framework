@@ -8,7 +8,7 @@ struct PSIN {
 };
 
 Texture2D g_Textures[] : register(t0, space1);
-SamplerState g_Samplers[] : register(s0, space0);
+#include "ConstantBuffer/sampler.hlsli"
 
 float4 main(PSIN input) : SV_TARGET {
   float4 texColor = g_Textures[g_MaterialData.albedoTextureIndex].Sample(

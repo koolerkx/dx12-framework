@@ -6,7 +6,7 @@ struct SSAOBlurCB {
 ConstantBuffer<SSAOBlurCB> g_BlurCB : register(b2);
 
 Texture2D g_Textures[] : register(t0, space1);
-SamplerState g_Samplers[] : register(s0, space0);
+#include "ConstantBuffer/sampler.hlsli"
 
 struct PSIN {
   float4 position : SV_POSITION;
@@ -17,7 +17,7 @@ static const float DEPTH_THRESHOLD_RATIO = 0.005;
 
 float4 main(PSIN input) : SV_TARGET {
   float4 centerND =
-      g_Textures[g_BlurCB.normalDepthSrvIndex].Sample(g_Samplers[4], input.uv);
+      g_Textures[g_BlurCB.normalDepthSrvIndex].Sample(g_Samplers[SAMPLER_LINEAR_CLAMP], input.uv);
   float centerDepth = centerND.w;
   float3 centerNormal = normalize(centerND.xyz);
   float depthThreshold = max(centerDepth * DEPTH_THRESHOLD_RATIO, 0.01);
@@ -30,9 +30,9 @@ float4 main(PSIN input) : SV_TARGET {
     float2 sampleUV = input.uv + offset;
 
     float sampleAO =
-        g_Textures[g_BlurCB.aoSrvIndex].Sample(g_Samplers[4], sampleUV).r;
+        g_Textures[g_BlurCB.aoSrvIndex].Sample(g_Samplers[SAMPLER_LINEAR_CLAMP], sampleUV).r;
     float4 sampleND = g_Textures[g_BlurCB.normalDepthSrvIndex].Sample(
-        g_Samplers[4], sampleUV);
+        g_Samplers[SAMPLER_LINEAR_CLAMP], sampleUV);
 
     float depthWeight =
         saturate(1.0 - abs(centerDepth - sampleND.w) / depthThreshold);

@@ -7,7 +7,7 @@ struct DepthViewCB {
 ConstantBuffer<DepthViewCB> g_DepthViewCB : register(b2);
 
 Texture2D g_Textures[] : register(t0, space1);
-SamplerState g_Samplers[] : register(s0, space0);
+#include "ConstantBuffer/sampler.hlsli"
 
 struct PSIN {
   float4 position : SV_POSITION;
@@ -16,7 +16,7 @@ struct PSIN {
 
 float4 main(PSIN input) : SV_TARGET {
   float depth =
-      g_Textures[g_DepthViewCB.depthSrvIndex].Sample(g_Samplers[0], input.uv).r;
+      g_Textures[g_DepthViewCB.depthSrvIndex].Sample(g_Samplers[SAMPLER_POINT_WRAP], input.uv).r;
 
   // Linearize reverse-Z depth
   float linear_depth = g_DepthViewCB.nearPlane /

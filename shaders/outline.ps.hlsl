@@ -19,7 +19,7 @@ struct OutlineCB {
 ConstantBuffer<OutlineCB> g_OutlineCB : register(b2);
 
 Texture2D g_Textures[] : register(t0, space1);
-SamplerState g_Samplers[] : register(s0, space0);
+#include "ConstantBuffer/sampler.hlsli"
 
 struct PSIN {
   float4 position : SV_POSITION;
@@ -27,7 +27,7 @@ struct PSIN {
 };
 
 float4 SampleNormalDepth(float2 uv) {
-  return g_Textures[g_OutlineCB.normalDepthSrvIndex].SampleLevel(g_Samplers[4],
+  return g_Textures[g_OutlineCB.normalDepthSrvIndex].SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP],
                                                                  uv, 0);
 }
 
@@ -87,7 +87,7 @@ float4 main(PSIN input) : SV_TARGET {
   float4 centerSample = SampleNormalDepth(input.uv);
   float depth = centerSample.w;
   float3 sceneColor = g_Textures[g_OutlineCB.sceneSrvIndex]
-                          .SampleLevel(g_Samplers[4], input.uv, 0)
+                          .SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], input.uv, 0)
                           .rgb;
 
   if (depth <= 0.0 || dot(centerSample.xyz, centerSample.xyz) < 0.001) {

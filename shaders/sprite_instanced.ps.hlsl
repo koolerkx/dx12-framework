@@ -2,7 +2,7 @@
 #include "ConstantBuffer/material_cb.hlsli"
 
 Texture2D g_Textures[] : register(t0, space1);
-SamplerState g_Samplers[] : register(s0, space0);
+#include "ConstantBuffer/sampler.hlsli"
 
 struct PSIN {
   float4 position : SV_POSITION;
@@ -16,7 +16,7 @@ float4 main(PSIN input) : SV_TARGET {
 
   float4 finalColor = texColor * input.color;
 
-  if ((g_MaterialData.flags & 1u) && finalColor.a < 0.01f) {
+  if ((g_MaterialData.flags & MATERIAL_FLAG_ALPHA_TEST) && finalColor.a < 0.01f) {
     discard;
   }
 
