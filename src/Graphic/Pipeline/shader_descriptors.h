@@ -386,6 +386,52 @@ struct PostProcessFogShader {
   }
 };
 
+struct ModelInstancedShader {
+  static constexpr ShaderId ID = 25;
+  using VertexType = Vertex::ModelVertex;
+
+  static constexpr RSPreset RS_PRESET = RSPreset::Standard;
+  static constexpr std::string_view NAME = "ModelInstanced";
+  static constexpr std::wstring_view VS_PATH = L"Content/shaders/model_instanced.vs.cso";
+  static constexpr std::wstring_view PS_PATH = L"Content/shaders/pbr.ps.cso";
+  static constexpr ShaderRenderHints HINTS = {};
+  static constexpr bool STRUCTURED_INSTANCING = true;
+
+  static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
+    return VertexType::GetInputLayout();
+  }
+};
+
+struct ShadowDepthInstancedShader {
+  static constexpr ShaderId ID = 26;
+  using VertexType = Vertex::ShadowVertex;
+
+  static constexpr RSPreset RS_PRESET = RSPreset::Standard;
+  static constexpr std::string_view NAME = "ShadowDepthInstanced";
+  static constexpr std::wstring_view VS_PATH = L"Content/shaders/shadow_depth_instanced.vs.cso";
+  static constexpr std::wstring_view PS_PATH = L"";
+  static constexpr ShaderRenderHints HINTS = {};
+
+  static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
+    return VertexType::GetInputLayout();
+  }
+};
+
+struct DepthNormalInstancedShader {
+  static constexpr ShaderId ID = 27;
+  using VertexType = Vertex::DepthNormalVertex;
+
+  static constexpr RSPreset RS_PRESET = RSPreset::Standard;
+  static constexpr std::string_view NAME = "DepthNormalInstanced";
+  static constexpr std::wstring_view VS_PATH = L"Content/shaders/depth_normal_instanced.vs.cso";
+  static constexpr std::wstring_view PS_PATH = L"Content/shaders/depth_normal.ps.cso";
+  static constexpr ShaderRenderHints HINTS = {};
+
+  static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
+    return VertexType::GetInputLayout();
+  }
+};
+
 // Shader Registration
 using AllShaders = std::tuple<SpriteShader,
   SpriteInstancedShader,
@@ -409,7 +455,10 @@ using AllShaders = std::tuple<SpriteShader,
   PostProcessSMAANeighborhoodShader,
   PostProcessOutlineShader,
   PostProcessVignetteShader,
-  PostProcessFogShader>;
+  PostProcessFogShader,
+  ModelInstancedShader,
+  ShadowDepthInstancedShader,
+  DepthNormalInstancedShader>;
 
 [[maybe_unused]] constexpr size_t SHADER_COUNT = std::tuple_size_v<AllShaders>;
 

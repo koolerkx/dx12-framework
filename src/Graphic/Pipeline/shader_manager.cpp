@@ -134,6 +134,8 @@ bool ShaderManager::CreateStandardRS() {
           D3D12_SHADER_VISIBILITY_PIXEL)  // Slot 6: Samplers
         // Point light structured buffer
         .AddRootSRV(0, 2)  // Slot 7: PointLights (t0, space2)
+        // Instance data structured buffer
+        .AddRootSRV(0, 3)  // Slot 8: InstanceBuffer (t0, space3)
         .AddStaticSampler(SamplerPresets::CreateComparisonSampler(0).SetRegisterSpace(2))
         .Build(device_);
 

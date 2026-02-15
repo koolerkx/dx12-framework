@@ -4,6 +4,7 @@
 
 #include "Command/render_command_list.h"
 #include "Frame/constant_buffers.h"
+#include "Framework/Logging/logger.h"
 #include "Pipeline/material.h"
 #include "Render/shadow_config.h"
 
@@ -158,7 +159,15 @@ void MaterialRenderer::Record(const RenderFrameContext& frame,
       current_material = draw_cmd.material;
     }
 
-    if (draw_cmd.IsInstanced()) {
+    if (draw_cmd.IsStructuredInstanced()) {
+      if (!draw_cmd.material->SupportsStructuredInstancing()) {
+        Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(),
+          "DrawCommand has structured instance data but material '{}' does not support structured instancing",
+          draw_cmd.material->GetName());
+        continue;
+      }
+      RecordStructuredInstanced(cmd, draw_cmd, view_proj, shadow.enabled);
+    } else if (draw_cmd.IsInstanced()) {
       RecordInstanced(cmd, draw_cmd);
     } else {
       RecordSingle(cmd, draw_cmd, view_proj, shadow.enabled);
@@ -185,6 +194,52 @@ void MaterialRenderer::RecordSingle(RenderCommandList& cmd, const DrawCommand& d
   cmd.SetObjectConstants(obj_data);
 
   cmd.DrawMesh(draw_cmd.mesh);
+}
+
+void MaterialRenderer::RecordStructuredInstanced(
+  RenderCommandList& cmd, const DrawCommand& draw_cmd, const Matrix4& view_proj, bool shadow_enabled) {
+  const auto& mi = draw_cmd.material_instance;
+  MaterialCB mat = {};
+  mat.albedo_texture_index = mi.albedo_texture_index;
+  mat.normal_texture_index = mi.normal_texture_index;
+  mat.metallic_roughness_index = mi.metallic_roughness_index;
+  mat.flags = (mi.use_alpha_test ? 1u : 0u) | (mi.double_sided ? 2u : 0u) | (mi.rim_shadow_affected ? 4u : 0u) |
+              (mi.has_normal_map ? 8u : 0u) | (mi.has_metallic_roughness_map ? 16u : 0u) | (mi.has_emissive_map ? 32u : 0u);
+  mat.specular_intensity = mi.specular_intensity;
+  mat.specular_power = mi.specular_power;
+  mat.rim_intensity = mi.rim_intensity;
+  mat.rim_power = mi.rim_power;
+  mat.rim_color = Vector3(mi.rim_color[0], mi.rim_color[1], mi.rim_color[2]);
+  mat.emissive_texture_index = mi.emissive_texture_index;
+  mat.metallic_factor = mi.metallic_factor;
+  mat.roughness_factor = mi.roughness_factor;
+  mat.emissive_factor = Vector3(mi.emissive_factor[0], mi.emissive_factor[1], mi.emissive_factor[2]);
+  cmd.SetMaterialConstants(mat);
+
+  ObjectCB obj_data = {};
+  obj_data.color = draw_cmd.color;
+  obj_data.uvScale = {1.0f, 1.0f};
+  obj_data.samplerIndex = mi.sampler_index;
+  uint32_t flags = 0;
+  if (HasTag(draw_cmd.tags, RenderTag::Lit)) flags |= 1u;
+  if (draw_cmd.layer == RenderLayer::Opaque) flags |= 2u;
+  if (shadow_enabled && HasTag(draw_cmd.tags, RenderTag::ReceiveShadow)) flags |= 4u;
+  obj_data.flags = flags;
+  cmd.SetObjectConstants(obj_data);
+
+  cmd.SetInstanceBufferSRV(draw_cmd.instance_buffer_address);
+
+  const Mesh* mesh = draw_cmd.mesh;
+  auto vbv = mesh->GetVertexBuffer().GetView();
+  auto ibv = mesh->GetIndexBuffer().GetView();
+  cmd.GetNative()->IASetVertexBuffers(0, 1, &vbv);
+  cmd.GetNative()->IASetIndexBuffer(&ibv);
+
+  for (size_t i = 0; i < mesh->GetSubMeshCount(); ++i) {
+    const auto& sub = mesh->GetSubMesh(i);
+    cmd.GetNative()->DrawIndexedInstanced(
+      sub.indexCount, draw_cmd.instance_count, sub.startIndexLocation, sub.baseVertexLocation, 0);
+  }
 }
 
 void MaterialRenderer::RecordInstanced(RenderCommandList& cmd, const DrawCommand& draw_cmd) {

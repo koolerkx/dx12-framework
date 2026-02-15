@@ -26,6 +26,9 @@ struct DrawCommand {
 
   std::vector<SpriteInstanceData> instances;
 
+  D3D12_GPU_VIRTUAL_ADDRESS instance_buffer_address = 0;
+  uint32_t instance_count = 0;
+
   RenderLayer layer = RenderLayer::Opaque;
   RenderTagMask tags = 0;
   bool depth_test = true;
@@ -33,5 +36,9 @@ struct DrawCommand {
 
   [[nodiscard]] bool IsInstanced() const {
     return !instances.empty();
+  }
+
+  [[nodiscard]] bool IsStructuredInstanced() const {
+    return instance_count > 0 && instance_buffer_address != 0;
   }
 };

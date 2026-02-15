@@ -1,3 +1,10 @@
+/**
+ * @file structured_buffer.h
+ * @brief The abstracted structured buffer handle resource
+
+ * @note the buffer will stay 1-2 frame before cleanup
+ * since we taking deferred clean up policy, it will auto queue to cleanup at next frame
+ */
 #pragma once
 
 #include <d3d12.h>

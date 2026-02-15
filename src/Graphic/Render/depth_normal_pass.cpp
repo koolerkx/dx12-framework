@@ -39,7 +39,24 @@ bool DepthNormalPass::CreatePipelineState() {
                       .SetName(L"DepthNormalPass_PSO")
                       .Build(device_);
 
-  return pipeline_state_ != nullptr;
+  if (!pipeline_state_) return false;
+
+  auto* instanced_vs = shader_manager_->GetVertexShader<Graphics::DepthNormalInstancedShader>();
+  if (instanced_vs) {
+    instanced_pipeline_state_ = PipelineStateBuilder()
+                                  .SetRootSignature(root_signature)
+                                  .SetVertexShader(instanced_vs)
+                                  .SetPixelShader(ps)
+                                  .SetInputLayout(Graphics::DepthNormalInstancedShader::GetInputLayout())
+                                  .SetRenderTargetFormat(DXGI_FORMAT_R16G16B16A16_FLOAT)
+                                  .SetDepthStencilFormat(DXGI_FORMAT_D32_FLOAT)
+                                  .EnableDepthTest()
+                                  .SetCullMode(D3D12_CULL_MODE_BACK)
+                                  .SetName(L"DepthNormalPass_Instanced_PSO")
+                                  .Build(device_);
+  }
+
+  return true;
 }
 
 void DepthNormalPass::Execute(const RenderFrameContext& frame, const FramePacket& packet) {
@@ -61,7 +78,30 @@ void DepthNormalPass::Execute(const RenderFrameContext& frame, const FramePacket
   for (const auto& draw_cmd : packet.commands) {
     if (!draw_cmd.depth_write) continue;
     if (!draw_cmd.mesh) continue;
+    // CPU instances (sprites) skip prepass — only structured (3D model) instances participate
     if (draw_cmd.IsInstanced()) continue;
+
+    if (draw_cmd.IsStructuredInstanced()) {
+      if (!instanced_pipeline_state_) continue;
+
+      frame.command_list->SetPipelineState(instanced_pipeline_state_.Get());
+      cmd.SetInstanceBufferSRV(draw_cmd.instance_buffer_address);
+
+      const Mesh* mesh = draw_cmd.mesh;
+      auto vbv = mesh->GetVertexBuffer().GetView();
+      auto ibv = mesh->GetIndexBuffer().GetView();
+      frame.command_list->IASetVertexBuffers(0, 1, &vbv);
+      frame.command_list->IASetIndexBuffer(&ibv);
+
+      for (size_t i = 0; i < mesh->GetSubMeshCount(); ++i) {
+        const auto& sub = mesh->GetSubMesh(i);
+        frame.command_list->DrawIndexedInstanced(
+          sub.indexCount, draw_cmd.instance_count, sub.startIndexLocation, sub.baseVertexLocation, 0);
+      }
+
+      frame.command_list->SetPipelineState(pipeline_state_.Get());
+      continue;
+    }
 
     ObjectCB obj_data = {};
     obj_data.world = draw_cmd.world_matrix;

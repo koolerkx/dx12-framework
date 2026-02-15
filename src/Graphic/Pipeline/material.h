@@ -65,12 +65,21 @@ class Material {
     return supports_instancing_;
   }
 
+  void SetStructuredInstancingSupport(bool supports) {
+    supports_structured_instancing_ = supports;
+  }
+
+  [[nodiscard]] bool SupportsStructuredInstancing() const {
+    return supports_structured_instancing_;
+  }
+
  private:
   std::string name_;
   ComPtr<ID3D12RootSignature> root_signature_;
   ComPtr<ID3D12PipelineState> pipeline_state_;
   uint64_t sort_key_ = 0;  // 64-bit: [32-bit RS hash | 32-bit PSO hash]
   bool supports_instancing_ = false;
+  bool supports_structured_instancing_ = false;
 };
 
 // Material instance with per-instance data

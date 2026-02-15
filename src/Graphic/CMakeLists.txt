@@ -43,6 +43,9 @@ add_library(graphic STATIC
   Pipeline/material_manager.h
   Pipeline/material_manager.cpp
 
+  Resource/Buffer/instance_buffer_manager.h
+  Resource/Buffer/instance_buffer_manager.cpp
+
   Resource/mesh.h
   Resource/mesh.cpp
   Resource/mesh_registry.h
@@ -187,6 +190,9 @@ target_add_hlsl_auto(graphic "6.6"
   "${CMAKE_SOURCE_DIR}/shaders/outline.ps.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/vignette.ps.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/fog.ps.hlsl"
+  "${CMAKE_SOURCE_DIR}/shaders/model_instanced.vs.hlsl"
+  "${CMAKE_SOURCE_DIR}/shaders/shadow_depth_instanced.vs.hlsl"
+  "${CMAKE_SOURCE_DIR}/shaders/depth_normal_instanced.vs.hlsl"
 )
 
 # manually add shaders files

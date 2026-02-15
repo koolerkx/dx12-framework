@@ -68,7 +68,25 @@ bool ShadowPass::CreatePipelineState() {
       .SetName(L"ShadowPass_PSO")
       .Build(device_);
 
-  return pipeline_state_ != nullptr;
+  if (!pipeline_state_) return false;
+
+  auto* instanced_vs = shader_manager_->GetVertexShader<Graphics::ShadowDepthInstancedShader>();
+  if (instanced_vs) {
+    instanced_pipeline_state_ =
+      PipelineStateBuilder()
+        .SetRootSignature(root_signature)
+        .SetVertexShader(instanced_vs)
+        .SetInputLayout(Graphics::ShadowDepthInstancedShader::GetInputLayout())
+        .SetCullMode(D3D12_CULL_MODE_BACK)
+        .EnableDepthTest()
+        .SetDepthBias(
+          ShadowHardwareConfig::DEPTH_BIAS, ShadowHardwareConfig::DEPTH_BIAS_CLAMP, ShadowHardwareConfig::SLOPE_SCALED_DEPTH_BIAS)
+        .SetDepthStencilFormat(DXGI_FORMAT_D32_FLOAT)
+        .SetName(L"ShadowPass_Instanced_PSO")
+        .Build(device_);
+  }
+
+  return true;
 }
 
 Matrix4 ShadowPass::ComputeLightViewProj(
@@ -195,7 +213,30 @@ void ShadowPass::Execute(const RenderFrameContext& frame, const FramePacket& pac
   for (const auto& draw_cmd : packet.commands) {
     if (!HasTag(draw_cmd.tags, RenderTag::CastShadow)) continue;
     if (!draw_cmd.mesh) continue;
+    // CPU instances (sprites) don't cast shadows — only structured (3D model) instances do
     if (draw_cmd.IsInstanced()) continue;
+
+    if (draw_cmd.IsStructuredInstanced()) {
+      if (!instanced_pipeline_state_) continue;
+
+      frame.command_list->SetPipelineState(instanced_pipeline_state_.Get());
+      cmd.SetInstanceBufferSRV(draw_cmd.instance_buffer_address);
+
+      const Mesh* mesh = draw_cmd.mesh;
+      auto vbv = mesh->GetVertexBuffer().GetView();
+      auto ibv = mesh->GetIndexBuffer().GetView();
+      frame.command_list->IASetVertexBuffers(0, 1, &vbv);
+      frame.command_list->IASetIndexBuffer(&ibv);
+
+      for (size_t i = 0; i < mesh->GetSubMeshCount(); ++i) {
+        const auto& sub = mesh->GetSubMesh(i);
+        frame.command_list->DrawIndexedInstanced(
+          sub.indexCount, draw_cmd.instance_count, sub.startIndexLocation, sub.baseVertexLocation, 0);
+      }
+
+      frame.command_list->SetPipelineState(pipeline_state_.Get());
+      continue;
+    }
 
     ObjectCB obj_data = {};
     obj_data.world = draw_cmd.world_matrix;

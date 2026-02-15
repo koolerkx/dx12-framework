@@ -30,4 +30,5 @@ class DepthNormalPass : public IRenderPass {
   ID3D12Device* device_;
   ShaderManager* shader_manager_;
   ComPtr<ID3D12PipelineState> pipeline_state_;
+  ComPtr<ID3D12PipelineState> instanced_pipeline_state_;
 };

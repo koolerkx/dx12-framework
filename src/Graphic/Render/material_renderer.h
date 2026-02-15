@@ -44,6 +44,7 @@ class MaterialRenderer {
  private:
   void RecordSingle(RenderCommandList& cmd, const DrawCommand& draw_cmd, const Matrix4& view_proj, bool shadow_enabled);
   void RecordInstanced(RenderCommandList& cmd, const DrawCommand& draw_cmd);
+  void RecordStructuredInstanced(RenderCommandList& cmd, const DrawCommand& draw_cmd, const Matrix4& view_proj, bool shadow_enabled);
 };
 
 class OpaqueRenderer : public MaterialRenderer {

@@ -203,6 +203,7 @@ Material MaterialManager::CreateMaterialInternal(Graphics::ShaderId shader_id, c
   Material material(name, rs, pso.Get(), sort_key);
 
   material.SetInstancingSupport(metadata.supports_instancing);
+  material.SetStructuredInstancingSupport(metadata.supports_structured_instancing);
 
   return material;
 }

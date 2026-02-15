@@ -48,6 +48,7 @@ struct ShaderMetadata {
   std::span<const D3D12_INPUT_ELEMENT_DESC> input_layout;
   ShaderRenderHints render_hints;
   bool supports_instancing;
+  bool supports_structured_instancing;
 };
 
 namespace detail {
@@ -59,6 +60,15 @@ inline bool HasInstanceElements(std::span<const D3D12_INPUT_ELEMENT_DESC> layout
     }
   }
   return false;
+}
+
+template <typename T>
+constexpr bool GetStructuredInstancing() {
+  if constexpr (requires { T::STRUCTURED_INSTANCING; }) {
+    return T::STRUCTURED_INSTANCING;
+  } else {
+    return false;
+  }
 }
 
 template <typename ShaderType>
@@ -73,6 +83,7 @@ ShaderMetadata MakeMetadata() {
     layout,
     ShaderType::HINTS,
     HasInstanceElements(layout),
+    GetStructuredInstancing<ShaderType>(),
   };
 }
 

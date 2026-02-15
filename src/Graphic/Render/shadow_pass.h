@@ -28,8 +28,8 @@ class ShadowPass : public IRenderPass {
 
  private:
   bool CreatePipelineState();
-  Math::Matrix4 ComputeLightViewProj(const CameraData& camera, const Math::Vector3& light_dir,
-                                     float near_dist, float far_dist, float light_distance) const;
+  Math::Matrix4 ComputeLightViewProj(
+    const CameraData& camera, const Math::Vector3& light_dir, float near_dist, float far_dist, float light_distance) const;
 
   ID3D12Device* device_;
   ShaderManager* shader_manager_;
@@ -37,4 +37,5 @@ class ShadowPass : public IRenderPass {
   uint32_t cascade_index_;
   char name_buffer_[32];
   ComPtr<ID3D12PipelineState> pipeline_state_;
+  ComPtr<ID3D12PipelineState> instanced_pipeline_state_;
 };

@@ -1,3 +1,11 @@
+/**
+ * @file mesh_registry.h
+ * @brief Graphic-layer registry that owns GPU mesh buffers (vertex + index).
+ *
+ * Provides unique ownership of Mesh objects keyed by a string identifier.
+ * AssetManager stores non-owning pointers into this registry; the registry
+ * is the single source of truth for GPU mesh lifetime.
+ */
 #pragma once
 
 #include <memory>
