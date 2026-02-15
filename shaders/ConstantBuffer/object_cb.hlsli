@@ -22,7 +22,7 @@ struct ObjectCB {
   float2 uvScale;
   uint samplerIndex;
   uint flags;
-  uint2 _padding1;
+  uint2 _pad;
 };
 ConstantBuffer<ObjectCB> g_ObjectCB : register(OBJECT_CB_SLOT);
 

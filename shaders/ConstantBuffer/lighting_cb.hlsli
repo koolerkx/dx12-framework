@@ -13,7 +13,7 @@ struct LightingCB {
   float3 ambientColor;
   uint pointLightCount;
   uint ssaoSrvIndex;
-  uint3 _padding;
+  uint3 _pad;
 };
 ConstantBuffer<LightingCB> g_LightingCB : register(LIGHTING_CB_SLOT);
 
@@ -24,7 +24,7 @@ struct PointLight {
   float radius;
   float falloff;
   uint enabled;
-  float2 _padding;
+  float2 _pad;
 };
 
 StructuredBuffer<PointLight> g_PointLights : register(t0, space2);

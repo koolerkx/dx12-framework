@@ -17,18 +17,19 @@
 #include "Render/blit_pass.h"
 #include "Render/debug_pass.h"
 #include "Render/depth_view_pass.h"
+#include "Render/fog_pass.h"
 #include "Render/material_pass.h"
+#include "Render/outline_pass.h"
 #include "Render/pipeline_context.h"
 #include "Render/post_process_group.h"
 #include "Render/prepass_group.h"
 #include "Render/preview_group.h"
 #include "Render/shadow_pass_group.h"
 #include "Render/skybox_pass.h"
-#include "Render/fog_pass.h"
-#include "Render/outline_pass.h"
-#include "Render/vignette_pass.h"
 #include "Render/smaa_pass_group.h"
 #include "Render/ssao_pass_group.h"
+#include "Render/vignette_pass.h"
+
 
 using Math::Vector3;
 using Math::Vector4;
@@ -63,8 +64,6 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
 
   device_ = device_context_->GetDevice();
   dxgi_factory_ = device_context_->GetFactory();
-  use_bindless_sampler_ = device_context_->SupportsBindlessSamplers();
-
   DescriptorHeapConfig heapConfig;
   if (!descriptor_heap_manager_.Initialize(device_.Get(), FRAME_BUFFER_COUNT, heapConfig)) {
     Logger::LogFormat(LogLevel::Fatal, LogCategory::Graphic, Logger::Here(), "Failed to initialize descriptor heap manager");
@@ -102,18 +101,18 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
 
   if (!frame_cb_storage_.Initialize(device_.Get(), FRAME_BUFFER_COUNT)) return false;
 
-  size_t object_buffer_page_size = 1024 * 1024;
+  constexpr size_t OBJECT_BUFFER_PAGE_SIZE = 1024 * 1024;
 
   object_cb_allocators_.resize(FRAME_BUFFER_COUNT);
-  for (int i = 0; i < FRAME_BUFFER_COUNT; ++i) {
+  for (uint32_t i = 0; i < FRAME_BUFFER_COUNT; ++i) {
     object_cb_allocators_[i] = std::make_unique<DynamicUploadBuffer>();
     std::wstring bufferName = L"ObjectCB_Frame" + std::to_wstring(i);
-    if (!object_cb_allocators_[i]->Initialize(device_.Get(), object_buffer_page_size, bufferName)) {
+    if (!object_cb_allocators_[i]->Initialize(device_.Get(), OBJECT_BUFFER_PAGE_SIZE, bufferName)) {
       return false;
     }
   }
 
-  for (int i = 0; i < FRAME_BUFFER_COUNT; ++i) {
+  for (uint32_t i = 0; i < FRAME_BUFFER_COUNT; ++i) {
     std::wstring name = L"PointLightBuffer_Frame" + std::to_wstring(i);
     if (!point_light_buffers_[i].Initialize(device_.Get(), MAX_POINT_LIGHTS, name)) {
       Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "Failed to initialize point light buffer {}", i);
@@ -157,17 +156,17 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
 
 void Graphic::BuildRenderPipeline() {
   auto backbuffer = render_graph_->ImportBackbuffer("backbuffer");
-  PipelineContext ctx{device_.Get(), &render_services_->GetShaderManager(),
-                      frame_buffer_width_, frame_buffer_height_};
+  PipelineContext ctx{device_.Get(), &render_services_->GetShaderManager(), frame_buffer_width_, frame_buffer_height_};
 
   ShadowPassGroup shadow_group;
-  shadow_group.Build(*render_graph_, {
-    .context = ctx,
-    .cascade_count = active_cascade_count_,
-    .resolution = shadow_frame_data_.shadow_map_resolution,
-    .shadow_data = &shadow_frame_data_,
-    .shadow_depth_handles = shadow_depth_handles_,
-  });
+  shadow_group.Build(*render_graph_,
+    {
+      .context = ctx,
+      .cascade_count = active_cascade_count_,
+      .resolution = shadow_frame_data_.shadow_map_resolution,
+      .shadow_data = &shadow_frame_data_,
+      .shadow_depth_handles = shadow_depth_handles_,
+    });
 
   PrepassGroup prepass;
   prepass.Build(*render_graph_, {.context = ctx});
@@ -175,10 +174,12 @@ void Graphic::BuildRenderPipeline() {
   ssao_handle_ = RenderGraphHandle::Invalid;
   if (ssao_config_.enabled) {
     SSAOPassGroup ssao_group;
-    ssao_group.Build(*render_graph_, prepass.GetNormalDepthRT(), {
-      .context = ctx,
-      .config = &ssao_config_,
-    });
+    ssao_group.Build(*render_graph_,
+      prepass.GetNormalDepthRT(),
+      {
+        .context = ctx,
+        .config = &ssao_config_,
+      });
     ssao_handle_ = ssao_group.GetAOTexture();
   }
 
@@ -225,41 +226,49 @@ void Graphic::BuildRenderPipeline() {
   render_graph_->AddPass(std::make_unique<DebugPass>(debug_line_renderer_.get(), &render_services_->GetMaterialManager(), scene_setup));
 
   PostProcessGroup postfx;
-  postfx.Build(*render_graph_, scene_rt, {
-    .context = ctx,
-    .material_manager = &render_services_->GetMaterialManager(),
-    .bloom_config = &bloom_config_,
-    .hdr_debug = &hdr_debug_,
-  });
+  postfx.Build(*render_graph_,
+    scene_rt,
+    {
+      .context = ctx,
+      .material_manager = &render_services_->GetMaterialManager(),
+      .bloom_config = &bloom_config_,
+      .hdr_debug = &hdr_debug_,
+    });
 
   RenderGraphHandle ldr_output = postfx.GetLdrOutput();
 
   if (fog_config_.enabled) {
     FogPassGroup fog_group;
-    fog_group.Build(*render_graph_, ldr_output,
-                    prepass.GetNormalDepthRT(), {
-      .context = ctx,
-      .config = &fog_config_,
-    });
+    fog_group.Build(*render_graph_,
+      ldr_output,
+      prepass.GetNormalDepthRT(),
+      {
+        .context = ctx,
+        .config = &fog_config_,
+      });
     ldr_output = fog_group.GetOutput();
   }
 
   if (outline_config_.enabled) {
     OutlinePassGroup outline_group;
-    outline_group.Build(*render_graph_, ldr_output,
-                        prepass.GetNormalDepthRT(), {
-      .context = ctx,
-      .config = &outline_config_,
-    });
+    outline_group.Build(*render_graph_,
+      ldr_output,
+      prepass.GetNormalDepthRT(),
+      {
+        .context = ctx,
+        .config = &outline_config_,
+      });
     ldr_output = outline_group.GetOutput();
   }
 
   if (vignette_config_.enabled) {
     VignettePassGroup vignette_group;
-    vignette_group.Build(*render_graph_, ldr_output, {
-      .context = ctx,
-      .config = &vignette_config_,
-    });
+    vignette_group.Build(*render_graph_,
+      ldr_output,
+      {
+        .context = ctx,
+        .config = &vignette_config_,
+      });
     ldr_output = vignette_group.GetOutput();
   }
 
@@ -267,11 +276,13 @@ void Graphic::BuildRenderPipeline() {
 
   if (smaa_config_.enabled) {
     SMAAPassGroup smaa_group;
-    smaa_group.Build(*render_graph_, ldr_output, {
-      .context = ctx,
-      .texture_manager = &render_services_->GetTextureManager(),
-      .config = &smaa_config_,
-    });
+    smaa_group.Build(*render_graph_,
+      ldr_output,
+      {
+        .context = ctx,
+        .texture_manager = &render_services_->GetTextureManager(),
+        .config = &smaa_config_,
+      });
     blit_source = smaa_group.GetOutput();
   }
 
@@ -388,13 +399,13 @@ void Graphic::MarkActivePreviewResources() {
 void Graphic::SetPreviewPipelineActive(bool active) {
   if (preview_pipeline_active_ == active) return;
   preview_pipeline_active_ = active;
-  RebuildRenderPipeline();
+  RequestPipelineRebuild();
 }
 
 void Graphic::SetPreviewShadowActive(bool active) {
   if (preview_shadow_active_ == active) return;
   preview_shadow_active_ = active;
-  // RebuildRenderPipeline(); // Shadow always in pipeline
+  // RequestPipelineRebuild(); // Shadow always in pipeline
 }
 
 void Graphic::Shutdown() {
@@ -545,10 +556,10 @@ void Graphic::SetCascadeCount(uint32_t count) {
   count = std::clamp(count, 1u, ShadowCascadeConfig::MAX_CASCADES);
   if (count == active_cascade_count_) return;
   active_cascade_count_ = count;
-  RebuildRenderPipeline();
+  RequestPipelineRebuild();
 }
 
-void Graphic::RebuildRenderPipeline() {
+void Graphic::RequestPipelineRebuild() {
   pending_pipeline_rebuild_ = true;
 }
 

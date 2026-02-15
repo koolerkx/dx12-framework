@@ -50,7 +50,7 @@ struct alignas(256) FrameCB {
   Vector3 cameraPos;
   float time;
   Vector2 screenSize;
-  Vector2 _padding;
+  Vector2 _pad;
 };
 static_assert(sizeof(FrameCB) == 512);
 
@@ -63,7 +63,7 @@ struct alignas(256) ObjectCB {
   Vector2 uvScale;
   uint32_t samplerIndex;
   uint32_t flags;
-  uint32_t _padding[2];
+  uint32_t _pad[2];
 };
 static_assert(sizeof(ObjectCB) == 256);
 
@@ -75,7 +75,7 @@ struct alignas(256) LightingCB {
   Vector3 ambientColor;
   uint32_t pointLightCount;
   uint32_t ssaoSrvIndex;
-  uint32_t _padding[3];
+  uint32_t _pad[3];
 };
 static_assert(sizeof(LightingCB) == 256);
 
@@ -86,7 +86,7 @@ struct PointLightData {
   float radius;
   float falloff;
   uint32_t enabled;
-  float _padding[2];
+  float _pad[2];
 };
 static_assert(sizeof(PointLightData) == 48);
 static_assert(sizeof(PointLightData) % 16 == 0);

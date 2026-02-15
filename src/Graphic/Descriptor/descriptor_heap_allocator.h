@@ -28,12 +28,6 @@ class DescriptorHeapAllocator {
     }
   };
 
-  struct DeferredFree {
-    uint32_t offset;
-    uint32_t count;
-    uint64_t fence_value;
-  };
-
   DescriptorHeapAllocator() = default;
 
   // Mode 1: Create its own heap (Used for RTV/DSV)

@@ -2,7 +2,7 @@
 
 struct SkyboxCB {
   uint cubemapSrvIndex;
-  uint3 _padding;
+  uint3 _pad;
 };
 ConstantBuffer<SkyboxCB> g_SkyboxCB : register(b2);
 

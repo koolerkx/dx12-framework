@@ -138,4 +138,6 @@ class TextureManager {
 
   std::mutex texture_mutex_;  // Protects cache and pending deletes
   std::vector<PendingDelete> pending_deletes_;
+
+  uint32_t deferred_free_counter_ = 0;
 };

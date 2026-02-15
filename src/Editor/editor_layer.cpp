@@ -1088,7 +1088,7 @@ void EditorLayer::DrawPostFxPanel() {
     ImGui::SliderFloat("Intensity", &bloom.intensity, 0.0f, 2.0f, "%.2f");
 
     if (bloom.enabled != prev_enabled || bloom.mip_levels != prev_mip_levels) {
-      graphic_->RebuildRenderPipeline();
+      graphic_->RequestPipelineRebuild();
     }
   }
 
@@ -1105,7 +1105,7 @@ void EditorLayer::DrawPostFxPanel() {
       ssao.sample_count = static_cast<uint32_t>(samples);
     }
     if (ssao.enabled != prev_enabled) {
-      graphic_->RebuildRenderPipeline();
+      graphic_->RequestPipelineRebuild();
     }
   }
 
@@ -1120,7 +1120,7 @@ void EditorLayer::DrawPostFxPanel() {
     ImGui::SliderFloat("Roundness##vignette", &vignette.roundness, 0.0f, 1.0f, "%.2f");
     ImGui::ColorEdit3("Color##vignette", vignette.vignette_color);
     if (vignette.enabled != prev_enabled) {
-      graphic_->RebuildRenderPipeline();
+      graphic_->RequestPipelineRebuild();
     }
   }
 
@@ -1135,7 +1135,7 @@ void EditorLayer::DrawPostFxPanel() {
     ImGui::DragFloat("Max Distance##fog", &fog.max_distance, 1.0f, 10.0f, 5000.0f, "%.0f");
     ImGui::ColorEdit3("Color##fog", fog.fog_color);
     if (fog.enabled != prev_enabled) {
-      graphic_->RebuildRenderPipeline();
+      graphic_->RequestPipelineRebuild();
     }
   }
 
@@ -1151,7 +1151,7 @@ void EditorLayer::DrawPostFxPanel() {
     ImGui::SliderFloat("Thickness##outline", &outline.thickness, 0.5f, 5.0f, "%.1f");
     ImGui::ColorEdit3("Color##outline", outline.outline_color);
     if (outline.enabled != prev_enabled) {
-      graphic_->RebuildRenderPipeline();
+      graphic_->RequestPipelineRebuild();
     }
   }
 

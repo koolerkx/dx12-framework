@@ -2,7 +2,7 @@ struct DepthViewCB {
   uint depthSrvIndex;
   float nearPlane;
   float farPlane;
-  uint _padding;
+  uint _pad;
 };
 ConstantBuffer<DepthViewCB> g_DepthViewCB : register(b2);
 

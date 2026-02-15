@@ -2,7 +2,7 @@ struct LinearDepthViewCB {
   uint srcSrvIndex;
   float nearPlane;
   float farPlane;
-  uint _padding;
+  uint _pad;
 };
 ConstantBuffer<LinearDepthViewCB> g_LinearDepthViewCB : register(b2);
 

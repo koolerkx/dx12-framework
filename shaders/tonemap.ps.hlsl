@@ -28,7 +28,7 @@ struct ToneMapCB {
   uint hdrSrvIndex;
   uint bloomSrvIndex;
   float bloomIntensity;
-  uint3 _padding;
+  uint3 _pad;
 };
 ConstantBuffer<ToneMapCB> g_ToneMapCB : register(b2);
 

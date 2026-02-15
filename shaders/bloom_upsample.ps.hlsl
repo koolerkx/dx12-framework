@@ -1,7 +1,7 @@
 struct BloomUpCB {
   uint sourceSrvIndex;
   float2 texelSize;
-  float padding;
+  float _pad;
 };
 ConstantBuffer<BloomUpCB> g_CB : register(b2);
 

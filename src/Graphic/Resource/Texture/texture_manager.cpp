@@ -608,10 +608,8 @@ void TextureManager::ProcessDeferredFrees(uint64_t completed_fence_value) {
     }
   }
 
-  // Periodic defragmentation
-  static uint32_t free_counter = 0;
-  if (++free_counter >= 16) {
+  if (++deferred_free_counter_ >= 16) {
     allocator.CoalesceFreeBlocks();
-    free_counter = 0;
+    deferred_free_counter_ = 0;
   }
 }

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <basetsd.h>
 #include <d3d12.h>
 #include <dxgi1_6.h>
 
@@ -36,7 +35,6 @@
 #include "Resource/Texture/texture_manager.h"
 #include "Resource/mesh_registry.h"
 #include "Resource/render_services.h"
-
 
 class Graphic {
  public:
@@ -75,7 +73,7 @@ class Graphic {
     return debug_line_renderer_.get();
   }
 
-  static constexpr int FRAME_BUFFER_COUNT = 2;
+  static constexpr uint32_t FRAME_BUFFER_COUNT = 2;
 
   TextureManager& GetTextureManager() {
     return render_services_->GetTextureManager();
@@ -233,9 +231,6 @@ class Graphic {
   UINT frame_buffer_width_ = 0;
   UINT frame_buffer_height_ = 0;
 
-  ConstantBuffer<FrameCB> frameCB_;
-  ConstantBuffer<ObjectCB> objectCB_;
-
   PerFrameConstantBuffer<FrameCB> frame_cb_storage_;
   std::vector<std::unique_ptr<DynamicUploadBuffer>> object_cb_allocators_;
 
@@ -254,8 +249,6 @@ class Graphic {
 
   HWND hwnd_ = nullptr;
   bool enable_vsync_ = true;
-  bool use_bindless_sampler_ = false;
-
   OverlayRenderFunc overlay_renderer_;
   bool preview_pipeline_active_ = true;
   bool preview_shadow_active_ = false;
@@ -264,7 +257,7 @@ class Graphic {
   void MarkActivePreviewResources();
 
  public:
-  void RebuildRenderPipeline();
+  void RequestPipelineRebuild();
   void SetPreviewPipelineActive(bool active);
   void SetPreviewShadowActive(bool active);
   void SetShadowMapResolution(uint32_t resolution);
