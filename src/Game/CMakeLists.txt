@@ -91,6 +91,10 @@ add_library(game STATIC
     Map/map_data.h
     Map/map_loader.h
     Map/map_loader.cpp
+    Map/nav_grid.h
+    Map/nav_grid.cpp
+    Map/pathfinder.h
+    Map/pathfinder.cpp
 )
 
 set_msvc_runtime(game)

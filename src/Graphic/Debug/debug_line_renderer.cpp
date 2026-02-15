@@ -15,8 +15,7 @@ void DebugLineRenderer::Shutdown() {
 
 void DebugLineRenderer::Clear() {
   vertices_.clear();
-  current_frame_gpu_address_ = 0;
-  current_frame_vertex_count_ = 0;
+  batches_.clear();
 }
 
 void DebugLineRenderer::AddLine(const Vector3& start, const Vector3& end, const Vector4& color) {
@@ -25,27 +24,31 @@ void DebugLineRenderer::AddLine(const Vector3& start, const Vector3& end, const 
 }
 
 void DebugLineRenderer::UploadVertices(const RenderFrameContext& frame) {
-  if (vertices_.empty()) {
-    current_frame_gpu_address_ = 0;
-    current_frame_vertex_count_ = 0;
-    return;
+  batches_.clear();
+  if (vertices_.empty()) return;
+
+  constexpr size_t ALIGNMENT = 256;
+  size_t page_size = 1024 * 1024;
+  size_t max_vertices_per_batch = (page_size - ALIGNMENT) / sizeof(LineVertex);
+  // round down to even number (each line = 2 vertices)
+  max_vertices_per_batch &= ~1u;
+
+  size_t offset = 0;
+  while (offset < vertices_.size()) {
+    size_t remaining = vertices_.size() - offset;
+    size_t batch_count = (std::min)(remaining, max_vertices_per_batch);
+    size_t data_size = batch_count * sizeof(LineVertex);
+
+    auto alloc = frame.object_cb_allocator->Allocate(data_size);
+    if (alloc.cpu_ptr == nullptr) {
+      Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[DebugLineRenderer] Failed to allocate upload buffer");
+      return;
+    }
+
+    memcpy(alloc.cpu_ptr, vertices_.data() + offset, data_size);
+    batches_.push_back({.gpu_address = alloc.gpu_ptr, .vertex_count = static_cast<uint32_t>(batch_count)});
+    offset += batch_count;
   }
-
-  size_t data_size = vertices_.size() * sizeof(LineVertex);
-
-  DynamicUploadBuffer::Allocation alloc = frame.object_cb_allocator->Allocate(data_size);
-
-  if (alloc.cpu_ptr == nullptr) {
-    Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[DebugLineRenderer] Failed to allocate upload buffer");
-    current_frame_gpu_address_ = 0;
-    current_frame_vertex_count_ = 0;
-    return;
-  }
-
-  memcpy(alloc.cpu_ptr, vertices_.data(), data_size);
-
-  current_frame_gpu_address_ = alloc.gpu_ptr;
-  current_frame_vertex_count_ = static_cast<uint32_t>(vertices_.size());
 }
 
 void DebugLineRenderer::Render(const RenderFrameContext& frame, const Material* line_material, const Matrix4& view_proj) {
@@ -55,9 +58,7 @@ void DebugLineRenderer::Render(const RenderFrameContext& frame, const Material* 
 
   UploadVertices(frame);
 
-  if (current_frame_gpu_address_ == 0) {
-    return;
-  }
+  if (batches_.empty()) return;
 
   frame.command_list->SetPipelineState(line_material->GetPipelineState());
   frame.command_list->SetGraphicsRootSignature(line_material->GetRootSignature());
@@ -73,13 +74,15 @@ void DebugLineRenderer::Render(const RenderFrameContext& frame, const Material* 
   memcpy(obj_alloc.cpu_ptr, &obj_cb, sizeof(ObjectCB));
   frame.command_list->SetGraphicsRootConstantBufferView(1, obj_alloc.gpu_ptr);
 
-  D3D12_VERTEX_BUFFER_VIEW vbv = {};
-  vbv.BufferLocation = current_frame_gpu_address_;
-  vbv.SizeInBytes = current_frame_vertex_count_ * sizeof(LineVertex);
-  vbv.StrideInBytes = sizeof(LineVertex);
-
-  frame.command_list->IASetVertexBuffers(0, 1, &vbv);
   frame.command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
 
-  frame.command_list->DrawInstanced(current_frame_vertex_count_, 1, 0, 0);
+  for (const auto& batch : batches_) {
+    D3D12_VERTEX_BUFFER_VIEW vbv = {};
+    vbv.BufferLocation = batch.gpu_address;
+    vbv.SizeInBytes = batch.vertex_count * sizeof(LineVertex);
+    vbv.StrideInBytes = sizeof(LineVertex);
+
+    frame.command_list->IASetVertexBuffers(0, 1, &vbv);
+    frame.command_list->DrawInstanced(batch.vertex_count, 1, 0, 0);
+  }
 }

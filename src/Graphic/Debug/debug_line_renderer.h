@@ -33,11 +33,14 @@ class DebugLineRenderer {
   }
 
  private:
+  struct Batch {
+    D3D12_GPU_VIRTUAL_ADDRESS gpu_address;
+    uint32_t vertex_count;
+  };
+
   void UploadVertices(const RenderFrameContext& frame);
 
   ID3D12Device* device_ = nullptr;
   std::vector<LineVertex> vertices_;
-
-  D3D12_GPU_VIRTUAL_ADDRESS current_frame_gpu_address_ = 0;
-  uint32_t current_frame_vertex_count_ = 0;
+  std::vector<Batch> batches_;
 };

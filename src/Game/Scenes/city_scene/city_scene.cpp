@@ -62,6 +62,7 @@ void CityScene::OnEnter(AssetManager& asset_manager) {
   }
 
   auto* map_root = CreateGameObject("Map");
+  std::vector<Math::AABB> obstacle_bounds;
 
   for (const auto& layer : map_data->layers) {
     auto* layer_go = CreateGameObject(layer.id);
@@ -93,7 +94,8 @@ void CityScene::OnEnter(AssetManager& asset_manager) {
         for (const auto& entry : instances) {
           auto* collider_go = CreateGameObject(entry.id + "_collider");
           collider_go->SetParent(layer_go);
-          collider_go->AddComponent<BoxColliderComponent>(model->bounds, entry.props.world);
+          auto* collider = collider_go->AddComponent<BoxColliderComponent>(model->bounds, entry.props.world);
+          obstacle_bounds.push_back(collider->GetWorldBounds());
         }
       }
 
@@ -108,12 +110,16 @@ void CityScene::OnEnter(AssetManager& asset_manager) {
     }
   }
 
+  nav_grid_.Build(*map_data, obstacle_bounds, {.cell_size = 0.25f, .show_debug_grid = true});
+
   Logger::LogFormat(LogLevel::Info,
     LogCategory::Game,
     Logger::Here(),
-    "[CityScene] Map loaded: {} layers, {} mesh resources",
+    "[CityScene] Map loaded: {} layers, {} mesh resources, nav grid {}x{}",
     map_data->layers.size(),
-    map_data->mesh_resources.size());
+    map_data->mesh_resources.size(),
+    nav_grid_.GetWidth(),
+    nav_grid_.GetHeight());
 
   CreateSpawnCubes(*map_data);
 
@@ -139,6 +145,8 @@ void CityScene::OnDebugDraw(DebugDrawer& drawer) {
   axis_config.position = Vector3::Zero;
   axis_config.length = 2.0f;
   drawer.DrawAxisGizmo(axis_config);
+
+  nav_grid_.DebugDraw(drawer, 0.1f);
 }
 
 void CityScene::CreateSpawnCubes(const MapData& map_data) {
