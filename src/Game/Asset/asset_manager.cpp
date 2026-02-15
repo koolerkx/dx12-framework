@@ -1,5 +1,6 @@
 #include "asset_manager.h"
 
+#include <cstdio>
 #include <filesystem>
 #include <limits>
 #include <optional>
@@ -118,8 +119,16 @@ std::optional<DefaultMesh> AssetManager::FindDefaultMeshType(const Mesh* mesh) c
   return std::nullopt;
 }
 
-std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path) {
-  auto cache_it = model_cache_.find(path);
+std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path, float global_scale) {
+  auto format_scale = [](float s) -> std::string {
+    char buf[32];
+    std::snprintf(buf, sizeof(buf), "%.6g", s);
+    return buf;
+  };
+
+  std::string scale_suffix = (global_scale == 1.0f) ? "" : "@" + format_scale(global_scale);
+  std::string cache_key = path + scale_suffix;
+  auto cache_it = model_cache_.find(cache_key);
   if (cache_it != model_cache_.end()) {
     return cache_it->second;
   }
@@ -214,7 +223,7 @@ std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path) {
   float global_min_y = (std::numeric_limits<float>::max)();
 
   auto mesh_cb = [&](const Model::MeshData<Graphics::Vertex::ModelVertex>& mesh_data) -> const Mesh* {
-    std::string key = path + "#" + mesh_data.name + "_" + std::to_string(mesh_counter++);
+    std::string key = path + scale_suffix + "#" + mesh_data.name + "_" + std::to_string(mesh_counter++);
     mesh_material_indices.push_back(mesh_data.material_index);
 
     for (const auto& vertex : mesh_data.vertices) {
@@ -233,8 +242,10 @@ std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path) {
     return mesh_registry.Register(key, std::move(mesh));
   };
 
+  Model::LoadOptions load_options;
+  load_options.global_scale = global_scale;
   auto result = Loader::Load<Graphics::Vertex::ModelVertex, const Mesh*, ModelSurfaceMaterial, std::shared_ptr<Texture>>(
-    path, texture_cb, material_cb, mesh_cb);
+    path, texture_cb, material_cb, mesh_cb, load_options);
 
   if (!result.success) {
     Logger::LogFormat(
@@ -276,7 +287,7 @@ std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path) {
     model_data->sub_meshes.push_back(entry);
   }
 
-  model_cache_[path] = model_data;
+  model_cache_[cache_key] = model_data;
   return model_data;
 }
 

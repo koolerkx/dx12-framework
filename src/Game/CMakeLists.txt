@@ -49,6 +49,8 @@ add_library(game STATIC
     Component/Renderer/ui_text_renderer.cpp
     Component/Renderer/particle_emitter.h
     Component/Renderer/particle_emitter.cpp
+    Component/Renderer/instanced_model_renderer.h
+    Component/Renderer/instanced_model_renderer.cpp
 
     Serialization/scene_serializer.h
     Serialization/scene_serializer.cpp
@@ -79,6 +81,13 @@ add_library(game STATIC
     Scenes/test_scene/test_scene.cpp
     Scenes/test_scene/character_mover_component.h
     Scenes/test_scene/character_mover_component.cpp
+
+    Scenes/city_scene/city_scene.h
+    Scenes/city_scene/city_scene.cpp
+
+    Map/map_data.h
+    Map/map_loader.h
+    Map/map_loader.cpp
 )
 
 set_msvc_runtime(game)

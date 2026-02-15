@@ -186,9 +186,7 @@ class ModelLoader {
 
     Assimp::Importer importer;
 
-    unsigned int import_flags = aiProcessPreset_TargetRealtime_MaxQuality
-      | aiProcess_ConvertToLeftHanded
-      | aiProcess_OptimizeMeshes;
+    unsigned int import_flags = aiProcessPreset_TargetRealtime_MaxQuality | aiProcess_ConvertToLeftHanded | aiProcess_OptimizeMeshes;
 
     importer.SetPropertyBool(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, false);
 
@@ -204,6 +202,16 @@ class ModelLoader {
       result.success = false;
       result.error_message = std::string("Assimp: ") + importer.GetErrorString();
       return result;
+    }
+
+    float final_scale = options.global_scale;
+
+    // consider the fbx unit scale
+    if (scene->mMetaData) {
+      float unit_scale_factor = 1.0f;
+      if (scene->mMetaData->Get("UnitScaleFactor", unit_scale_factor)) {
+        final_scale *= unit_scale_factor;
+      }
     }
 
     struct EmbeddedTextureMap {
@@ -327,7 +335,7 @@ class ModelLoader {
 
     // Mesh Callback
     for (unsigned int i = 0; i < scene->mNumMeshes; ++i) {
-      MeshData<VertexType> mesh_data = ConvertMesh<VertexType>(scene->mMeshes[i], options.global_scale);
+      MeshData<VertexType> mesh_data = ConvertMesh<VertexType>(scene->mMeshes[i], final_scale);
       result.mesh_handles.push_back(mesh_callback(mesh_data));
     }
 

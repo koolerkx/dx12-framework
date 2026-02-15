@@ -21,8 +21,8 @@ void SceneManager::ProcessPending(AssetManager& asset_manager, GameContext* cont
   auto new_scene = it->second();
 
   if (current_scene_) {
-    current_scene_->Exit();
     if (graphic) graphic->WaitForGpuIdle();
+    current_scene_->Exit();
     current_scene_.reset();
   }
 
@@ -38,8 +38,8 @@ void SceneManager::ProcessPending(AssetManager& asset_manager, GameContext* cont
 
 void SceneManager::Shutdown(Graphic* graphic) {
   if (current_scene_) {
-    current_scene_->Exit();
     if (graphic) graphic->WaitForGpuIdle();
+    current_scene_->Exit();
     current_scene_.reset();
   }
 }

@@ -1,3 +1,11 @@
+/**
+ * @file asset_manager.h
+ * @brief Game-layer asset loading facade with model-level caching.
+ *
+ * Caches complete ModelData (mesh pointers, textures, materials) keyed by
+ * path + scale, so repeated LoadModel calls skip Assimp parsing entirely.
+ * Individual GPU mesh buffers are owned by MeshRegistry in the Graphic layer.
+ */
 #pragma once
 #include <memory>
 #include <optional>
@@ -44,7 +52,7 @@ class AssetManager {
   AssetHandle<Texture> LoadCubemap(const std::string& path);
   std::vector<AssetHandle<Texture>> LoadTextures(const std::vector<std::string>& paths);
 
-  std::shared_ptr<ModelData> LoadModel(const std::string& path);
+  std::shared_ptr<ModelData> LoadModel(const std::string& path, float global_scale = 1.0f);
 
   // Todo: Audio management
   // AssetHandle<AudioClip> LoadAudio(const std::string& path);
@@ -70,7 +78,7 @@ class AssetManager {
  private:
   void CreateDefaultMeshes();
   std::unordered_map<DefaultMesh, const Mesh*> default_meshes_;
-  std::unordered_map<std::string, std::shared_ptr<ModelData>> model_cache_;
+  std::unordered_map<std::string, std::shared_ptr<ModelData>> model_cache_;  // router table to graphic layers
   std::shared_ptr<Texture> default_white_texture_;
 
   class Impl;
