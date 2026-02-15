@@ -401,7 +401,7 @@ std::shared_ptr<Texture> TextureManager::LoadTextureLinear(const std::wstring& p
   auto texture = std::make_shared<Texture>();
   texture->resource = texture_buffer;
   texture->srv_index = CreateSrv(texture_buffer);
-  texture->source_path = path;  // Store original path for reference
+  texture->source_path = linear_key;
   texture_cache_[linear_key] = texture;
 
   D3D12_RESOURCE_DESC texDesc = texture_buffer->GetDesc();
@@ -608,7 +608,7 @@ std::shared_ptr<Texture> TextureManager::LoadCubemapFromCrossHDR(const std::wstr
   auto texture = std::make_shared<Texture>();
   texture->resource = texture_buffer;
   texture->srv_index = CreateCubemapSrv(texture_buffer, metadata.format, 1);
-  texture->source_path = path;
+  texture->source_path = cache_key;
   texture_cache_[cache_key] = texture;
 
   Logger::LogFormat(LogLevel::Info,

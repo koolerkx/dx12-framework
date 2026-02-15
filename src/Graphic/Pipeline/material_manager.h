@@ -3,6 +3,7 @@
 #include <d3d12shader.h>
 #include <dxgiformat.h>
 
+#include <atomic>
 #include <memory>
 #include <shared_mutex>
 #include <unordered_map>
@@ -51,7 +52,17 @@ class MaterialManager {
   // === Unified LRU Cache ===
   struct CacheEntry {
     std::unique_ptr<Material> material;
-    uint64_t last_used_frame;
+    std::atomic<uint64_t> last_used_frame{0};
+
+    CacheEntry() = default;
+    CacheEntry(CacheEntry&& other) noexcept
+        : material(std::move(other.material)),
+          last_used_frame(other.last_used_frame.load(std::memory_order_relaxed)) {}
+    CacheEntry& operator=(CacheEntry&& other) noexcept {
+      material = std::move(other.material);
+      last_used_frame.store(other.last_used_frame.load(std::memory_order_relaxed), std::memory_order_relaxed);
+      return *this;
+    }
   };
 
   static constexpr size_t MAX_CACHE_SIZE = 128;

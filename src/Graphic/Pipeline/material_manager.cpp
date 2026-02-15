@@ -82,8 +82,6 @@ Material* MaterialManager::GetOrCreateMaterial(Graphics::ShaderId shader_id, con
   if (!entry.material || !entry.material->IsValid()) {
     Logger::LogFormat(
       LogLevel::Error, LogCategory::Resource, Logger::Here(), "[MaterialManager] Failed to create material for ShaderId: {}", shader_id);
-    entry.material.reset();
-    unified_cache_[key] = std::move(entry);
     return nullptr;
   }
 
@@ -227,9 +225,13 @@ void MaterialManager::EvictLRU() {
     return;
   }
 
-  auto oldest = std::min_element(unified_cache_.begin(), unified_cache_.end(), [](const auto& a, const auto& b) {
+  auto oldest = std::min_element(unified_cache_.begin(), unified_cache_.end(), [this](const auto& a, const auto& b) {
+    if (a.second.last_used_frame == current_frame_) return false;
+    if (b.second.last_used_frame == current_frame_) return true;
     return a.second.last_used_frame < b.second.last_used_frame;
   });
+
+  if (oldest->second.last_used_frame == current_frame_) return;
 
   unified_cache_.erase(oldest);
 }
