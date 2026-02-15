@@ -30,7 +30,6 @@
 #include "Render/ssao_pass_group.h"
 #include "Render/vignette_pass.h"
 
-
 using Math::Vector3;
 using Math::Vector4;
 
@@ -42,12 +41,12 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
   frame_buffer_width_ = frame_buffer_width;
   frame_buffer_height_ = frame_buffer_height;
   enable_vsync_ = props.enable_vsync;
-  bloom_config_ = props.bloom;
-  ssao_config_ = props.ssao;
-  smaa_config_ = props.smaa;
-  fog_config_ = props.fog;
-  outline_config_ = props.outline;
-  vignette_config_ = props.vignette;
+  render_config_.bloom = props.bloom;
+  render_config_.ssao = props.ssao;
+  render_config_.smaa = props.smaa;
+  render_config_.fog = props.fog;
+  render_config_.outline = props.outline;
+  render_config_.vignette = props.vignette;
 
   std::wstring init_error_caption = L"Graphic Initialization Error";
 
@@ -172,13 +171,13 @@ void Graphic::BuildRenderPipeline() {
   prepass.Build(*render_graph_, {.context = ctx});
 
   ssao_handle_ = RenderGraphHandle::Invalid;
-  if (ssao_config_.enabled) {
+  if (render_config_.ssao.enabled) {
     SSAOPassGroup ssao_group;
     ssao_group.Build(*render_graph_,
       prepass.GetNormalDepthRT(),
       {
         .context = ctx,
-        .config = &ssao_config_,
+        .config = &render_config_.ssao,
       });
     ssao_handle_ = ssao_group.GetAOTexture();
   }
@@ -231,57 +230,57 @@ void Graphic::BuildRenderPipeline() {
     {
       .context = ctx,
       .material_manager = &render_services_->GetMaterialManager(),
-      .bloom_config = &bloom_config_,
-      .hdr_debug = &hdr_debug_,
+      .bloom_config = &render_config_.bloom,
+      .hdr_debug = &render_config_.hdr_debug,
     });
 
   RenderGraphHandle ldr_output = postfx.GetLdrOutput();
 
-  if (fog_config_.enabled) {
+  if (render_config_.fog.enabled) {
     FogPassGroup fog_group;
     fog_group.Build(*render_graph_,
       ldr_output,
       prepass.GetNormalDepthRT(),
       {
         .context = ctx,
-        .config = &fog_config_,
+        .config = &render_config_.fog,
       });
     ldr_output = fog_group.GetOutput();
   }
 
-  if (outline_config_.enabled) {
+  if (render_config_.outline.enabled) {
     OutlinePassGroup outline_group;
     outline_group.Build(*render_graph_,
       ldr_output,
       prepass.GetNormalDepthRT(),
       {
         .context = ctx,
-        .config = &outline_config_,
+        .config = &render_config_.outline,
       });
     ldr_output = outline_group.GetOutput();
   }
 
-  if (vignette_config_.enabled) {
+  if (render_config_.vignette.enabled) {
     VignettePassGroup vignette_group;
     vignette_group.Build(*render_graph_,
       ldr_output,
       {
         .context = ctx,
-        .config = &vignette_config_,
+        .config = &render_config_.vignette,
       });
     ldr_output = vignette_group.GetOutput();
   }
 
   RenderGraphHandle blit_source = ldr_output;
 
-  if (smaa_config_.enabled) {
+  if (render_config_.smaa.enabled) {
     SMAAPassGroup smaa_group;
     smaa_group.Build(*render_graph_,
       ldr_output,
       {
         .context = ctx,
         .texture_manager = &render_services_->GetTextureManager(),
-        .config = &smaa_config_,
+        .config = &render_config_.smaa,
       });
     blit_source = smaa_group.GetOutput();
   }
@@ -302,7 +301,7 @@ void Graphic::BuildRenderPipeline() {
     PreviewGroup preview;
     preview.Build(*render_graph_,
       {.normal_depth_rt = prepass.GetNormalDepthRT(), .scene_depth = scene_depth},
-      {.context = ctx, .depth_preview_config = &depth_preview_config_});
+      {.context = ctx, .depth_preview_config = &render_config_.depth_preview});
     preview_output = preview.GetOutput();
   }
 
@@ -315,7 +314,7 @@ void Graphic::BuildRenderPipeline() {
     .shader_manager = &render_services_->GetShaderManager(),
     .pass_setup = depth_view_setup,
     .depth_handle = scene_depth,
-    .config = &depth_view_config_,
+    .config = &render_config_.depth_view,
   }));
 
   PassSetup backbuffer_setup;

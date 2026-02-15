@@ -38,6 +38,18 @@
 
 class Graphic {
  public:
+  struct RenderConfig {
+    HdrDebug hdr_debug;
+    DepthViewConfig depth_view;
+    DepthViewConfig depth_preview = {.enabled = true, .near_plane = 0.1f, .far_plane = 1000.0f};
+    BloomConfig bloom;
+    SSAOConfig ssao;
+    SMAAConfig smaa;
+    FogConfig fog;
+    OutlineConfig outline;
+    VignetteConfig vignette;
+  };
+
   struct GraphicInitProps {
     bool enable_vsync = true;
     BloomConfig bloom;
@@ -162,31 +174,31 @@ class Graphic {
   }
 
   HdrDebug& GetHdrDebug() {
-    return hdr_debug_;
+    return render_config_.hdr_debug;
   }
   DepthViewConfig& GetDepthViewConfig() {
-    return depth_view_config_;
+    return render_config_.depth_view;
   }
   DepthViewConfig& GetDepthPreviewConfig() {
-    return depth_preview_config_;
+    return render_config_.depth_preview;
   }
   BloomConfig& GetBloomConfig() {
-    return bloom_config_;
+    return render_config_.bloom;
   }
   SSAOConfig& GetSSAOConfig() {
-    return ssao_config_;
+    return render_config_.ssao;
   }
   SMAAConfig& GetSMAAConfig() {
-    return smaa_config_;
+    return render_config_.smaa;
   }
   OutlineConfig& GetOutlineConfig() {
-    return outline_config_;
+    return render_config_.outline;
   }
   FogConfig& GetFogConfig() {
-    return fog_config_;
+    return render_config_.fog;
   }
   VignetteConfig& GetVignetteConfig() {
-    return vignette_config_;
+    return render_config_.vignette;
   }
 
   void SetWireframeMode(bool enabled) {
@@ -212,15 +224,7 @@ class Graphic {
   DescriptorHeapManager descriptor_heap_manager_;
   MeshRegistry mesh_registry_;
 
-  HdrDebug hdr_debug_;
-  DepthViewConfig depth_view_config_;
-  DepthViewConfig depth_preview_config_ = {.enabled = true, .near_plane = 0.1f, .far_plane = 1000.0f};
-  BloomConfig bloom_config_;
-  SSAOConfig ssao_config_;
-  SMAAConfig smaa_config_;
-  FogConfig fog_config_;
-  OutlineConfig outline_config_;
-  VignetteConfig vignette_config_;
+  RenderConfig render_config_;
   RenderGraphHandle ssao_handle_ = RenderGraphHandle::Invalid;
   bool pending_pipeline_rebuild_ = false;
 
