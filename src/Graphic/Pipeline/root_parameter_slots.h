@@ -25,14 +25,13 @@ enum class ShaderResource : uint32_t {
   PointLights = 7,  // StructuredBuffer<PointLight> (t0, space2)
 };
 
-// Static samplers (not root parameters, but defined in root signature)
-// Note: These are now replaced by bindless sampler descriptor table
-enum class StaticSampler : uint32_t {
-  PointWrap = 0,        // s0
-  LinearWrap = 1,       // s1
-  AnisotropicWrap = 2,  // s2
-  PointClamp = 3,       // s3
-  LinearClamp = 4,      // s4
+// Bindless sampler heap indices (see shaders/ConstantBuffer/sampler.hlsli)
+enum class SamplerIndex : uint32_t {
+  PointWrap = 0,        // SAMPLER_POINT_WRAP
+  LinearWrap = 1,       // SAMPLER_LINEAR_WRAP
+  AnisotropicWrap = 2,  // SAMPLER_ANISOTROPIC_WRAP
+  PointClamp = 3,       // SAMPLER_POINT_CLAMP
+  LinearClamp = 4,      // SAMPLER_LINEAR_CLAMP
 };
 
 // Helper functions to convert enum to uint32_t for API calls
@@ -48,7 +47,7 @@ inline constexpr uint32_t ToIndex(ShaderResource slot) {
   return static_cast<uint32_t>(slot);
 }
 
-inline constexpr uint32_t ToIndex(StaticSampler slot) {
+inline constexpr uint32_t ToIndex(SamplerIndex slot) {
   return static_cast<uint32_t>(slot);
 }
 

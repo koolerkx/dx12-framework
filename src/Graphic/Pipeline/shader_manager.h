@@ -58,8 +58,6 @@ class ShaderManager {
 
   bool CreateRSPresets();
   bool CreateStandardRS();
-  bool CreateDeferredRS();
-  bool CreateComputeRS();
 
   ID3DBlob* LoadShaderFromFile(const std::wstring& path);
 };

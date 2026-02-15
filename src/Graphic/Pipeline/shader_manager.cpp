@@ -101,17 +101,7 @@ void ShaderManager::PreloadShaders(const std::vector<Graphics::ShaderId>& shader
 }
 
 bool ShaderManager::CreateRSPresets() {
-  // Create all RS presets
-  if (!CreateStandardRS()) {
-    return false;
-  }
-
-  // Deferred and Compute RS are placeholders for future expansion
-  // For now, they can use the same RS as Standard
-  rs_presets_[static_cast<size_t>(Graphics::RSPreset::Deferred)] = rs_presets_[static_cast<size_t>(Graphics::RSPreset::Standard)];
-  rs_presets_[static_cast<size_t>(Graphics::RSPreset::Compute)] = rs_presets_[static_cast<size_t>(Graphics::RSPreset::Standard)];
-
-  return true;
+  return CreateStandardRS();
 }
 
 bool ShaderManager::CreateStandardRS() {
@@ -161,13 +151,6 @@ bool ShaderManager::CreateStandardRS() {
   }
 }
 
-bool ShaderManager::CreateDeferredRS() {
-  return true;
-}
-
-bool ShaderManager::CreateComputeRS() {
-  return true;
-}
 
 ID3DBlob* ShaderManager::LoadShaderFromFile(const std::wstring& path) {
   ComPtr<ID3DBlob> blob;

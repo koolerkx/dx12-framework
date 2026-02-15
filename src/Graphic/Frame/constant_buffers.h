@@ -1,4 +1,6 @@
 #pragma once
+#include <cstdint>
+
 #include "Framework/Math/Math.h"
 #include "Graphic/Render/shadow_config.h"
 
@@ -6,6 +8,38 @@ using Math::Matrix4;
 using Math::Vector2;
 using Math::Vector3;
 using Math::Vector4;
+
+enum class MaterialFlags : uint32_t {
+  None = 0,
+  AlphaTest = 1u << 0,
+  DoubleSided = 1u << 1,
+  RimShadowAffected = 1u << 2,
+  HasNormalMap = 1u << 3,
+  HasMetallicRoughnessMap = 1u << 4,
+  HasEmissiveMap = 1u << 5,
+};
+
+enum class ObjectFlags : uint32_t {
+  None = 0,
+  Lit = 1u << 0,
+  Opaque = 1u << 1,
+  ReceiveShadow = 1u << 2,
+};
+
+namespace flags {
+template <typename E>
+constexpr uint32_t Combine(E flag) {
+  return static_cast<uint32_t>(flag);
+}
+template <typename E, typename... Es>
+constexpr uint32_t Combine(E flag, Es... rest) {
+  return static_cast<uint32_t>(flag) | Combine(rest...);
+}
+template <typename E>
+constexpr uint32_t If(bool condition, E flag) {
+  return condition ? static_cast<uint32_t>(flag) : 0u;
+}
+}  // namespace flags
 
 struct alignas(256) FrameCB {
   Matrix4 view;

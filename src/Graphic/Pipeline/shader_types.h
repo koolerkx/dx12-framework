@@ -24,8 +24,6 @@ using ShaderId = uint32_t;
 /// Root Signature Preset - determines which root signature to use
 enum class RSPreset : uint8_t {
   Standard,  ///< FrameCB + ObjectCB + MaterialData + SRVs + Samplers
-  Deferred,  ///< GBuffer render targets
-  Compute,   ///< Compute shader
 
   Count
 };

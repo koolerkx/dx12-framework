@@ -14,8 +14,11 @@ MaterialCB BuildMaterialCB(const MaterialInstance& mi) {
   mat.albedo_texture_index = mi.albedo_texture_index;
   mat.normal_texture_index = mi.normal_texture_index;
   mat.metallic_roughness_index = mi.metallic_roughness_index;
-  mat.flags = (mi.use_alpha_test ? 1u : 0u) | (mi.double_sided ? 2u : 0u) | (mi.rim_shadow_affected ? 4u : 0u) |
-              (mi.has_normal_map ? 8u : 0u) | (mi.has_metallic_roughness_map ? 16u : 0u) | (mi.has_emissive_map ? 32u : 0u);
+  mat.flags = flags::If(mi.use_alpha_test, MaterialFlags::AlphaTest) | flags::If(mi.double_sided, MaterialFlags::DoubleSided) |
+              flags::If(mi.rim_shadow_affected, MaterialFlags::RimShadowAffected) |
+              flags::If(mi.has_normal_map, MaterialFlags::HasNormalMap) |
+              flags::If(mi.has_metallic_roughness_map, MaterialFlags::HasMetallicRoughnessMap) |
+              flags::If(mi.has_emissive_map, MaterialFlags::HasEmissiveMap);
   mat.specular_intensity = mi.specular_intensity;
   mat.specular_power = mi.specular_power;
   mat.rim_intensity = mi.rim_intensity;
@@ -176,11 +179,9 @@ void MaterialRenderer::RecordSingle(RenderCommandList& cmd, const DrawCommand& d
   obj_data.uvOffset = draw_cmd.uv_offset;
   obj_data.uvScale = draw_cmd.uv_scale;
   obj_data.samplerIndex = draw_cmd.material_instance.sampler_index;
-  uint32_t flags = 0;
-  if (HasTag(draw_cmd.tags, RenderTag::Lit)) flags |= 1u;
-  if (draw_cmd.layer == RenderLayer::Opaque) flags |= 2u;
-  if (shadow_enabled && HasTag(draw_cmd.tags, RenderTag::ReceiveShadow)) flags |= 4u;
-  obj_data.flags = flags;
+  obj_data.flags = flags::If(HasTag(draw_cmd.tags, RenderTag::Lit), ObjectFlags::Lit) |
+                   flags::If(draw_cmd.layer == RenderLayer::Opaque, ObjectFlags::Opaque) |
+                   flags::If(shadow_enabled && HasTag(draw_cmd.tags, RenderTag::ReceiveShadow), ObjectFlags::ReceiveShadow);
   cmd.SetObjectConstants(obj_data);
 
   cmd.DrawMesh(draw_cmd.mesh);

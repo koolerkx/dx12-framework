@@ -74,80 +74,34 @@ bool DescriptorHeapManager::InitializeSamplerHeap(ID3D12Device* device) {
 }
 
 void DescriptorHeapManager::CreateDefaultSamplers(ID3D12Device* device) {
+  struct SamplerPreset {
+    D3D12_FILTER filter;
+    D3D12_TEXTURE_ADDRESS_MODE address_mode;
+    UINT max_anisotropy;
+  };
+
+  constexpr SamplerPreset SAMPLER_PRESETS[] = {
+    {D3D12_FILTER_MIN_MAG_MIP_POINT,  D3D12_TEXTURE_ADDRESS_MODE_WRAP,  0},
+    {D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_WRAP,  0},
+    {D3D12_FILTER_ANISOTROPIC,        D3D12_TEXTURE_ADDRESS_MODE_WRAP,  16},
+    {D3D12_FILTER_MIN_MAG_MIP_POINT,  D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 0},
+    {D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 0},
+  };
+
   D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = sampler_heap_->GetCPUDescriptorHandleForHeapStart();
   uint32_t increment = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
 
-  // Index 0: PointWrap
-  {
-    D3D12_SAMPLER_DESC sampler_desc = {};
-    sampler_desc.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
-    sampler_desc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-    sampler_desc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-    sampler_desc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-    sampler_desc.MaxAnisotropy = 0;
-    sampler_desc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-    sampler_desc.MinLOD = 0.0f;
-    sampler_desc.MaxLOD = D3D12_FLOAT32_MAX;
-    device->CreateSampler(&sampler_desc, cpu_handle);
-  }
-  cpu_handle.ptr += increment;
-
-  // Index 1: LinearWrap
-  {
-    D3D12_SAMPLER_DESC sampler_desc = {};
-    sampler_desc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
-    sampler_desc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-    sampler_desc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-    sampler_desc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-    sampler_desc.MaxAnisotropy = 0;
-    sampler_desc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-    sampler_desc.MinLOD = 0.0f;
-    sampler_desc.MaxLOD = D3D12_FLOAT32_MAX;
-    device->CreateSampler(&sampler_desc, cpu_handle);
-  }
-  cpu_handle.ptr += increment;
-
-  // Index 2: AnisotropicWrap
-  {
-    D3D12_SAMPLER_DESC sampler_desc = {};
-    sampler_desc.Filter = D3D12_FILTER_ANISOTROPIC;
-    sampler_desc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-    sampler_desc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-    sampler_desc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-    sampler_desc.MaxAnisotropy = 16;
-    sampler_desc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-    sampler_desc.MinLOD = 0.0f;
-    sampler_desc.MaxLOD = D3D12_FLOAT32_MAX;
-    device->CreateSampler(&sampler_desc, cpu_handle);
-  }
-  cpu_handle.ptr += increment;
-
-  // Index 3: PointClamp
-  {
-    D3D12_SAMPLER_DESC sampler_desc = {};
-    sampler_desc.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
-    sampler_desc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-    sampler_desc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-    sampler_desc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-    sampler_desc.MaxAnisotropy = 0;
-    sampler_desc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-    sampler_desc.MinLOD = 0.0f;
-    sampler_desc.MaxLOD = D3D12_FLOAT32_MAX;
-    device->CreateSampler(&sampler_desc, cpu_handle);
-  }
-  cpu_handle.ptr += increment;
-
-  // Index 4: LinearClamp
-  {
-    D3D12_SAMPLER_DESC sampler_desc = {};
-    sampler_desc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
-    sampler_desc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-    sampler_desc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-    sampler_desc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-    sampler_desc.MaxAnisotropy = 0;
-    sampler_desc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-    sampler_desc.MinLOD = 0.0f;
-    sampler_desc.MaxLOD = D3D12_FLOAT32_MAX;
-    device->CreateSampler(&sampler_desc, cpu_handle);
+  for (const auto& preset : SAMPLER_PRESETS) {
+    D3D12_SAMPLER_DESC desc = {};
+    desc.Filter = preset.filter;
+    desc.AddressU = preset.address_mode;
+    desc.AddressV = preset.address_mode;
+    desc.AddressW = preset.address_mode;
+    desc.MaxAnisotropy = preset.max_anisotropy;
+    desc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+    desc.MinLOD = 0.0f;
+    desc.MaxLOD = D3D12_FLOAT32_MAX;
+    device->CreateSampler(&desc, cpu_handle);
+    cpu_handle.ptr += increment;
   }
 }
