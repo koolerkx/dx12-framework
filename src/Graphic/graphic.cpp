@@ -24,6 +24,7 @@
 #include "Render/preview_group.h"
 #include "Render/shadow_pass_group.h"
 #include "Render/skybox_pass.h"
+#include "Render/fog_pass.h"
 #include "Render/outline_pass.h"
 #include "Render/vignette_pass.h"
 #include "Render/smaa_pass_group.h"
@@ -43,6 +44,7 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
   bloom_config_ = props.bloom;
   ssao_config_ = props.ssao;
   smaa_config_ = props.smaa;
+  fog_config_ = props.fog;
   outline_config_ = props.outline;
   vignette_config_ = props.vignette;
 
@@ -231,6 +233,16 @@ void Graphic::BuildRenderPipeline() {
   });
 
   RenderGraphHandle ldr_output = postfx.GetLdrOutput();
+
+  if (fog_config_.enabled) {
+    FogPassGroup fog_group;
+    fog_group.Build(*render_graph_, ldr_output,
+                    prepass.GetNormalDepthRT(), {
+      .context = ctx,
+      .config = &fog_config_,
+    });
+    ldr_output = fog_group.GetOutput();
+  }
 
   if (outline_config_.enabled) {
     OutlinePassGroup outline_group;

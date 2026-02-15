@@ -49,6 +49,15 @@ void LoadOutlineConfig(const framework::SerializeNode& node, OutlineConfig& outl
   node.ReadVec3("Color", outline.outline_color[0], outline.outline_color[1], outline.outline_color[2]);
 }
 
+void LoadFogConfig(const framework::SerializeNode& node, FogConfig& fog) {
+  fog.enabled = node.ReadBool("Enabled", fog.enabled);
+  fog.density = node.ReadFloat("Density", fog.density);
+  fog.height_falloff = node.ReadFloat("HeightFalloff", fog.height_falloff);
+  fog.base_height = node.ReadFloat("BaseHeight", fog.base_height);
+  fog.max_distance = node.ReadFloat("MaxDistance", fog.max_distance);
+  node.ReadVec3("Color", fog.fog_color[0], fog.fog_color[1], fog.fog_color[2]);
+}
+
 void LoadVignetteConfig(const framework::SerializeNode& node, VignetteConfig& vignette) {
   vignette.enabled = node.ReadBool("Enabled", vignette.enabled);
   vignette.intensity = node.ReadFloat("Intensity", vignette.intensity);
@@ -109,6 +118,7 @@ AppConfig ConfigLoader::LoadFromFile(const std::filesystem::path& path) {
   if (root.HasKey("Bloom")) LoadBloomConfig(root.GetMap("Bloom"), config.bloom);
   if (root.HasKey("SSAO")) LoadSSAOConfig(root.GetMap("SSAO"), config.ssao);
   if (root.HasKey("SMAA")) LoadSMAAConfig(root.GetMap("SMAA"), config.smaa);
+  if (root.HasKey("Fog")) LoadFogConfig(root.GetMap("Fog"), config.fog);
   if (root.HasKey("Outline")) LoadOutlineConfig(root.GetMap("Outline"), config.outline);
   if (root.HasKey("Vignette")) LoadVignetteConfig(root.GetMap("Vignette"), config.vignette);
 

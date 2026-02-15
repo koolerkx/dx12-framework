@@ -48,6 +48,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
       .bloom = config.bloom,
       .ssao = config.ssao,
       .smaa = config.smaa,
+      .fog = config.fog,
       .outline = config.outline,
       .vignette = config.vignette,
   };

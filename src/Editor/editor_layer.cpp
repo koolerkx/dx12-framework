@@ -1124,6 +1124,21 @@ void EditorLayer::DrawPostFxPanel() {
     }
   }
 
+  auto& fog = graphic_->GetFogConfig();
+
+  if (ImGui::CollapsingHeader("Fog", ImGuiTreeNodeFlags_DefaultOpen)) {
+    bool prev_enabled = fog.enabled;
+    ImGui::Checkbox("Enabled##fog", &fog.enabled);
+    ImGui::SliderFloat("Density##fog", &fog.density, 0.001f, 0.2f, "%.4f");
+    ImGui::SliderFloat("Height Falloff##fog", &fog.height_falloff, 0.0f, 2.0f, "%.3f");
+    ImGui::DragFloat("Base Height##fog", &fog.base_height, 0.1f, -100.0f, 100.0f, "%.1f");
+    ImGui::DragFloat("Max Distance##fog", &fog.max_distance, 1.0f, 10.0f, 5000.0f, "%.0f");
+    ImGui::ColorEdit3("Color##fog", fog.fog_color);
+    if (fog.enabled != prev_enabled) {
+      graphic_->RebuildRenderPipeline();
+    }
+  }
+
   auto& outline = graphic_->GetOutlineConfig();
 
   if (ImGui::CollapsingHeader("Outline", ImGuiTreeNodeFlags_DefaultOpen)) {

@@ -26,6 +26,14 @@ Vignette:
   Roundness: 0.15
   Color: [0.0, 0.0, 0.0]
 
+Fog:
+  Enabled: false
+  Density: 0.02 # Larger = fog appears closer to camera
+  HeightFalloff: 0 # Larger = fog thickens faster below BaseHeight, 0 = disable height fog
+  BaseHeight: 0.0 # World Y below which height fog applies
+  MaxDistance: 100.0 # Clamp distance to avoid full fog on skybox
+  Color: [0.7, 0.75, 0.8]
+
 Outline:
   Enabled: true
   DepthWeight: 1.0

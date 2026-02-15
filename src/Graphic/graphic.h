@@ -28,6 +28,7 @@
 #include "Rendering/hdr_config.h"
 #include "Rendering/outline_config.h"
 #include "Rendering/smaa_config.h"
+#include "Rendering/fog_config.h"
 #include "Rendering/vignette_config.h"
 #include "Rendering/ssao_config.h"
 #include "Resource/Buffer/structured_buffer.h"
@@ -43,6 +44,7 @@ class Graphic {
     BloomConfig bloom;
     SSAOConfig ssao;
     SMAAConfig smaa;
+    FogConfig fog;
     OutlineConfig outline;
     VignetteConfig vignette;
   };
@@ -181,6 +183,9 @@ class Graphic {
   OutlineConfig& GetOutlineConfig() {
     return outline_config_;
   }
+  FogConfig& GetFogConfig() {
+    return fog_config_;
+  }
   VignetteConfig& GetVignetteConfig() {
     return vignette_config_;
   }
@@ -214,6 +219,7 @@ class Graphic {
   BloomConfig bloom_config_;
   SSAOConfig ssao_config_;
   SMAAConfig smaa_config_;
+  FogConfig fog_config_;
   OutlineConfig outline_config_;
   VignetteConfig vignette_config_;
   RenderGraphHandle ssao_handle_ = RenderGraphHandle::Invalid;

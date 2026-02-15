@@ -135,12 +135,16 @@ add_library(graphic STATIC
   Render/smaa_pass_group.h
   Render/smaa_pass_group.cpp
 
+  Render/fog_pass.h
+  Render/fog_pass.cpp
+
   Render/outline_pass.h
   Render/outline_pass.cpp
 
   Render/vignette_pass.h
   Render/vignette_pass.cpp
 
+  Rendering/fog_config.h
   Rendering/ssao_config.h
   Rendering/smaa_config.h
   Rendering/outline_config.h
@@ -186,6 +190,7 @@ target_add_hlsl_auto(graphic "6.6"
   "${CMAKE_SOURCE_DIR}/shaders/smaa_neighborhood.ps.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/outline.ps.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/vignette.ps.hlsl"
+  "${CMAKE_SOURCE_DIR}/shaders/fog.ps.hlsl"
 )
 
 # manually add shaders files
