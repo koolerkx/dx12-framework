@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "Framework/Math/Math.h"
 #include "Framework/Model/node_hierarchy.h"
 #include "Graphic/Resource/Texture/texture.h"
 #include "Graphic/Resource/mesh.h"
@@ -35,4 +36,5 @@ struct ModelData {
   std::vector<ModelSubMeshEntry> sub_meshes;
   Model::Node root_node;
   float min_y = 0.0f;
+  Math::AABB bounds;
 };

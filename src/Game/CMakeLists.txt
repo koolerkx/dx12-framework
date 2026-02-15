@@ -51,6 +51,9 @@ add_library(game STATIC
     Component/Renderer/particle_emitter.cpp
     Component/Renderer/instanced_model_renderer.h
     Component/Renderer/instanced_model_renderer.cpp
+    Component/Collider/collider_component.h
+    Component/Collider/box_collider_component.h
+    Component/Collider/box_collider_component.cpp
 
     Serialization/scene_serializer.h
     Serialization/scene_serializer.cpp

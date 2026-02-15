@@ -4,6 +4,7 @@
 #include <unordered_map>
 
 #include "Asset/asset_manager.h"
+#include "Component/Collider/box_collider_component.h"
 #include "Component/Renderer/instanced_model_renderer.h"
 #include "Component/Renderer/mesh_renderer.h"
 #include "Component/camera_component.h"
@@ -80,16 +81,28 @@ void CityScene::OnEnter(AssetManager& asset_manager) {
       grouped[item.mesh_id].push_back(std::move(entry));
     }
 
+    bool has_colliders = (layer.id == "object" || layer.id == "spawn");
+
     for (auto& [mesh_id, instances] : grouped) {
       auto it = model_cache.find(mesh_id);
       if (it == model_cache.end()) continue;
+
+      auto& model = it->second;
+
+      if (has_colliders) {
+        for (const auto& entry : instances) {
+          auto* collider_go = CreateGameObject(entry.id + "_collider");
+          collider_go->SetParent(layer_go);
+          collider_go->AddComponent<BoxColliderComponent>(model->bounds, entry.props.world);
+        }
+      }
 
       std::string go_name = layer.id + "_" + mesh_id + "_instances";
       auto* instance_go = CreateGameObject(go_name);
       instance_go->SetParent(layer_go);
 
       instance_go->AddComponent<InstancedModelRenderer>(InstancedModelRenderer::Props{
-        .model = it->second,
+        .model = model,
         .instances = std::move(instances),
       });
     }

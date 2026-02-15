@@ -235,6 +235,9 @@ std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path, floa
   std::vector<uint32_t> mesh_material_indices;
   uint32_t mesh_counter = 0;
   float global_min_y = (std::numeric_limits<float>::max)();
+  Math::Vector3 bounds_min((std::numeric_limits<float>::max)(), (std::numeric_limits<float>::max)(), (std::numeric_limits<float>::max)());
+  Math::Vector3 bounds_max(
+    -(std::numeric_limits<float>::max)(), -(std::numeric_limits<float>::max)(), -(std::numeric_limits<float>::max)());
 
   auto mesh_cb = [&](const Model::MeshData<Graphics::Vertex::ModelVertex>& mesh_data) -> const Mesh* {
     std::string key = path + scale_suffix + "#" + mesh_data.name + "_" + std::to_string(mesh_counter++);
@@ -242,6 +245,9 @@ std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path, floa
 
     for (const auto& vertex : mesh_data.vertices) {
       if (vertex.position.y < global_min_y) global_min_y = vertex.position.y;
+      Math::Vector3 pos(vertex.position.x, vertex.position.y, vertex.position.z);
+      bounds_min = Math::Vector3::Min(bounds_min, pos);
+      bounds_max = Math::Vector3::Max(bounds_max, pos);
     }
 
     if (auto* existing = mesh_registry.Find(key)) {
@@ -273,6 +279,9 @@ std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path, floa
   model_data->surface_materials = std::move(result.surface_material_handles);
   model_data->root_node = std::move(result.root_node);
   model_data->min_y = (global_min_y < (std::numeric_limits<float>::max)()) ? global_min_y : 0.0f;
+  if (bounds_min.x <= bounds_max.x) {
+    model_data->bounds = Math::AABB(bounds_min, bounds_max);
+  }
 
   auto resolve_texture = [&](const std::vector<std::optional<uint32_t>>& indices, uint32_t mat_idx) -> std::shared_ptr<Texture> {
     if (mat_idx < indices.size()) {
