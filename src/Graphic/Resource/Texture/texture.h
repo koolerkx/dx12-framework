@@ -8,12 +8,14 @@
 #include "Core/types.h"
 
 struct Texture {
-  ComPtr<ID3D12Resource> resource;
-  uint32_t srv_index = UINT32_MAX;
   std::wstring source_path;
 
   uint32_t GetBindlessIndex() const {
-    return srv_index;
+    return srv_index_;
+  }
+
+  ID3D12Resource* GetResource() const {
+    return resource_.Get();
   }
 
   Texture() = default;
@@ -23,4 +25,10 @@ struct Texture {
   Texture& operator=(Texture&&) = default;
 
   ~Texture() = default;
+
+ private:
+  friend class TextureManager;
+
+  ComPtr<ID3D12Resource> resource_;
+  uint32_t srv_index_ = UINT32_MAX;
 };

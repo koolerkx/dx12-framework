@@ -139,6 +139,59 @@ bool TextureManager::LoadFromRawPixelsAndGenerateMipmaps(
   return true;
 }
 
+std::shared_ptr<Texture> TextureManager::FinalizeTexture(
+  const DirectX::ScratchImage& mip_chain, bool use_srgb, const std::wstring& cache_key, const std::string& log_label) {
+  ComPtr<ID3D12Resource> texture_buffer;
+  if (!CreateTextureResource(mip_chain.GetMetadata(), texture_buffer, use_srgb)) {
+    return nullptr;
+  }
+
+  UploadInfo upload_info;
+  if (!PrepareUpload(mip_chain, texture_buffer, upload_info)) {
+    return nullptr;
+  }
+
+  execute_sync_([&](ID3D12GraphicsCommandList* command_list) {
+    UpdateSubresources(command_list,
+      texture_buffer.Get(),
+      upload_info.upload_buffer.Get(),
+      0,
+      0,
+      static_cast<UINT>(upload_info.subresources.size()),
+      upload_info.subresources.data());
+
+    auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+      texture_buffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+    command_list->ResourceBarrier(1, &barrier);
+  });
+
+  {
+    std::lock_guard<std::mutex> lock(upload_mutex_);
+    upload_buffers_.push_back(upload_info.upload_buffer);
+  }
+
+  auto texture = std::make_shared<Texture>();
+  texture->resource_ = texture_buffer;
+  texture->srv_index_ = CreateSrv(texture_buffer);
+  texture->source_path = cache_key;
+  texture_cache_[cache_key] = texture;
+
+  D3D12_RESOURCE_DESC tex_desc = texture_buffer->GetDesc();
+  Logger::LogFormat(LogLevel::Info,
+    LogCategory::Resource,
+    Logger::Here(),
+    "[Texture] Loaded {} \"{}\" | {}x{} | {} mips | Format: {} | SRV Index: {}",
+    log_label,
+    utils::wstring_to_utf8(cache_key),
+    tex_desc.Width,
+    tex_desc.Height,
+    tex_desc.MipLevels,
+    utils::GetDxgiFormatName(tex_desc.Format),
+    texture->srv_index_);
+
+  return texture;
+}
+
 std::shared_ptr<Texture> TextureManager::LoadTextureFromRawPixels(
   const std::string& cache_key, const uint8_t* pixels, uint32_t width, uint32_t height, bool force_srgb) {
   std::wstring wkey = utils::utf8_to_wstring(cache_key);
@@ -149,54 +202,7 @@ std::shared_ptr<Texture> TextureManager::LoadTextureFromRawPixels(
     return nullptr;
   }
 
-  ComPtr<ID3D12Resource> texture_buffer;
-  if (!CreateTextureResource(mipChain.GetMetadata(), texture_buffer, force_srgb)) {
-    return nullptr;
-  }
-
-  UploadInfo uploadInfo;
-  if (!PrepareUpload(mipChain, texture_buffer, uploadInfo)) {
-    return nullptr;
-  }
-
-  execute_sync_([&](ID3D12GraphicsCommandList* command_list) {
-    UpdateSubresources(command_list,
-      texture_buffer.Get(),
-      uploadInfo.upload_buffer.Get(),
-      0,
-      0,
-      static_cast<UINT>(uploadInfo.subresources.size()),
-      uploadInfo.subresources.data());
-
-    auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-      texture_buffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-    command_list->ResourceBarrier(1, &barrier);
-  });
-
-  {
-    std::lock_guard<std::mutex> lock(upload_mutex_);
-    upload_buffers_.push_back(uploadInfo.upload_buffer);
-  }
-
-  auto texture = std::make_shared<Texture>();
-  texture->resource = texture_buffer;
-  texture->srv_index = CreateSrv(texture_buffer);
-  texture->source_path = wkey;
-  texture_cache_[wkey] = texture;
-
-  D3D12_RESOURCE_DESC texDesc = texture_buffer->GetDesc();
-  Logger::LogFormat(LogLevel::Info,
-    LogCategory::Resource,
-    Logger::Here(),
-    "[Texture] Loaded raw pixels \"{}\" | {}x{} | {} mips | Format: {} | SRV Index: {}",
-    cache_key,
-    texDesc.Width,
-    texDesc.Height,
-    texDesc.MipLevels,
-    utils::GetDxgiFormatName(texDesc.Format),
-    texture->srv_index);
-
-  return texture;
+  return FinalizeTexture(mipChain, force_srgb, wkey, "raw pixels");
 }
 
 bool TextureManager::CreateTextureResource(const DirectX::TexMetadata& metadata, ComPtr<ID3D12Resource>& texture, bool use_srgb) {
@@ -298,9 +304,7 @@ std::shared_ptr<Texture> TextureManager::LoadTexture(const std::wstring& path, T
   return (usage == TextureUsage::Color) ? LoadTextureSRGB(path) : LoadTextureLinear(path);
 }
 
-// NEW: Load texture with sRGB color space
 std::shared_ptr<Texture> TextureManager::LoadTextureSRGB(const std::wstring& path) {
-  // check cache
   if (texture_cache_.count(path)) return texture_cache_[path];
 
   DirectX::ScratchImage mipChain;
@@ -308,59 +312,10 @@ std::shared_ptr<Texture> TextureManager::LoadTextureSRGB(const std::wstring& pat
     return nullptr;
   }
 
-  ComPtr<ID3D12Resource> texture_buffer;
-  if (!CreateTextureResource(mipChain.GetMetadata(), texture_buffer, true)) {
-    return nullptr;
-  }
-
-  UploadInfo uploadInfo;
-  if (!PrepareUpload(mipChain, texture_buffer, uploadInfo)) {
-    return nullptr;
-  }
-
-  execute_sync_([&](ID3D12GraphicsCommandList* command_list) {
-    UpdateSubresources(command_list,
-      texture_buffer.Get(),
-      uploadInfo.upload_buffer.Get(),
-      0,
-      0,
-      static_cast<UINT>(uploadInfo.subresources.size()),
-      uploadInfo.subresources.data());
-
-    auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-      texture_buffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-    command_list->ResourceBarrier(1, &barrier);
-  });
-
-  {
-    std::lock_guard<std::mutex> lock(upload_mutex_);
-    upload_buffers_.push_back(uploadInfo.upload_buffer);
-  }
-
-  auto texture = std::make_shared<Texture>();
-  texture->resource = texture_buffer;
-  texture->srv_index = CreateSrv(texture_buffer);
-  texture->source_path = path;
-  texture_cache_[path] = texture;
-
-  D3D12_RESOURCE_DESC texDesc = texture_buffer->GetDesc();
-  Logger::LogFormat(LogLevel::Info,
-    LogCategory::Resource,
-    Logger::Here(),
-    "[Texture] Loaded SRGB \"{}\" | {}x{} | {} mips | Format: {} | SRV Index: {}",
-    utils::wstring_to_utf8(path),
-    texDesc.Width,
-    texDesc.Height,
-    texDesc.MipLevels,
-    utils::GetDxgiFormatName(texDesc.Format),
-    texture->srv_index);
-
-  return texture;
+  return FinalizeTexture(mipChain, true, path, "SRGB");
 }
 
-// NEW: Load texture with linear color space
 std::shared_ptr<Texture> TextureManager::LoadTextureLinear(const std::wstring& path) {
-  // Separate cache key for linear version
   std::wstring linear_key = path + L"_linear";
   if (texture_cache_.count(linear_key)) return texture_cache_[linear_key];
 
@@ -369,54 +324,7 @@ std::shared_ptr<Texture> TextureManager::LoadTextureLinear(const std::wstring& p
     return nullptr;
   }
 
-  ComPtr<ID3D12Resource> texture_buffer;
-  if (!CreateTextureResource(mipChain.GetMetadata(), texture_buffer, false)) {
-    return nullptr;
-  }
-
-  UploadInfo uploadInfo;
-  if (!PrepareUpload(mipChain, texture_buffer, uploadInfo)) {
-    return nullptr;
-  }
-
-  execute_sync_([&](ID3D12GraphicsCommandList* command_list) {
-    UpdateSubresources(command_list,
-      texture_buffer.Get(),
-      uploadInfo.upload_buffer.Get(),
-      0,
-      0,
-      static_cast<UINT>(uploadInfo.subresources.size()),
-      uploadInfo.subresources.data());
-
-    auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-      texture_buffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-    command_list->ResourceBarrier(1, &barrier);
-  });
-
-  {
-    std::lock_guard<std::mutex> lock(upload_mutex_);
-    upload_buffers_.push_back(uploadInfo.upload_buffer);
-  }
-
-  auto texture = std::make_shared<Texture>();
-  texture->resource = texture_buffer;
-  texture->srv_index = CreateSrv(texture_buffer);
-  texture->source_path = linear_key;
-  texture_cache_[linear_key] = texture;
-
-  D3D12_RESOURCE_DESC texDesc = texture_buffer->GetDesc();
-  Logger::LogFormat(LogLevel::Info,
-    LogCategory::Resource,
-    Logger::Here(),
-    "[Texture] Loaded Linear \"{}\" | {}x{} | {} mips | Format: {} | SRV Index: {}",
-    utils::wstring_to_utf8(path),
-    texDesc.Width,
-    texDesc.Height,
-    texDesc.MipLevels,
-    utils::GetDxgiFormatName(texDesc.Format),
-    texture->srv_index);
-
-  return texture;
+  return FinalizeTexture(mipChain, false, linear_key, "Linear");
 }
 
 std::shared_ptr<Texture> TextureManager::LoadTextureFromMemory(
@@ -429,54 +337,7 @@ std::shared_ptr<Texture> TextureManager::LoadTextureFromMemory(
     return nullptr;
   }
 
-  ComPtr<ID3D12Resource> texture_buffer;
-  if (!CreateTextureResource(mipChain.GetMetadata(), texture_buffer, force_srgb)) {
-    return nullptr;
-  }
-
-  UploadInfo uploadInfo;
-  if (!PrepareUpload(mipChain, texture_buffer, uploadInfo)) {
-    return nullptr;
-  }
-
-  execute_sync_([&](ID3D12GraphicsCommandList* command_list) {
-    UpdateSubresources(command_list,
-      texture_buffer.Get(),
-      uploadInfo.upload_buffer.Get(),
-      0,
-      0,
-      static_cast<UINT>(uploadInfo.subresources.size()),
-      uploadInfo.subresources.data());
-
-    auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-      texture_buffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-    command_list->ResourceBarrier(1, &barrier);
-  });
-
-  {
-    std::lock_guard<std::mutex> lock(upload_mutex_);
-    upload_buffers_.push_back(uploadInfo.upload_buffer);
-  }
-
-  auto texture = std::make_shared<Texture>();
-  texture->resource = texture_buffer;
-  texture->srv_index = CreateSrv(texture_buffer);
-  texture->source_path = wkey;
-  texture_cache_[wkey] = texture;
-
-  D3D12_RESOURCE_DESC texDesc = texture_buffer->GetDesc();
-  Logger::LogFormat(LogLevel::Info,
-    LogCategory::Resource,
-    Logger::Here(),
-    "[Texture] Loaded from memory \"{}\" | {}x{} | {} mips | Format: {} | SRV Index: {}",
-    cache_key,
-    texDesc.Width,
-    texDesc.Height,
-    texDesc.MipLevels,
-    utils::GetDxgiFormatName(texDesc.Format),
-    texture->srv_index);
-
-  return texture;
+  return FinalizeTexture(mipChain, force_srgb, wkey, "from memory");
 }
 
 uint32_t TextureManager::CreateCubemapSrv(ComPtr<ID3D12Resource> texture_buffer, DXGI_FORMAT format, uint32_t mip_levels) {
@@ -606,8 +467,8 @@ std::shared_ptr<Texture> TextureManager::LoadCubemapFromCrossHDR(const std::wstr
   }
 
   auto texture = std::make_shared<Texture>();
-  texture->resource = texture_buffer;
-  texture->srv_index = CreateCubemapSrv(texture_buffer, metadata.format, 1);
+  texture->resource_ = texture_buffer;
+  texture->srv_index_ = CreateCubemapSrv(texture_buffer, metadata.format, 1);
   texture->source_path = cache_key;
   texture_cache_[cache_key] = texture;
 
@@ -619,7 +480,7 @@ std::shared_ptr<Texture> TextureManager::LoadCubemapFromCrossHDR(const std::wstr
     face_size,
     face_size,
     utils::GetDxgiFormatName(metadata.format),
-    texture->srv_index);
+    texture->srv_index_);
 
   return texture;
 }
@@ -676,8 +537,8 @@ std::vector<std::shared_ptr<Texture>> TextureManager::LoadTextures(const std::ve
 
   for (auto& task : tasks) {
     auto texture = std::make_shared<Texture>();
-    texture->resource = task.texture_buffer;
-    texture->srv_index = CreateSrv(task.texture_buffer);
+    texture->resource_ = task.texture_buffer;
+    texture->srv_index_ = CreateSrv(task.texture_buffer);
     texture->source_path = task.path;
     texture_cache_[task.path] = texture;
     results.push_back(texture);
@@ -692,7 +553,7 @@ std::vector<std::shared_ptr<Texture>> TextureManager::LoadTextures(const std::ve
       texDesc.Height,
       texDesc.MipLevels,
       utils::GetDxgiFormatName(texDesc.Format),
-      texture->srv_index);
+      texture->srv_index_);
 
     std::lock_guard<std::mutex> lock(upload_mutex_);
     upload_buffers_.push_back(task.uploadInfo.upload_buffer);
@@ -726,7 +587,7 @@ void TextureManager::UnloadTexture(const std::wstring& path) {
   uint64_t current_fence = get_fence_value_();
   uint64_t safe_fence = current_fence + frame_buffer_count_;
 
-  pending_deletes_.push_back({it->second, it->second->srv_index, safe_fence});
+  pending_deletes_.push_back({it->second, it->second->srv_index_, safe_fence});
 
   texture_cache_.erase(it);
 }

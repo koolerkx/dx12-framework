@@ -14,7 +14,7 @@ BackgroundConfig BackgroundSetting::ToConfig() const {
   config.mode = mode_;
   config.clear_color = clear_color_;
   if (cubemap_.IsValid()) {
-    config.cubemap_srv_index = cubemap_->srv_index;
+    config.cubemap_srv_index = cubemap_->GetBindlessIndex();
   }
   return config;
 }

@@ -1,11 +1,7 @@
 #include "fog_pass.h"
 
-#include "Command/render_command_list.h"
-#include "Core/types.h"
-#include "Framework/Logging/logger.h"
-#include "Pipeline/pipeline_state_builder.h"
 #include "Pipeline/shader_descriptors.h"
-#include "Pipeline/shader_manager.h"
+#include "Render/fullscreen_pass.h"
 #include "Render/render_graph.h"
 #include "Rendering/fog_config.h"
 
@@ -25,7 +21,7 @@ struct FogCB {
 };
 static_assert(sizeof(FogCB) == 48);
 
-class FogPass : public IRenderPass {
+class FogPass : public FullscreenPass<Graphics::PostProcessFogShader> {
  public:
   FogPass(ID3D12Device* device,
     ShaderManager* shader_manager,
@@ -33,41 +29,18 @@ class FogPass : public IRenderPass {
     RenderGraphHandle input_handle,
     RenderGraphHandle normal_depth_handle,
     const FogConfig* config)
-      : shader_manager_(shader_manager), input_handle_(input_handle), normal_depth_handle_(normal_depth_handle), config_(config) {
-    setup_ = pass_setup;
-
-    auto* vs = shader_manager->GetVertexShader<Graphics::PostProcessFogShader>();
-    auto* ps = shader_manager->GetPixelShader<Graphics::PostProcessFogShader>();
-    auto* root_sig = shader_manager->GetRootSignature(Graphics::RSPreset::Standard);
-
-    if (!vs || !ps || !root_sig) {
-      Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[FogPass] Shader load failed");
-    } else {
-      pipeline_state_ = PipelineStateBuilder()
-                          .SetRootSignature(root_sig)
-                          .SetVertexShader(vs)
-                          .SetPixelShader(ps)
-                          .SetRenderTargetFormat(DXGI_FORMAT_R8G8B8A8_UNORM)
-                          .SetName(L"Fog_PSO")
-                          .Build(device);
-    }
+      : FullscreenPass(device, shader_manager, pass_setup, {.pso_name = L"Fog_PSO"}),
+        input_handle_(input_handle),
+        normal_depth_handle_(normal_depth_handle),
+        config_(config) {
   }
 
   const char* GetName() const override {
     return "Fog Pass";
   }
 
-  void Execute(const RenderFrameContext& frame, const FramePacket& packet) override {
-    if (!pipeline_state_) return;
-
-    RenderCommandList cmd(frame.command_list, frame.dynamic_allocator, frame.frame_cb, frame.object_cb_allocator);
-
-    frame.command_list->SetPipelineState(pipeline_state_.Get());
-    frame.command_list->SetGraphicsRootSignature(shader_manager_->GetRootSignature(Graphics::RSPreset::Standard));
-
-    cmd.BindGlobalSRVTable(frame.global_heap_manager);
-    cmd.BindSamplerTable(frame.global_heap_manager);
-
+ protected:
+  void SetupConstants(RenderCommandList& cmd, const RenderFrameContext& frame, const FramePacket& packet) override {
     FrameCB frame_data = {};
     frame_data.invView = packet.main_camera.inv_view;
     frame_data.invProj = packet.main_camera.inv_proj;
@@ -90,14 +63,9 @@ class FogPass : public IRenderPass {
 
     constexpr auto POST_PROCESS_CB = RootSlot::ConstantBuffer::Light;
     cmd.SetConstantBufferOverride(POST_PROCESS_CB, cb_data);
-
-    frame.command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    frame.command_list->DrawInstanced(3, 1, 0, 0);
   }
 
  private:
-  ShaderManager* shader_manager_;
-  ComPtr<ID3D12PipelineState> pipeline_state_;
   RenderGraphHandle input_handle_;
   RenderGraphHandle normal_depth_handle_;
   const FogConfig* config_;

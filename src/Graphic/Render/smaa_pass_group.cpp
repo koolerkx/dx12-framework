@@ -276,8 +276,8 @@ void SMAAPassGroup::Build(RenderGraph& graph, RenderGraphHandle ldr_input, const
     return;
   }
 
-  uint32_t area_srv = area_tex->srv_index;
-  uint32_t search_srv = search_tex->srv_index;
+  uint32_t area_srv = area_tex->GetBindlessIndex();
+  uint32_t search_srv = search_tex->GetBindlessIndex();
 
   auto edges_rt = graph.CreateRenderTexture({
     .name = "smaa_edges_rt",

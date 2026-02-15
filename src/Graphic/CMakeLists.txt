@@ -72,6 +72,7 @@ add_library(graphic STATIC
   Render/render_graph.h
   Render/render_graph.cpp
   Render/render_pass.h
+  Render/fullscreen_pass.h
   Render/render_graph_handle.h
   Render/material_renderer.h
   Render/material_renderer.cpp
@@ -91,16 +92,13 @@ add_library(graphic STATIC
   Render/debug_pass.cpp
 
   Render/tone_map_pass.h
-  Render/tone_map_pass.cpp
 
   Render/depth_view_pass.h
-  Render/depth_view_pass.cpp
 
   Render/skybox_pass.h
   Render/skybox_pass.cpp
 
   Render/blit_pass.h
-  Render/blit_pass.cpp
 
   Render/shadow_pass.h
   Render/shadow_pass.cpp
@@ -124,10 +122,8 @@ add_library(graphic STATIC
   Render/depth_normal_pass.cpp
 
   Render/normal_view_pass.h
-  Render/normal_view_pass.cpp
 
   Render/linear_depth_view_pass.h
-  Render/linear_depth_view_pass.cpp
 
   Render/ssao_pass_group.h
   Render/ssao_pass_group.cpp

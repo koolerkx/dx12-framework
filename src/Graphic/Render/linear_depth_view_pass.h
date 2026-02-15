@@ -1,15 +1,9 @@
 #pragma once
 
-#include <d3d12.h>
-
-#include "Frame/frame_packet.h"
-#include "Frame/render_frame_context.h"
-#include "Render/render_graph_handle.h"
-#include "Render/render_pass.h"
+#include "Pipeline/shader_descriptors.h"
+#include "Render/fullscreen_pass.h"
+#include "Render/render_graph.h"
 #include "Rendering/hdr_config.h"
-
-struct ID3D12Device;
-class ShaderManager;
 
 struct LinearDepthViewPassProps {
   ID3D12Device* device;
@@ -19,22 +13,39 @@ struct LinearDepthViewPassProps {
   const DepthViewConfig* config;
 };
 
-class LinearDepthViewPass : public IRenderPass {
+class LinearDepthViewPass : public FullscreenPass<Graphics::PostProcessLinearDepthViewShader> {
  public:
-  explicit LinearDepthViewPass(const LinearDepthViewPassProps& props);
+  explicit LinearDepthViewPass(const LinearDepthViewPassProps& props)
+      : FullscreenPass(props.device, props.shader_manager, props.pass_setup,
+                        {.pso_name = L"LinearDepthViewPass_PSO"}),
+        source_handle_(props.source_handle),
+        config_(props.config) {}
 
-  const char* GetName() const override {
-    return "Linear Depth View Pass";
+  const char* GetName() const override { return "Linear Depth View Pass"; }
+
+ protected:
+  bool ShouldExecute(const RenderFrameContext&, const FramePacket&) const override {
+    return pipeline_state_ && config_->enabled;
   }
 
-  void Execute(const RenderFrameContext& frame, const FramePacket& packet) override;
+  void SetupConstants(RenderCommandList& cmd, const RenderFrameContext& frame,
+                      const FramePacket&) override {
+    struct LinearDepthViewCB {
+      uint32_t src_srv_index;
+      float near_plane;
+      float far_plane;
+      uint32_t padding = 0;
+    } cb_data = {
+      .src_srv_index = frame.render_graph->GetSrvIndex(source_handle_),
+      .near_plane = config_->near_plane,
+      .far_plane = config_->far_plane,
+    };
+
+    constexpr auto POST_PROCESS_CB = RootSlot::ConstantBuffer::Light;
+    cmd.SetConstantBufferOverride(POST_PROCESS_CB, cb_data);
+  }
 
  private:
-  bool CreatePipelineObjects();
-
-  ID3D12Device* device_;
-  ShaderManager* shader_manager_;
-  ComPtr<ID3D12PipelineState> pipeline_state_;
-  RenderGraphHandle source_handle_ = RenderGraphHandle::Invalid;
-  const DepthViewConfig* config_ = nullptr;
+  RenderGraphHandle source_handle_;
+  const DepthViewConfig* config_;
 };

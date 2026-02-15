@@ -25,17 +25,18 @@
 #include "Render/material_renderer.h"
 #include "Render/render_graph.h"
 #include "Render/render_graph_handle.h"
+#include "Rendering/fog_config.h"
 #include "Rendering/hdr_config.h"
 #include "Rendering/outline_config.h"
 #include "Rendering/smaa_config.h"
-#include "Rendering/fog_config.h"
-#include "Rendering/vignette_config.h"
 #include "Rendering/ssao_config.h"
+#include "Rendering/vignette_config.h"
 #include "Resource/Buffer/structured_buffer.h"
 #include "Resource/Font/sprite_font_manager.h"
 #include "Resource/Texture/texture_manager.h"
 #include "Resource/mesh_registry.h"
 #include "Resource/render_services.h"
+
 
 class Graphic {
  public:
@@ -272,6 +273,7 @@ class Graphic {
     return shadow_frame_data_;
   }
 
+ private:
   bool is_initialized_ = false;
   std::atomic<bool> is_shutting_down_{false};
 };

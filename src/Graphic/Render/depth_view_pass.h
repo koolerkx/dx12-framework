@@ -1,15 +1,9 @@
 #pragma once
 
-#include <d3d12.h>
-
-#include "Frame/frame_packet.h"
-#include "Frame/render_frame_context.h"
-#include "Render/render_graph_handle.h"
-#include "Render/render_pass.h"
+#include "Pipeline/shader_descriptors.h"
+#include "Render/fullscreen_pass.h"
+#include "Render/render_graph.h"
 #include "Rendering/hdr_config.h"
-
-struct ID3D12Device;
-class ShaderManager;
 
 struct DepthViewPassProps {
   ID3D12Device* device;
@@ -19,24 +13,40 @@ struct DepthViewPassProps {
   const DepthViewConfig* config;
 };
 
-class DepthViewPass : public IRenderPass {
+class DepthViewPass : public FullscreenPass<Graphics::PostProcessDepthViewShader> {
  public:
-  explicit DepthViewPass(const DepthViewPassProps& props);
-  ~DepthViewPass() = default;
+  explicit DepthViewPass(const DepthViewPassProps& props)
+      : FullscreenPass(props.device, props.shader_manager, props.pass_setup, {.pso_name = L"DepthViewPass_PSO"}),
+        depth_handle_(props.depth_handle),
+        config_(props.config) {
+  }
 
   const char* GetName() const override {
     return "Depth View Pass";
   }
 
-  void Execute(const RenderFrameContext& frame, const FramePacket& packet) override;
+ protected:
+  bool ShouldExecute(const RenderFrameContext&, const FramePacket&) const override {
+    return pipeline_state_ && config_->enabled;
+  }
+
+  void SetupConstants(RenderCommandList& cmd, const RenderFrameContext& frame, const FramePacket&) override {
+    struct DepthViewCB {
+      uint32_t depth_srv_index;
+      float near_plane;
+      float far_plane;
+      uint32_t padding = 0;
+    } cb_data = {
+      .depth_srv_index = frame.render_graph->GetSrvIndex(depth_handle_),
+      .near_plane = config_->near_plane,
+      .far_plane = config_->far_plane,
+    };
+
+    constexpr auto POST_PROCESS_CB = RootSlot::ConstantBuffer::Light;
+    cmd.SetConstantBufferOverride(POST_PROCESS_CB, cb_data);
+  }
 
  private:
-  bool CreatePipelineObjects();
-
-  ID3D12Device* device_;
-  ShaderManager* shader_manager_;
-  ComPtr<ID3D12PipelineState> pipeline_state_;
-
-  RenderGraphHandle depth_handle_ = RenderGraphHandle::Invalid;
-  const DepthViewConfig* config_ = nullptr;
+  RenderGraphHandle depth_handle_;
+  const DepthViewConfig* config_;
 };

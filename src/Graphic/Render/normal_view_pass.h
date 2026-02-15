@@ -1,14 +1,8 @@
 #pragma once
 
-#include <d3d12.h>
-
-#include "Frame/frame_packet.h"
-#include "Frame/render_frame_context.h"
-#include "Render/render_graph_handle.h"
-#include "Render/render_pass.h"
-
-struct ID3D12Device;
-class ShaderManager;
+#include "Pipeline/shader_descriptors.h"
+#include "Render/fullscreen_pass.h"
+#include "Render/render_graph.h"
 
 struct NormalViewPassProps {
   ID3D12Device* device;
@@ -17,21 +11,28 @@ struct NormalViewPassProps {
   RenderGraphHandle source_handle;
 };
 
-class NormalViewPass : public IRenderPass {
+class NormalViewPass : public FullscreenPass<Graphics::PostProcessNormalViewShader> {
  public:
-  explicit NormalViewPass(const NormalViewPassProps& props);
+  explicit NormalViewPass(const NormalViewPassProps& props)
+      : FullscreenPass(props.device, props.shader_manager, props.pass_setup, {.pso_name = L"NormalViewPass_PSO"}),
+        source_handle_(props.source_handle) {
+  }
 
   const char* GetName() const override {
     return "Normal View Pass";
   }
 
-  void Execute(const RenderFrameContext& frame, const FramePacket& packet) override;
+ protected:
+  void SetupConstants(RenderCommandList& cmd, const RenderFrameContext& frame, const FramePacket&) override {
+    struct NormalViewCB {
+      uint32_t src_srv_index;
+      uint32_t padding[3] = {};
+    } cb_data = {.src_srv_index = frame.render_graph->GetSrvIndex(source_handle_)};
+
+    constexpr auto POST_PROCESS_CB = RootSlot::ConstantBuffer::Light;
+    cmd.SetConstantBufferOverride(POST_PROCESS_CB, cb_data);
+  }
 
  private:
-  bool CreatePipelineObjects();
-
-  ID3D12Device* device_;
-  ShaderManager* shader_manager_;
-  ComPtr<ID3D12PipelineState> pipeline_state_;
-  RenderGraphHandle source_handle_ = RenderGraphHandle::Invalid;
+  RenderGraphHandle source_handle_;
 };

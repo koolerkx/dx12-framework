@@ -1,11 +1,7 @@
 #include "ssao_pass_group.h"
 
-#include "Command/render_command_list.h"
-#include "Core/types.h"
-#include "Framework/Logging/logger.h"
-#include "Pipeline/pipeline_state_builder.h"
 #include "Pipeline/shader_descriptors.h"
-#include "Pipeline/shader_manager.h"
+#include "Render/fullscreen_pass.h"
 #include "Render/render_graph.h"
 #include "Rendering/ssao_config.h"
 
@@ -29,48 +25,24 @@ struct SSAOBlurCB {
 };
 static_assert(sizeof(SSAOBlurCB) == 16);
 
-class SSAOPass : public IRenderPass {
+class SSAOPass : public FullscreenPass<Graphics::PostProcessSSAOShader> {
  public:
   SSAOPass(ID3D12Device* device,
     ShaderManager* shader_manager,
     const PassSetup& pass_setup,
     RenderGraphHandle normal_depth_handle,
     const SSAOConfig* config)
-      : shader_manager_(shader_manager), normal_depth_handle_(normal_depth_handle), config_(config) {
-    setup_ = pass_setup;
-
-    auto* vs = shader_manager->GetVertexShader<Graphics::PostProcessSSAOShader>();
-    auto* ps = shader_manager->GetPixelShader<Graphics::PostProcessSSAOShader>();
-    auto* root_sig = shader_manager->GetRootSignature(Graphics::RSPreset::Standard);
-
-    if (!vs || !ps || !root_sig) {
-      Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[SSAOPass] Shader load failed");
-    } else {
-      pipeline_state_ = PipelineStateBuilder()
-                          .SetRootSignature(root_sig)
-                          .SetVertexShader(vs)
-                          .SetPixelShader(ps)
-                          .SetRenderTargetFormat(DXGI_FORMAT_R8_UNORM)
-                          .SetName(L"SSAO_PSO")
-                          .Build(device);
-    }
+      : FullscreenPass(device, shader_manager, pass_setup, {.rt_format = DXGI_FORMAT_R8_UNORM, .pso_name = L"SSAO_PSO"}),
+        normal_depth_handle_(normal_depth_handle),
+        config_(config) {
   }
 
   const char* GetName() const override {
     return "SSAO Pass";
   }
 
-  void Execute(const RenderFrameContext& frame, const FramePacket& packet) override {
-    if (!pipeline_state_) return;
-
-    RenderCommandList cmd(frame.command_list, frame.dynamic_allocator, frame.frame_cb, frame.object_cb_allocator);
-
-    frame.command_list->SetPipelineState(pipeline_state_.Get());
-    frame.command_list->SetGraphicsRootSignature(shader_manager_->GetRootSignature(Graphics::RSPreset::Standard));
-
-    cmd.BindGlobalSRVTable(frame.global_heap_manager);
-    cmd.BindSamplerTable(frame.global_heap_manager);
-
+ protected:
+  void SetupConstants(RenderCommandList& cmd, const RenderFrameContext& frame, const FramePacket& packet) override {
     FrameCB frame_data = {};
     frame_data.proj = packet.main_camera.proj;
     frame_data.invProj = packet.main_camera.inv_proj;
@@ -86,21 +58,16 @@ class SSAOPass : public IRenderPass {
 
     constexpr auto POST_PROCESS_CB = RootSlot::ConstantBuffer::Light;
     cmd.SetConstantBufferOverride(POST_PROCESS_CB, cb_data);
-
-    frame.command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    frame.command_list->DrawInstanced(3, 1, 0, 0);
   }
 
  private:
-  ShaderManager* shader_manager_;
-  ComPtr<ID3D12PipelineState> pipeline_state_;
   RenderGraphHandle normal_depth_handle_;
   const SSAOConfig* config_;
 };
 
 enum class BlurDirection : uint8_t { Horizontal, Vertical };
 
-class SSAOBlurPass : public IRenderPass {
+class SSAOBlurPass : public FullscreenPass<Graphics::PostProcessSSAOBlurShader> {
  public:
   SSAOBlurPass(ID3D12Device* device,
     ShaderManager* shader_manager,
@@ -108,41 +75,21 @@ class SSAOBlurPass : public IRenderPass {
     RenderGraphHandle ao_handle,
     RenderGraphHandle normal_depth_handle,
     BlurDirection direction)
-      : shader_manager_(shader_manager), ao_handle_(ao_handle), normal_depth_handle_(normal_depth_handle), direction_(direction) {
-    setup_ = pass_setup;
-
-    auto* vs = shader_manager->GetVertexShader<Graphics::PostProcessSSAOBlurShader>();
-    auto* ps = shader_manager->GetPixelShader<Graphics::PostProcessSSAOBlurShader>();
-    auto* root_sig = shader_manager->GetRootSignature(Graphics::RSPreset::Standard);
-
-    if (!vs || !ps || !root_sig) {
-      Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "[SSAOBlurPass] Shader load failed");
-    } else {
-      pipeline_state_ = PipelineStateBuilder()
-                          .SetRootSignature(root_sig)
-                          .SetVertexShader(vs)
-                          .SetPixelShader(ps)
-                          .SetRenderTargetFormat(DXGI_FORMAT_R8_UNORM)
-                          .SetName(direction == BlurDirection::Horizontal ? L"SSAOBlurH_PSO" : L"SSAOBlurV_PSO")
-                          .Build(device);
-    }
+      : FullscreenPass(device,
+          shader_manager,
+          pass_setup,
+          {.rt_format = DXGI_FORMAT_R8_UNORM, .pso_name = direction == BlurDirection::Horizontal ? L"SSAOBlurH_PSO" : L"SSAOBlurV_PSO"}),
+        ao_handle_(ao_handle),
+        normal_depth_handle_(normal_depth_handle),
+        direction_(direction) {
   }
 
   const char* GetName() const override {
     return direction_ == BlurDirection::Horizontal ? "SSAO Blur H Pass" : "SSAO Blur V Pass";
   }
 
-  void Execute(const RenderFrameContext& frame, const FramePacket&) override {
-    if (!pipeline_state_) return;
-
-    RenderCommandList cmd(frame.command_list, frame.dynamic_allocator, frame.frame_cb, frame.object_cb_allocator);
-
-    frame.command_list->SetPipelineState(pipeline_state_.Get());
-    frame.command_list->SetGraphicsRootSignature(shader_manager_->GetRootSignature(Graphics::RSPreset::Standard));
-
-    cmd.BindGlobalSRVTable(frame.global_heap_manager);
-    cmd.BindSamplerTable(frame.global_heap_manager);
-
+ protected:
+  void SetupConstants(RenderCommandList& cmd, const RenderFrameContext& frame, const FramePacket&) override {
     auto [w, h] = frame.render_graph->GetTextureSize(ao_handle_);
     float inv_w = 1.0f / static_cast<float>(w);
     float inv_h = 1.0f / static_cast<float>(h);
@@ -156,14 +103,9 @@ class SSAOBlurPass : public IRenderPass {
 
     constexpr auto POST_PROCESS_CB = RootSlot::ConstantBuffer::Light;
     cmd.SetConstantBufferOverride(POST_PROCESS_CB, cb_data);
-
-    frame.command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    frame.command_list->DrawInstanced(3, 1, 0, 0);
   }
 
  private:
-  ShaderManager* shader_manager_;
-  ComPtr<ID3D12PipelineState> pipeline_state_;
   RenderGraphHandle ao_handle_;
   RenderGraphHandle normal_depth_handle_;
   BlurDirection direction_;
