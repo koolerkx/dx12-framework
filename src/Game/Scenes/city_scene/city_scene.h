@@ -10,4 +10,5 @@ class CityScene : public IScene {
 
  private:
   void SetupCamera();
+  void CreateScanlineCube();
 };

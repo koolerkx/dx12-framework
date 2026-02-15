@@ -1,4 +1,7 @@
 #pragma once
+#include <array>
+#include <cstring>
+
 #include "Asset/asset_handle.h"
 #include "Asset/asset_manager.h"
 #include "Component/component.h"
@@ -294,6 +297,16 @@ class MeshRenderer : public Component<MeshRenderer> {
     shader_id_ = ShaderType::ID;
   }
 
+  template <typename ShaderType>
+    requires requires { typename ShaderType::Params; }
+  void SetShaderWithParams(const typename ShaderType::Params& params) {
+    shader_id_ = ShaderType::ID;
+    SetCustomData(params);
+    if constexpr (requires { ShaderType::RENDER_LAYER; }) render_layer_ = ShaderType::RENDER_LAYER;
+    if constexpr (requires { ShaderType::RENDER_TAGS; }) render_tags_ = ShaderType::RENDER_TAGS;
+    if constexpr (requires { ShaderType::DefaultRenderSettings(); }) render_settings_ = ShaderType::DefaultRenderSettings();
+  }
+
   void SetRenderLayer(RenderLayer layer) {
     render_layer_ = layer;
   }
@@ -335,6 +348,14 @@ class MeshRenderer : public Component<MeshRenderer> {
   }
   void AddRenderTag(RenderTag tag) {
     render_tags_ |= static_cast<uint32_t>(tag);
+  }
+  template <typename T>
+  void SetCustomData(const T& data) {
+    static_assert(std::is_trivially_copyable_v<T>);
+    static_assert(sizeof(T) <= sizeof(custom_data_));
+    custom_data_ = {};
+    memcpy(custom_data_.data(), &data, sizeof(T));
+    has_custom_data_ = true;
   }
   const Mesh* GetMesh() const {
     return mesh_;
@@ -526,6 +547,11 @@ class MeshRenderer : public Component<MeshRenderer> {
     Vector3 camPos = packet.main_camera.position;
     cmd.depth = Vector3::DistanceSquared(worldPos, camPos);
 
+    if (has_custom_data_) {
+      cmd.custom_data = custom_data_;
+      cmd.has_custom_data = true;
+    }
+
     cmd.layer = render_layer_;
     cmd.tags = render_tags_;
     cmd.depth_test = render_settings_.depth_test;
@@ -555,6 +581,9 @@ class MeshRenderer : public Component<MeshRenderer> {
   float roughness_ = 0.5f;
   Vector3 emissive_color_ = {0.0f, 0.0f, 0.0f};
   float emissive_intensity_ = 1.0f;
+
+  std::array<float, 16> custom_data_{};
+  bool has_custom_data_ = false;
 
   RenderLayer render_layer_ = RenderLayer::Opaque;
   RenderTagMask render_tags_ = static_cast<uint32_t>(RenderTag::CastShadow | RenderTag::ReceiveShadow | RenderTag::Lit);

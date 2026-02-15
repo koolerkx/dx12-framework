@@ -28,15 +28,11 @@
 #include <string_view>
 #include <tuple>
 
+#include "pixel_shader_descriptors.h"
 #include "shader_types.h"
 #include "vertex_types.h"
 
 namespace Graphics {
-
-// ShaderRenderHints - Data-driven PSO configuration
-struct ShaderRenderHints {
-  D3D12_PRIMITIVE_TOPOLOGY_TYPE topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-};
 
 // Sprite Shaders
 struct SpriteShader {
@@ -458,7 +454,8 @@ using AllShaders = std::tuple<SpriteShader,
   PostProcessFogShader,
   ModelInstancedShader,
   ShadowDepthInstancedShader,
-  DepthNormalInstancedShader>;
+  DepthNormalInstancedShader,
+  ScanlineCubeShader>;
 
 [[maybe_unused]] constexpr size_t SHADER_COUNT = std::tuple_size_v<AllShaders>;
 

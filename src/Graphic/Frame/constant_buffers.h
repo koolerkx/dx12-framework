@@ -106,6 +106,11 @@ struct alignas(256) ShadowCB {
 };
 static_assert(sizeof(ShadowCB) == 512);
 
+struct alignas(256) CustomCB {
+  float data[16];
+};
+static_assert(sizeof(CustomCB) == 256);
+
 struct alignas(256) MaterialCB {
   uint32_t albedo_texture_index;
   uint32_t normal_texture_index;

@@ -75,6 +75,7 @@ void Game::Stop() {
 }
 
 void Game::OnUpdate(float dt) {
+  if (play_state_ == PlayState::Playing) elapsed_time_ += dt;
   scene_manager_.ProcessPending(asset_manager_, context_, context_ ? context_->GetGraphic() : nullptr);
   IScene* scene = scene_manager_.GetCurrentScene();
   if (!scene) return;
@@ -101,6 +102,7 @@ void Game::OnRender() {
 
   Graphic* graphic = context_->GetGraphic();
   frame_packet_.Clear();
+  frame_packet_.time = elapsed_time_;
 
   RenderFrameContext frame_context = graphic->BeginFrame();
 

@@ -32,7 +32,8 @@ class MaterialRenderer {
     const LightingConfig& lighting,
     const ShadowConfig& shadow,
     uint32_t screen_width,
-    uint32_t screen_height);
+    uint32_t screen_height,
+    float time);
 
  protected:
   static void FilterCommands(const FramePacket& packet, RenderLayer target_layer, std::vector<DrawCommand>& out) {

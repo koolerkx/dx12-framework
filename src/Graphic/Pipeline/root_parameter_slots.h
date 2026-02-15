@@ -12,6 +12,7 @@ enum class ConstantBuffer : uint32_t {
   Light = 2,     // LightingCB - lighting data
   Material = 3,  // MaterialCB - material constants (texture indices, specular, rim, etc)
   Shadow = 4,    // ShadowCB - shadow mapping data (b4)
+  Custom = 9,    // CustomCB - per-object custom data (b5)
 };
 
 // Descriptor tables

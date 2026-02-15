@@ -11,5 +11,5 @@ void MaterialPass::Execute(const RenderFrameContext& frame, const FramePacket& p
 
   CameraData camera = camera_provider_ ? camera_provider_(frame, packet) : packet.main_camera;
 
-  renderer_->Record(frame, command_cache_, camera, packet.lighting, packet.shadow, frame.screen_width, frame.screen_height);
+  renderer_->Record(frame, command_cache_, camera, packet.lighting, packet.shadow, frame.screen_width, frame.screen_height, packet.time);
 }

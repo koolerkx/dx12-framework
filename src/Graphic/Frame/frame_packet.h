@@ -63,6 +63,7 @@ struct PointLightEntry {
 };
 
 struct FramePacket {
+  float time = 0.0f;
   CameraData main_camera;
   CameraData ui_camera;
   BackgroundConfig background;

@@ -36,6 +36,7 @@ add_library(graphic STATIC
   Pipeline/sampler_builder.cpp
   Pipeline/root_parameter_slots.h
   Pipeline/shader_types.h
+  Pipeline/pixel_shader_descriptors.h
   Pipeline/shader_registry.h
   Pipeline/shader_manager.h
   Pipeline/shader_manager.cpp
@@ -193,6 +194,7 @@ target_add_hlsl_auto(graphic "6.6"
   "${CMAKE_SOURCE_DIR}/shaders/model_instanced.vs.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/shadow_depth_instanced.vs.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/depth_normal_instanced.vs.hlsl"
+  "${CMAKE_SOURCE_DIR}/shaders/scanline.ps.hlsl"
 )
 
 # manually add shaders files

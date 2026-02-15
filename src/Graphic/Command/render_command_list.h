@@ -123,6 +123,13 @@ class RenderCommandList {
     cmd_->SetGraphicsRootConstantBufferView(RootSlot::ToIndex(RootSlot::ConstantBuffer::Material), allocation.gpu_ptr);
   }
 
+  void SetCustomConstants(const CustomCB& data) {
+    auto allocation = object_allocator_->Allocate<CustomCB>();
+    if (!allocation.cpu_ptr) return;
+    memcpy(allocation.cpu_ptr, &data, sizeof(CustomCB));
+    cmd_->SetGraphicsRootConstantBufferView(RootSlot::ToIndex(RootSlot::ConstantBuffer::Custom), allocation.gpu_ptr);
+  }
+
   template <typename T>
   void SetConstantBufferOverride(RootSlot::ConstantBuffer slot, const T& data) {
     auto allocation = object_allocator_->Allocate<T>();

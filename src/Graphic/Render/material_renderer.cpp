@@ -78,7 +78,8 @@ void MaterialRenderer::Record(const RenderFrameContext& frame,
   const LightingConfig& lighting,
   const ShadowConfig& shadow,
   uint32_t screen_width,
-  uint32_t screen_height) {
+  uint32_t screen_height,
+  float time) {
   if (commands.empty()) {
     return;
   }
@@ -111,6 +112,7 @@ void MaterialRenderer::Record(const RenderFrameContext& frame,
   frame_cb_data.invProj = camera.inv_proj;
   frame_cb_data.cameraPos = camera.position;
   frame_cb_data.screenSize = Vector2(static_cast<float>(screen_width), static_cast<float>(screen_height));
+  frame_cb_data.time = time;
   cmd.SetFrameConstants(frame_cb_data);
 
   LightingCB lighting_cb = {};
@@ -192,6 +194,12 @@ void MaterialRenderer::RecordSingle(RenderCommandList& cmd, const DrawCommand& d
                    flags::If(draw_cmd.layer == RenderLayer::Opaque, ObjectFlags::Opaque) |
                    flags::If(shadow_enabled && HasTag(draw_cmd.tags, RenderTag::ReceiveShadow), ObjectFlags::ReceiveShadow);
   cmd.SetObjectConstants(obj_data);
+
+  if (draw_cmd.has_custom_data) {
+    CustomCB custom_cb = {};
+    memcpy(custom_cb.data, draw_cmd.custom_data.data(), sizeof(float) * 16);
+    cmd.SetCustomConstants(custom_cb);
+  }
 
   cmd.DrawMesh(draw_cmd.mesh);
 }

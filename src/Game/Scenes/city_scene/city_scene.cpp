@@ -4,6 +4,7 @@
 
 #include "Asset/asset_manager.h"
 #include "Component/Renderer/instanced_model_renderer.h"
+#include "Component/Renderer/mesh_renderer.h"
 #include "Component/camera_component.h"
 #include "Component/transform_component.h"
 #include "Debug/debug_drawer.h"
@@ -99,6 +100,8 @@ void CityScene::OnEnter(AssetManager& asset_manager) {
     map_data->layers.size(),
     map_data->mesh_resources.size());
 
+  CreateScanlineCube();
+
   auto& bus = *GetContext()->GetEventBus();
   GetEventScope().Subscribe<KeyDownEvent>(bus, [this](const KeyDownEvent& e) {
     if (e.key == Keyboard::KeyCode::F1) GetContext()->GetSceneManager()->RequestLoad(SceneId::TEST_SCENE);
@@ -121,6 +124,27 @@ void CityScene::OnDebugDraw(DebugDrawer& drawer) {
   axis_config.position = Vector3::Zero;
   axis_config.length = 2.0f;
   drawer.DrawAxisGizmo(axis_config);
+}
+
+void CityScene::CreateScanlineCube() {
+  auto* cube = CreateGameObject("ScanlineCube", {.position = {0, 5, 0}});
+  auto* renderer = cube->AddComponent<MeshRenderer>(MeshRenderer::Props{
+    .mesh_type = DefaultMesh::Cube,
+  });
+  renderer->SetShaderWithParams<Graphics::ScanlineCubeShader>({
+    .primary_r = 0.0f,
+    .primary_g = 0.8f,
+    .primary_b = 1.0f,
+    .grid_divisions = 4.0f,
+    .secondary_r = 1.0f,
+    .secondary_g = 0.2f,
+    .secondary_b = 0.8f,
+    .grid_line_width = 0.05f,
+    .scanline_speed = 2.0f,
+    .scanline_width = 0.15f,
+    .glow_intensity = 1.5f,
+    .edge_glow_width = 0.02f,
+  });
 }
 
 void CityScene::SetupCamera() {
