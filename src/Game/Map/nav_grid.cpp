@@ -76,6 +76,33 @@ void NavGrid::Build(const MapData& map_data, const std::vector<Math::AABB>& obst
     elapsed_ms);
 }
 
+void NavGrid::SetAreaValue(const Math::AABB& bounds, uint8_t value) {
+  constexpr float EPSILON = 1e-4f;
+  int col_min = static_cast<int>(std::floor((bounds.min.x - origin_x_ + EPSILON) / cell_size_));
+  int col_max = static_cast<int>(std::floor((bounds.max.x - origin_x_ - EPSILON) / cell_size_));
+  int row_min = static_cast<int>(std::floor((bounds.min.z - origin_z_ + EPSILON) / cell_size_));
+  int row_max = static_cast<int>(std::floor((bounds.max.z - origin_z_ - EPSILON) / cell_size_));
+
+  col_min = (std::max)(col_min, 0);
+  col_max = (std::min)(col_max, width_ - 1);
+  row_min = (std::max)(row_min, 0);
+  row_max = (std::min)(row_max, height_ - 1);
+
+  for (int r = row_min; r <= row_max; ++r) {
+    for (int c = col_min; c <= col_max; ++c) {
+      cells_[CellIndex(c, r)] = value;
+    }
+  }
+}
+
+void NavGrid::BlockArea(const Math::AABB& bounds) {
+  SetAreaValue(bounds, 1);
+}
+
+void NavGrid::UnblockArea(const Math::AABB& bounds) {
+  SetAreaValue(bounds, 0);
+}
+
 bool NavGrid::IsBlocked(int col, int row) const {
   if (!IsInBounds(col, row)) return true;
   return cells_[CellIndex(col, row)] != 0;

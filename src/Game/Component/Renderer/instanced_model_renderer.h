@@ -20,6 +20,7 @@ struct InstanceProps {
   Matrix4 world = Matrix4::Identity;
   Vector4 color = {1.0f, 1.0f, 1.0f, 1.0f};
   Vector4 overlay_color = {0.0f, 0.0f, 0.0f, 0.0f};
+  bool visible = true;
 };
 
 class InstancedModelRenderer : public Component<InstancedModelRenderer> {

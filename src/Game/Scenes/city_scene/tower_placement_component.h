@@ -14,12 +14,19 @@ class CameraComponent;
 class InputSystem;
 class GameObject;
 class InstancedModelRenderer;
+class NavGrid;
 
 enum class PlacementState : uint8_t { Inactive, Hovering, Selected };
 
 class TowerPlacementComponent : public BehaviorComponent<TowerPlacementComponent> {
  public:
+  struct Props {
+    NavGrid* nav = nullptr;
+  };
+
   using BehaviorComponent::BehaviorComponent;
+  TowerPlacementComponent(GameObject* owner, const Props& props)
+      : BehaviorComponent(owner), nav_(props.nav) {}
 
   void OnStart() override;
   void OnUpdate(float dt) override;
@@ -42,6 +49,7 @@ class TowerPlacementComponent : public BehaviorComponent<TowerPlacementComponent
   Math::AABB ComputePreviewBounds() const;
   void UpdateOverlapHighlights();
   void ClearHighlights();
+  void HideOverlappedInstances();
 
   struct HighlightedInstance {
     InstancedModelRenderer* renderer;
@@ -58,6 +66,7 @@ class TowerPlacementComponent : public BehaviorComponent<TowerPlacementComponent
   PlacementState state_ = PlacementState::Inactive;
   std::function<void()> on_finished_;
 
+  NavGrid* nav_ = nullptr;
   CameraComponent* camera_ = nullptr;
   InputSystem* input_ = nullptr;
   float screen_width_ = 0.0f;

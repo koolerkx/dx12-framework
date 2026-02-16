@@ -22,6 +22,9 @@ class NavGrid {
   bool IsInBounds(int col, int row) const;
   bool IsAreaBlocked(float min_x, float min_z, float max_x, float max_z) const;
 
+  void BlockArea(const Math::AABB& bounds);
+  void UnblockArea(const Math::AABB& bounds);
+
   Math::Vector2 CellToWorld(int col, int row) const;
   bool WorldToCell(float world_x, float world_z, int& out_col, int& out_row) const;
 
@@ -50,6 +53,7 @@ class NavGrid {
   int CellIndex(int col, int row) const {
     return row * width_ + col;
   }
+  void SetAreaValue(const Math::AABB& bounds, uint8_t value);
 
   bool show_debug_grid_ = false;
   float cell_size_ = 1.0f;

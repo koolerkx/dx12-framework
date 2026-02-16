@@ -7,7 +7,7 @@
 
 void PlayerControlComponent::OnInit() {
   input_ = GetContext()->GetInput();
-  GetOwner()->AddComponent<TowerPlacementComponent>();
+  GetOwner()->AddComponent<TowerPlacementComponent>(TowerPlacementComponent::Props{.nav = nav_});
 }
 
 void PlayerControlComponent::OnUpdate(float /*dt*/) {

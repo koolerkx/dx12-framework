@@ -38,6 +38,10 @@ void InstancedModelRenderer::OnRender(FramePacket& packet) {
   if (dirty_) {
     std::vector<GPUInstanceData> gpu_data(instance_count_);
     for (uint32_t i = 0; i < instance_count_; ++i) {
+      if (!entries_[i].props.visible) {
+        gpu_data[i] = {};  // auto cull
+        continue;
+      }
       gpu_data[i].world = entries_[i].props.world;
       gpu_data[i].normal_matrix = entries_[i].props.world.Inverted().Transposed();
       gpu_data[i].color = entries_[i].props.color;

@@ -121,7 +121,8 @@ void CityScene::OnEnter(AssetManager& asset_manager) {
   CreateSpawnCubes(*map_data);
 
   auto* player = CreateGameObject("Player");
-  player->AddComponent<PlayerControlComponent>();
+  player->AddComponent<PlayerControlComponent>(PlayerControlComponent::Props{.nav = &nav_grid_});
+
 
   Logger::LogFormat(LogLevel::Info,
     LogCategory::Game,

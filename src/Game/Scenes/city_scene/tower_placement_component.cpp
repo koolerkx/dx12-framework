@@ -10,6 +10,7 @@
 #include "Framework/Core/color.h"
 #include "Framework/Input/input.h"
 #include "Map/ground_ray_caster.h"
+#include "Map/nav_grid.h"
 #include "SceneSetting/active_camera_setting.h"
 #include "game_context.h"
 #include "game_object.h"
@@ -154,6 +155,9 @@ void TowerPlacementComponent::UpdatePreviewPosition() {
 }
 
 void TowerPlacementComponent::PlaceTower() {
+  HideOverlappedInstances();
+
+  constexpr float TOWER_HALF_EXTENT = 0.375f;
   constexpr float TOWER_HALF_HEIGHT = 0.5f;
   auto* scene = GetOwner()->GetScene();
   auto* tower =
@@ -162,6 +166,14 @@ void TowerPlacementComponent::PlaceTower() {
     .mesh_type = DefaultMesh::Cube,
     .color = colors::Green,
   });
+
+  if (nav_) {
+    Math::AABB tower_bounds = {
+      {snapped_xz_.x - TOWER_HALF_EXTENT, 0.0f, snapped_xz_.y - TOWER_HALF_EXTENT},
+      {snapped_xz_.x + TOWER_HALF_EXTENT, 1.0f, snapped_xz_.y + TOWER_HALF_EXTENT},
+    };
+    nav_->BlockArea(tower_bounds);
+  }
 }
 
 Math::AABB TowerPlacementComponent::ComputePreviewBounds() const {
@@ -230,6 +242,33 @@ void TowerPlacementComponent::UpdateOverlapHighlights() {
   }
 
   highlighted_instances_ = std::move(new_highlights);
+}
+
+void TowerPlacementComponent::HideOverlappedInstances() {
+  auto* scene = GetOwner()->GetScene();
+  auto* object_go = scene->FindGameObject("object");
+
+  for (const auto& entry : highlighted_instances_) {
+    entry.renderer->UpdateById(entry.instance_id, [](const InstanceProps& p) {
+      InstanceProps updated = p;
+      updated.visible = false;
+      updated.overlay_color = {0.0f, 0.0f, 0.0f, 0.0f};
+      return updated;
+    });
+
+    if (object_go) {
+      std::string collider_name = entry.instance_id + "_collider";
+      auto* collider_go = object_go->FindChild(collider_name);
+      if (collider_go) {
+        if (nav_) {
+          auto* collider = collider_go->GetComponent<BoxColliderComponent>();
+          if (collider) nav_->UnblockArea(collider->GetWorldBounds());
+        }
+        collider_go->Destroy();
+      }
+    }
+  }
+  highlighted_instances_.clear();
 }
 
 void TowerPlacementComponent::ClearHighlights() {
