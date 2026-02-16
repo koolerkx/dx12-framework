@@ -1,4 +1,6 @@
 #pragma once
+#include <algorithm>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -34,3 +36,19 @@ struct MapData {
   std::vector<MapMeshResource> mesh_resources;
   std::vector<MapLayer> layers;
 };
+
+struct XZBounds {
+  float min_x = (std::numeric_limits<float>::max)();
+  float max_x = (std::numeric_limits<float>::lowest)();
+  float min_z = (std::numeric_limits<float>::max)();
+  float max_z = (std::numeric_limits<float>::lowest)();
+
+  void Expand(float x, float z, float half_sx, float half_sz) {
+    min_x = (std::min)(min_x, x - half_sx);
+    max_x = (std::max)(max_x, x + half_sx);
+    min_z = (std::min)(min_z, z - half_sz);
+    max_z = (std::max)(max_z, z + half_sz);
+  }
+};
+
+XZBounds ComputeGroundBounds(const MapData& map_data);

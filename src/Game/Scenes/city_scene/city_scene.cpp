@@ -115,6 +115,7 @@ void CityScene::OnEnter(AssetManager& asset_manager) {
 
   nav_grid_.Build(*map_data, obstacle_bounds, {.cell_size = 0.25f, .show_debug_grid = true});
 
+  SpawnBorderWalls(*map_data);
   SpawnEnemy();
   CreateSpawnCubes(*map_data);
 
@@ -170,6 +171,42 @@ void CityScene::SpawnEnemy() {
     .initial_target_xz = {5.0f, 0.0f},
     .has_initial_target = true,
   });
+}
+
+void CityScene::SpawnBorderWalls(const MapData& map_data) {
+  auto bounds = ComputeGroundBounds(map_data);
+  if (bounds.min_x > bounds.max_x) return;
+
+  auto* wall_root = CreateGameObject("BorderWalls");
+
+  constexpr float CUBE_Y = 0.4f;
+  int wall_index = 0;
+
+  auto spawn_cube = [&](float x, float z) {
+    auto* cube = CreateGameObject("wall_" + std::to_string(wall_index++), {.position = {x, CUBE_Y, z}});
+    cube->SetParent(wall_root);
+    cube->AddComponent<MeshRenderer>(MeshRenderer::Props{
+      .mesh_type = DefaultMesh::Cube,
+      .color = colors::White,
+    });
+  };
+
+  float wall_min_x = bounds.min_x - 1.0f;
+  float wall_max_x = bounds.max_x;
+  float wall_min_z = bounds.min_z - 1.0f;
+  float wall_max_z = bounds.max_z;
+
+  for (float x = wall_min_x; x <= wall_max_x; x += 1.0f) {
+    float cx = x + 0.5f;
+    spawn_cube(cx, wall_min_z + 0.5f);
+    spawn_cube(cx, wall_max_z + 0.5f);
+  }
+
+  for (float z = wall_min_z + 1.0f; z < wall_max_z; z += 1.0f) {
+    float cz = z + 0.5f;
+    spawn_cube(wall_min_x + 0.5f, cz);
+    spawn_cube(wall_max_x + 0.5f, cz);
+  }
 }
 
 void CityScene::CreateSpawnCubes(const MapData& map_data) {

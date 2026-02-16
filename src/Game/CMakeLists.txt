@@ -93,10 +93,15 @@ add_library(game STATIC
     Scenes/city_scene/object_movement_component.cpp
 
     Map/map_data.h
+    Map/map_data.cpp
     Map/map_loader.h
     Map/map_loader.cpp
     Map/a_star.h
     Map/a_star.cpp
+    Map/nav_grid.h
+    Map/nav_grid.cpp
+    Map/pathfinder.h
+    Map/pathfinder.cpp
 )
 
 set_msvc_runtime(game)

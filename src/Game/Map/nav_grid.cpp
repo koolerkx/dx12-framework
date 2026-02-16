@@ -2,7 +2,6 @@
 
 #include <chrono>
 #include <cmath>
-#include <limits>
 
 #include "Debug/debug_drawer.h"
 #include "Framework/Logging/logger.h"
@@ -10,40 +9,6 @@
 
 using Math::Vector2;
 using Math::Vector4;
-
-namespace {
-
-struct XZBounds {
-  float min_x = (std::numeric_limits<float>::max)();
-  float max_x = (std::numeric_limits<float>::lowest)();
-  float min_z = (std::numeric_limits<float>::max)();
-  float max_z = (std::numeric_limits<float>::lowest)();
-
-  void Expand(float x, float z, float half_sx, float half_sz) {
-    min_x = (std::min)(min_x, x - half_sx);
-    max_x = (std::max)(max_x, x + half_sx);
-    min_z = (std::min)(min_z, z - half_sz);
-    max_z = (std::max)(max_z, z + half_sz);
-  }
-};
-
-// Out ground must be 1*1 tile
-XZBounds ComputeGroundBounds(const MapData& map_data) {
-  XZBounds bounds;
-  for (const auto& layer : map_data.layers) {
-    if (layer.id != "ground") continue;
-    for (const auto& item : layer.items) {
-      float world_x = item.transform.x + map_data.origin_x;
-      float world_z = item.transform.z + map_data.origin_z;
-      float half_sx = 0.5f * item.transform.scale_x;
-      float half_sz = 0.5f * item.transform.scale_z;
-      bounds.Expand(world_x, world_z, half_sx, half_sz);
-    }
-  }
-  return bounds;
-}
-
-}  // namespace
 
 void NavGrid::Build(const MapData& map_data, const std::vector<Math::AABB>& obstacles, const NavGridConfig& config) {
   auto start_time = std::chrono::steady_clock::now();
