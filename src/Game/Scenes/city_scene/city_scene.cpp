@@ -16,6 +16,7 @@
 #include "Framework/Logging/logger.h"
 #include "Framework/Math/Math.h"
 #include "Map/map_loader.h"
+#include "Scenes/city_scene/object_movement_component.h"
 #include "Scripts/free_camera_controller.h"
 #include "scene_id.h"
 #include "scene_manager.h"
@@ -65,6 +66,8 @@ void CityScene::OnEnter(AssetManager& asset_manager) {
   std::vector<Math::AABB> obstacle_bounds;
 
   for (const auto& layer : map_data->layers) {
+    if (layer.id == "spawn") continue;
+
     auto* layer_go = CreateGameObject(layer.id);
     layer_go->SetParent(map_root);
 
@@ -82,7 +85,7 @@ void CityScene::OnEnter(AssetManager& asset_manager) {
       grouped[item.mesh_id].push_back(std::move(entry));
     }
 
-    bool has_colliders = (layer.id == "object" || layer.id == "spawn");
+    bool has_colliders = (layer.id == "object");
 
     for (auto& [mesh_id, instances] : grouped) {
       auto it = model_cache.find(mesh_id);
@@ -112,6 +115,9 @@ void CityScene::OnEnter(AssetManager& asset_manager) {
 
   nav_grid_.Build(*map_data, obstacle_bounds, {.cell_size = 0.25f, .show_debug_grid = true});
 
+  SpawnEnemy();
+  CreateSpawnCubes(*map_data);
+
   Logger::LogFormat(LogLevel::Info,
     LogCategory::Game,
     Logger::Here(),
@@ -120,8 +126,6 @@ void CityScene::OnEnter(AssetManager& asset_manager) {
     map_data->mesh_resources.size(),
     nav_grid_.GetWidth(),
     nav_grid_.GetHeight());
-
-  CreateSpawnCubes(*map_data);
 
   auto& bus = *GetContext()->GetEventBus();
   GetEventScope().Subscribe<KeyDownEvent>(bus, [this](const KeyDownEvent& e) {
@@ -147,6 +151,25 @@ void CityScene::OnDebugDraw(DebugDrawer& drawer) {
   drawer.DrawAxisGizmo(axis_config);
 
   nav_grid_.DebugDraw(drawer, 0.1f);
+}
+
+void CityScene::SpawnEnemy() {
+  constexpr float ENEMY_SCALE = 0.5f;
+  const Math::AABB UNIT_CUBE_BOUNDS = {{-0.5f, -0.5f, -0.5f}, {0.5f, 0.5f, 0.5f}};
+
+  auto* enemy = CreateGameObject("Enemy", {.position = {0.0f, 0.5f, 10.0f}, .scale = {ENEMY_SCALE, ENEMY_SCALE, ENEMY_SCALE}});
+  enemy->AddComponent<MeshRenderer>(MeshRenderer::Props{
+    .mesh_type = DefaultMesh::Cube,
+    .color = colors::Red,
+  });
+  enemy->AddComponent<BoxColliderComponent>(UNIT_CUBE_BOUNDS, enemy->GetTransform()->GetWorldMatrix());
+
+  enemy->AddComponent<ObjectMovementComponent>(ObjectMovementComponent::Props{
+    .nav = &nav_grid_,
+    .move_speed = 3.0f,
+    .initial_target_xz = {5.0f, 0.0f},
+    .has_initial_target = true,
+  });
 }
 
 void CityScene::CreateSpawnCubes(const MapData& map_data) {

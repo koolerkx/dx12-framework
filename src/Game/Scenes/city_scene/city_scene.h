@@ -12,6 +12,7 @@ class CityScene : public IScene {
 
  private:
   void SetupCamera();
+  void SpawnEnemy();
   void CreateSpawnCubes(const MapData& map_data);
 
   NavGrid nav_grid_;

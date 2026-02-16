@@ -54,6 +54,8 @@ add_library(game STATIC
     Component/Collider/collider_component.h
     Component/Collider/box_collider_component.h
     Component/Collider/box_collider_component.cpp
+    Component/nav_grid_component.h
+    Component/nav_grid_component.cpp
 
     Serialization/scene_serializer.h
     Serialization/scene_serializer.cpp
@@ -87,14 +89,14 @@ add_library(game STATIC
 
     Scenes/city_scene/city_scene.h
     Scenes/city_scene/city_scene.cpp
+    Scenes/city_scene/object_movement_component.h
+    Scenes/city_scene/object_movement_component.cpp
 
     Map/map_data.h
     Map/map_loader.h
     Map/map_loader.cpp
-    Map/nav_grid.h
-    Map/nav_grid.cpp
-    Map/pathfinder.h
-    Map/pathfinder.cpp
+    Map/a_star.h
+    Map/a_star.cpp
 )
 
 set_msvc_runtime(game)
