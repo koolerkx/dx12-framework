@@ -15,6 +15,7 @@
 #include "Framework/Input/keyboard.h"
 #include "Game/Asset/asset_manager.h"
 #include "Game/Component/Renderer/mesh_renderer.h"
+#include "Game/Component/Renderer/particle_emitter.h"
 #include "Game/Component/Renderer/sprite_renderer.h"
 #include "Game/Component/Renderer/text_renderer.h"
 #include "Game/Component/Renderer/ui_sprite_renderer.h"
@@ -38,6 +39,7 @@
 #include "Graphic/Pipeline/shader_registry.h"
 #include "Graphic/Render/render_graph.h"
 #include "Graphic/graphic.h"
+
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -719,6 +721,10 @@ void EditorLayer::DrawInspector() {
         if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen)) {
           DrawCameraInspector(camera);
         }
+      } else if (auto* emitter = dynamic_cast<ParticleEmitter*>(comp.get())) {
+        if (ImGui::CollapsingHeader("ParticleEmitter", ImGuiTreeNodeFlags_DefaultOpen)) {
+          DrawParticleEmitterInspector(emitter);
+        }
       } else if (auto* point_light = dynamic_cast<PointLightComponent*>(comp.get())) {
         if (ImGui::CollapsingHeader("PointLightComponent", ImGuiTreeNodeFlags_DefaultOpen)) {
           bool dbg = comp->IsDebugDrawEnabled();
@@ -1387,6 +1393,36 @@ void EditorLayer::DrawCameraInspector(CameraComponent* camera) {
   if (ImGui::DragFloat("Exposure", &exposure, 0.01f, 0.01f, 10.0f)) {
     camera->SetExposure(exposure);
   }
+}
+
+void EditorLayer::DrawParticleEmitterInspector(ParticleEmitter* emitter) {
+  if (emitter->IsPlaying()) {
+    if (ImGui::Button("Stop")) emitter->Stop();
+  } else {
+    if (ImGui::Button("Play")) emitter->Play();
+  }
+  ImGui::SameLine();
+  if (ImGui::Button("Clear")) emitter->Clear();
+
+  auto data = emitter->GetEditorData();
+
+  ImGui::DragFloat("Emit Rate", &data.emit_rate, 0.5f, 0.1f, 200.0f);
+  ImGui::DragFloat("Lifetime", &data.particle_lifetime, 0.1f, 0.1f, 30.0f);
+  ImGui::DragFloat2("Particle Size", &data.particle_size.x, 0.01f, 0.01f, 10.0f);
+  DrawColorEditor("Start Color", data.start_color);
+  DrawColorEditor("End Color", data.end_color);
+  ImGui::DragFloat("Start Speed", &data.start_speed, 0.1f, 0.0f, 50.0f);
+  ImGui::DragFloat("Speed Variation", &data.speed_variation, 0.1f, 0.0f, 50.0f);
+  ImGui::DragFloat3("Gravity", &data.gravity.x, 0.01f);
+  ImGui::DragFloat3("Spawn Offset", &data.spawn_offset.x, 0.05f);
+  ImGui::DragFloat("Spawn Radius", &data.spawn_radius, 0.05f, 0.0f, 20.0f);
+  ImGui::DragFloat("Fade In", &data.fade_in_ratio, 0.01f, 0.0f, 1.0f);
+  ImGui::DragFloat("Fade Out", &data.fade_out_ratio, 0.01f, 0.0f, 1.0f);
+  ImGui::DragFloat("Emissive", &data.emissive_intensity, 0.1f, 0.0f, 10.0f);
+  ImGui::DragFloat("Soft Distance", &data.soft_distance, 0.01f, 0.01f, 5.0f);
+  ImGui::Checkbox("Loop", &data.loop);
+
+  emitter->ApplyEditorData(data);
 }
 
 void EditorLayer::DrawPointLightInspector(PointLightComponent* light) {

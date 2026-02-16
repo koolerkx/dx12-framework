@@ -48,4 +48,27 @@ struct NeonGridShader {
   static_assert(sizeof(Params) == 40);
 };
 
+struct SoftParticleShader {
+  static constexpr ShaderId ID = 29;
+  using VertexType = Vertex::SpriteInstanced;
+
+  static constexpr RSPreset RS_PRESET = RSPreset::Standard;
+  static constexpr std::string_view NAME = "SoftParticle";
+  static constexpr std::wstring_view VS_PATH = L"Content/shaders/sprite_instanced.vs.cso";
+  static constexpr std::wstring_view PS_PATH = L"Content/shaders/soft_particle.ps.cso";
+  static constexpr ShaderRenderHints HINTS = {};
+
+  static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
+    return VertexType::GetInputLayout();
+  }
+
+  struct Params {
+    uint32_t depth_srv_index;
+    float emissive_intensity;
+    float soft_distance;
+    uint32_t _pad;
+  };
+  static_assert(sizeof(Params) == 16);
+};
+
 }  // namespace Graphics

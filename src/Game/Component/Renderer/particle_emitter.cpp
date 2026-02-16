@@ -1,7 +1,9 @@
 #include "particle_emitter.h"
 
 #include "Game/Asset/asset_manager.h"
+#include "Graphic/Pipeline/pixel_shader_descriptors.h"
 #include "Graphic/Pipeline/shader_descriptors.h"
+#include "Graphic/graphic.h"
 #include "game_context.h"
 
 thread_local std::mt19937 ParticleEmitter::rng_{std::random_device{}()};
@@ -21,7 +23,25 @@ ParticleEmitter::ParticleEmitter(GameObject* owner, const Props& props) : Compon
   speed_variation_ = props.speed_variation;
   gravity_ = props.gravity;
   loop_ = props.loop;
-  spawn_fn_ = props.spawn_fn ? props.spawn_fn : SpawnFromCenter();
+  spawn_offset_ = props.spawn_offset;
+  spawn_shape_ = props.spawn_shape;
+  spawn_radius_ = props.spawn_radius;
+  fade_in_ratio_ = props.fade_in_ratio;
+  fade_out_ratio_ = props.fade_out_ratio;
+  emissive_intensity_ = props.emissive_intensity;
+  soft_distance_ = props.soft_distance;
+
+  switch (spawn_shape_) {
+    case SpawnShape::Disk:
+      spawn_fn_ = SpawnFromDisk();
+      break;
+    case SpawnShape::Custom:
+      spawn_fn_ = props.spawn_fn ? props.spawn_fn : SpawnFromCenter();
+      break;
+    default:
+      spawn_fn_ = SpawnFromCenter();
+      break;
+  }
 
   render_settings_ = Rendering::RenderSettings::Transparent();
   render_settings_.blend_mode = props.blend_mode;
@@ -53,14 +73,24 @@ void ParticleEmitter::OnRender(FramePacket& packet) {
   if (!texture_ || particles_.empty()) return;
 
   auto* context = GetOwner()->GetContext();
-  auto& material_mgr = context->GetGraphic()->GetMaterialManager();
+  auto* graphic = context->GetGraphic();
+  auto& material_mgr = graphic->GetMaterialManager();
 
   DrawCommand cmd;
   cmd.mesh = context->GetAssetManager().GetDefaultMesh(DefaultMesh::Rect);
-  cmd.material = material_mgr.GetOrCreateMaterial(Graphics::SpriteInstancedShader::ID, render_settings_);
+  cmd.material = material_mgr.GetOrCreateMaterial(Graphics::SoftParticleShader::ID, render_settings_);
   cmd.material_instance.material = cmd.material;
   cmd.material_instance.albedo_texture_index = texture_->GetBindlessIndex();
   cmd.material_instance.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
+
+  Graphics::SoftParticleShader::Params params{
+    .depth_srv_index = graphic->GetNormalDepthSrvIndex(),
+    .emissive_intensity = emissive_intensity_,
+    .soft_distance = soft_distance_,
+  };
+  static_assert(sizeof(params) <= sizeof(cmd.custom_data));
+  memcpy(cmd.custom_data.data(), &params, sizeof(params));
+  cmd.has_custom_data = true;
 
   cmd.instances.reserve(particles_.size());
   for (const auto& p : particles_) {
@@ -96,7 +126,7 @@ void ParticleEmitter::EmitParticles(float dt) {
     auto [offset, direction] = spawn_fn_(rng_);
 
     Particle p;
-    p.position = emitter_pos + offset;
+    p.position = emitter_pos + spawn_offset_ + offset * spawn_radius_;
     p.velocity = direction * speed_dist(rng_);
     p.color = start_color_;
     p.size = 1.0f;
@@ -115,7 +145,18 @@ void ParticleEmitter::UpdateParticles(float dt) {
     p.velocity = p.velocity + gravity_ * dt;
     p.position = p.position + p.velocity * dt;
     p.age += dt;
-    p.color = Vector4::LerpClamped(start_color_, end_color_, p.GetLifetimeRatio());
+
+    float t = p.GetLifetimeRatio();
+    p.color = Vector4::LerpClamped(start_color_, end_color_, t);
+
+    float fade = 1.0f;
+    if (fade_in_ratio_ > 0.0f && t < fade_in_ratio_) {
+      fade = t / fade_in_ratio_;
+    }
+    if (fade_out_ratio_ > 0.0f && t > (1.0f - fade_out_ratio_)) {
+      fade = (1.0f - t) / fade_out_ratio_;
+    }
+    p.color.w *= fade;
   }
 }
 
@@ -131,5 +172,23 @@ ParticleEmitter::SpawnFn ParticleEmitter::SpawnFromCenter() {
       dir = {dist(rng), dist(rng), dist(rng)};
     } while (dir.LengthSquared() < 0.0001f || dir.LengthSquared() > 1.0f);
     return {.offset = Vector3::Zero, .direction = dir.Normalized()};
+  };
+}
+
+ParticleEmitter::SpawnFn ParticleEmitter::SpawnFromDisk() {
+  return [](std::mt19937& rng) -> SpawnParams {
+    std::uniform_real_distribution<float> angle_dist(0.0f, 6.2831853f);
+    std::uniform_real_distribution<float> radius_dist(0.0f, 1.0f);
+
+    float angle = angle_dist(rng);
+    float r = std::sqrt(radius_dist(rng));
+
+    float x = r * std::cos(angle);
+    float z = r * std::sin(angle);
+
+    return {
+      .offset = {x, 0.0f, z},
+      .direction = Vector3::Up,
+    };
   };
 }

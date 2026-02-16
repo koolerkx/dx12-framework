@@ -21,6 +21,8 @@ using Math::Vector2;
 using Math::Vector3;
 using Math::Vector4;
 
+enum class SpawnShape : uint8_t { Point, Disk, Custom };
+
 class ParticleEmitter : public Component<ParticleEmitter> {
  public:
   struct SpawnParams {
@@ -59,7 +61,32 @@ class ParticleEmitter : public Component<ParticleEmitter> {
     Vector3 gravity = {0, -9.8f, 0};
     bool loop = true;
     Rendering::BlendMode blend_mode = Rendering::BlendMode::Additive;
+    Vector3 spawn_offset = {0, 0, 0};
+    SpawnShape spawn_shape = SpawnShape::Point;
+    float spawn_radius = 1.0f;
+    float fade_in_ratio = 0.0f;
+    float fade_out_ratio = 0.0f;
+    float emissive_intensity = 1.0f;
+    float soft_distance = 0.5f;
     SpawnFn spawn_fn = SpawnFromCenter();
+  };
+
+  struct EditorData {
+    float emit_rate;
+    float particle_lifetime;
+    Vector2 particle_size;
+    Vector4 start_color;
+    Vector4 end_color;
+    float start_speed;
+    float speed_variation;
+    Vector3 gravity;
+    Vector3 spawn_offset;
+    float spawn_radius;
+    float fade_in_ratio;
+    float fade_out_ratio;
+    float emissive_intensity;
+    float soft_distance;
+    bool loop;
   };
 
   ParticleEmitter(GameObject* owner);
@@ -76,6 +103,44 @@ class ParticleEmitter : public Component<ParticleEmitter> {
     if (!context) return;
     texture_handle_ = context->GetAssetManager().LoadTexture(path);
     texture_ = texture_handle_.Get();
+  }
+
+  EditorData GetEditorData() const {
+    return {
+      emit_rate_,
+      particle_lifetime_,
+      particle_size_,
+      start_color_,
+      end_color_,
+      start_speed_,
+      speed_variation_,
+      gravity_,
+      spawn_offset_,
+      spawn_radius_,
+      fade_in_ratio_,
+      fade_out_ratio_,
+      emissive_intensity_,
+      soft_distance_,
+      loop_,
+    };
+  }
+
+  void ApplyEditorData(const EditorData& data) {
+    emit_rate_ = data.emit_rate;
+    particle_lifetime_ = data.particle_lifetime;
+    particle_size_ = data.particle_size;
+    start_color_ = data.start_color;
+    end_color_ = data.end_color;
+    start_speed_ = data.start_speed;
+    speed_variation_ = data.speed_variation;
+    gravity_ = data.gravity;
+    spawn_offset_ = data.spawn_offset;
+    spawn_radius_ = data.spawn_radius;
+    fade_in_ratio_ = data.fade_in_ratio;
+    fade_out_ratio_ = data.fade_out_ratio;
+    emissive_intensity_ = data.emissive_intensity;
+    soft_distance_ = data.soft_distance;
+    loop_ = data.loop;
   }
 
   void OnSerialize(framework::SerializeNode& node) const override {
@@ -96,6 +161,13 @@ class ParticleEmitter : public Component<ParticleEmitter> {
     node.WriteVec3("Gravity", gravity_.x, gravity_.y, gravity_.z);
     node.Write("Loop", loop_);
     node.Write("BlendMode", static_cast<int>(render_settings_.blend_mode));
+    node.WriteVec3("SpawnOffset", spawn_offset_.x, spawn_offset_.y, spawn_offset_.z);
+    node.Write("SpawnShape", static_cast<int>(spawn_shape_));
+    node.Write("SpawnRadius", spawn_radius_);
+    node.Write("FadeInRatio", fade_in_ratio_);
+    node.Write("FadeOutRatio", fade_out_ratio_);
+    node.Write("EmissiveIntensity", emissive_intensity_);
+    node.Write("SoftDistance", soft_distance_);
   }
 
   void OnDeserialize(const framework::SerializeNode& node) override {
@@ -118,6 +190,17 @@ class ParticleEmitter : public Component<ParticleEmitter> {
     loop_ = node.ReadBool("Loop", loop_);
     render_settings_.blend_mode =
       static_cast<Rendering::BlendMode>(node.ReadInt("BlendMode", static_cast<int>(render_settings_.blend_mode)));
+    node.ReadVec3("SpawnOffset", spawn_offset_.x, spawn_offset_.y, spawn_offset_.z);
+    spawn_shape_ = static_cast<SpawnShape>(node.ReadInt("SpawnShape", static_cast<int>(spawn_shape_)));
+    switch (spawn_shape_) {
+      case SpawnShape::Disk: spawn_fn_ = SpawnFromDisk(); break;
+      default: spawn_fn_ = SpawnFromCenter(); break;
+    }
+    spawn_radius_ = node.ReadFloat("SpawnRadius", spawn_radius_);
+    fade_in_ratio_ = node.ReadFloat("FadeInRatio", fade_in_ratio_);
+    fade_out_ratio_ = node.ReadFloat("FadeOutRatio", fade_out_ratio_);
+    emissive_intensity_ = node.ReadFloat("EmissiveIntensity", emissive_intensity_);
+    soft_distance_ = node.ReadFloat("SoftDistance", soft_distance_);
   }
 
   void Play();
@@ -132,6 +215,7 @@ class ParticleEmitter : public Component<ParticleEmitter> {
   void OnRender(FramePacket& packet) override;
 
   static SpawnFn SpawnFromCenter();
+  static SpawnFn SpawnFromDisk();
 
  private:
   void EmitParticles(float dt);
@@ -153,6 +237,14 @@ class ParticleEmitter : public Component<ParticleEmitter> {
   float speed_variation_ = 2.0f;
   Vector3 gravity_ = {0, -9.8f, 0};
   bool loop_ = true;
+
+  Vector3 spawn_offset_ = {0, 0, 0};
+  SpawnShape spawn_shape_ = SpawnShape::Point;
+  float spawn_radius_ = 1.0f;
+  float fade_in_ratio_ = 0.0f;
+  float fade_out_ratio_ = 0.0f;
+  float emissive_intensity_ = 1.0f;
+  float soft_distance_ = 0.5f;
 
   float emit_accumulator_ = 0.0f;
   bool is_playing_ = false;

@@ -220,11 +220,13 @@ void Graphic::BuildRenderPipeline() {
     .pass_setup = scene_setup,
   }));
 
+  PassSetup transparent_setup = scene_setup;
+  transparent_setup.resource_reads.push_back(prepass.GetNormalDepthRT());
   render_graph_->AddPass(std::make_unique<MaterialPass>(MaterialPass::MaterialPassProps{
     .name = "Transparent Pass",
     .renderer = transparent_renderer_.get(),
     .layer = RenderLayer::Transparent,
-    .pass_setup = scene_setup,
+    .pass_setup = transparent_setup,
   }));
 
   render_graph_->AddPass(std::make_unique<DebugPass>(debug_line_renderer_.get(), &render_services_->GetMaterialManager(), scene_setup));
@@ -563,6 +565,10 @@ void Graphic::SetCascadeCount(uint32_t count) {
   if (count == active_cascade_count_) return;
   active_cascade_count_ = count;
   RequestPipelineRebuild();
+}
+
+uint32_t Graphic::GetNormalDepthSrvIndex() const {
+  return render_graph_->GetSrvIndex(preview_handles_.normal_depth_rt);
 }
 
 void Graphic::RequestPipelineRebuild() {

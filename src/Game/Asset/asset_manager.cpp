@@ -101,6 +101,10 @@ void AssetManager::CreateDefaultMeshes() {
   register_default(DefaultMesh::Sphere, "default:sphere", [](auto* d, auto& m) { return MeshFactory::CreateSphere(d, m, 32, 16); });
 }
 
+void AssetManager::CreateTextureFromPixels(const std::string& cache_key, const uint8_t* pixels, uint32_t width, uint32_t height) {
+  impl_->texture_manager->LoadTextureFromRawPixels(cache_key, pixels, width, height, false);
+}
+
 const Mesh* AssetManager::CreateCube(const std::string& key, const CubeCornerColors& corner_colors) {
   auto& registry = impl_->graphic->GetMeshRegistry();
   if (auto* existing = registry.Find(key)) {

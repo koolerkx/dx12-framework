@@ -174,6 +174,8 @@ class Graphic {
     uint32_t shadow_map_count = 0;
   };
 
+  uint32_t GetNormalDepthSrvIndex() const;
+
   RenderGraph* GetRenderGraph() {
     return render_graph_.get();
   }

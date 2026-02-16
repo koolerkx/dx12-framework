@@ -4,7 +4,9 @@
 #include <string>
 
 #include "Asset/asset_manager.h"
+#include "ProceduralTexture/procedural_texture_factory.h"
 #include "Component/Renderer/mesh_renderer.h"
+#include "Component/Renderer/particle_emitter.h"
 #include "Component/behavior_component.h"
 #include "Framework/Core/color.h"
 #include "Graphic/Pipeline/pixel_shader_descriptors.h"
@@ -32,6 +34,9 @@ class SpawnPointComponent : public BehaviorComponent<SpawnPointComponent> {
 
     auto shader_params = BuildShaderParams(type_);
     renderer->SetShaderWithParams<Graphics::NeonGridShader>(shader_params);
+
+    RegisterProceduralTexture(assets);
+    CreateParticleEmitter();
   }
 
   SpawnType GetSpawnType() const {
@@ -39,7 +44,6 @@ class SpawnPointComponent : public BehaviorComponent<SpawnPointComponent> {
   }
 
   void OnFixedUpdate(float dt) override {
-    // rotate object
     auto transform = GetOwner()->GetTransform();
     if (transform) {
       constexpr float rotation_speed_degrees = 15.0f;
@@ -51,6 +55,43 @@ class SpawnPointComponent : public BehaviorComponent<SpawnPointComponent> {
 
  private:
   SpawnType type_;
+
+  static constexpr uint32_t PROCEDURAL_CIRCLE_SIZE = 64;
+  static constexpr const char* PROCEDURAL_CIRCLE_KEY = "procedural:circle_128";
+
+  static void RegisterProceduralTexture(AssetManager& assets) {
+    auto pixels = GenerateProceduralTexture({.size = PROCEDURAL_CIRCLE_SIZE, .falloff = 10.0f, .shape = ProceduralShape::Circle});
+    assets.CreateTextureFromPixels(PROCEDURAL_CIRCLE_KEY, pixels.data(), PROCEDURAL_CIRCLE_SIZE, PROCEDURAL_CIRCLE_SIZE);
+  }
+
+  void CreateParticleEmitter() {
+    bool is_player = (type_ == SpawnType::Player);
+
+    Vector4 start_color = is_player ? Vector4{0.3f, 0.6f, 1.0f, 0.8f} : Vector4{1.0f, 0.3f, 0.15f, 0.8f};
+    Vector4 end_color = is_player ? Vector4{0.1f, 0.3f, 0.9f, 0.0f} : Vector4{0.8f, 0.1f, 0.05f, 0.0f};
+
+    auto* emitter = GetOwner()->AddComponent<ParticleEmitter>(ParticleEmitter::Props{
+      .texture_path = PROCEDURAL_CIRCLE_KEY,
+      .max_particles = 200,
+      .emit_rate = 25.0f,
+      .particle_lifetime = 4.0f,
+      .particle_size = {0.15f, 0.15f},
+      .start_color = start_color,
+      .end_color = end_color,
+      .start_speed = 0.2f,
+      .speed_variation = 0.15f,
+      .gravity = {0.0f, 0.1f, 0.0f},
+      .loop = true,
+      .blend_mode = Rendering::BlendMode::Additive,
+      .spawn_offset = {0.0f, -1.5f, 0.0f},
+      .spawn_shape = SpawnShape::Disk,
+      .spawn_radius = 1.25f,
+      .fade_in_ratio = 0.15f,
+      .fade_out_ratio = 0.3f,
+      .emissive_intensity = 2.5f,
+    });
+    emitter->Play();
+  }
 
   static const Mesh* CreateMeshForType(AssetManager& assets, SpawnType type) {
     using colors::ColorFromHex;

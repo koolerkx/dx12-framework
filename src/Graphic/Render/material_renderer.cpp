@@ -257,5 +257,11 @@ void MaterialRenderer::RecordInstanced(RenderCommandList& cmd, const DrawCommand
   obj_data.samplerIndex = draw_cmd.material_instance.sampler_index;
   cmd.SetObjectConstants(obj_data);
 
+  if (draw_cmd.has_custom_data) {
+    CustomCB custom_cb = {};
+    memcpy(custom_cb.data, draw_cmd.custom_data.data(), sizeof(float) * 16);
+    cmd.SetCustomConstants(custom_cb);
+  }
+
   cmd.DrawMeshInstanced(draw_cmd.mesh, draw_cmd.instances);
 }

@@ -455,7 +455,8 @@ using AllShaders = std::tuple<SpriteShader,
   ModelInstancedShader,
   ShadowDepthInstancedShader,
   DepthNormalInstancedShader,
-  NeonGridShader>;
+  NeonGridShader,
+  SoftParticleShader>;
 
 [[maybe_unused]] constexpr size_t SHADER_COUNT = std::tuple_size_v<AllShaders>;
 

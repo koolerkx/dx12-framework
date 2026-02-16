@@ -62,6 +62,9 @@ add_library(framework STATIC
   # UUID
   UUID/uuid.h
 
+  # ProceduralTexture
+  ProceduralTexture/procedural_texture_factory.h
+
   # Serialization
   Serialize/serialize_node.h
   Serialize/serialize_node.cpp

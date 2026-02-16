@@ -59,6 +59,8 @@ class AssetManager {
   // Todo: Audio management
   // AssetHandle<AudioClip> LoadAudio(const std::string& path);
 
+  void CreateTextureFromPixels(const std::string& cache_key, const uint8_t* pixels, uint32_t width, uint32_t height);
+
   using CubeCornerColors = std::array<Math::Vector4, 8>;
   const Mesh* CreateCube(const std::string& key, const CubeCornerColors& corner_colors);
 

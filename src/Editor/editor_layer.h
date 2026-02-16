@@ -29,6 +29,7 @@ class UITextRenderer;
 class MeshRenderer;
 class CameraComponent;
 class ModelComponent;
+class ParticleEmitter;
 class PointLightComponent;
 
 class DebugDrawer;
@@ -60,6 +61,7 @@ class EditorLayer {
   void DrawMeshRendererInspector(MeshRenderer* renderer);
   void DrawModelComponentInspector(ModelComponent* model);
   void DrawCameraInspector(CameraComponent* camera);
+  void DrawParticleEmitterInspector(ParticleEmitter* emitter);
   void DrawPointLightInspector(PointLightComponent* light);
   void DrawMainMenu();
   void DrawSceneMenu();
