@@ -1,6 +1,8 @@
 #include "tower_placement_component.h"
 
 #include "Asset/asset_manager.h"
+#include "Component/Collider/box_collider_component.h"
+#include "Component/Renderer/instanced_model_renderer.h"
 #include "Component/Renderer/mesh_renderer.h"
 #include "Component/camera_component.h"
 #include "Component/model_component.h"
@@ -56,6 +58,7 @@ void TowerPlacementComponent::Activate(std::function<void()> on_finished) {
 }
 
 void TowerPlacementComponent::Deactivate() {
+  ClearHighlights();
   DestroyPreview();
   TransitionTo(PlacementState::Inactive);
   if (on_finished_) {
@@ -81,6 +84,7 @@ void TowerPlacementComponent::UpdateHovering() {
   if (hit) {
     snapped_xz_ = SnapToGrid(*hit);
     UpdatePreviewPosition();
+    UpdateOverlapHighlights();
   }
 
   if (input_->GetMouseButtonDown(Mouse::Button::Right)) {
@@ -158,4 +162,84 @@ void TowerPlacementComponent::PlaceTower() {
     .mesh_type = DefaultMesh::Cube,
     .color = colors::Green,
   });
+}
+
+Math::AABB TowerPlacementComponent::ComputePreviewBounds() const {
+  if (!selection_a_model_) return {};
+  Math::Vector3 offset(snapped_xz_.x, 0.0f, snapped_xz_.y);
+  return {selection_a_model_->bounds.min + offset, selection_a_model_->bounds.max + offset};
+}
+
+static std::string ExtractRendererGoName(const std::string& instance_id) {
+  auto last_underscore = instance_id.rfind('_');
+  if (last_underscore == std::string::npos) return instance_id + "_instances";
+  return instance_id.substr(0, last_underscore) + "_instances";
+}
+
+void TowerPlacementComponent::UpdateOverlapHighlights() {
+  auto* scene = GetOwner()->GetScene();
+  auto* object_go = scene->FindGameObject("object");
+  if (!object_go) return;
+
+  Math::AABB preview_bounds = ComputePreviewBounds();
+  std::set<HighlightedInstance> new_highlights;
+
+  for (auto* child : object_go->GetChildren()) {
+    auto* collider = child->GetComponent<BoxColliderComponent>();
+    if (!collider) continue;
+
+    if (!preview_bounds.Intersects(collider->GetWorldBounds())) continue;
+
+    const auto& collider_name = child->GetName();
+    constexpr std::string_view COLLIDER_SUFFIX = "_collider";
+    if (collider_name.size() <= COLLIDER_SUFFIX.size()) continue;
+
+    std::string instance_id = collider_name.substr(0, collider_name.size() - COLLIDER_SUFFIX.size());
+    std::string renderer_go_name = ExtractRendererGoName(instance_id);
+
+    auto* renderer_go = object_go->FindChild(renderer_go_name);
+    if (!renderer_go) continue;
+
+    auto* renderer = renderer_go->GetComponent<InstancedModelRenderer>();
+    if (!renderer) continue;
+
+    new_highlights.insert({renderer, instance_id});
+  }
+
+  static const Math::Vector4 RED_OVERLAY = {1.0f, 0.0f, 0.0f, 0.5f};
+  static const Math::Vector4 NO_OVERLAY = {0.0f, 0.0f, 0.0f, 0.0f};
+
+  for (const auto& prev : highlighted_instances_) {
+    if (new_highlights.find(prev) == new_highlights.end()) {
+      prev.renderer->UpdateById(prev.instance_id, [](const InstanceProps& p) {
+        InstanceProps updated = p;
+        updated.overlay_color = NO_OVERLAY;
+        return updated;
+      });
+    }
+  }
+
+  for (const auto& cur : new_highlights) {
+    if (highlighted_instances_.find(cur) == highlighted_instances_.end()) {
+      cur.renderer->UpdateById(cur.instance_id, [](const InstanceProps& p) {
+        InstanceProps updated = p;
+        updated.overlay_color = RED_OVERLAY;
+        return updated;
+      });
+    }
+  }
+
+  highlighted_instances_ = std::move(new_highlights);
+}
+
+void TowerPlacementComponent::ClearHighlights() {
+  static const Math::Vector4 NO_OVERLAY = {0.0f, 0.0f, 0.0f, 0.0f};
+  for (const auto& entry : highlighted_instances_) {
+    entry.renderer->UpdateById(entry.instance_id, [](const InstanceProps& p) {
+      InstanceProps updated = p;
+      updated.overlay_color = NO_OVERLAY;
+      return updated;
+    });
+  }
+  highlighted_instances_.clear();
 }

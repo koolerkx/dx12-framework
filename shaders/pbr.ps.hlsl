@@ -11,6 +11,7 @@ struct PSIN {
   float3 worldPos : TEXCOORD1;
   float3 worldTangent : TEXCOORD2;
   float3 worldBitangent : TEXCOORD3;
+  float4 overlayColor : TEXCOORD4;
 };
 
 Texture2D g_Textures[] : register(t0, space1);
@@ -154,5 +155,6 @@ float4 main(PSIN input) : SV_TARGET {
 
   float3 finalColor = (directional + ambient + pointDiffuse) * ao +
                       pointSpecular + rimLight + emissive;
+  finalColor += input.overlayColor.rgb * input.overlayColor.a;
   return float4(finalColor, baseColor.a);
 }

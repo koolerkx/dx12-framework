@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <set>
+#include <string>
 
 #include "Component/behavior_component.h"
 #include "Framework/Math/Math.h"
@@ -11,6 +13,7 @@ struct ModelData;
 class CameraComponent;
 class InputSystem;
 class GameObject;
+class InstancedModelRenderer;
 
 enum class PlacementState : uint8_t { Inactive, Hovering, Selected };
 
@@ -35,6 +38,22 @@ class TowerPlacementComponent : public BehaviorComponent<TowerPlacementComponent
   void DestroyPreview();
   void UpdatePreviewPosition();
   void PlaceTower();
+
+  Math::AABB ComputePreviewBounds() const;
+  void UpdateOverlapHighlights();
+  void ClearHighlights();
+
+  struct HighlightedInstance {
+    InstancedModelRenderer* renderer;
+    std::string instance_id;
+
+    bool operator<(const HighlightedInstance& other) const {
+      if (renderer != other.renderer) return renderer < other.renderer;
+      return instance_id < other.instance_id;
+    }
+  };
+
+  std::set<HighlightedInstance> highlighted_instances_;
 
   PlacementState state_ = PlacementState::Inactive;
   std::function<void()> on_finished_;
