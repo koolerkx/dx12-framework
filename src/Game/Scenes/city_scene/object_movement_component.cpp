@@ -87,7 +87,7 @@ void ObjectMovementComponent::MoveToXZ(Vector2 target_xz) {
   if (!transform) return;
 
   Vector3 pos = transform->GetWorldPosition();
-  auto result = Pathfinder::FindPath(*nav_, {pos.x, pos.z}, target_xz);
+  auto result = Pathfinder::FindPath(*nav_, {pos.x, pos.z}, target_xz, agent_radius_);
   if (!result.found || result.waypoints.empty()) return;
 
   waypoints_ = std::move(result.waypoints);

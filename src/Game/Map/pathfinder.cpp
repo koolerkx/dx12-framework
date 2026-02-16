@@ -45,43 +45,33 @@ constexpr Direction DIRECTIONS[] = {
   {-1, -1, SQRT2},
 };
 
-Vector2 NodeToWorld(int col, int row, float origin_x, float origin_z, float node_size) {
-  return {origin_x + (col + 0.5f) * node_size, origin_z + (row + 0.5f) * node_size};
-}
-
-bool IsNodeBlocked(const NavGrid& grid, int col, int row, float origin_x, float origin_z, float node_size) {
-  float cx = origin_x + (col + 0.5f) * node_size;
-  float cz = origin_z + (row + 0.5f) * node_size;
-  float half = node_size * 0.5f;
-  return grid.IsAreaBlocked(cx - half, cz - half, cx + half, cz + half);
-}
-
 }  // namespace
 
-PathResult Pathfinder::FindPath(const NavGrid& grid, Vector2 start_world, Vector2 goal_world, float node_size) {
+PathResult Pathfinder::FindPath(const NavGrid& grid, Vector2 start_world, Vector2 goal_world, float agent_radius) {
+  int grid_w = grid.GetWidth();
+  int grid_h = grid.GetHeight();
+  float cell_size = grid.GetCellSize();
   float origin_x = grid.GetOriginX();
   float origin_z = grid.GetOriginZ();
-  float world_w = grid.GetWorldWidth();
-  float world_h = grid.GetWorldHeight();
-
-  int grid_w = static_cast<int>(std::ceil(world_w / node_size));
-  int grid_h = static_cast<int>(std::ceil(world_h / node_size));
-
-  auto world_to_node = [&](float wx, float wz, int& out_col, int& out_row) -> bool {
-    out_col = static_cast<int>(std::floor((wx - origin_x) / node_size));
-    out_row = static_cast<int>(std::floor((wz - origin_z) / node_size));
-    return out_col >= 0 && out_col < grid_w && out_row >= 0 && out_row < grid_h;
-  };
 
   int start_col, start_row, goal_col, goal_row;
 
-  if (!world_to_node(start_world.x, start_world.y, start_col, start_row) ||
-      !world_to_node(goal_world.x, goal_world.y, goal_col, goal_row)) {
+  if (!grid.WorldToCell(start_world.x, start_world.y, start_col, start_row) ||
+      !grid.WorldToCell(goal_world.x, goal_world.y, goal_col, goal_row)) {
     return {};
   }
 
-  if (IsNodeBlocked(grid, start_col, start_row, origin_x, origin_z, node_size) ||
-      IsNodeBlocked(grid, goal_col, goal_row, origin_x, origin_z, node_size)) {
+  float half = cell_size * 0.5f + agent_radius;
+
+  auto is_blocked = [&](int col, int row) -> bool {
+    if (col < 0 || col >= grid_w || row < 0 || row >= grid_h) return true;
+    if (agent_radius <= 0.0f) return grid.IsBlocked(col, row);
+    float cx = origin_x + (col + 0.5f) * cell_size;
+    float cz = origin_z + (row + 0.5f) * cell_size;
+    return grid.IsAreaBlocked(cx - half, cz - half, cx + half, cz + half);
+  };
+
+  if (is_blocked(goal_col, goal_row)) {
     return {};
   }
 
@@ -90,7 +80,8 @@ PathResult Pathfinder::FindPath(const NavGrid& grid, Vector2 start_world, Vector
   int goal_index = goal_row * grid_w + goal_col;
 
   if (start_index == goal_index) {
-    return {true, {NodeToWorld(start_col, start_row, origin_x, origin_z, node_size)}};
+    auto wp = grid.CellToWorld(start_col, start_row);
+    return {true, {wp}};
   }
 
   std::vector<float> g_score(total_nodes, (std::numeric_limits<float>::max)());
@@ -113,7 +104,7 @@ PathResult Pathfinder::FindPath(const NavGrid& grid, Vector2 start_world, Vector
       while (idx != -1) {
         int c = idx % grid_w;
         int r = idx / grid_w;
-        waypoints.push_back(NodeToWorld(c, r, origin_x, origin_z, node_size));
+        waypoints.push_back(grid.CellToWorld(c, r));
         idx = parent[idx];
       }
       std::reverse(waypoints.begin(), waypoints.end());
@@ -130,13 +121,11 @@ PathResult Pathfinder::FindPath(const NavGrid& grid, Vector2 start_world, Vector
       int nc = cur_col + dir.dc;
       int nr = cur_row + dir.dr;
 
-      if (nc < 0 || nc >= grid_w || nr < 0 || nr >= grid_h) continue;
-      if (IsNodeBlocked(grid, nc, nr, origin_x, origin_z, node_size)) continue;
+      if (is_blocked(nc, nr)) continue;
 
-      bool is_diagonal = (dir.dc != 0 && dir.dr != 0);
-      if (is_diagonal) {
-        if (IsNodeBlocked(grid, cur_col + dir.dc, cur_row, origin_x, origin_z, node_size) ||
-            IsNodeBlocked(grid, cur_col, cur_row + dir.dr, origin_x, origin_z, node_size)) {
+      if (dir.dc != 0 && dir.dr != 0) {
+        if (is_blocked(cur_col + dir.dc, cur_row) ||
+            is_blocked(cur_col, cur_row + dir.dr)) {
           continue;
         }
       }

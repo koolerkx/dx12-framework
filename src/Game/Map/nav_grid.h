@@ -46,6 +46,9 @@ class NavGrid {
   float GetWorldHeight() const {
     return height_ * cell_size_;
   }
+  float GetCellSize() const {
+    return cell_size_;
+  }
 
   void DebugDraw(DebugDrawer& drawer, float y_level) const;
 
