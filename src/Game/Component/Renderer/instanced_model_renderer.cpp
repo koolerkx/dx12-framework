@@ -39,7 +39,7 @@ void InstancedModelRenderer::OnRender(FramePacket& packet) {
     std::vector<GPUInstanceData> gpu_data(instance_count_);
     for (uint32_t i = 0; i < instance_count_; ++i) {
       if (!entries_[i].props.visible) {
-        gpu_data[i] = {};  // auto cull
+        gpu_data[i].world = Math::Matrix4::CreateScale(0.0f);
         continue;
       }
       gpu_data[i].world = entries_[i].props.world;

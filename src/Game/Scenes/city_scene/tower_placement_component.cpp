@@ -128,7 +128,7 @@ Math::Vector2 TowerPlacementComponent::SnapToGrid(const Math::Vector2& world_xz)
 void TowerPlacementComponent::CreatePreview(const std::shared_ptr<ModelData>& model) {
   if (!model) return;
   auto* scene = GetOwner()->GetScene();
-  preview_go_ = scene->CreateGameObject("TowerPreview");
+  preview_go_ = scene->CreateGameObject("TowerPreview_" + std::to_string(tower_count_));
   preview_go_->SetTransient(true);
   preview_go_->AddComponent<ModelComponent>(ModelComponent::Props{.model = model});
 }
@@ -162,7 +162,7 @@ void TowerPlacementComponent::PlaceTower() {
   constexpr float TOWER_HALF_HEIGHT = 0.5f;
   auto* scene = GetOwner()->GetScene();
   auto* tower =
-    scene->CreateGameObject("Tower", {.position = {snapped_xz_.x, TOWER_HALF_HEIGHT, snapped_xz_.y}, .scale = {0.75f, 0.75f, 0.75f}});
+    scene->CreateGameObject("Tower_" + std::to_string(tower_count_++), {.position = {snapped_xz_.x, TOWER_HALF_HEIGHT, snapped_xz_.y}, .scale = {0.75f, 0.75f, 0.75f}});
   tower->AddComponent<MeshRenderer>(MeshRenderer::Props{
     .mesh_type = DefaultMesh::Cube,
     .color = colors::Green,

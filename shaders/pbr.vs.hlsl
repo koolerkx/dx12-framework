@@ -9,6 +9,7 @@ struct VSOUT {
   float3 worldPos : TEXCOORD1;
   float3 worldTangent : TEXCOORD2;
   float3 worldBitangent : TEXCOORD3;
+  float4 overlayColor : TEXCOORD4;
 };
 
 VSOUT main(VS_IN_PBR input) {
@@ -25,5 +26,6 @@ VSOUT main(VS_IN_PBR input) {
 
   output.uv = input.uv * g_ObjectCB.uvScale + g_ObjectCB.uvOffset;
   output.color = input.color;
+  output.overlayColor = float4(0, 0, 0, 0);
   return output;
 }

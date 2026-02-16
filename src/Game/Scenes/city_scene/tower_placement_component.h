@@ -78,4 +78,5 @@ class TowerPlacementComponent : public BehaviorComponent<TowerPlacementComponent
   GameObject* preview_go_ = nullptr;
   Math::Vector2 snapped_xz_ = {};
   float pulse_time_ = 0.0f;
+  int tower_count_ = 0;
 };
