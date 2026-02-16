@@ -49,7 +49,7 @@ class TowerPlacementComponent : public BehaviorComponent<TowerPlacementComponent
   Math::AABB ComputePreviewBounds() const;
   void UpdateOverlapHighlights();
   void ClearHighlights();
-  void HideOverlappedInstances();
+  Math::AABB HideOverlappedInstances();
 
   struct HighlightedInstance {
     InstancedModelRenderer* renderer;

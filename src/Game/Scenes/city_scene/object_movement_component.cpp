@@ -5,7 +5,9 @@
 #include "Debug/debug_drawer.h"
 #include "Framework/Core/color.h"
 #include "Map/nav_grid.h"
+#include "Map/nav_grid_events.h"
 #include "Map/pathfinder.h"
+#include "game_context.h"
 #include "game_object.h"
 
 using Math::Vector2;
@@ -28,6 +30,13 @@ void ObjectMovementComponent::OnInit() {
     auto extents = collider->GetWorldBounds().GetExtents();
     agent_radius_ = (std::max)(extents.x, extents.z);
   }
+
+  auto* bus = GetContext()->GetEventBus().get();
+  event_scope_.Subscribe<NavGridChangedEvent>(*bus, [this](const NavGridChangedEvent& event) {
+    if (!moving_) return;
+    if (!IsPathAffected(event.affected_area)) return;
+    MoveToXZ(goal_xz_);
+  });
 }
 
 void ObjectMovementComponent::OnStart() {
@@ -67,6 +76,7 @@ void ObjectMovementComponent::OnDebugDraw(DebugDrawer& drawer) {
 }
 
 void ObjectMovementComponent::MoveToXZ(Vector2 target_xz) {
+  goal_xz_ = target_xz;
   waypoints_.clear();
   current_waypoint_ = 0;
   moving_ = false;
@@ -102,6 +112,18 @@ void ObjectMovementComponent::ResetToSpawn() {
   if (collider) {
     collider->SetWorldMatrix(transform->GetWorldMatrix());
   }
+}
+
+bool ObjectMovementComponent::IsPathAffected(const Math::AABB& area) const {
+  for (size_t i = current_waypoint_; i < waypoints_.size(); ++i) {
+    float wx = waypoints_[i].x;
+    float wz = waypoints_[i].y;
+    if (wx >= area.min.x && wx <= area.max.x &&
+        wz >= area.min.z && wz <= area.max.z) {
+      return true;
+    }
+  }
+  return false;
 }
 
 void ObjectMovementComponent::MoveAlongPath(float dt) {

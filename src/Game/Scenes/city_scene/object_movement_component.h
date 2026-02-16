@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "Component/behavior_component.h"
+#include "Framework/Event/event_scope.hpp"
 #include "Framework/Math/Math.h"
 
 class NavGrid;
@@ -31,7 +32,9 @@ class ObjectMovementComponent : public BehaviorComponent<ObjectMovementComponent
  private:
   void MoveAlongPath(float dt);
   void ResetToSpawn();
+  bool IsPathAffected(const Math::AABB& area) const;
 
+  EventScope event_scope_;
   NavGrid* nav_ = nullptr;
   float move_speed_ = 3.0f;
   float waypoint_reach_threshold_ = 0.15f;
@@ -40,6 +43,7 @@ class ObjectMovementComponent : public BehaviorComponent<ObjectMovementComponent
   bool has_initial_target_ = false;
 
   Math::Vector3 spawn_position_ = {};
+  Math::Vector2 goal_xz_ = {};
   std::vector<Math::Vector2> waypoints_;
   size_t current_waypoint_ = 0;
   bool moving_ = false;

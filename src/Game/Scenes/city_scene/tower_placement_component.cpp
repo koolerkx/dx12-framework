@@ -11,6 +11,7 @@
 #include "Framework/Input/input.h"
 #include "Map/ground_ray_caster.h"
 #include "Map/nav_grid.h"
+#include "Map/nav_grid_events.h"
 #include "SceneSetting/active_camera_setting.h"
 #include "game_context.h"
 #include "game_object.h"
@@ -155,7 +156,7 @@ void TowerPlacementComponent::UpdatePreviewPosition() {
 }
 
 void TowerPlacementComponent::PlaceTower() {
-  HideOverlappedInstances();
+  Math::AABB removed_area = HideOverlappedInstances();
 
   constexpr float TOWER_HALF_EXTENT = 0.375f;
   constexpr float TOWER_HALF_HEIGHT = 0.5f;
@@ -173,6 +174,12 @@ void TowerPlacementComponent::PlaceTower() {
       {snapped_xz_.x + TOWER_HALF_EXTENT, 1.0f, snapped_xz_.y + TOWER_HALF_EXTENT},
     };
     nav_->BlockArea(tower_bounds);
+
+    Math::AABB affected_area = tower_bounds;
+    if (removed_area.min.x <= removed_area.max.x) {
+      affected_area.Encapsulate(removed_area);
+    }
+    GetContext()->GetEventBus()->Emit(NavGridChangedEvent{.affected_area = affected_area});
   }
 }
 
@@ -244,9 +251,11 @@ void TowerPlacementComponent::UpdateOverlapHighlights() {
   highlighted_instances_ = std::move(new_highlights);
 }
 
-void TowerPlacementComponent::HideOverlappedInstances() {
+Math::AABB TowerPlacementComponent::HideOverlappedInstances() {
   auto* scene = GetOwner()->GetScene();
   auto* object_go = scene->FindGameObject("object");
+
+  Math::AABB merged_area = {{1e9f, 1e9f, 1e9f}, {-1e9f, -1e9f, -1e9f}};
 
   for (const auto& entry : highlighted_instances_) {
     entry.renderer->UpdateById(entry.instance_id, [](const InstanceProps& p) {
@@ -262,13 +271,18 @@ void TowerPlacementComponent::HideOverlappedInstances() {
       if (collider_go) {
         if (nav_) {
           auto* collider = collider_go->GetComponent<BoxColliderComponent>();
-          if (collider) nav_->UnblockArea(collider->GetWorldBounds());
+          if (collider) {
+            Math::AABB bounds = collider->GetWorldBounds();
+            nav_->UnblockArea(bounds);
+            merged_area.Encapsulate(bounds);
+          }
         }
         collider_go->Destroy();
       }
     }
   }
   highlighted_instances_.clear();
+  return merged_area;
 }
 
 void TowerPlacementComponent::ClearHighlights() {
