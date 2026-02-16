@@ -96,6 +96,11 @@ add_library(game STATIC
     Scenes/city_scene/player_control_component.cpp
     Scenes/city_scene/tower_placement_component.h
     Scenes/city_scene/tower_placement_component.cpp
+    Scenes/city_scene/enemy_component.h
+    Scenes/city_scene/tower_component.h
+    Scenes/city_scene/tower_component.cpp
+    Scenes/city_scene/projectile_component.h
+    Scenes/city_scene/projectile_component.cpp
 
     Map/map_data.h
     Map/ground_ray_caster.h

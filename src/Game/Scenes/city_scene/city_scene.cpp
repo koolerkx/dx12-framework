@@ -17,6 +17,7 @@
 #include "Framework/Math/Math.h"
 #include "Map/map_loader.h"
 #include "Scenes/city_scene/city_scene_config.h"
+#include "Scenes/city_scene/enemy_component.h"
 #include "Scenes/city_scene/object_movement_component.h"
 #include "Scenes/city_scene/player_control_component.h"
 #include "Scripts/free_camera_controller.h"
@@ -120,12 +121,11 @@ void CityScene::OnEnter(AssetManager& asset_manager) {
   nav_grid_.Build(*map_data, obstacle_bounds, {.cell_size = NAV.cell_size, .block_threshold = NAV.block_threshold, .show_debug_grid = NAV.show_debug_grid});
 
   SpawnBorderWalls(*map_data);
-  SpawnEnemy();
+  SpawnEnemyManager();
   CreateSpawnCubes(*map_data);
 
   auto* player = CreateGameObject("Player");
   player->AddComponent<PlayerControlComponent>(PlayerControlComponent::Props{.nav = &nav_grid_});
-
 
   Logger::LogFormat(LogLevel::Info,
     LogCategory::Game,
@@ -164,16 +164,20 @@ void CityScene::OnDebugDraw(DebugDrawer& drawer) {
   nav_grid_.DebugDraw(drawer, DBG.nav_grid_y_level);
 }
 
-void CityScene::SpawnEnemy() {
+void CityScene::SpawnEnemyManager() {
+  auto* enemy_manager = CreateGameObject("EnemyManager");
+
   const cfg::EnemyConfig ENEMY;
   const Math::AABB UNIT_CUBE_BOUNDS = {{-0.5f, -0.5f, -0.5f}, {0.5f, 0.5f, 0.5f}};
 
   auto* enemy = CreateGameObject("Enemy", {.position = ENEMY.spawn_position, .scale = {ENEMY.scale, ENEMY.scale, ENEMY.scale}});
+  enemy->SetParent(enemy_manager);
   enemy->AddComponent<MeshRenderer>(MeshRenderer::Props{
     .mesh_type = DefaultMesh::Cube,
     .color = colors::Red,
   });
   enemy->AddComponent<BoxColliderComponent>(UNIT_CUBE_BOUNDS, enemy->GetTransform()->GetWorldMatrix());
+  enemy->AddComponent<EnemyComponent>(EnemyComponent::Props{.hp = 2.0f});
 
   enemy->AddComponent<ObjectMovementComponent>(ObjectMovementComponent::Props{
     .nav = &nav_grid_,

@@ -14,6 +14,7 @@
 #include "Map/nav_grid_events.h"
 #include "Scenes/city_scene/city_scene_config.h"
 #include "SceneSetting/active_camera_setting.h"
+#include "Scenes/city_scene/tower_component.h"
 #include "game_context.h"
 #include "game_object.h"
 #include "scene.h"
@@ -178,6 +179,7 @@ void TowerPlacementComponent::PlaceTower() {
     .mesh_type = DefaultMesh::Cube,
     .color = colors::Green,
   });
+  tower->AddComponent<TowerComponent>(TowerComponent::Props{});
 
   if (nav_) {
     float he = TOWER_CFG.tower_half_extent;

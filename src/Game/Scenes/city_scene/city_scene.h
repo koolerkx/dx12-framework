@@ -12,7 +12,7 @@ class CityScene : public IScene {
 
  private:
   void SetupCamera();
-  void SpawnEnemy();
+  void SpawnEnemyManager();
   void SpawnBorderWalls(const MapData& map_data);
   void CreateSpawnCubes(const MapData& map_data);
 
