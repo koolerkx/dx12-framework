@@ -75,7 +75,7 @@ class SpawnPointComponent : public BehaviorComponent<SpawnPointComponent> {
       .max_particles = 200,
       .emit_rate = 25.0f,
       .particle_lifetime = 4.0f,
-      .particle_size = {0.15f, 0.15f},
+      .particle_size = {0.25f, 0.25f},
       .start_color = start_color,
       .end_color = end_color,
       .start_speed = 0.2f,
