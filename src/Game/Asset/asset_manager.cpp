@@ -101,6 +101,20 @@ void AssetManager::CreateDefaultMeshes() {
   register_default(DefaultMesh::Sphere, "default:sphere", [](auto* d, auto& m) { return MeshFactory::CreateSphere(d, m, 32, 16); });
 }
 
+const Mesh* AssetManager::CreateCube(const std::string& key, const CubeCornerColors& corner_colors) {
+  auto& registry = impl_->graphic->GetMeshRegistry();
+  if (auto* existing = registry.Find(key)) {
+    return existing;
+  }
+
+  auto mesh = std::make_unique<Mesh>();
+  if (!MeshFactory::CreateCube(impl_->graphic->GetDevice(), *mesh, corner_colors)) {
+    Logger::LogFormat(LogLevel::Error, LogCategory::Game, Logger::Here(), "[AssetManager] Failed to create cube: {}", key);
+    return nullptr;
+  }
+  return registry.Register(key, std::move(mesh));
+}
+
 const Mesh* AssetManager::GetDefaultMesh(DefaultMesh type) const {
   auto it = default_meshes_.find(type);
   if (it != default_meshes_.end()) {

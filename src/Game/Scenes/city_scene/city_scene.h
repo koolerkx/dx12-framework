@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Map/map_data.h"
 #include "scene.h"
 
 class CityScene : public IScene {
@@ -10,5 +11,5 @@ class CityScene : public IScene {
 
  private:
   void SetupCamera();
-  void CreateScanlineCube();
+  void CreateSpawnCubes(const MapData& map_data);
 };

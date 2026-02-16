@@ -1,11 +1,13 @@
 #include "city_scene.h"
 
+#include <algorithm>
 #include <unordered_map>
 
 #include "Asset/asset_manager.h"
 #include "Component/Renderer/instanced_model_renderer.h"
 #include "Component/Renderer/mesh_renderer.h"
 #include "Component/camera_component.h"
+#include "Component/spawn_point_component.h"
 #include "Component/transform_component.h"
 #include "Debug/debug_drawer.h"
 #include "Framework/Core/color.h"
@@ -100,7 +102,7 @@ void CityScene::OnEnter(AssetManager& asset_manager) {
     map_data->layers.size(),
     map_data->mesh_resources.size());
 
-  CreateScanlineCube();
+  CreateSpawnCubes(*map_data);
 
   auto& bus = *GetContext()->GetEventBus();
   GetEventScope().Subscribe<KeyDownEvent>(bus, [this](const KeyDownEvent& e) {
@@ -126,25 +128,25 @@ void CityScene::OnDebugDraw(DebugDrawer& drawer) {
   drawer.DrawAxisGizmo(axis_config);
 }
 
-void CityScene::CreateScanlineCube() {
-  auto* cube = CreateGameObject("ScanlineCube", {.position = {0, 5, 0}});
-  auto* renderer = cube->AddComponent<MeshRenderer>(MeshRenderer::Props{
-    .mesh_type = DefaultMesh::Cube,
-  });
-  renderer->SetShaderWithParams<Graphics::ScanlineCubeShader>({
-    .primary_r = 0.0f,
-    .primary_g = 0.8f,
-    .primary_b = 1.0f,
-    .grid_divisions = 4.0f,
-    .secondary_r = 1.0f,
-    .secondary_g = 0.2f,
-    .secondary_b = 0.8f,
-    .grid_line_width = 0.05f,
-    .scanline_speed = 2.0f,
-    .scanline_width = 0.15f,
-    .glow_intensity = 1.5f,
-    .edge_glow_width = 0.02f,
-  });
+void CityScene::CreateSpawnCubes(const MapData& map_data) {
+  auto spawn_it = std::ranges::find_if(map_data.layers, [](const MapLayer& layer) { return layer.id == "spawn"; });
+  if (spawn_it == map_data.layers.end()) return;
+
+  constexpr float CUBE_Y_OFFSET = 1.0f;
+  constexpr float CUBE_SCALE = 0.5f;
+
+  for (size_t i = 0; i < spawn_it->items.size(); ++i) {
+    const auto& item = spawn_it->items[i];
+    SpawnType type = (i == 0) ? SpawnType::Player : SpawnType::Enemy;
+
+    float x = item.transform.x + map_data.origin_x;
+    float z = item.transform.z + map_data.origin_z;
+    float y = spawn_it->y_offset + CUBE_Y_OFFSET;
+
+    std::string name = "SpawnPoint_" + std::to_string(i);
+    auto* go = CreateGameObject(name, {.position = {x, y, z}, .scale = {CUBE_SCALE, CUBE_SCALE, CUBE_SCALE}});
+    go->AddComponent<SpawnPointComponent>(SpawnPointComponent::Props{.type = type});
+  }
 }
 
 void CityScene::SetupCamera() {

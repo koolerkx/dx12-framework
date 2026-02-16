@@ -7,12 +7,14 @@
  * Individual GPU mesh buffers are owned by MeshRegistry in the Graphic layer.
  */
 #pragma once
+#include <array>
 #include <memory>
 #include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
+#include "Framework/Math/Math.h"
 #include "Resource/mesh.h"
 #include "asset_handle.h"
 #include "model_data.h"
@@ -56,6 +58,9 @@ class AssetManager {
 
   // Todo: Audio management
   // AssetHandle<AudioClip> LoadAudio(const std::string& path);
+
+  using CubeCornerColors = std::array<Math::Vector4, 8>;
+  const Mesh* CreateCube(const std::string& key, const CubeCornerColors& corner_colors);
 
   const Mesh* GetDefaultMesh(DefaultMesh type) const;
   std::optional<DefaultMesh> FindDefaultMeshType(const Mesh* mesh) const;

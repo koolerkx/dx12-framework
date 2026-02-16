@@ -194,7 +194,7 @@ target_add_hlsl_auto(graphic "6.6"
   "${CMAKE_SOURCE_DIR}/shaders/model_instanced.vs.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/shadow_depth_instanced.vs.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/depth_normal_instanced.vs.hlsl"
-  "${CMAKE_SOURCE_DIR}/shaders/scanline.ps.hlsl"
+  "${CMAKE_SOURCE_DIR}/shaders/neon_grid.ps.hlsl"
 )
 
 # manually add shaders files

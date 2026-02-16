@@ -11,14 +11,14 @@
 
 namespace Graphics {
 
-struct ScanlineCubeShader {
+struct NeonGridShader {
   static constexpr ShaderId ID = 28;
   using VertexType = Vertex::Basic3DVertex;
 
   static constexpr RSPreset RS_PRESET = RSPreset::Standard;
-  static constexpr std::string_view NAME = "ScanlineCube";
+  static constexpr std::string_view NAME = "NeonGrid";
   static constexpr std::wstring_view VS_PATH = L"Content/shaders/basic.vs.cso";
-  static constexpr std::wstring_view PS_PATH = L"Content/shaders/scanline.ps.cso";
+  static constexpr std::wstring_view PS_PATH = L"Content/shaders/neon_grid.ps.cso";
   static constexpr ShaderRenderHints HINTS = {};
 
   static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
@@ -38,16 +38,14 @@ struct ScanlineCubeShader {
   }
 
   struct Params {
-    float primary_r, primary_g, primary_b;
+    float grid_r, grid_g, grid_b;
     float grid_divisions;
-    float secondary_r, secondary_g, secondary_b;
+    float fill_r, fill_g, fill_b;
+    float fill_opacity;
     float grid_line_width;
-    float scanline_speed;
-    float scanline_width;
     float glow_intensity;
-    float edge_glow_width;
   };
-  static_assert(sizeof(Params) == 48);
+  static_assert(sizeof(Params) == 40);
 };
 
 }  // namespace Graphics
