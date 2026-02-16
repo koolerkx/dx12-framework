@@ -17,6 +17,7 @@
 #include "Framework/Math/Math.h"
 #include "Map/map_loader.h"
 #include "Scenes/city_scene/object_movement_component.h"
+#include "Scenes/city_scene/player_control_component.h"
 #include "Scripts/free_camera_controller.h"
 #include "scene_id.h"
 #include "scene_manager.h"
@@ -118,6 +119,9 @@ void CityScene::OnEnter(AssetManager& asset_manager) {
   SpawnBorderWalls(*map_data);
   SpawnEnemy();
   CreateSpawnCubes(*map_data);
+
+  auto* player = CreateGameObject("Player");
+  player->AddComponent<PlayerControlComponent>();
 
   Logger::LogFormat(LogLevel::Info,
     LogCategory::Game,

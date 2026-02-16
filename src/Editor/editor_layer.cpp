@@ -673,6 +673,10 @@ void DrawTextProperties(std::wstring& text,
 void EditorLayer::DrawInspector() {
   ImGui::Begin("Inspector");
 
+  if (selected_object_ && selected_object_->IsPendingDestroy()) {
+    selected_object_ = nullptr;
+  }
+
   if (selected_object_) {
     bool active = selected_object_->IsActive();
     if (ImGui::Checkbox("##Active", &active)) selected_object_->SetActive(active);
