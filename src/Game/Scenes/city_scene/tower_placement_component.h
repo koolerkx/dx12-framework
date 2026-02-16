@@ -5,6 +5,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <vector>
 
 #include "Component/behavior_component.h"
 #include "Framework/Math/Math.h"
@@ -39,6 +40,7 @@ class TowerPlacementComponent : public BehaviorComponent<TowerPlacementComponent
   void TransitionTo(PlacementState new_state);
   void UpdateHovering();
   void UpdateSelected();
+  void UpdateTowerHoverRadar();
 
   Math::Vector2 SnapToGrid(const Math::Vector2& world_xz) const;
   void CreatePreview(const std::shared_ptr<ModelData>& model);
@@ -74,7 +76,16 @@ class TowerPlacementComponent : public BehaviorComponent<TowerPlacementComponent
   std::shared_ptr<ModelData> selection_b_model_;
   std::shared_ptr<ModelData> tower_model_;
 
+  struct PlacedTower {
+    Math::Vector2 grid_xz;
+    float range;
+  };
+
   GameObject* preview_go_ = nullptr;
+  GameObject* radar_go_ = nullptr;
+  GameObject* hover_radar_go_ = nullptr;
+  Math::Vector2 hovered_tower_xz_ = {};
+  std::vector<PlacedTower> placed_towers_;
   Math::Vector2 snapped_xz_ = {};
   float pulse_time_ = 0.0f;
   int tower_count_ = 0;

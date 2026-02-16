@@ -9,6 +9,7 @@
 #include "Component/transform_component.h"
 #include "Framework/Core/color.h"
 #include "Framework/Input/input.h"
+#include "Graphic/Pipeline/pixel_shader_descriptors.h"
 #include "Map/ground_ray_caster.h"
 #include "Map/nav_grid.h"
 #include "Map/nav_grid_events.h"
@@ -30,9 +31,42 @@ struct TowerPlacementConfig {
   float tower_half_extent = 0.375f;
   float tower_half_height = 0.5f;
   float tower_scale = 0.75f;
+  float radar_y_offset = 0.05f;
 };
 
 constexpr TowerPlacementConfig TOWER_CFG;
+
+struct RadarColor {
+  float r, g, b;
+};
+
+constexpr RadarColor RADAR_COLOR_PREVIEW = {0.3f, 0.5f, 1.0f};
+constexpr RadarColor RADAR_COLOR_PLACED = {0.2f, 1.0f, 0.3f};
+
+GameObject* CreateRadarDisc(IScene* scene, const Math::Vector3& world_pos, float range, RadarColor color) {
+  auto* radar = scene->CreateGameObject("RadarDisc");
+  radar->SetTransient(true);
+
+  float diameter = range * 2.0f;
+  radar->GetTransform()->SetPosition({world_pos.x, TOWER_CFG.radar_y_offset, world_pos.z});
+  radar->GetTransform()->SetScale({diameter, 1.0f, diameter});
+
+  auto* renderer = radar->AddComponent<MeshRenderer>(MeshRenderer::Props{
+    .mesh_type = DefaultMesh::Plane,
+  });
+
+  Graphics::RadarRangeShader::Params params{
+    .radar_r = color.r, .radar_g = color.g, .radar_b = color.b,
+    .scan_speed = 0.4f,
+    .ring_count = 4.0f,
+    .opacity = 0.5f,
+    .emissive_intensity = 3.0f,
+    .ring_width = 2.0f,
+  };
+  renderer->SetShaderWithParams<Graphics::RadarRangeShader>(params);
+
+  return radar;
+}
 
 }  // namespace
 
@@ -48,6 +82,8 @@ void TowerPlacementComponent::OnStart() {
 }
 
 void TowerPlacementComponent::OnUpdate(float dt) {
+  UpdateTowerHoverRadar();
+
   if (state_ == PlacementState::Inactive) return;
 
   if (input_->GetKeyDown(Keyboard::KeyCode::Escape)) {
@@ -150,9 +186,16 @@ void TowerPlacementComponent::CreatePreview(const std::shared_ptr<ModelData>& mo
   preview_go_ = scene->CreateGameObject("TowerPreview_" + std::to_string(tower_count_));
   preview_go_->SetTransient(true);
   preview_go_->AddComponent<ModelComponent>(ModelComponent::Props{.model = model});
+
+  Math::Vector3 pos = {snapped_xz_.x, 0.0f, snapped_xz_.y};
+  radar_go_ = CreateRadarDisc(scene, pos, TowerComponent::Props{}.range, RADAR_COLOR_PREVIEW);
 }
 
 void TowerPlacementComponent::DestroyPreview() {
+  if (radar_go_) {
+    radar_go_->Destroy();
+    radar_go_ = nullptr;
+  }
   if (preview_go_) {
     preview_go_->Destroy();
     preview_go_ = nullptr;
@@ -168,6 +211,12 @@ void TowerPlacementComponent::UpdatePreviewPosition() {
     float t = (Math::Sin(pulse_time_ * TOWER_CFG.pulse_speed) + 1.0f) * 0.5f;
     float scale_xz = Math::Lerp(TOWER_CFG.pulse_scale_min, TOWER_CFG.pulse_scale_max, t);
     transform->SetScale({scale_xz, 1.0f, scale_xz});
+  } else {
+    transform->SetScale({1.0f, 1.0f, 1.0f});
+  }
+
+  if (radar_go_) {
+    radar_go_->GetTransform()->SetPosition({snapped_xz_.x, TOWER_CFG.radar_y_offset, snapped_xz_.y});
   }
 }
 
@@ -179,6 +228,7 @@ void TowerPlacementComponent::PlaceTower() {
     scene->CreateGameObject("Tower_" + std::to_string(tower_count_++), {.position = {snapped_xz_.x, 0.0f, snapped_xz_.y}});
   tower->AddComponent<ModelComponent>(ModelComponent::Props{.model = tower_model_});
   tower->AddComponent<TowerComponent>(TowerComponent::Props{});
+  placed_towers_.push_back({snapped_xz_, TowerComponent::Props{}.range});
 
   if (nav_) {
     float he = TOWER_CFG.tower_half_extent;
@@ -296,6 +346,48 @@ Math::AABB TowerPlacementComponent::HideOverlappedInstances() {
   }
   highlighted_instances_.clear();
   return merged_area;
+}
+
+void TowerPlacementComponent::UpdateTowerHoverRadar() {
+  if (placed_towers_.empty()) return;
+
+  auto* cam = GetOwner()->GetScene()->GetCameraSetting().GetActive();
+  if (!cam) return;
+
+  auto [mx, my] = input_->GetMousePosition();
+  auto hit = GroundRayCaster::ScreenToGroundXZ(mx, my, screen_width_, screen_height_, cam->GetCameraData());
+  if (!hit) {
+    if (hover_radar_go_) {
+      hover_radar_go_->Destroy();
+      hover_radar_go_ = nullptr;
+    }
+    return;
+  }
+
+  Math::Vector2 snapped = SnapToGrid(*hit);
+  constexpr float EPSILON = 0.01f;
+
+  for (const auto& tower : placed_towers_) {
+    float dx = snapped.x - tower.grid_xz.x;
+    float dz = snapped.y - tower.grid_xz.y;
+    if (dx * dx + dz * dz < EPSILON) {
+      if (hover_radar_go_ && hovered_tower_xz_.x == tower.grid_xz.x && hovered_tower_xz_.y == tower.grid_xz.y) {
+        return;
+      }
+      if (hover_radar_go_) {
+        hover_radar_go_->Destroy();
+      }
+      Math::Vector3 pos = {tower.grid_xz.x, 0.0f, tower.grid_xz.y};
+      hover_radar_go_ = CreateRadarDisc(GetOwner()->GetScene(), pos, tower.range, RADAR_COLOR_PLACED);
+      hovered_tower_xz_ = tower.grid_xz;
+      return;
+    }
+  }
+
+  if (hover_radar_go_) {
+    hover_radar_go_->Destroy();
+    hover_radar_go_ = nullptr;
+  }
 }
 
 void TowerPlacementComponent::ClearHighlights() {

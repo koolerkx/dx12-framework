@@ -71,4 +71,41 @@ struct SoftParticleShader {
   static_assert(sizeof(Params) == 16);
 };
 
+struct RadarRangeShader {
+  static constexpr ShaderId ID = 30;
+  using VertexType = Vertex::Basic3DVertex;
+
+  static constexpr RSPreset RS_PRESET = RSPreset::Standard;
+  static constexpr std::string_view NAME = "RadarRange";
+  static constexpr std::wstring_view VS_PATH = L"Content/shaders/basic.vs.cso";
+  static constexpr std::wstring_view PS_PATH = L"Content/shaders/radar_range.ps.cso";
+  static constexpr ShaderRenderHints HINTS = {};
+
+  static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
+    return VertexType::GetInputLayout();
+  }
+
+  static constexpr RenderLayer RENDER_LAYER = RenderLayer::Transparent;
+  static constexpr RenderTagMask RENDER_TAGS = 0;
+
+  static Rendering::RenderSettings DefaultRenderSettings() {
+    return {
+      .blend_mode = Rendering::BlendMode::Additive,
+      .depth_test = true,
+      .double_sided = true,
+      .render_target_format = Rendering::RenderTargetFormat::HDR,
+    };
+  }
+
+  struct Params {
+    float radar_r, radar_g, radar_b;
+    float scan_speed;
+    float ring_count;
+    float opacity;
+    float emissive_intensity;
+    float ring_width;
+  };
+  static_assert(sizeof(Params) == 32);
+};
+
 }  // namespace Graphics
