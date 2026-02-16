@@ -12,10 +12,28 @@
 #include "Map/ground_ray_caster.h"
 #include "Map/nav_grid.h"
 #include "Map/nav_grid_events.h"
+#include "Scenes/city_scene/city_scene_config.h"
 #include "SceneSetting/active_camera_setting.h"
 #include "game_context.h"
 #include "game_object.h"
 #include "scene.h"
+
+namespace {
+
+struct TowerPlacementConfig {
+  float grid_snap_offset_x = 0.5f;
+  float grid_snap_offset_z = 0.25f;
+  float pulse_scale_min = 0.75f;
+  float pulse_scale_max = 0.9f;
+  float pulse_speed = 3.0f;
+  float tower_half_extent = 0.375f;
+  float tower_half_height = 0.5f;
+  float tower_scale = 0.75f;
+};
+
+constexpr TowerPlacementConfig TOWER_CFG;
+
+}  // namespace
 
 void TowerPlacementComponent::OnStart() {
   auto* context = GetContext();
@@ -24,9 +42,8 @@ void TowerPlacementComponent::OnStart() {
   screen_height_ = static_cast<float>(context->GetGraphic()->GetFrameBufferHeight());
 
   auto& assets = context->GetAssetManager();
-  constexpr float FBX_UNIT_SCALE = 0.01f;
-  selection_a_model_ = assets.LoadModel("Content/models/tower/selection-a.fbx", FBX_UNIT_SCALE);
-  selection_b_model_ = assets.LoadModel("Content/models/tower/selection-b.fbx", FBX_UNIT_SCALE);
+  selection_a_model_ = assets.LoadModel(CitySceneConfig::PATHS.tower_selection_a, CitySceneConfig::FBX_UNIT_SCALE);
+  selection_b_model_ = assets.LoadModel(CitySceneConfig::PATHS.tower_selection_b, CitySceneConfig::FBX_UNIT_SCALE);
 }
 
 void TowerPlacementComponent::OnUpdate(float dt) {
@@ -118,10 +135,8 @@ void TowerPlacementComponent::UpdateSelected() {
 }
 
 Math::Vector2 TowerPlacementComponent::SnapToGrid(const Math::Vector2& world_xz) const {
-  constexpr float GRID_OFFSET_X = 0.5f;
-  constexpr float GRID_OFFSET_Z = 0.25f;
-  float snapped_x = std::floor(world_xz.x - GRID_OFFSET_X + 0.5f) + GRID_OFFSET_X;
-  float snapped_z = std::floor(world_xz.y - GRID_OFFSET_Z + 0.5f) + GRID_OFFSET_Z;
+  float snapped_x = std::floor(world_xz.x - TOWER_CFG.grid_snap_offset_x + 0.5f) + TOWER_CFG.grid_snap_offset_x;
+  float snapped_z = std::floor(world_xz.y - TOWER_CFG.grid_snap_offset_z + 0.5f) + TOWER_CFG.grid_snap_offset_z;
   return Math::Vector2(snapped_x, snapped_z);
 }
 
@@ -146,11 +161,8 @@ void TowerPlacementComponent::UpdatePreviewPosition() {
   transform->SetPosition({snapped_xz_.x, 0.0f, snapped_xz_.y});
 
   if (state_ == PlacementState::Hovering) {
-    constexpr float SCALE_MIN = 0.75f;
-    constexpr float SCALE_MAX = 0.9f;
-    constexpr float PULSE_SPEED = 3.0f;
-    float t = (Math::Sin(pulse_time_ * PULSE_SPEED) + 1.0f) * 0.5f;
-    float scale_xz = Math::Lerp(SCALE_MIN, SCALE_MAX, t);
+    float t = (Math::Sin(pulse_time_ * TOWER_CFG.pulse_speed) + 1.0f) * 0.5f;
+    float scale_xz = Math::Lerp(TOWER_CFG.pulse_scale_min, TOWER_CFG.pulse_scale_max, t);
     transform->SetScale({scale_xz, 1.0f, scale_xz});
   }
 }
@@ -158,20 +170,20 @@ void TowerPlacementComponent::UpdatePreviewPosition() {
 void TowerPlacementComponent::PlaceTower() {
   Math::AABB removed_area = HideOverlappedInstances();
 
-  constexpr float TOWER_HALF_EXTENT = 0.375f;
-  constexpr float TOWER_HALF_HEIGHT = 0.5f;
   auto* scene = GetOwner()->GetScene();
+  float s = TOWER_CFG.tower_scale;
   auto* tower =
-    scene->CreateGameObject("Tower_" + std::to_string(tower_count_++), {.position = {snapped_xz_.x, TOWER_HALF_HEIGHT, snapped_xz_.y}, .scale = {0.75f, 0.75f, 0.75f}});
+    scene->CreateGameObject("Tower_" + std::to_string(tower_count_++), {.position = {snapped_xz_.x, TOWER_CFG.tower_half_height, snapped_xz_.y}, .scale = {s, s, s}});
   tower->AddComponent<MeshRenderer>(MeshRenderer::Props{
     .mesh_type = DefaultMesh::Cube,
     .color = colors::Green,
   });
 
   if (nav_) {
+    float he = TOWER_CFG.tower_half_extent;
     Math::AABB tower_bounds = {
-      {snapped_xz_.x - TOWER_HALF_EXTENT, 0.0f, snapped_xz_.y - TOWER_HALF_EXTENT},
-      {snapped_xz_.x + TOWER_HALF_EXTENT, 1.0f, snapped_xz_.y + TOWER_HALF_EXTENT},
+      {snapped_xz_.x - he, 0.0f, snapped_xz_.y - he},
+      {snapped_xz_.x + he, 1.0f, snapped_xz_.y + he},
     };
     nav_->BlockArea(tower_bounds);
 

@@ -16,11 +16,14 @@
 #include "Framework/Logging/logger.h"
 #include "Framework/Math/Math.h"
 #include "Map/map_loader.h"
+#include "Scenes/city_scene/city_scene_config.h"
 #include "Scenes/city_scene/object_movement_component.h"
 #include "Scenes/city_scene/player_control_component.h"
 #include "Scripts/free_camera_controller.h"
 #include "scene_id.h"
 #include "scene_manager.h"
+
+namespace cfg = CitySceneConfig;
 
 using Math::Matrix4;
 using Math::Vector3;
@@ -40,22 +43,21 @@ Matrix4 BuildWorldMatrix(const MapItemTransform& t, float y_offset, float origin
 void CityScene::OnEnter(AssetManager& asset_manager) {
   SetupCamera();
 
-  GetBackgroundSetting().SetSkybox("Content/skybox/sunflowers_puresky_standard_cubemap_4k.hdr", asset_manager);
+  constexpr cfg::LightConfig LIGHT;
+  GetBackgroundSetting().SetSkybox(cfg::PATHS.skybox, asset_manager);
   auto& light = GetLightSetting();
-  light.SetAzimuth(45.0f);
-  light.SetElevation(55.0f);
+  light.SetAzimuth(LIGHT.azimuth);
+  light.SetElevation(LIGHT.elevation);
 
-  auto map_data = MapLoader::Load("Content/map/City.yaml");
+  auto map_data = MapLoader::Load(cfg::PATHS.map);
   if (!map_data) {
     Logger::LogFormat(LogLevel::Error, LogCategory::Game, Logger::Here(), "[CityScene] Failed to load map");
     return;
   }
 
-  constexpr float FBX_UNIT_SCALE = 0.01f;
-
   std::unordered_map<std::string, std::shared_ptr<ModelData>> model_cache;
   for (const auto& res : map_data->mesh_resources) {
-    auto model = asset_manager.LoadModel(res.path, FBX_UNIT_SCALE);
+    auto model = asset_manager.LoadModel(res.path, cfg::FBX_UNIT_SCALE);
     if (model) {
       model_cache[res.id] = model;
     } else {
@@ -114,7 +116,8 @@ void CityScene::OnEnter(AssetManager& asset_manager) {
     }
   }
 
-  nav_grid_.Build(*map_data, obstacle_bounds, {.cell_size = 0.25f, .show_debug_grid = true});
+  constexpr cfg::NavGridConfig NAV;
+  nav_grid_.Build(*map_data, obstacle_bounds, {.cell_size = NAV.cell_size, .block_threshold = NAV.block_threshold, .show_debug_grid = NAV.show_debug_grid});
 
   SpawnBorderWalls(*map_data);
   SpawnEnemy();
@@ -144,26 +147,28 @@ void CityScene::OnExit() {
 }
 
 void CityScene::OnDebugDraw(DebugDrawer& drawer) {
+  constexpr cfg::DebugDrawConfig DBG;
+
   DebugDrawer::GridConfig grid_config;
-  grid_config.size = 30.0f;
-  grid_config.cell_size = 1.0f;
-  grid_config.y_level = 0.0f;
+  grid_config.size = DBG.grid_size;
+  grid_config.cell_size = DBG.grid_cell_size;
+  grid_config.y_level = DBG.grid_y_level;
   grid_config.color = colors::Gray;
   drawer.DrawGrid(grid_config);
 
   DebugDrawer::AxisGizmoConfig axis_config;
   axis_config.position = Vector3::Zero;
-  axis_config.length = 2.0f;
+  axis_config.length = DBG.axis_length;
   drawer.DrawAxisGizmo(axis_config);
 
-  nav_grid_.DebugDraw(drawer, 0.1f);
+  nav_grid_.DebugDraw(drawer, DBG.nav_grid_y_level);
 }
 
 void CityScene::SpawnEnemy() {
-  constexpr float ENEMY_SCALE = 0.5f;
+  const cfg::EnemyConfig ENEMY;
   const Math::AABB UNIT_CUBE_BOUNDS = {{-0.5f, -0.5f, -0.5f}, {0.5f, 0.5f, 0.5f}};
 
-  auto* enemy = CreateGameObject("Enemy", {.position = {0.0f, 0.5f, 10.0f}, .scale = {ENEMY_SCALE, ENEMY_SCALE, ENEMY_SCALE}});
+  auto* enemy = CreateGameObject("Enemy", {.position = ENEMY.spawn_position, .scale = {ENEMY.scale, ENEMY.scale, ENEMY.scale}});
   enemy->AddComponent<MeshRenderer>(MeshRenderer::Props{
     .mesh_type = DefaultMesh::Cube,
     .color = colors::Red,
@@ -172,8 +177,8 @@ void CityScene::SpawnEnemy() {
 
   enemy->AddComponent<ObjectMovementComponent>(ObjectMovementComponent::Props{
     .nav = &nav_grid_,
-    .move_speed = 3.0f,
-    .initial_target_xz = {5.0f, 0.0f},
+    .move_speed = ENEMY.move_speed,
+    .initial_target_xz = ENEMY.initial_target_xz,
     .has_initial_target = true,
   });
 }
@@ -182,13 +187,12 @@ void CityScene::SpawnBorderWalls(const MapData& map_data) {
   auto bounds = ComputeGroundBounds(map_data);
   if (bounds.min_x > bounds.max_x) return;
 
+  constexpr cfg::BorderWallConfig WALL;
   auto* wall_root = CreateGameObject("BorderWalls");
-
-  constexpr float CUBE_Y = 0.4f;
   int wall_index = 0;
 
   auto spawn_cube = [&](float x, float z) {
-    auto* cube = CreateGameObject("wall_" + std::to_string(wall_index++), {.position = {x, CUBE_Y, z}});
+    auto* cube = CreateGameObject("wall_" + std::to_string(wall_index++), {.position = {x, WALL.cube_y, z}});
     cube->SetParent(wall_root);
     cube->AddComponent<MeshRenderer>(MeshRenderer::Props{
       .mesh_type = DefaultMesh::Cube,
@@ -196,9 +200,9 @@ void CityScene::SpawnBorderWalls(const MapData& map_data) {
     });
   };
 
-  float wall_min_x = bounds.min_x - 1.0f;
+  float wall_min_x = bounds.min_x - WALL.margin;
   float wall_max_x = bounds.max_x;
-  float wall_min_z = bounds.min_z - 1.0f;
+  float wall_min_z = bounds.min_z - WALL.margin;
   float wall_max_z = bounds.max_z;
 
   for (float x = wall_min_x; x <= wall_max_x; x += 1.0f) {
@@ -218,8 +222,7 @@ void CityScene::CreateSpawnCubes(const MapData& map_data) {
   auto spawn_it = std::ranges::find_if(map_data.layers, [](const MapLayer& layer) { return layer.id == "spawn"; });
   if (spawn_it == map_data.layers.end()) return;
 
-  constexpr float CUBE_Y_OFFSET = 1.0f;
-  constexpr float CUBE_SCALE = 0.5f;
+  constexpr cfg::SpawnCubeConfig SPAWN;
 
   for (size_t i = 0; i < spawn_it->items.size(); ++i) {
     const auto& item = spawn_it->items[i];
@@ -227,21 +230,22 @@ void CityScene::CreateSpawnCubes(const MapData& map_data) {
 
     float x = item.transform.x + map_data.origin_x;
     float z = item.transform.z + map_data.origin_z;
-    float y = spawn_it->y_offset + CUBE_Y_OFFSET;
+    float y = spawn_it->y_offset + SPAWN.y_offset;
 
     std::string name = "SpawnPoint_" + std::to_string(i);
-    auto* go = CreateGameObject(name, {.position = {x, y, z}, .scale = {CUBE_SCALE, CUBE_SCALE, CUBE_SCALE}});
+    auto* go = CreateGameObject(name, {.position = {x, y, z}, .scale = {SPAWN.scale, SPAWN.scale, SPAWN.scale}});
     go->AddComponent<SpawnPointComponent>(SpawnPointComponent::Props{.type = type});
   }
 }
 
 void CityScene::SetupCamera() {
-  auto* camera_obj = CreateGameObject("MainCamera", {.position = {5, 20, -20}, .rotation_degrees = {45.0f, 0, 0}});
+  const cfg::CameraConfig CAM;
+  auto* camera_obj = CreateGameObject("MainCamera", {.position = CAM.position, .rotation_degrees = CAM.rotation_degrees});
   auto* camera = camera_obj->AddComponent<CameraComponent>();
   camera_obj->AddComponent<FreeCameraController>(FreeCameraController::Props{
-    .movement_speed = 20.0f,
-    .rotation_speed = 1.5f,
-    .smoothness = 8.0f,
+    .movement_speed = CAM.movement_speed,
+    .rotation_speed = CAM.rotation_speed,
+    .smoothness = CAM.smoothness,
   });
   GetCameraSetting().Register(camera);
 }

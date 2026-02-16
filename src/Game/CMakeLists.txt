@@ -87,6 +87,7 @@ add_library(game STATIC
     Scenes/test_scene/character_mover_component.h
     Scenes/test_scene/character_mover_component.cpp
 
+    Scenes/city_scene/city_scene_config.h
     Scenes/city_scene/city_scene.h
     Scenes/city_scene/city_scene.cpp
     Scenes/city_scene/object_movement_component.h
