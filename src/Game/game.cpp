@@ -4,6 +4,7 @@
 #include "Graphic/graphic.h"
 #include "Scenes/blank_scene.h"
 #include "Scenes/city_scene/city_scene.h"
+#include "Scenes/title_scene/title_scene.h"
 #include "Scenes/cube_scene/cube_scene.h"
 #include "Scenes/empty_scene.h"
 #include "Scenes/model_scene/model_scene.h"
@@ -44,7 +45,8 @@ void Game::Initialize(const Props& props) {
   scene_manager_.Register<BlankScene>(SceneId::BLANK_SCENE);
   scene_manager_.Register<ModelScene>(SceneId::MODEL_SCENE);
   scene_manager_.Register<CityScene>(SceneId::CITY_SCENE);
-  scene_manager_.RequestLoad(SceneId::CITY_SCENE);
+  scene_manager_.Register<TitleScene>(SceneId::TITLE_SCENE);
+  scene_manager_.RequestLoad(SceneId::TITLE_SCENE);
   scene_manager_.ProcessPending(asset_manager_, context_, context_->GetGraphic());
 }
 

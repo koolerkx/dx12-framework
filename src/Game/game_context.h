@@ -69,6 +69,13 @@ class GameContext {
     scene_defaults_ = defaults;
   }
 
+  void RequestQuit() {
+    quit_requested_ = true;
+  }
+  bool IsQuitRequested() const {
+    return quit_requested_;
+  }
+
  private:
   InputSystem* input_ = nullptr;
   Graphic* graphic_ = nullptr;
@@ -78,4 +85,5 @@ class GameContext {
   SceneManager* scene_manager_ = nullptr;
   PlayState* play_state_ = nullptr;
   SceneDefaults scene_defaults_;
+  bool quit_requested_ = false;
 };

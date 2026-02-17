@@ -10,9 +10,10 @@
 #include "game_context.h"
 #include "game_object.h"
 #include "scene.h"
-#include "Framework/Logging/logger.h"
 #include "Scenes/city_scene/city_scene_events.h"
 #include "scene_events.h"
+#include "scene_id.h"
+#include "scene_manager.h"
 
 namespace {
 
@@ -655,7 +656,7 @@ void HudManagerComponent::UpdateGameOverInteraction() {
     if (over_restart) {
       GetContext()->GetEventBus()->Emit(RestartGameEvent{});
     } else if (over_title) {
-      Logger::Log(LogLevel::Info, LogCategory::Game, "Back to Title requested");
+      GetContext()->GetSceneManager()->RequestLoad(SceneId::TITLE_SCENE);
     }
   }
 }
