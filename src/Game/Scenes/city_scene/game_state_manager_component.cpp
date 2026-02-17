@@ -47,7 +47,7 @@ void GameStateManagerComponent::OnUpdate(float dt) {
   switch (wave_state_) {
     case WaveState::WaitingInitial: {
       timer_ += dt;
-      float remaining = props_.initial_delay - timer_;
+      float remaining = props_.wave_timing.initial_delay - timer_;
       if (remaining > 0.0f) {
         GetContext()->GetEventBus()->Emit(WaveCountdownEvent{.seconds_remaining = remaining});
       } else {
@@ -83,7 +83,7 @@ void GameStateManagerComponent::OnUpdate(float dt) {
 
     case WaveState::WaveDelay: {
       timer_ += dt;
-      float remaining = props_.wave_delay - timer_;
+      float remaining = props_.wave_timing.wave_delay - timer_;
       if (remaining > 0.0f) {
         GetContext()->GetEventBus()->Emit(WaveCountdownEvent{.seconds_remaining = remaining});
       } else {

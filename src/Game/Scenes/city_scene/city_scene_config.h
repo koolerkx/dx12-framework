@@ -63,6 +63,11 @@ struct PlayerSpawnConfig {
   int max_health = 10;
 };
 
+struct WaveTimingConfig {
+  float initial_delay = 5.0f;
+  float wave_delay = 10.0f;
+};
+
 struct GoldConfig {
   int initial_gold = 100;
   int kill_reward_base = 20;

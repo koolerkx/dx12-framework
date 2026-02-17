@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "Component/behavior_component.h"
+#include "Scenes/city_scene/city_scene_config.h"
 #include "Scenes/city_scene/wave_stage_config.h"
 
 class EnemySpawnManagerComponent;
@@ -28,8 +29,7 @@ struct SpawnerProgress {
 class GameStateManagerComponent : public BehaviorComponent<GameStateManagerComponent> {
  public:
   struct Props {
-    float initial_delay = 3.0f;
-    float wave_delay = 5.0f;
+    CitySceneConfig::WaveTimingConfig wave_timing;
   };
 
   using BehaviorComponent::BehaviorComponent;
