@@ -33,6 +33,8 @@ constexpr PanelLayout MESSAGE_PANEL = {480.0f, 68.0f};
 constexpr PanelLayout ALERT_PANEL = {360.0f, 52.0f};
 constexpr PanelLayout HINT_PANEL = {264.0f, 240.0f};
 constexpr PanelLayout ICON_SLOT = {128.0f, 128.0f};
+constexpr PanelLayout CONFIRM_BUTTON = {200.0f, 44.0f};
+constexpr float BUTTON_GAP = 8.0f;
 
 float MoveToward(float current, float target, float max_delta) {
   if (target > current) {
@@ -162,6 +164,45 @@ void HudManagerComponent::OnInit() {
 
   icon_slots_.push_back({.root = icon_go, .glass = icon_glass, .icon = icon_sprite});
 
+  confirm_panel_ = scene->CreateGameObject("HUD_ConfirmPanel");
+  confirm_panel_->SetParent(hud_root);
+  confirm_panel_glass_ = confirm_panel_->AddComponent<UIGlassRenderer>(UIGlassRenderer::Props{
+    .size = {CONFIRM_BUTTON.width, CONFIRM_BUTTON.height},
+    .layer_id = 1,
+  });
+
+  auto* cost_go = scene->CreateGameObject("HUD_CostText");
+  cost_go->SetParent(confirm_panel_);
+  cost_text_ = cost_go->AddComponent<UITextRenderer>(UITextRenderer::Props{
+    .text = L"Cost: 0",
+    .pixel_size = TEXT_SIZE,
+    .h_align = Text::HorizontalAlign::Center,
+    .pivot = {0.5f, 0.0f},
+  });
+
+  auto create_button = [&](const char* name, const wchar_t* label_text) -> ButtonSlot {
+    ButtonSlot slot;
+    slot.root = scene->CreateGameObject(name);
+    slot.root->SetParent(hud_root);
+    slot.glass = slot.root->AddComponent<UIGlassRenderer>(UIGlassRenderer::Props{
+      .size = {CONFIRM_BUTTON.width, CONFIRM_BUTTON.height},
+      .layer_id = 2,
+    });
+    auto* label_go = scene->CreateGameObject(std::string(name) + "_Label");
+    label_go->SetParent(slot.root);
+    slot.label = label_go->AddComponent<UITextRenderer>(UITextRenderer::Props{
+      .text = label_text,
+      .pixel_size = SMALL_TEXT_SIZE,
+      .h_align = Text::HorizontalAlign::Center,
+      .pivot = {0.5f, 0.0f},
+    });
+    return slot;
+  };
+
+  confirm_button_ = create_button("HUD_ConfirmBtn", L"Confirm");
+  cancel_button_ = create_button("HUD_CancelBtn", L"Cancel");
+  SetConfirmPanelVisible(false);
+
   input_ = GetContext()->GetInput();
   SubscribeEvents();
   UpdateLayout();
@@ -211,6 +252,16 @@ void HudManagerComponent::SubscribeEvents() {
     if (!icon_slots_.empty()) {
       icon_slots_[0].glass->SetTintColor({1.0f, 1.0f, 1.0f, 0.1f});
     }
+    SetConfirmPanelVisible(false);
+  });
+
+  event_scope_.Subscribe<TowerPlacementSelectedEvent>(bus, [this](const TowerPlacementSelectedEvent& e) {
+    cost_text_->SetText(L"Cost: " + std::to_wstring(e.cost));
+    SetConfirmPanelVisible(true);
+  });
+
+  event_scope_.Subscribe<TowerPlacementCancelledEvent>(bus, [this](const TowerPlacementCancelledEvent&) {
+    SetConfirmPanelVisible(false);
   });
 }
 
@@ -218,6 +269,7 @@ void HudManagerComponent::OnUpdate(float dt) {
   UpdateFadePanel(message_fade_, dt);
   UpdateFadePanel(alert_fade_, dt);
   UpdateIconInteraction();
+  UpdateConfirmPanelInteraction();
 }
 
 void HudManagerComponent::OnRender(FramePacket& /*packet*/) {
@@ -312,6 +364,37 @@ void HudManagerComponent::UpdateLayout() {
     icon_slots_[i].icon->SetSize({icon_size, icon_size});
 
     panel_rects_.push_back({icon_x, icon_y, icon_size, icon_size});
+  }
+
+  if (confirm_panel_->IsActive()) {
+    float btn_w = CONFIRM_BUTTON.width * s;
+    float btn_h = CONFIRM_BUTTON.height * s;
+    float gap = BUTTON_GAP * s;
+    float total_h = btn_h * 3.0f + gap * 2.0f;
+
+    float base_x = screen_w - (SAFE_AREA * s + btn_w);
+    float base_y = screen_h - (SAFE_AREA * s + total_h);
+
+    set_pos(confirm_panel_, base_x, base_y);
+    confirm_panel_glass_->SetSize({btn_w, btn_h});
+    set_pos(cost_text_->GetOwner(), btn_w * 0.5f, (btn_h - TEXT_SIZE * s) * 0.5f);
+    cost_text_->SetPixelSize(TEXT_SIZE * s);
+
+    float confirm_y = base_y + btn_h + gap;
+    set_pos(confirm_button_.root, base_x, confirm_y);
+    confirm_button_.glass->SetSize({btn_w, btn_h});
+    set_pos(confirm_button_.label->GetOwner(), btn_w * 0.5f, (btn_h - SMALL_TEXT_SIZE * s) * 0.5f);
+    confirm_button_.label->SetPixelSize(SMALL_TEXT_SIZE * s);
+    confirm_button_.rect = {base_x, confirm_y, btn_w, btn_h};
+
+    float cancel_y = confirm_y + btn_h + gap;
+    set_pos(cancel_button_.root, base_x, cancel_y);
+    cancel_button_.glass->SetSize({btn_w, btn_h});
+    set_pos(cancel_button_.label->GetOwner(), btn_w * 0.5f, (btn_h - SMALL_TEXT_SIZE * s) * 0.5f);
+    cancel_button_.label->SetPixelSize(SMALL_TEXT_SIZE * s);
+    cancel_button_.rect = {base_x, cancel_y, btn_w, btn_h};
+
+    panel_rects_.push_back({base_x, base_y, btn_w, total_h});
   }
 }
 
@@ -425,4 +508,37 @@ void HudManagerComponent::UpdateIconInteraction() {
       break;
   }
   icon_slots_[0].glass->SetTintColor(tint);
+}
+
+void HudManagerComponent::SetConfirmPanelVisible(bool visible) {
+  confirm_panel_->SetActive(visible);
+  confirm_button_.root->SetActive(visible);
+  cancel_button_.root->SetActive(visible);
+}
+
+void HudManagerComponent::UpdateConfirmPanelInteraction() {
+  if (!confirm_panel_->IsActive()) return;
+
+  auto [mx, my] = input_->GetMousePosition();
+
+  auto hit_test = [](float mx, float my, const PanelRect& r) {
+    return mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h;
+  };
+
+  static const Math::Vector4 HOVER_TINT = {0.3f, 0.5f, 1.0f, 0.2f};
+  static const Math::Vector4 DEFAULT_TINT = {1.0f, 1.0f, 1.0f, 0.1f};
+
+  bool over_confirm = hit_test(mx, my, confirm_button_.rect);
+  bool over_cancel = hit_test(mx, my, cancel_button_.rect);
+
+  confirm_button_.glass->SetTintColor(over_confirm ? HOVER_TINT : DEFAULT_TINT);
+  cancel_button_.glass->SetTintColor(over_cancel ? HOVER_TINT : DEFAULT_TINT);
+
+  if (input_->GetMouseButtonDown(Mouse::Button::Left)) {
+    if (over_confirm) {
+      GetContext()->GetEventBus()->Emit(TowerPlacementConfirmedEvent{});
+    } else if (over_cancel) {
+      GetContext()->GetEventBus()->Emit(TowerPlacementCancelledEvent{});
+    }
+  }
 }

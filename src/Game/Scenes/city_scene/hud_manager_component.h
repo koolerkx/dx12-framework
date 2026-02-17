@@ -60,6 +60,8 @@ class HudManagerComponent : public BehaviorComponent<HudManagerComponent> {
   void UpdateLayout();
   void UpdateFadePanel(FadePanel& fade, float dt);
   void UpdateIconInteraction();
+  void UpdateConfirmPanelInteraction();
+  void SetConfirmPanelVisible(bool visible);
   void SubscribeEvents();
 
   EventScope event_scope_;
@@ -77,8 +79,21 @@ class HudManagerComponent : public BehaviorComponent<HudManagerComponent> {
   UIGlassRenderer* hint_glass_ = nullptr;
   UITextRenderer* hint_text_ = nullptr;
 
+  struct ButtonSlot {
+    GameObject* root = nullptr;
+    UIGlassRenderer* glass = nullptr;
+    UITextRenderer* label = nullptr;
+    PanelRect rect = {};
+  };
+
   std::vector<IconSlot> icon_slots_;
   std::vector<PanelRect> panel_rects_;
+
+  GameObject* confirm_panel_ = nullptr;
+  UIGlassRenderer* confirm_panel_glass_ = nullptr;
+  UITextRenderer* cost_text_ = nullptr;
+  ButtonSlot confirm_button_;
+  ButtonSlot cancel_button_;
 
   IconState icon_state_ = IconState::Normal;
   InputSystem* input_ = nullptr;

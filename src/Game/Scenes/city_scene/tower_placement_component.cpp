@@ -74,6 +74,32 @@ void TowerPlacementComponent::OnStart() {
   selection_a_model_ = assets.LoadModel(cfg::PATHS.tower_selection_a, cfg::FBX_UNIT_SCALE);
   selection_b_model_ = assets.LoadModel(cfg::PATHS.tower_selection_b, cfg::FBX_UNIT_SCALE);
   tower_model_ = assets.LoadModel(cfg::PATHS.tower_model, cfg::FBX_UNIT_SCALE);
+
+  auto& bus = *context->GetEventBus();
+
+  event_scope_.Subscribe<TowerPlacementConfirmedEvent>(bus, [this](const TowerPlacementConfirmedEvent&) {
+    if (state_ != PlacementState::Selected) return;
+    if (IsPlacementBlocked()) {
+      GetContext()->GetEventBus()->Emit(OverlapEnemyEvent{});
+      return;
+    }
+    const CitySceneConfig::GoldConfig gold_cfg;
+    int total_cost = gold_cfg.ComputePlacementCost(static_cast<int>(highlighted_instances_.size()));
+    auto* player = GetOwner()->GetScene()->FindGameObject("Player");
+    auto* gold = player ? player->GetComponent<GameStateManagerComponent>() : nullptr;
+    if (gold && gold->TrySpendGold(total_cost)) {
+      PlaceTower();
+      Deactivate();
+    }
+  });
+
+  event_scope_.Subscribe<TowerPlacementCancelledEvent>(bus, [this](const TowerPlacementCancelledEvent&) {
+    if (state_ != PlacementState::Selected) return;
+    DestroyPreview();
+    CreatePreview(selection_a_model_);
+    UpdatePreviewPosition();
+    TransitionTo(PlacementState::Hovering);
+  });
 }
 
 void TowerPlacementComponent::OnUpdate(float dt) {
@@ -160,6 +186,10 @@ void TowerPlacementComponent::UpdateHovering() {
     CreatePreview(selection_b_model_);
     UpdatePreviewPosition();
     TransitionTo(PlacementState::Selected);
+
+    const CitySceneConfig::GoldConfig gold_cfg;
+    int total_cost = gold_cfg.ComputePlacementCost(static_cast<int>(highlighted_instances_.size()));
+    GetContext()->GetEventBus()->Emit(TowerPlacementSelectedEvent{.cost = total_cost});
   }
 }
 
@@ -170,27 +200,8 @@ void TowerPlacementComponent::UpdateSelected() {
   bool over_ui = hud && hud->IsMouseOverUI(mx, my);
 
   if (!over_ui && input_->GetMouseButtonDown(Mouse::Button::Right)) {
-    DestroyPreview();
-    CreatePreview(selection_a_model_);
-    UpdatePreviewPosition();
-    TransitionTo(PlacementState::Hovering);
+    GetContext()->GetEventBus()->Emit(TowerPlacementCancelledEvent{});
     return;
-  }
-
-  if (input_->GetKeyDown(Keyboard::KeyCode::Space)) {
-    if (IsPlacementBlocked()) {
-      GetContext()->GetEventBus()->Emit(OverlapEnemyEvent{});
-      return;
-    }
-
-    const CitySceneConfig::GoldConfig gold_cfg;
-    int total_cost = gold_cfg.ComputePlacementCost(static_cast<int>(highlighted_instances_.size()));
-    auto* player = GetOwner()->GetScene()->FindGameObject("Player");
-    auto* gold = player ? player->GetComponent<GameStateManagerComponent>() : nullptr;
-    if (gold && gold->TrySpendGold(total_cost)) {
-      PlaceTower();
-      Deactivate();
-    }
   }
 }
 

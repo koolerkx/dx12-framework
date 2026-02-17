@@ -47,3 +47,16 @@ struct ToggleTowerPlacementEvent : Event<ToggleTowerPlacementEvent> {
 struct TowerPlacementExitedEvent : Event<TowerPlacementExitedEvent> {
   static constexpr std::string_view EventName = "city.tower_placement_exited";
 };
+
+struct TowerPlacementSelectedEvent : Event<TowerPlacementSelectedEvent> {
+  static constexpr std::string_view EventName = "city.tower_placement_selected";
+  int cost;
+};
+
+struct TowerPlacementCancelledEvent : Event<TowerPlacementCancelledEvent> {
+  static constexpr std::string_view EventName = "city.tower_placement_cancelled";
+};
+
+struct TowerPlacementConfirmedEvent : Event<TowerPlacementConfirmedEvent> {
+  static constexpr std::string_view EventName = "city.tower_placement_confirmed";
+};

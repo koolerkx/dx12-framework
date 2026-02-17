@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "Component/behavior_component.h"
+#include "Framework/Event/event_scope.hpp"
 #include "Framework/Math/Math.h"
 
 struct ModelData;
@@ -70,6 +71,7 @@ class TowerPlacementComponent : public BehaviorComponent<TowerPlacementComponent
 
   PlacementState state_ = PlacementState::Inactive;
   std::function<void()> on_finished_;
+  EventScope event_scope_;
 
   NavGrid* nav_ = nullptr;
   CameraComponent* camera_ = nullptr;
