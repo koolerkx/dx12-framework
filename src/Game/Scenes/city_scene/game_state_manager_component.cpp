@@ -7,6 +7,7 @@
 #include "game_context.h"
 #include "scene_events.h"
 #include "Scenes/city_scene/city_scene_config.h"
+#include "Scenes/city_scene/city_scene_events.h"
 #include "Scenes/city_scene/enemy_spawn_manager_component.h"
 #include "Scenes/city_scene/explosion_effect.h"
 #include "Scripts/camera_shake_controller.h"
@@ -33,6 +34,10 @@ void GameStateManagerComponent::OnStart() {
   if (enemy_manager) {
     spawn_manager_ = enemy_manager->GetComponent<EnemySpawnManagerComponent>();
   }
+
+  auto bus = GetContext()->GetEventBus();
+  bus->Emit(GoldChangedEvent{.gold = gold_});
+  bus->Emit(HealthChangedEvent{.health = health_});
 }
 
 void GameStateManagerComponent::OnUpdate(float dt) {
@@ -42,7 +47,10 @@ void GameStateManagerComponent::OnUpdate(float dt) {
   switch (wave_state_) {
     case WaveState::WaitingInitial: {
       timer_ += dt;
-      if (timer_ >= props_.initial_delay) {
+      float remaining = props_.initial_delay - timer_;
+      if (remaining > 0.0f) {
+        GetContext()->GetEventBus()->Emit(WaveCountdownEvent{.seconds_remaining = remaining});
+      } else {
         timer_ = 0.0f;
         StartWave();
         wave_state_ = WaveState::Spawning;
@@ -75,7 +83,10 @@ void GameStateManagerComponent::OnUpdate(float dt) {
 
     case WaveState::WaveDelay: {
       timer_ += dt;
-      if (timer_ >= props_.wave_delay) {
+      float remaining = props_.wave_delay - timer_;
+      if (remaining > 0.0f) {
+        GetContext()->GetEventBus()->Emit(WaveCountdownEvent{.seconds_remaining = remaining});
+      } else {
         timer_ = 0.0f;
         ++current_wave_;
         StartWave();
@@ -90,17 +101,20 @@ void GameStateManagerComponent::AddGold(int amount) {
   gold_ += amount;
   Logger::LogFormat(LogLevel::Info, LogCategory::Game, Logger::Here(),
     "[Gold] +{} gold (total: {})", amount, gold_);
+  GetContext()->GetEventBus()->Emit(GoldChangedEvent{.gold = gold_});
 }
 
 bool GameStateManagerComponent::TrySpendGold(int amount) {
   if (gold_ < amount) {
     Logger::LogFormat(LogLevel::Info, LogCategory::Game, Logger::Here(),
       "[Gold] Not enough gold: need {}, have {}", amount, gold_);
+    GetContext()->GetEventBus()->Emit(InsufficientGoldEvent{.required = amount, .available = gold_});
     return false;
   }
   gold_ -= amount;
   Logger::LogFormat(LogLevel::Info, LogCategory::Game, Logger::Here(),
     "[Gold] -{} gold (total: {})", amount, gold_);
+  GetContext()->GetEventBus()->Emit(GoldChangedEvent{.gold = gold_});
   return true;
 }
 
@@ -109,6 +123,11 @@ void GameStateManagerComponent::TakeDamage(int amount) {
   health_ -= amount;
   Logger::LogFormat(LogLevel::Info, LogCategory::Game, Logger::Here(),
     "[Health] -{} health (remaining: {})", amount, health_);
+
+  auto bus = GetContext()->GetEventBus();
+  bus->Emit(HealthChangedEvent{.health = health_});
+  bus->Emit(EnemyReachedBaseEvent{});
+
   if (health_ <= 0) {
     game_state_ = GameState::GameOver;
     Logger::LogFormat(LogLevel::Info, LogCategory::Game, Logger::Here(),
@@ -164,6 +183,8 @@ void GameStateManagerComponent::StartWave() {
     "[Wave] Wave {} started: {} enemies, {} spawners, interval {:.2f}s",
     current_wave_, current_config_.total_enemy_count,
     current_config_.spawner_assignments.size(), current_config_.spawn_interval);
+
+  GetContext()->GetEventBus()->Emit(WaveStartEvent{.wave = current_wave_});
 
   spawner_progress_.clear();
   for (const auto& assignment : current_config_.spawner_assignments) {

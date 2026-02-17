@@ -1,4 +1,5 @@
 #pragma once
+#include <optional>
 #include <string>
 
 #include "Component/component.h"
@@ -26,7 +27,7 @@ class UITextRenderer : public Component<UITextRenderer> {
     Text::HorizontalAlign h_align = Text::HorizontalAlign::Left;
     Text::VerticalAlign v_align = Text::VerticalAlign::Baseline;
     Vector2 pivot = {0.5f, 0.0f};
-    std::optional<int> layer_id;
+    std::optional<int> layer_id = std::nullopt;
   };
 
   UITextRenderer(GameObject* owner) : Component(owner) {

@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "Component/behavior_component.h"
+#include "Framework/Event/event_scope.hpp"
 #include "Graphic/Frame/frame_packet.h"
 
 class UIGlassRenderer;
@@ -21,12 +22,6 @@ class HudManagerComponent : public BehaviorComponent<HudManagerComponent> {
   void OnUpdate(float dt) override;
   void OnRender(FramePacket& packet) override;
 
-  void SetWave(int wave);
-  void SetHealth(int hp);
-  void SetGold(int gold);
-  void ShowMessage(const std::wstring& text);
-  void ShowAlert(const std::wstring& text);
-
  private:
   struct IconSlot {
     GameObject* root = nullptr;
@@ -34,7 +29,29 @@ class HudManagerComponent : public BehaviorComponent<HudManagerComponent> {
     UISpriteRenderer* icon = nullptr;
   };
 
+  struct FadePanel {
+    GameObject* panel = nullptr;
+    UIGlassRenderer* glass = nullptr;
+    UITextRenderer* text = nullptr;
+    float opacity = 0.0f;
+    float target_opacity = 0.0f;
+    float auto_hide_delay = -1.0f;
+    float base_tint_alpha = 0.15f;
+    bool is_countdown = false;
+  };
+
+  void SetWave(int wave);
+  void SetHealth(int hp);
+  void SetGold(int gold);
+  void ShowMessage(const std::wstring& text, float duration = 3.0f);
+  void ShowAlert(const std::wstring& text, float duration = 3.0f);
+  void ShowCountdownMessage(const std::wstring& text);
+
   void UpdateLayout();
+  void UpdateFadePanel(FadePanel& fade, float dt);
+  void SubscribeEvents();
+
+  EventScope event_scope_;
 
   GameObject* info_panel_ = nullptr;
   UIGlassRenderer* info_glass_ = nullptr;
@@ -42,17 +59,8 @@ class HudManagerComponent : public BehaviorComponent<HudManagerComponent> {
   UITextRenderer* hp_text_ = nullptr;
   UITextRenderer* gold_text_ = nullptr;
 
-  GameObject* message_panel_ = nullptr;
-  UIGlassRenderer* message_glass_ = nullptr;
-  UITextRenderer* message_text_ = nullptr;
-  float message_timer_ = 0.0f;
-  bool message_visible_ = false;
-
-  GameObject* alert_panel_ = nullptr;
-  UIGlassRenderer* alert_glass_ = nullptr;
-  UITextRenderer* alert_text_ = nullptr;
-  float alert_timer_ = 0.0f;
-  bool alert_visible_ = false;
+  FadePanel message_fade_;
+  FadePanel alert_fade_;
 
   GameObject* hint_panel_ = nullptr;
   UIGlassRenderer* hint_glass_ = nullptr;
