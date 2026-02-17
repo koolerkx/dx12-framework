@@ -60,3 +60,7 @@ struct TowerPlacementCancelledEvent : Event<TowerPlacementCancelledEvent> {
 struct TowerPlacementConfirmedEvent : Event<TowerPlacementConfirmedEvent> {
   static constexpr std::string_view EventName = "city.tower_placement_confirmed";
 };
+
+struct RestartGameEvent : Event<RestartGameEvent> {
+  static constexpr std::string_view EventName = "city.restart_game";
+};

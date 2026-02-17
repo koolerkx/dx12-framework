@@ -61,7 +61,9 @@ class HudManagerComponent : public BehaviorComponent<HudManagerComponent> {
   void UpdateFadePanel(FadePanel& fade, float dt);
   void UpdateIconInteraction();
   void UpdateConfirmPanelInteraction();
+  void UpdateGameOverInteraction();
   void SetConfirmPanelVisible(bool visible);
+  void SetGameplayHudVisible(bool visible);
   void SubscribeEvents();
 
   EventScope event_scope_;
@@ -97,6 +99,14 @@ class HudManagerComponent : public BehaviorComponent<HudManagerComponent> {
 
   IconState icon_state_ = IconState::Normal;
   InputSystem* input_ = nullptr;
+
+  GameObject* gameover_panel_ = nullptr;
+  UIGlassRenderer* gameover_panel_glass_ = nullptr;
+  UITextRenderer* gameover_title_text_ = nullptr;
+  UITextRenderer* gameover_stats_text_ = nullptr;
+  ButtonSlot restart_button_;
+  ButtonSlot title_button_;
+  bool gameover_active_ = false;
 
   int wave_ = 1;
   int hp_ = 100;

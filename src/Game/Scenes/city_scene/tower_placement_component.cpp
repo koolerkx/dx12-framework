@@ -6,28 +6,29 @@
 #include "Component/Renderer/instanced_model_renderer.h"
 #include "Component/Renderer/mesh_renderer.h"
 #include "Component/camera_component.h"
+#include "Component/enemy_spawn_component.h"
 #include "Component/model_component.h"
+#include "Component/player_spawn_component.h"
 #include "Component/transform_component.h"
-#include "Framework/Core/color.h"
+#include "Framework/Event/event_bus.hpp"
 #include "Framework/Input/input.h"
 #include "Graphic/Pipeline/pixel_shader_descriptors.h"
 #include "Map/ground_ray_caster.h"
 #include "Map/nav_grid.h"
 #include "Map/nav_grid_events.h"
-#include "Component/enemy_spawn_component.h"
-#include "Component/player_spawn_component.h"
-#include "Framework/Event/event_bus.hpp"
+#include "SceneSetting/active_camera_setting.h"
 #include "Scenes/city_scene/city_scene_config.h"
 #include "Scenes/city_scene/city_scene_events.h"
-#include "Scenes/city_scene/floating_text_effect.h"
 #include "Scenes/city_scene/enemy_component.h"
+#include "Scenes/city_scene/floating_text_effect.h"
 #include "Scenes/city_scene/game_state_manager_component.h"
 #include "Scenes/city_scene/hud_manager_component.h"
-#include "SceneSetting/active_camera_setting.h"
 #include "Scenes/city_scene/tower_component.h"
 #include "game_context.h"
 #include "game_object.h"
 #include "scene.h"
+#include "scene_events.h"
+
 
 namespace {
 
@@ -53,7 +54,9 @@ GameObject* CreateRadarDisc(IScene* scene, const Math::Vector3& world_pos, float
   });
 
   Graphics::RadarRangeShader::Params params{
-    .radar_r = color.r, .radar_g = color.g, .radar_b = color.b,
+    .radar_r = color.r,
+    .radar_g = color.g,
+    .radar_b = color.b,
     .scan_speed = 0.4f,
     .ring_count = 4.0f,
     .opacity = 0.5f,
@@ -83,8 +86,7 @@ void TowerPlacementComponent::OnStart() {
     if (state_ != PlacementState::Selected) return;
     if (IsPlacementBlocked()) {
       const CitySceneConfig::FloatingTextConfig txt_cfg;
-      CitySceneEffect::SpawnWarningText(GetOwner()->GetScene(),
-        {snapped_xz_.x, txt_cfg.y_offset, snapped_xz_.y}, L"Blocked!");
+      CitySceneEffect::SpawnWarningText(GetOwner()->GetScene(), {snapped_xz_.x, txt_cfg.y_offset, snapped_xz_.y}, L"Blocked!");
       GetContext()->GetEventBus()->Emit(OverlapEnemyEvent{});
       return;
     }
@@ -94,14 +96,12 @@ void TowerPlacementComponent::OnStart() {
     auto* gold = player ? player->GetComponent<GameStateManagerComponent>() : nullptr;
     if (gold && gold->TrySpendGold(total_cost)) {
       const CitySceneConfig::FloatingTextConfig txt_cfg;
-      CitySceneEffect::SpawnCostText(GetOwner()->GetScene(),
-        {snapped_xz_.x, txt_cfg.y_offset, snapped_xz_.y}, total_cost);
+      CitySceneEffect::SpawnCostText(GetOwner()->GetScene(), {snapped_xz_.x, txt_cfg.y_offset, snapped_xz_.y}, total_cost);
       PlaceTower();
       Deactivate();
     } else {
       const CitySceneConfig::FloatingTextConfig txt_cfg;
-      CitySceneEffect::SpawnWarningText(GetOwner()->GetScene(),
-        {snapped_xz_.x, txt_cfg.y_offset, snapped_xz_.y}, L"No Gold!");
+      CitySceneEffect::SpawnWarningText(GetOwner()->GetScene(), {snapped_xz_.x, txt_cfg.y_offset, snapped_xz_.y}, L"No Gold!");
     }
   });
 
@@ -111,6 +111,10 @@ void TowerPlacementComponent::OnStart() {
     CreatePreview(selection_a_model_);
     UpdatePreviewPosition();
     TransitionTo(PlacementState::Hovering);
+  });
+
+  event_scope_.Subscribe<GameOverEvent>(bus, [this](const GameOverEvent&) {
+    if (IsActive()) Deactivate();
   });
 }
 
@@ -192,8 +196,7 @@ void TowerPlacementComponent::UpdateHovering() {
   if (!over_ui && input_->GetMouseButtonDown(Mouse::Button::Left)) {
     if (IsOverlappingEnemySpawn() || IsOverlappingExistingTower()) {
       const CitySceneConfig::FloatingTextConfig txt_cfg;
-      CitySceneEffect::SpawnWarningText(GetOwner()->GetScene(),
-        {snapped_xz_.x, txt_cfg.y_offset, snapped_xz_.y}, L"Blocked!");
+      CitySceneEffect::SpawnWarningText(GetOwner()->GetScene(), {snapped_xz_.x, txt_cfg.y_offset, snapped_xz_.y}, L"Blocked!");
       GetContext()->GetEventBus()->Emit(OverlapEnemySpawnEvent{});
       return;
     }
@@ -271,8 +274,8 @@ void TowerPlacementComponent::PlaceTower() {
 
   auto* scene = GetOwner()->GetScene();
   float s = TOWER_CFG.tower_scale;
-  auto* tower =
-    scene->CreateGameObject("Tower_" + std::to_string(tower_count_++), {.position = {snapped_xz_.x, 0.0f, snapped_xz_.y}, .scale = {s, s, s}});
+  auto* tower = scene->CreateGameObject(
+    "Tower_" + std::to_string(tower_count_++), {.position = {snapped_xz_.x, 0.0f, snapped_xz_.y}, .scale = {s, s, s}});
   tower->AddComponent<ModelComponent>(ModelComponent::Props{.model = tower_model_});
   tower->AddComponent<TowerComponent>(TowerComponent::Props{});
   placed_towers_.push_back({snapped_xz_, TowerComponent::Props{}.range, tower});

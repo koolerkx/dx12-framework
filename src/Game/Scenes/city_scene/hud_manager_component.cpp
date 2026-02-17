@@ -10,7 +10,9 @@
 #include "game_context.h"
 #include "game_object.h"
 #include "scene.h"
+#include "Framework/Logging/logger.h"
 #include "Scenes/city_scene/city_scene_events.h"
+#include "scene_events.h"
 
 namespace {
 
@@ -36,6 +38,11 @@ constexpr PanelLayout HINT_PANEL = {264.0f, 240.0f};
 constexpr PanelLayout ICON_SLOT = {128.0f, 128.0f};
 constexpr PanelLayout CONFIRM_BUTTON = {300.0f, 66.0f};
 constexpr float BUTTON_GAP = 12.0f;
+
+constexpr PanelLayout GAMEOVER_PANEL = {480.0f, 120.0f};
+constexpr PanelLayout GAMEOVER_BUTTON = {200.0f, 50.0f};
+constexpr float GAMEOVER_TITLE_SIZE = 48.0f;
+constexpr float GAMEOVER_BUTTON_GAP = 16.0f;
 
 float MoveToward(float current, float target, float max_delta) {
   if (target > current) {
@@ -204,6 +211,40 @@ void HudManagerComponent::OnInit() {
   cancel_button_ = create_button("HUD_CancelBtn", L"Cancel");
   SetConfirmPanelVisible(false);
 
+  gameover_panel_ = scene->CreateGameObject("HUD_GameOverPanel");
+  gameover_panel_->SetParent(hud_root);
+  gameover_panel_glass_ = gameover_panel_->AddComponent<UIGlassRenderer>(UIGlassRenderer::Props{
+    .size = {GAMEOVER_PANEL.width, GAMEOVER_PANEL.height},
+    .layer_id = 3,
+  });
+
+  auto* go_title = scene->CreateGameObject("HUD_GameOverTitle");
+  go_title->SetParent(gameover_panel_);
+  gameover_title_text_ = go_title->AddComponent<UITextRenderer>(UITextRenderer::Props{
+    .text = L"GAME OVER",
+    .pixel_size = GAMEOVER_TITLE_SIZE,
+    .h_align = Text::HorizontalAlign::Center,
+    .pivot = {0.5f, 0.0f},
+  });
+
+  auto* go_stats = scene->CreateGameObject("HUD_GameOverStats");
+  go_stats->SetParent(gameover_panel_);
+  gameover_stats_text_ = go_stats->AddComponent<UITextRenderer>(UITextRenderer::Props{
+    .text = L"",
+    .pixel_size = SMALL_TEXT_SIZE,
+    .h_align = Text::HorizontalAlign::Center,
+    .pivot = {0.5f, 0.0f},
+  });
+
+  restart_button_ = create_button("HUD_RestartBtn", L"Restart");
+  restart_button_.glass->SetLayerId(3);
+  title_button_ = create_button("HUD_TitleBtn", L"Back to Title");
+  title_button_.glass->SetLayerId(3);
+
+  gameover_panel_->SetActive(false);
+  restart_button_.root->SetActive(false);
+  title_button_.root->SetActive(false);
+
   input_ = GetContext()->GetInput();
   SubscribeEvents();
   UpdateLayout();
@@ -264,11 +305,28 @@ void HudManagerComponent::SubscribeEvents() {
   event_scope_.Subscribe<TowerPlacementCancelledEvent>(bus, [this](const TowerPlacementCancelledEvent&) {
     SetConfirmPanelVisible(false);
   });
+
+  event_scope_.Subscribe<GameOverEvent>(bus, [this](const GameOverEvent& e) {
+    SetGameplayHudVisible(false);
+
+    wchar_t buf[128];
+    swprintf_s(buf, L"Wave: %d  |  Kills: %d", e.wave, e.kill_count);
+    gameover_stats_text_->SetText(buf);
+
+    gameover_panel_->SetActive(true);
+    restart_button_.root->SetActive(true);
+    title_button_.root->SetActive(true);
+    gameover_active_ = true;
+  });
 }
 
 void HudManagerComponent::OnUpdate(float dt) {
   UpdateFadePanel(message_fade_, dt);
   UpdateFadePanel(alert_fade_, dt);
+  if (gameover_active_) {
+    UpdateGameOverInteraction();
+    return;
+  }
   UpdateIconInteraction();
   UpdateConfirmPanelInteraction();
 }
@@ -397,6 +455,49 @@ void HudManagerComponent::UpdateLayout() {
 
     panel_rects_.push_back({base_x, base_y, btn_w, total_h});
   }
+
+  if (gameover_active_) {
+    float go_panel_w = GAMEOVER_PANEL.width * s;
+    float go_panel_h = GAMEOVER_PANEL.height * s;
+    float go_btn_w = GAMEOVER_BUTTON.width * s;
+    float go_btn_h = GAMEOVER_BUTTON.height * s;
+    float go_btn_gap = GAMEOVER_BUTTON_GAP * s;
+    float gap_between = PADDING * s;
+    float total_block_h = go_panel_h + gap_between + go_btn_h;
+
+    float go_panel_x = (screen_w - go_panel_w) / 2.0f;
+    float go_panel_y = (screen_h - total_block_h) / 2.0f;
+
+    set_pos(gameover_panel_, go_panel_x, go_panel_y);
+    gameover_panel_glass_->SetSize({go_panel_w, go_panel_h});
+
+    set_pos(gameover_title_text_->GetOwner(), go_panel_w / 2.0f, PADDING * s);
+    gameover_title_text_->SetPixelSize(GAMEOVER_TITLE_SIZE * s);
+
+    float stats_y = PADDING * s + GAMEOVER_TITLE_SIZE * s + 8.0f * s;
+    set_pos(gameover_stats_text_->GetOwner(), go_panel_w / 2.0f, stats_y);
+    gameover_stats_text_->SetPixelSize(SMALL_TEXT_SIZE * s);
+
+    float total_btn_w = go_btn_w * 2.0f + go_btn_gap;
+    float btn_start_x = (screen_w - total_btn_w) / 2.0f;
+    float btn_y = go_panel_y + go_panel_h + gap_between;
+
+    set_pos(restart_button_.root, btn_start_x, btn_y);
+    restart_button_.glass->SetSize({go_btn_w, go_btn_h});
+    set_pos(restart_button_.label->GetOwner(), go_btn_w / 2.0f, (go_btn_h - SMALL_TEXT_SIZE * s) / 2.0f);
+    restart_button_.label->SetPixelSize(SMALL_TEXT_SIZE * s);
+    restart_button_.rect = {btn_start_x, btn_y, go_btn_w, go_btn_h};
+
+    float title_btn_x = btn_start_x + go_btn_w + go_btn_gap;
+    set_pos(title_button_.root, title_btn_x, btn_y);
+    title_button_.glass->SetSize({go_btn_w, go_btn_h});
+    set_pos(title_button_.label->GetOwner(), go_btn_w / 2.0f, (go_btn_h - SMALL_TEXT_SIZE * s) / 2.0f);
+    title_button_.label->SetPixelSize(SMALL_TEXT_SIZE * s);
+    title_button_.rect = {title_btn_x, btn_y, go_btn_w, go_btn_h};
+
+    panel_rects_.push_back({go_panel_x, go_panel_y, go_panel_w, go_panel_h});
+    panel_rects_.push_back({btn_start_x, btn_y, total_btn_w, go_btn_h});
+  }
 }
 
 void HudManagerComponent::SetWave(int wave) {
@@ -515,6 +616,48 @@ void HudManagerComponent::SetConfirmPanelVisible(bool visible) {
   confirm_panel_->SetActive(visible);
   confirm_button_.root->SetActive(visible);
   cancel_button_.root->SetActive(visible);
+}
+
+void HudManagerComponent::SetGameplayHudVisible(bool visible) {
+  info_panel_->SetActive(visible);
+  hint_panel_->SetActive(visible);
+  for (auto& slot : icon_slots_) {
+    slot.root->SetActive(visible);
+  }
+  if (!visible) {
+    SetConfirmPanelVisible(false);
+    message_fade_.panel->SetActive(false);
+    message_fade_.target_opacity = 0.0f;
+    message_fade_.opacity = 0.0f;
+    alert_fade_.panel->SetActive(false);
+    alert_fade_.target_opacity = 0.0f;
+    alert_fade_.opacity = 0.0f;
+  }
+}
+
+void HudManagerComponent::UpdateGameOverInteraction() {
+  auto [mx, my] = input_->GetMousePosition();
+
+  auto hit_test = [](float mx, float my, const PanelRect& r) {
+    return mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h;
+  };
+
+  static const Math::Vector4 HOVER_TINT = {0.3f, 0.5f, 1.0f, 0.2f};
+  static const Math::Vector4 DEFAULT_TINT = {1.0f, 1.0f, 1.0f, 0.1f};
+
+  bool over_restart = hit_test(mx, my, restart_button_.rect);
+  bool over_title = hit_test(mx, my, title_button_.rect);
+
+  restart_button_.glass->SetTintColor(over_restart ? HOVER_TINT : DEFAULT_TINT);
+  title_button_.glass->SetTintColor(over_title ? HOVER_TINT : DEFAULT_TINT);
+
+  if (input_->GetMouseButtonDown(Mouse::Button::Left)) {
+    if (over_restart) {
+      GetContext()->GetEventBus()->Emit(RestartGameEvent{});
+    } else if (over_title) {
+      Logger::Log(LogLevel::Info, LogCategory::Game, "Back to Title requested");
+    }
+  }
 }
 
 void HudManagerComponent::UpdateConfirmPanelInteraction() {

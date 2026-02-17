@@ -20,6 +20,7 @@
 #include "Framework/Math/Math.h"
 #include "Map/map_loader.h"
 #include "Scenes/city_scene/city_scene_config.h"
+#include "Scenes/city_scene/city_scene_events.h"
 #include "Scenes/city_scene/enemy_spawn_manager_component.h"
 #include "Scenes/city_scene/game_state_manager_component.h"
 #include "Scenes/city_scene/player_control_component.h"
@@ -152,6 +153,10 @@ void CityScene::OnEnter(AssetManager& asset_manager) {
   GetEventScope().Subscribe<KeyDownEvent>(bus, [this](const KeyDownEvent& e) {
     if (e.key == Keyboard::KeyCode::F1) GetContext()->GetSceneManager()->RequestLoad(SceneId::TEST_SCENE);
     if (e.key == Keyboard::KeyCode::F2) GetContext()->GetSceneManager()->RequestLoad(SceneId::MODEL_SCENE);
+  });
+
+  GetEventScope().Subscribe<RestartGameEvent>(bus, [this](const RestartGameEvent&) {
+    GetContext()->GetSceneManager()->RequestLoad(SceneId::CITY_SCENE);
   });
 }
 
