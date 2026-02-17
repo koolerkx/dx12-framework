@@ -45,6 +45,8 @@ struct DebugDrawConfig {
 
 struct EnemyConfig {
   float move_speed = 1.0f;
+  float size_scale = 0.75f;
+  float agent_size_scale = 0.5f;
 };
 
 struct BorderWallConfig {

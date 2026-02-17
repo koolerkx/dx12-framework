@@ -14,6 +14,7 @@ class ObjectMovementComponent : public BehaviorComponent<ObjectMovementComponent
     NavGrid* nav = nullptr;
     float move_speed = 3.0f;
     float waypoint_reach_threshold = 0.15f;
+    float agent_size_scale = 1.0f;
     Math::Vector2 initial_target_xz = {};
     bool has_initial_target = false;
   };
@@ -42,6 +43,7 @@ class ObjectMovementComponent : public BehaviorComponent<ObjectMovementComponent
   float move_speed_ = 3.0f;
   float waypoint_reach_threshold_ = 0.15f;
   float agent_radius_ = 0.0f;
+  float agent_size_scale_ = 1.0f;
   Math::Vector2 initial_target_xz_ = {};
   bool has_initial_target_ = false;
 

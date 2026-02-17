@@ -1,9 +1,11 @@
 #include "object_movement_component.h"
 
 #include "Component/Collider/box_collider_component.h"
+#include "Component/Collider/sphere_collider_component.h"
 #include "Component/transform_component.h"
 #include "Debug/debug_drawer.h"
 #include "Framework/Core/color.h"
+#include "Framework/Logging/logger.h"
 #include "Map/nav_grid.h"
 #include "Map/nav_grid_events.h"
 #include "Map/pathfinder.h"
@@ -18,6 +20,7 @@ ObjectMovementComponent::ObjectMovementComponent(GameObject* owner, const Props&
       nav_(props.nav),
       move_speed_(props.move_speed),
       waypoint_reach_threshold_(props.waypoint_reach_threshold),
+      agent_size_scale_(props.agent_size_scale),
       initial_target_xz_(props.initial_target_xz),
       has_initial_target_(props.has_initial_target) {
 }
@@ -25,10 +28,9 @@ ObjectMovementComponent::ObjectMovementComponent(GameObject* owner, const Props&
 void ObjectMovementComponent::OnInit() {
   spawn_position_ = GetOwner()->GetTransform()->GetPosition();
 
-  auto* collider = GetOwner()->GetComponent<BoxColliderComponent>();
-  if (collider) {
-    auto extents = collider->GetWorldBounds().GetExtents();
-    agent_radius_ = (std::max)(extents.x, extents.z);
+  auto* sphere = GetOwner()->GetComponent<SphereColliderComponent>();
+  if (sphere) {
+    agent_radius_ = sphere->GetWorldSphere().radius * agent_size_scale_;
   }
 
   auto* bus = GetContext()->GetEventBus().get();
@@ -88,7 +90,12 @@ void ObjectMovementComponent::MoveToXZ(Vector2 target_xz) {
 
   Vector3 pos = transform->GetWorldPosition();
   auto result = Pathfinder::FindPath(*nav_, {pos.x, pos.z}, target_xz, agent_radius_);
-  if (!result.found || result.waypoints.empty()) return;
+  if (!result.found || result.waypoints.empty()) {
+    Logger::LogFormat(LogLevel::Warn, LogCategory::Game, Logger::Here(),
+      "Path not found: from ({:.2f}, {:.2f}) to ({:.2f}, {:.2f}), agent_radius={:.3f}",
+      pos.x, pos.z, target_xz.x, target_xz.y, agent_radius_);
+    return;
+  }
 
   waypoints_ = std::move(result.waypoints);
   current_waypoint_ = 0;

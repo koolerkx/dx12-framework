@@ -4,7 +4,6 @@
 #include <string>
 
 #include "Asset/asset_manager.h"
-#include "Component/Collider/box_collider_component.h"
 #include "Component/Collider/sphere_collider_component.h"
 #include "Component/enemy_spawn_component.h"
 #include "Component/model_component.h"
@@ -67,7 +66,9 @@ void EnemySpawnManagerComponent::SpawnEnemy() {
   std::string name = "Enemy_" + std::to_string(enemy_counter_++);
   auto* scene = GetOwner()->GetScene();
 
-  auto* enemy = scene->CreateGameObject(name, {.position = spawn_pos});
+  const cfg::EnemyConfig ENEMY;
+  float s = ENEMY.size_scale;
+  auto* enemy = scene->CreateGameObject(name, {.position = spawn_pos, .scale = {s, s, s}});
   enemy->SetParent(GetOwner());
 
   auto* enemy_mesh = scene->CreateGameObject("EnemyMesh");
@@ -75,17 +76,15 @@ void EnemySpawnManagerComponent::SpawnEnemy() {
   enemy_mesh->SetParent(enemy);
   enemy_mesh->AddComponent<ModelComponent>(ModelComponent::Props{.model = enemy_model_});
 
-  enemy->AddComponent<BoxColliderComponent>(enemy_model_->bounds, enemy->GetTransform()->GetWorldMatrix());
   auto extents = enemy_model_->bounds.GetExtents();
-  float circumscribed_radius = Math::Vector3(extents.x, extents.y, extents.z).Length();
-  enemy->AddComponent<SphereColliderComponent>(circumscribed_radius);
-
-  const cfg::EnemyConfig ENEMY;
+  float base_radius = (std::max)(extents.x, extents.z);
+  enemy->AddComponent<SphereColliderComponent>(base_radius);
   enemy->AddComponent<EnemyComponent>(EnemyComponent::Props{.hp = 2.0f});
   enemy->AddComponent<HpBarComponent>(HpBarComponent::Props{});
   enemy->AddComponent<ObjectMovementComponent>(ObjectMovementComponent::Props{
     .nav = nav_,
     .move_speed = ENEMY.move_speed,
+    .agent_size_scale = ENEMY.agent_size_scale,
     .initial_target_xz = player_spawn_xz_,
     .has_initial_target = true,
   });

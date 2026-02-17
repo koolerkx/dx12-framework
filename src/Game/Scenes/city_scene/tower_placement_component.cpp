@@ -355,7 +355,10 @@ void TowerPlacementComponent::UpdateTowerHoverRadar() {
   if (!cam) return;
 
   auto [mx, my] = input_->GetMousePosition();
-  auto hit = GroundRayCaster::ScreenToGroundXZ(mx, my, screen_width_, screen_height_, cam->GetCameraData());
+  auto* gfx = GetContext()->GetGraphic();
+  float screen_w = static_cast<float>(gfx->GetFrameBufferWidth());
+  float screen_h = static_cast<float>(gfx->GetFrameBufferHeight());
+  auto hit = GroundRayCaster::ScreenToGroundXZ(mx, my, screen_w, screen_h, cam->GetCameraData());
   auto unhover_tower = [this]() {
     if (hovered_tower_go_) {
       if (auto* tc = hovered_tower_go_->GetComponent<TowerComponent>()) tc->SetHighlighted(false);
