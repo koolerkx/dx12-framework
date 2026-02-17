@@ -69,8 +69,6 @@ class TowerPlacementComponent : public BehaviorComponent<TowerPlacementComponent
   NavGrid* nav_ = nullptr;
   CameraComponent* camera_ = nullptr;
   InputSystem* input_ = nullptr;
-  float screen_width_ = 0.0f;
-  float screen_height_ = 0.0f;
 
   std::shared_ptr<ModelData> selection_a_model_;
   std::shared_ptr<ModelData> selection_b_model_;

@@ -39,8 +39,6 @@ constexpr TowerPlacementConfig TOWER_CFG;
 void TowerPlacementComponent::OnStart() {
   auto* context = GetContext();
   input_ = context->GetInput();
-  screen_width_ = static_cast<float>(context->GetGraphic()->GetFrameBufferWidth());
-  screen_height_ = static_cast<float>(context->GetGraphic()->GetFrameBufferHeight());
 
   auto& assets = context->GetAssetManager();
   selection_a_model_ = assets.LoadModel(CitySceneConfig::PATHS.tower_selection_a, CitySceneConfig::FBX_UNIT_SCALE);
@@ -100,7 +98,10 @@ void TowerPlacementComponent::UpdateHovering() {
   auto [mx, my] = input_->GetMousePosition();
   if (!camera_) return;
 
-  auto hit = GroundRayCaster::ScreenToGroundXZ(mx, my, screen_width_, screen_height_, camera_->GetCameraData());
+  auto* gfx = GetContext()->GetGraphic();
+  float screen_w = static_cast<float>(gfx->GetFrameBufferWidth());
+  float screen_h = static_cast<float>(gfx->GetFrameBufferHeight());
+  auto hit = GroundRayCaster::ScreenToGroundXZ(mx, my, screen_w, screen_h, camera_->GetCameraData());
   if (hit) {
     snapped_xz_ = SnapToGrid(*hit);
     UpdatePreviewPosition();
