@@ -32,8 +32,10 @@ void UIGlassRenderer::OnRender(FramePacket& packet) {
     float specular_offset_y;
     float edge_shadow_strength;  // darkening at panel edges via smoothstep vignette
     float panel_aspect;          // width / height for uniform corner rounding
+    float darken;                // 0.0 = no darkening, 1.0 = fully black
+    float _pad[3] = {};
   };
-  static_assert(sizeof(GlassParams) == 64);
+  static_assert(sizeof(GlassParams) == 80);
 
   GlassParams params{
     .blur_srv_index = blur_srv_index,
@@ -52,15 +54,18 @@ void UIGlassRenderer::OnRender(FramePacket& packet) {
     .specular_offset_y = specular_offset_.y,
     .edge_shadow_strength = edge_shadow_strength_,
     .panel_aspect = size_.x / size_.y,
+    .darken = darken_,
   };
 
   DrawCommand cmd;
   float aspect = size_.x / size_.y;
+  float min_dim = (std::min)(size_.x, size_.y);
+  float mesh_radius = (min_dim > 0.0f) ? corner_radius_px_ / min_dim : 0.1f;
   char mesh_key[64];
-  std::snprintf(mesh_key, sizeof(mesh_key), "glass_rounded_rect:%.3f", aspect);
-  cmd.mesh = context->GetAssetManager().CreateRoundedRect(mesh_key, aspect);
+  std::snprintf(mesh_key, sizeof(mesh_key), "glass_rounded_rect:%.3f:%.4f", aspect, mesh_radius);
+  cmd.mesh = context->GetAssetManager().CreateRoundedRect(mesh_key, aspect, mesh_radius);
   if (!cmd.mesh) cmd.mesh = context->GetAssetManager().GetDefaultMesh(DefaultMesh::RoundedRect);
-  cmd.material = material_mgr.GetOrCreateMaterial(Graphics::UIGlassShader::ID, {});
+  cmd.material = material_mgr.GetOrCreateMaterial(Graphics::UIGlassShader::ID, Graphics::UIGlassShader::DefaultRenderSettings());
   cmd.material_instance.material = cmd.material;
   cmd.color = {1, 1, 1, 1};
 

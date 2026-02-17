@@ -121,14 +121,14 @@ const Mesh* AssetManager::CreateCube(const std::string& key, const CubeCornerCol
   return registry.Register(key, std::move(mesh));
 }
 
-const Mesh* AssetManager::CreateRoundedRect(const std::string& key, float aspect_ratio) {
+const Mesh* AssetManager::CreateRoundedRect(const std::string& key, float aspect_ratio, float corner_radius) {
   auto& registry = impl_->graphic->GetMeshRegistry();
   if (auto* existing = registry.Find(key)) {
     return existing;
   }
 
   auto mesh = std::make_unique<Mesh>();
-  bool ok = MeshFactory::CreateRoundedRect(impl_->graphic->GetDevice(), *mesh, 0.1f, 8, aspect_ratio);
+  bool ok = MeshFactory::CreateRoundedRect(impl_->graphic->GetDevice(), *mesh, corner_radius, 8, aspect_ratio);
   if (!ok) {
     return nullptr;
   }

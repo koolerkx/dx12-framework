@@ -30,7 +30,7 @@ struct DrawCommand {
   D3D12_GPU_VIRTUAL_ADDRESS instance_buffer_address = 0;
   uint32_t instance_count = 0;
 
-  std::array<float, 16> custom_data{};
+  std::array<float, 20> custom_data{};
   bool has_custom_data = false;
 
   RenderLayer layer = RenderLayer::Opaque;

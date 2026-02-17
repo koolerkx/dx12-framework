@@ -8,6 +8,7 @@
 #include "Component/Renderer/instanced_model_renderer.h"
 #include "Component/Renderer/mesh_renderer.h"
 #include "Component/Renderer/ui_glass_renderer.h"
+#include "Scenes/city_scene/hud_manager_component.h"
 #include "Component/camera_component.h"
 #include "Component/enemy_spawn_component.h"
 #include "Component/player_spawn_component.h"
@@ -143,32 +144,8 @@ void CityScene::OnEnter(AssetManager& asset_manager) {
     nav_grid_.GetWidth(),
     nav_grid_.GetHeight());
 
-  auto* glass_tall = CreateGameObject("GlassTall", {.position = {50.0f, 50.0f, 0.0f}});
-  glass_tall->AddComponent<UIGlassRenderer>(UIGlassRenderer::Props{
-    .size = {300.0f, 500.0f},
-  });
-
-  auto* glass_square = CreateGameObject("GlassSquare", {.position = {400.0f, 100.0f, 0.0f}});
-  glass_square->AddComponent<UIGlassRenderer>(UIGlassRenderer::Props{
-    .size = {350.0f, 350.0f},
-    .distortion_strength = 0.08f,
-    .chromatic_strength = 0.05f,
-  });
-
-  auto* glass_wide = CreateGameObject("GlassWide", {.position = {50.0f, 650.0f, 0.0f}});
-  glass_wide->AddComponent<UIGlassRenderer>(UIGlassRenderer::Props{
-    .size = {800.0f, 200.0f},
-  });
-
-  auto* glass_pill = CreateGameObject("GlassPill", {.position = {900.0f, 650.0f, 0.0f}});
-  glass_pill->AddComponent<UIGlassRenderer>(UIGlassRenderer::Props{
-    .size = {250.0f, 80.0f},
-  });
-
-  auto* glass_small = CreateGameObject("GlassSmall", {.position = {850.0f, 100.0f, 0.0f}});
-  glass_small->AddComponent<UIGlassRenderer>(UIGlassRenderer::Props{
-    .size = {150.0f, 150.0f},
-  });
+  auto* hud = CreateGameObject("HUD");
+  hud->AddComponent<HudManagerComponent>();
 
   auto& bus = *GetContext()->GetEventBus();
   GetEventScope().Subscribe<KeyDownEvent>(bus, [this](const KeyDownEvent& e) {

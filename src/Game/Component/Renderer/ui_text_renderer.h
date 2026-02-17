@@ -26,7 +26,7 @@ class UITextRenderer : public Component<UITextRenderer> {
     Text::HorizontalAlign h_align = Text::HorizontalAlign::Left;
     Text::VerticalAlign v_align = Text::VerticalAlign::Baseline;
     Vector2 pivot = {0.5f, 0.0f};
-    int layer_id = 0;
+    std::optional<int> layer_id;
   };
 
   UITextRenderer(GameObject* owner) : Component(owner) {
@@ -42,7 +42,7 @@ class UITextRenderer : public Component<UITextRenderer> {
     SetVerticalAlign(props.v_align);
 
     SetPivot(props.pivot);
-    if (props.layer_id != 0) SetLayerId(props.layer_id);
+    layer_id_ = props.layer_id.value_or(InheritParentUILayerId());
   }
 
   void SetText(const std::wstring& text) {
@@ -111,6 +111,10 @@ class UITextRenderer : public Component<UITextRenderer> {
 
   void SetLayerId(int id) {
     layer_id_ = id;
+  }
+
+  std::optional<int> GetUILayerId() const override {
+    return layer_id_;
   }
 
   void SetRenderTags(RenderTagMask tags) {

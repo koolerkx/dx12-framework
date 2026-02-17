@@ -585,7 +585,7 @@ class MeshRenderer : public Component<MeshRenderer> {
   Vector3 emissive_color_ = {0.0f, 0.0f, 0.0f};
   float emissive_intensity_ = 1.0f;
 
-  std::array<float, 16> custom_data_{};
+  std::array<float, 20> custom_data_{};
   bool has_custom_data_ = false;
 
   RenderLayer render_layer_ = RenderLayer::Opaque;

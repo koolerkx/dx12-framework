@@ -197,7 +197,7 @@ void MaterialRenderer::RecordSingle(RenderCommandList& cmd, const DrawCommand& d
 
   if (draw_cmd.has_custom_data) {
     CustomCB custom_cb = {};
-    memcpy(custom_cb.data, draw_cmd.custom_data.data(), sizeof(float) * 16);
+    memcpy(custom_cb.data, draw_cmd.custom_data.data(), sizeof(float) * 20);
     cmd.SetCustomConstants(custom_cb);
   }
 
@@ -259,7 +259,7 @@ void MaterialRenderer::RecordInstanced(RenderCommandList& cmd, const DrawCommand
 
   if (draw_cmd.has_custom_data) {
     CustomCB custom_cb = {};
-    memcpy(custom_cb.data, draw_cmd.custom_data.data(), sizeof(float) * 16);
+    memcpy(custom_cb.data, draw_cmd.custom_data.data(), sizeof(float) * 20);
     cmd.SetCustomConstants(custom_cb);
   }
 

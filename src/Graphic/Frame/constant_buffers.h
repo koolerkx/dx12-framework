@@ -107,7 +107,7 @@ struct alignas(256) ShadowCB {
 static_assert(sizeof(ShadowCB) == 512);
 
 struct alignas(256) CustomCB {
-  float data[16];
+  float data[20];
 };
 static_assert(sizeof(CustomCB) == 256);
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstring>
+#include <optional>
 #include <typeinfo>
 
 #include "Framework/UUID/uuid.h"
@@ -70,6 +71,10 @@ class IComponentBase {
   virtual void OnParentChanged() {
   }
 
+  virtual std::optional<int> GetUILayerId() const {
+    return std::nullopt;
+  }
+
   virtual ComponentTypeID GetTypeID() const = 0;
   virtual const char* GetTypeName() const {
     return "Unknown";
@@ -109,6 +114,8 @@ class IComponentBase {
   }
 
  protected:
+  int InheritParentUILayerId() const;
+
   GameObject* owner_;
 
  private:

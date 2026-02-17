@@ -196,6 +196,15 @@ struct UIGlassShader {
   static constexpr std::wstring_view PS_PATH = L"Content/shaders/ui_glass.ps.cso";
   static constexpr ShaderRenderHints HINTS = {};
 
+  static Rendering::RenderSettings DefaultRenderSettings() {
+    return {
+      .blend_mode = Rendering::BlendMode::AlphaBlend,
+      .depth_test = false,
+      .depth_write = false,
+      .render_target_format = Rendering::RenderTargetFormat::SDR,
+    };
+  }
+
   static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
     return VertexType::GetInputLayout();
   }

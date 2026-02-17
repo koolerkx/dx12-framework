@@ -78,7 +78,7 @@ class UiRenderer : public MaterialRenderer {
     FilterCommands(packet, target_layer, out_commands);
     out_commands = DrawCommandAggregator::Aggregate(out_commands);
     std::sort(out_commands.begin(), out_commands.end(), [](const DrawCommand& a, const DrawCommand& b) {
-      return SortKey::MaterialFirst(a, false) < SortKey::MaterialFirst(b, false);
+      return SortKey::DepthFirst(a, false) < SortKey::DepthFirst(b, false);
     });
   }
 };

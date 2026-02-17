@@ -23,7 +23,7 @@ class UISpriteRenderer : public Component<UISpriteRenderer> {
     std::string texture_path;
     Vector4 color = {1, 1, 1, 1};
     Vector2 size = {100, 100};
-    int layer_id = 0;
+    std::optional<int> layer_id;
     Vector2 pivot = {0.0f, 0.0f};
   };
 
@@ -36,7 +36,7 @@ class UISpriteRenderer : public Component<UISpriteRenderer> {
     SetColor(props.color);
     SetSize(props.size);
 
-    if (props.layer_id != 0) SetLayerId(props.layer_id);
+    layer_id_ = props.layer_id.value_or(InheritParentUILayerId());
     SetPivot(props.pivot);
   }
 
@@ -73,6 +73,10 @@ class UISpriteRenderer : public Component<UISpriteRenderer> {
   }
   void AddRenderTag(RenderTag tag) {
     render_tags_ |= static_cast<uint32_t>(tag);
+  }
+
+  std::optional<int> GetUILayerId() const override {
+    return layer_id_;
   }
 
   void SetBlendMode(Rendering::BlendMode mode) {

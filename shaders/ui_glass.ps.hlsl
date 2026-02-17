@@ -16,6 +16,8 @@ struct GlassCB {
   float specularOffsetY;
   float edgeShadowStrength;
   float panelAspect;
+  float darken;
+  float3 _pad;
 };
 ConstantBuffer<GlassCB> g_GlassCB : register(CUSTOM_CB_SLOT);
 
@@ -73,6 +75,8 @@ float4 main(PSIN input) : SV_TARGET {
 
   float shadow = smoothstep(0.85, 1.0, edge) * g_GlassCB.edgeShadowStrength;
   result *= (1.0 - shadow);
+
+  result *= (1.0 - g_GlassCB.darken);
 
   return float4(result, 1.0);
 }
