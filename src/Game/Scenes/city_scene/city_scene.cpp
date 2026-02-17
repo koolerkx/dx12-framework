@@ -128,6 +128,7 @@ void CityScene::OnEnter(AssetManager& asset_manager) {
     {.cell_size = NAV.cell_size, .block_threshold = NAV.block_threshold, .show_debug_grid = NAV.show_debug_grid});
 
   SpawnBorderWalls(*map_data);
+  SetupCameraBounds(*map_data);
   SpawnEnemyManager();
   CreateSpawnCubes(*map_data);
 
@@ -254,4 +255,21 @@ void CityScene::SetupCamera() {
   camera_obj->AddComponent<CameraShakeController>();
   camera_obj->AddComponent<ScreenEffectController>();
   GetCameraSetting().Register(camera);
+}
+
+void CityScene::SetupCameraBounds(const MapData& map_data) {
+  auto xz = ComputeGroundBounds(map_data);
+  if (xz.min_x > xz.max_x) return;
+
+  auto* camera_go = FindGameObject("MainCamera");
+  if (!camera_go) return;
+  auto* controller = camera_go->GetComponent<FreeCameraController>();
+  if (!controller) return;
+
+  const cfg::CameraConfig CAM;
+  float ext = CAM.bounds_xz_extent;
+  controller->SetBounds({
+    {xz.min_x - ext, CAM.bounds_y_min, xz.min_z - ext},
+    {xz.max_x + ext, CAM.bounds_y_max, xz.max_z + ext},
+  });
 }

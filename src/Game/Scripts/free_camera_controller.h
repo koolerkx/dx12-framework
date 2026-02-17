@@ -36,6 +36,10 @@ class FreeCameraController : public BehaviorComponent<FreeCameraController> {
   void SetSmoothness(float value) {
     smoothness_ = value;
   }
+  void SetBounds(const Math::AABB& bounds) {
+    bounds_ = bounds;
+    has_bounds_ = true;
+  }
 
   float GetMovementSpeed() const {
     return movement_speed_;
@@ -64,4 +68,7 @@ class FreeCameraController : public BehaviorComponent<FreeCameraController> {
   Vector3 current_euler_ = Vector3::Zero;
   Vector2 velocity_ = Vector2::Zero;
   float vertical_velocity_ = 0.0f;
+
+  Math::AABB bounds_ = {};
+  bool has_bounds_ = false;
 };

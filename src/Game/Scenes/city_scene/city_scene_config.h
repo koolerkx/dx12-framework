@@ -31,6 +31,9 @@ struct CameraConfig {
   float movement_speed = 20.0f;
   float rotation_speed = 1.5f;
   float smoothness = 8.0f;
+  float bounds_y_min = 5.0f;
+  float bounds_y_max = 20.0f;
+  float bounds_xz_extent = 5.0f;
 };
 
 struct NavGridConfig {

@@ -82,6 +82,12 @@ void FreeCameraController::ApplyMovement(const InputState& input, float dt) {
 
   position = position + movement * movement_speed_ * dt;
 
+  if (has_bounds_) {
+    position.x = std::clamp(position.x, bounds_.min.x, bounds_.max.x);
+    position.y = std::clamp(position.y, bounds_.min.y, bounds_.max.y);
+    position.z = std::clamp(position.z, bounds_.min.z, bounds_.max.z);
+  }
+
   transform->SetPosition(position);
 }
 
