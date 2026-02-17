@@ -52,4 +52,5 @@ class ObjectMovementComponent : public BehaviorComponent<ObjectMovementComponent
   std::vector<Math::Vector2> waypoints_;
   size_t current_waypoint_ = 0;
   bool moving_ = false;
+  bool is_running_ = true;
 };

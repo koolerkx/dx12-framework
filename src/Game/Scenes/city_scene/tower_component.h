@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "Component/behavior_component.h"
+#include "Framework/Event/event_scope.hpp"
 
 struct ModelData;
 class GameObject;
@@ -13,7 +14,7 @@ enum class LaserVisibility : uint8_t { AlwaysInRange, HighlightedOnly };
 class TowerComponent : public BehaviorComponent<TowerComponent> {
  public:
   struct Props {
-    float range = 5.0f;
+    float range = 3.0f;
     float shoot_interval = 1.0f;
     float damage = 1.0f;
     LaserVisibility laser_visibility = LaserVisibility::HighlightedOnly;
@@ -43,12 +44,14 @@ class TowerComponent : public BehaviorComponent<TowerComponent> {
   void UpdateLaser(GameObject* target);
   void DestroyLaser();
 
-  float range_ = 5.0f;
+  float range_ = 3.0f;
   float shoot_interval_ = 1.0f;
   float damage_ = 1.0f;
   float shoot_timer_ = 0.0f;
   LaserVisibility laser_visibility_ = LaserVisibility::HighlightedOnly;
   bool highlighted_ = false;
+  bool is_running_ = true;
+  EventScope event_scope_;
   GameObject* enemy_manager_ = nullptr;
   std::shared_ptr<ModelData> projectile_model_;
   GameObject* laser_go_ = nullptr;

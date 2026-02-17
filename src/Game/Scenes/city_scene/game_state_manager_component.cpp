@@ -2,7 +2,10 @@
 
 #include "Component/player_spawn_component.h"
 #include "Component/transform_component.h"
+#include "Framework/Event/event_bus.hpp"
 #include "Framework/Logging/logger.h"
+#include "game_context.h"
+#include "scene_events.h"
 #include "Scenes/city_scene/city_scene_config.h"
 #include "Scenes/city_scene/enemy_spawn_manager_component.h"
 #include "Scenes/city_scene/explosion_effect.h"
@@ -33,6 +36,7 @@ void GameStateManagerComponent::OnStart() {
 }
 
 void GameStateManagerComponent::OnUpdate(float dt) {
+  if (IsGameOver()) return;
   if (!spawn_manager_) return;
 
   switch (wave_state_) {
@@ -106,8 +110,10 @@ void GameStateManagerComponent::TakeDamage(int amount) {
   Logger::LogFormat(LogLevel::Info, LogCategory::Game, Logger::Here(),
     "[Health] -{} health (remaining: {})", amount, health_);
   if (health_ <= 0) {
+    game_state_ = GameState::GameOver;
     Logger::LogFormat(LogLevel::Info, LogCategory::Game, Logger::Here(),
-      "[Health] Player base destroyed!");
+      "[GameOver] Player base destroyed! Wave: {}, Kills: {}", current_wave_, kill_count_);
+    GetContext()->GetEventBus()->Emit(GameOverEvent{.wave = current_wave_, .kill_count = kill_count_});
     SpawnBaseDestroyedEffect();
   }
 }
@@ -145,6 +151,10 @@ void GameStateManagerComponent::SpawnBaseDestroyedEffect() {
   }
 
   spawn_go->Destroy();
+}
+
+void GameStateManagerComponent::IncrementKillCount() {
+  ++kill_count_;
 }
 
 void GameStateManagerComponent::StartWave() {

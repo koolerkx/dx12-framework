@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Component/behavior_component.h"
+#include "Framework/Event/event_scope.hpp"
 #include "Framework/Math/Math.h"
 
 class GameObject;
@@ -25,6 +26,7 @@ class ProjectileComponent : public BehaviorComponent<ProjectileComponent> {
         life_time_(props.life_time) {
   }
 
+  void OnStart() override;
   void OnUpdate(float dt) override;
 
  private:
@@ -35,4 +37,6 @@ class ProjectileComponent : public BehaviorComponent<ProjectileComponent> {
   float damage_ = 1.0f;
   float hit_radius_ = 0.5f;
   float life_time_ = 3.0f;
+  bool is_running_ = true;
+  EventScope event_scope_;
 };

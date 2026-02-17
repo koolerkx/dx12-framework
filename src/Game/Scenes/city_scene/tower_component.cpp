@@ -7,6 +7,7 @@
 #include "Scenes/city_scene/city_scene_config.h"
 #include "Scenes/city_scene/enemy_component.h"
 #include "Scenes/city_scene/projectile_component.h"
+#include "scene_events.h"
 #include "game_object.h"
 #include "scene.h"
 
@@ -18,10 +19,15 @@ using Math::Vector3;
 void TowerComponent::OnStart() {
   enemy_manager_ = GetOwner()->GetScene()->FindGameObject("EnemyManager");
   projectile_model_ = GetContext()->GetAssetManager().LoadModel(cfg::PATHS.projectile_model, cfg::FBX_UNIT_SCALE);
+  auto* bus = GetContext()->GetEventBus().get();
+  event_scope_.Subscribe<GameOverEvent>(*bus, [this](const GameOverEvent&) {
+    is_running_ = false;
+    DestroyLaser();
+  });
 }
 
 void TowerComponent::OnUpdate(float dt) {
-  if (!enemy_manager_) return;
+  if (!enemy_manager_ || !is_running_) return;
 
   auto* target = FindNearestEnemy();
 

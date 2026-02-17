@@ -11,6 +11,7 @@
 #include "Map/pathfinder.h"
 #include "game_context.h"
 #include "game_object.h"
+#include "scene_events.h"
 
 using Math::Vector2;
 using Math::Vector3;
@@ -39,6 +40,9 @@ void ObjectMovementComponent::OnInit() {
     if (!IsPathAffected(event.affected_area)) return;
     MoveToXZ(goal_xz_);
   });
+  event_scope_.Subscribe<GameOverEvent>(*bus, [this](const GameOverEvent&) {
+    is_running_ = false;
+  });
 }
 
 void ObjectMovementComponent::OnStart() {
@@ -55,6 +59,7 @@ void ObjectMovementComponent::OnReset() {
 }
 
 void ObjectMovementComponent::OnUpdate(float dt) {
+  if (!is_running_) return;
   if (moving_) {
     MoveAlongPath(dt);
   }

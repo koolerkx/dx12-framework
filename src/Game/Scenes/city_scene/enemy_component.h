@@ -4,14 +4,17 @@
 
 #include "Component/behavior_component.h"
 #include "Component/transform_component.h"
+#include "Framework/Event/event_scope.hpp"
 #include "Scenes/city_scene/city_scene_config.h"
 #include "Scenes/city_scene/explosion_effect.h"
 #include "Scenes/city_scene/game_state_manager_component.h"
 #include "Scenes/city_scene/object_movement_component.h"
 #include "Scripts/camera_shake_controller.h"
 #include "Scripts/screen_effect_controller.h"
+#include "game_context.h"
 #include "game_object.h"
 #include "scene.h"
+#include "scene_events.h"
 
 class EnemyComponent : public BehaviorComponent<EnemyComponent> {
  public:
@@ -36,9 +39,15 @@ class EnemyComponent : public BehaviorComponent<EnemyComponent> {
 
   void OnStart() override {
     mesh_go_ = GetOwner()->FindChild(GetOwner()->GetName() + "_Mesh");
+    auto* bus = GetContext()->GetEventBus().get();
+    event_scope_.Subscribe<GameOverEvent>(*bus, [this](const GameOverEvent&) {
+      is_running_ = false;
+    });
   }
 
   void OnUpdate(float dt) override {
+    if (!is_running_) return;
+
     auto* movement = GetOwner()->GetComponent<ObjectMovementComponent>();
     if (movement && was_moving_ && !movement->IsMoving()) {
       SpawnArrivalExplosion();
@@ -82,8 +91,10 @@ class EnemyComponent : public BehaviorComponent<EnemyComponent> {
     if (!scene) return;
     auto* player = scene->FindGameObject("Player");
     if (!player) return;
-    if (auto* gold = player->GetComponent<GameStateManagerComponent>())
-      gold->AddGold(kill_reward_);
+    if (auto* state = player->GetComponent<GameStateManagerComponent>()) {
+      state->IncrementKillCount();
+      state->AddGold(kill_reward_);
+    }
   }
 
   void SpawnArrivalExplosion() {
@@ -123,6 +134,8 @@ class EnemyComponent : public BehaviorComponent<EnemyComponent> {
   float bob_time_ = 0.0f;
   int kill_reward_ = 0;
   bool dead_ = false;
+  bool is_running_ = true;
   bool was_moving_ = false;
+  EventScope event_scope_;
   GameObject* mesh_go_ = nullptr;
 };

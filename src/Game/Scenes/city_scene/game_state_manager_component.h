@@ -7,6 +7,11 @@
 
 class EnemySpawnManagerComponent;
 
+enum class GameState : uint8_t {
+  Playing,
+  GameOver,
+};
+
 enum class WaveState : uint8_t {
   WaitingInitial,
   Spawning,
@@ -40,7 +45,11 @@ class GameStateManagerComponent : public BehaviorComponent<GameStateManagerCompo
   void TakeDamage(int amount = 1);
   int GetHealth() const { return health_; }
 
+  GameState GetGameState() const { return game_state_; }
+  bool IsGameOver() const { return game_state_ == GameState::GameOver; }
   int GetCurrentWave() const { return current_wave_; }
+  int GetKillCount() const { return kill_count_; }
+  void IncrementKillCount();
 
  private:
   void StartWave();
@@ -49,6 +58,8 @@ class GameStateManagerComponent : public BehaviorComponent<GameStateManagerCompo
   Props props_;
   int gold_ = 0;
   int health_ = 0;
+  int kill_count_ = 0;
+  GameState game_state_ = GameState::Playing;
 
   EnemySpawnManagerComponent* spawn_manager_ = nullptr;
   WaveStageConfig current_config_;

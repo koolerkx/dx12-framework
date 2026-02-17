@@ -6,11 +6,22 @@
 #include "Framework/Math/Math.h"
 #include "Scenes/city_scene/enemy_component.h"
 #include "Scenes/city_scene/explosion_effect.h"
+#include "game_context.h"
 #include "game_object.h"
+#include "scene_events.h"
 
 using Math::Vector3;
 
+void ProjectileComponent::OnStart() {
+  auto* bus = GetContext()->GetEventBus().get();
+  event_scope_.Subscribe<GameOverEvent>(*bus, [this](const GameOverEvent&) {
+    is_running_ = false;
+  });
+}
+
 void ProjectileComponent::OnUpdate(float dt) {
+  if (!is_running_) return;
+
   life_time_ -= dt;
   if (life_time_ <= 0.0f) {
     GetOwner()->Destroy();
