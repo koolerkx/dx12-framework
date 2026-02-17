@@ -7,6 +7,7 @@
 #include "Framework/Event/event_scope.hpp"
 #include "Scenes/city_scene/city_scene_config.h"
 #include "Scenes/city_scene/explosion_effect.h"
+#include "Scenes/city_scene/floating_text_effect.h"
 #include "Scenes/city_scene/game_state_manager_component.h"
 #include "Scenes/city_scene/object_movement_component.h"
 #include "Scripts/camera_shake_controller.h"
@@ -94,6 +95,9 @@ class EnemyComponent : public BehaviorComponent<EnemyComponent> {
     if (auto* state = player->GetComponent<GameStateManagerComponent>()) {
       state->IncrementKillCount();
       state->AddGold(kill_reward_);
+      const CitySceneConfig::FloatingTextConfig txt_cfg;
+      auto pos = GetOwner()->GetTransform()->GetWorldPosition();
+      CitySceneEffect::SpawnRewardText(scene, pos + Math::Vector3(0, txt_cfg.y_offset, 0), kill_reward_);
     }
   }
 

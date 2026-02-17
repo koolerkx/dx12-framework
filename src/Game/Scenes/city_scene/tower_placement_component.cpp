@@ -18,6 +18,7 @@
 #include "Framework/Event/event_bus.hpp"
 #include "Scenes/city_scene/city_scene_config.h"
 #include "Scenes/city_scene/city_scene_events.h"
+#include "Scenes/city_scene/floating_text_effect.h"
 #include "Scenes/city_scene/enemy_component.h"
 #include "Scenes/city_scene/game_state_manager_component.h"
 #include "Scenes/city_scene/hud_manager_component.h"
@@ -88,6 +89,9 @@ void TowerPlacementComponent::OnStart() {
     auto* player = GetOwner()->GetScene()->FindGameObject("Player");
     auto* gold = player ? player->GetComponent<GameStateManagerComponent>() : nullptr;
     if (gold && gold->TrySpendGold(total_cost)) {
+      const CitySceneConfig::FloatingTextConfig txt_cfg;
+      CitySceneEffect::SpawnCostText(GetOwner()->GetScene(),
+        {snapped_xz_.x, txt_cfg.y_offset, snapped_xz_.y}, total_cost);
       PlaceTower();
       Deactivate();
     }

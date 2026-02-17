@@ -165,6 +165,16 @@ struct BulletHitSparksConfig {
   float spawn_radius = 0.1f;
 };
 
+struct FloatingTextConfig {
+  float y_offset = 1.5f;
+  float speed = 2.0f;
+  float visible_duration = 0.5f;
+  float fade_duration = 0.3f;
+  float world_height = 0.5f;
+  Math::Vector4 damage_color = {3.0f, 0.2f, 0.2f, 1.0f};
+  Math::Vector4 reward_color = {3.0f, 2.5f, 0.2f, 1.0f};
+};
+
 struct TowerPlacementConfig {
   float grid_snap_offset_x = 0.5f;
   float grid_snap_offset_z = 0.25f;

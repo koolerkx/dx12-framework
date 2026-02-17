@@ -117,6 +117,8 @@ add_library(game STATIC
     Scenes/city_scene/game_state_manager_component.cpp
     Scenes/city_scene/pulse_path_component.h
     Scenes/city_scene/pulse_path_component.cpp
+    Scenes/city_scene/floating_text_component.h
+    Scenes/city_scene/floating_text_effect.h
     Scenes/city_scene/hud_manager_component.h
     Scenes/city_scene/hud_manager_component.cpp
 

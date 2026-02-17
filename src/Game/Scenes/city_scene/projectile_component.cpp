@@ -6,6 +6,7 @@
 #include "Framework/Math/Math.h"
 #include "Scenes/city_scene/enemy_component.h"
 #include "Scenes/city_scene/explosion_effect.h"
+#include "Scenes/city_scene/floating_text_effect.h"
 #include "game_context.h"
 #include "game_object.h"
 #include "scene_events.h"
@@ -45,6 +46,9 @@ void ProjectileComponent::OnUpdate(float dt) {
     auto* enemy = target_->GetComponent<EnemyComponent>();
     if (enemy) {
       enemy->TakeDamage(damage_);
+      const CitySceneConfig::FloatingTextConfig txt_cfg;
+      CitySceneEffect::SpawnDamageText(GetOwner()->GetScene(),
+        target_pos + Vector3(0, txt_cfg.y_offset, 0), damage_);
     }
     SpawnBulletHitExplosion(target_pos);
     GetOwner()->Destroy();
