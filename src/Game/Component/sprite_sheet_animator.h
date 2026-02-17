@@ -25,6 +25,7 @@ class SpriteSheetAnimator {
   void SetSpriteSheetConfig(const SpriteSheet::FrameConfig& config);
   void SetFrameCount(uint32_t frame_count);
   void SetFramesPerSecond(float fps);
+  void SetStartFrameOffset(uint32_t offset);
 
   void Play();
   void Stop();
@@ -62,5 +63,6 @@ class SpriteSheetAnimator {
   PlayDirection play_direction_ = PlayDirection::Forward;
 
   uint32_t current_frame_ = 0;
+  uint32_t start_frame_offset_ = 0;
   AnimationEndCallback on_animation_end_;
 };

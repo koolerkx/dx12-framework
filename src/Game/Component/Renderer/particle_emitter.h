@@ -37,6 +37,7 @@ class ParticleEmitter : public Component<ParticleEmitter> {
     Vector3 velocity;
     Vector4 color;
     float size;
+    float start_size;
     float lifetime;
     float age;
 
@@ -60,6 +61,11 @@ class ParticleEmitter : public Component<ParticleEmitter> {
     float speed_variation = 2.0f;
     Vector3 gravity = {0, -9.8f, 0};
     bool loop = true;
+    uint32_t burst_count = 0;
+    float drag = 0.0f;
+    float end_size = 1.0f;
+    float lifetime_variation = 0.0f;
+    float size_variation = 0.0f;
     Rendering::BlendMode blend_mode = Rendering::BlendMode::Additive;
     Vector3 spawn_offset = {0, 0, 0};
     SpawnShape spawn_shape = SpawnShape::Point;
@@ -168,6 +174,11 @@ class ParticleEmitter : public Component<ParticleEmitter> {
     node.Write("FadeOutRatio", fade_out_ratio_);
     node.Write("EmissiveIntensity", emissive_intensity_);
     node.Write("SoftDistance", soft_distance_);
+    node.Write("BurstCount", burst_count_);
+    node.Write("Drag", drag_);
+    node.Write("EndSize", end_size_);
+    node.Write("LifetimeVariation", lifetime_variation_);
+    node.Write("SizeVariation", size_variation_);
   }
 
   void OnDeserialize(const framework::SerializeNode& node) override {
@@ -201,11 +212,20 @@ class ParticleEmitter : public Component<ParticleEmitter> {
     fade_out_ratio_ = node.ReadFloat("FadeOutRatio", fade_out_ratio_);
     emissive_intensity_ = node.ReadFloat("EmissiveIntensity", emissive_intensity_);
     soft_distance_ = node.ReadFloat("SoftDistance", soft_distance_);
+    burst_count_ = node.ReadUint("BurstCount", burst_count_);
+    drag_ = node.ReadFloat("Drag", drag_);
+    end_size_ = node.ReadFloat("EndSize", end_size_);
+    lifetime_variation_ = node.ReadFloat("LifetimeVariation", lifetime_variation_);
+    size_variation_ = node.ReadFloat("SizeVariation", size_variation_);
   }
 
   void Play();
   void Stop();
   void Clear();
+
+  void SetOnAllDeadCallback(std::function<void()> callback) {
+    on_all_dead_ = std::move(callback);
+  }
 
   bool IsPlaying() const {
     return is_playing_;
@@ -246,10 +266,17 @@ class ParticleEmitter : public Component<ParticleEmitter> {
   float emissive_intensity_ = 1.0f;
   float soft_distance_ = 0.5f;
 
+  uint32_t burst_count_ = 0;
+  float drag_ = 0.0f;
+  float end_size_ = 1.0f;
+  float lifetime_variation_ = 0.0f;
+  float size_variation_ = 0.0f;
+
   float emit_accumulator_ = 0.0f;
   bool is_playing_ = false;
   Rendering::RenderSettings render_settings_;
   SpawnFn spawn_fn_;
+  std::function<void()> on_all_dead_;
 
   thread_local static std::mt19937 rng_;
 };

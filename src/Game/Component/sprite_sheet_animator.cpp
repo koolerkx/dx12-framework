@@ -18,7 +18,7 @@ SpriteSheetAnimator::UVResult SpriteSheetAnimator::GetCurrentUV() const {
     return {{0.0f, 0.0f}, {1.0f, 1.0f}};
   }
 
-  auto uv = SpriteSheet::CalculateFrameUV(sheet_config_, current_frame_);
+  auto uv = SpriteSheet::CalculateFrameUV(sheet_config_, current_frame_ + start_frame_offset_);
   return {uv.uv_offset, uv.uv_scale};
 }
 
@@ -81,6 +81,10 @@ void SpriteSheetAnimator::SetFramesPerSecond(float fps) {
 
 void SpriteSheetAnimator::SetSpriteSheetConfig(const SpriteSheet::FrameConfig& config) {
   sheet_config_ = config;
+}
+
+void SpriteSheetAnimator::SetStartFrameOffset(uint32_t offset) {
+  start_frame_offset_ = offset;
 }
 
 void SpriteSheetAnimator::SetFrameCount(uint32_t count) {
@@ -154,6 +158,7 @@ void SpriteSheetAnimator::Serialize(framework::SerializeNode& node) const {
   node.Write("Playing", is_playing_);
   node.Write("PlaySpeed", play_speed_);
   node.Write("PlayDirection", static_cast<int>(play_direction_));
+  node.Write("StartFrameOffset", start_frame_offset_);
 }
 
 void SpriteSheetAnimator::Deserialize(const framework::SerializeNode& node) {
@@ -171,6 +176,7 @@ void SpriteSheetAnimator::Deserialize(const framework::SerializeNode& node) {
   SetLoopEnabled(node.ReadBool("Loop", true));
   SetPlaySpeed(node.ReadFloat("PlaySpeed", 1.0f));
   SetPlayDirection(static_cast<PlayDirection>(node.ReadInt("PlayDirection", 0)));
+  start_frame_offset_ = node.ReadUint("StartFrameOffset", 0);
   if (node.ReadBool("Playing", false)) {
     is_playing_ = true;
   }

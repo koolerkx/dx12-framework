@@ -1,5 +1,7 @@
 #include "particle_emitter.h"
 
+#include <cmath>
+
 #include "Game/Asset/asset_manager.h"
 #include "Graphic/Pipeline/pixel_shader_descriptors.h"
 #include "Graphic/Pipeline/shader_descriptors.h"
@@ -31,6 +33,12 @@ ParticleEmitter::ParticleEmitter(GameObject* owner, const Props& props) : Compon
   emissive_intensity_ = props.emissive_intensity;
   soft_distance_ = props.soft_distance;
 
+  burst_count_ = props.burst_count;
+  drag_ = props.drag;
+  end_size_ = props.end_size;
+  lifetime_variation_ = props.lifetime_variation;
+  size_variation_ = props.size_variation;
+
   switch (spawn_shape_) {
     case SpawnShape::Disk:
       spawn_fn_ = SpawnFromDisk();
@@ -50,6 +58,29 @@ ParticleEmitter::ParticleEmitter(GameObject* owner, const Props& props) : Compon
 void ParticleEmitter::Play() {
   is_playing_ = true;
   emit_accumulator_ = 0.0f;
+
+  if (burst_count_ > 0) {
+    Vector3 emitter_pos = GetOwner()->GetTransform()->GetWorldPosition();
+    std::uniform_real_distribution<float> speed_dist(start_speed_ - speed_variation_, start_speed_ + speed_variation_);
+    std::uniform_real_distribution<float> lifetime_dist(
+      particle_lifetime_ * (1.0f - lifetime_variation_), particle_lifetime_ * (1.0f + lifetime_variation_));
+    std::uniform_real_distribution<float> size_dist(1.0f - size_variation_, 1.0f + size_variation_);
+
+    for (uint32_t i = 0; i < burst_count_ && particles_.size() < max_particles_; ++i) {
+      auto [offset, direction] = spawn_fn_(rng_);
+
+      Particle p;
+      p.position = emitter_pos + spawn_offset_ + offset * spawn_radius_;
+      p.velocity = direction * speed_dist(rng_);
+      p.color = start_color_;
+      p.start_size = size_dist(rng_);
+      p.size = p.start_size;
+      p.lifetime = lifetime_dist(rng_);
+      p.age = 0.0f;
+      particles_.push_back(p);
+    }
+    is_playing_ = false;
+  }
 }
 
 void ParticleEmitter::Stop() {
@@ -67,6 +98,11 @@ void ParticleEmitter::OnUpdate(float dt) {
   }
   UpdateParticles(dt);
   RemoveDeadParticles();
+
+  if (!is_playing_ && particles_.empty() && on_all_dead_) {
+    auto callback = std::move(on_all_dead_);
+    callback();
+  }
 }
 
 void ParticleEmitter::OnRender(FramePacket& packet) {
@@ -117,10 +153,13 @@ void ParticleEmitter::EmitParticles(float dt) {
   emit_accumulator_ += dt;
   float interval = 1.0f / emit_rate_;
 
+  std::uniform_real_distribution<float> speed_dist(start_speed_ - speed_variation_, start_speed_ + speed_variation_);
+  std::uniform_real_distribution<float> lifetime_dist(
+    particle_lifetime_ * (1.0f - lifetime_variation_), particle_lifetime_ * (1.0f + lifetime_variation_));
+  std::uniform_real_distribution<float> size_dist(1.0f - size_variation_, 1.0f + size_variation_);
+
   while (emit_accumulator_ >= interval && particles_.size() < max_particles_) {
     emit_accumulator_ -= interval;
-
-    std::uniform_real_distribution<float> speed_dist(start_speed_ - speed_variation_, start_speed_ + speed_variation_);
 
     Vector3 emitter_pos = GetOwner()->GetTransform()->GetWorldPosition();
     auto [offset, direction] = spawn_fn_(rng_);
@@ -129,8 +168,9 @@ void ParticleEmitter::EmitParticles(float dt) {
     p.position = emitter_pos + spawn_offset_ + offset * spawn_radius_;
     p.velocity = direction * speed_dist(rng_);
     p.color = start_color_;
-    p.size = 1.0f;
-    p.lifetime = particle_lifetime_;
+    p.start_size = size_dist(rng_);
+    p.size = p.start_size;
+    p.lifetime = lifetime_dist(rng_);
     p.age = 0.0f;
     particles_.push_back(p);
   }
@@ -143,6 +183,9 @@ void ParticleEmitter::EmitParticles(float dt) {
 void ParticleEmitter::UpdateParticles(float dt) {
   for (auto& p : particles_) {
     p.velocity = p.velocity + gravity_ * dt;
+    if (drag_ > 0.0f) {
+      p.velocity = p.velocity * std::exp(-drag_ * dt);
+    }
     p.position = p.position + p.velocity * dt;
     p.age += dt;
 
@@ -157,6 +200,8 @@ void ParticleEmitter::UpdateParticles(float dt) {
       fade = (1.0f - t) / fade_out_ratio_;
     }
     p.color.w *= fade;
+
+    p.size = std::lerp(p.start_size, end_size_ * p.start_size, t);
   }
 }
 

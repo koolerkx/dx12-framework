@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Component/behavior_component.h"
+#include "Framework/Math/Math.h"
 
 class GameObject;
 
@@ -27,6 +28,8 @@ class ProjectileComponent : public BehaviorComponent<ProjectileComponent> {
   void OnUpdate(float dt) override;
 
  private:
+  void SpawnBulletHitExplosion(const Math::Vector3& hit_position);
+
   GameObject* target_ = nullptr;
   float speed_ = 8.0f;
   float damage_ = 1.0f;

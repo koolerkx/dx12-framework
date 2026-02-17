@@ -5,6 +5,7 @@
 #include "Component/transform_component.h"
 #include "Framework/Math/Math.h"
 #include "Scenes/city_scene/enemy_component.h"
+#include "Scenes/city_scene/explosion_effect.h"
 #include "game_object.h"
 
 using Math::Vector3;
@@ -34,6 +35,7 @@ void ProjectileComponent::OnUpdate(float dt) {
     if (enemy) {
       enemy->TakeDamage(damage_);
     }
+    SpawnBulletHitExplosion(target_pos);
     GetOwner()->Destroy();
     return;
   }
@@ -45,4 +47,16 @@ void ProjectileComponent::OnUpdate(float dt) {
   float yaw_rad = std::atan2(direction.x, direction.z);
   float yaw_deg = yaw_rad * (180.0f / DirectX::XM_PI) + 180.0f;
   transform->SetRotationEulerDegree(0.0f, yaw_deg, 0.0f);
+}
+
+void ProjectileComponent::SpawnBulletHitExplosion(const Vector3& hit_position) {
+  auto* scene = GetOwner()->GetScene();
+  if (!scene) return;
+  const CitySceneConfig::BulletHitConfig cfg;
+  CitySceneEffect::SpawnExplosion(scene, hit_position,
+    CitySceneEffect::FromBulletHitConfig(cfg), "BulletHit");
+
+  const CitySceneConfig::BulletHitSparksConfig sparks_cfg;
+  CitySceneEffect::SpawnExplosionSparks(scene, hit_position,
+    CitySceneEffect::FromBulletHitSparksConfig(sparks_cfg), "BulletHitSparks");
 }
