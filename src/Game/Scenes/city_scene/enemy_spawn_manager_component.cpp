@@ -75,7 +75,11 @@ void EnemySpawnManagerComponent::SpawnEnemyAt(GameObject* spawner, int wave_inde
   auto extents = enemy_model_->bounds.GetExtents();
   float base_radius = (std::max)(extents.x, extents.z);
   enemy->AddComponent<SphereColliderComponent>(base_radius);
-  enemy->AddComponent<EnemyComponent>(EnemyComponent::Props{.hp = ENEMY.ComputeHP(wave_index)});
+  const cfg::GoldConfig GOLD;
+  enemy->AddComponent<EnemyComponent>(EnemyComponent::Props{
+    .hp = ENEMY.ComputeHP(wave_index),
+    .kill_reward = GOLD.ComputeKillReward(wave_index),
+  });
   enemy->AddComponent<HpBarComponent>(HpBarComponent::Props{});
   enemy->AddComponent<ObjectMovementComponent>(ObjectMovementComponent::Props{
     .nav = nav_,

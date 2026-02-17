@@ -6,6 +6,7 @@
 #include "Component/transform_component.h"
 #include "Scenes/city_scene/city_scene_config.h"
 #include "Scenes/city_scene/explosion_effect.h"
+#include "Scenes/city_scene/gold_manager_component.h"
 #include "Scenes/city_scene/object_movement_component.h"
 #include "Scripts/camera_shake_controller.h"
 #include "Scripts/screen_effect_controller.h"
@@ -19,6 +20,7 @@ class EnemyComponent : public BehaviorComponent<EnemyComponent> {
     float contact_damage = 1.0f;
     float bob_amplitude = 0.15f;
     float bob_speed = 2.0f;
+    int kill_reward = 0;
   };
 
   using BehaviorComponent::BehaviorComponent;
@@ -28,7 +30,8 @@ class EnemyComponent : public BehaviorComponent<EnemyComponent> {
         max_hp_(props.hp),
         contact_damage_(props.contact_damage),
         bob_amplitude_(props.bob_amplitude),
-        bob_speed_(props.bob_speed) {
+        bob_speed_(props.bob_speed),
+        kill_reward_(props.kill_reward) {
   }
 
   void OnStart() override {
@@ -53,8 +56,11 @@ class EnemyComponent : public BehaviorComponent<EnemyComponent> {
   }
 
   void TakeDamage(float amount) {
+    if (dead_) return;
     hp_ -= amount;
     if (hp_ <= 0.0f) {
+      dead_ = true;
+      AwardKillReward();
       GetOwner()->Destroy();
     }
   }
@@ -70,6 +76,16 @@ class EnemyComponent : public BehaviorComponent<EnemyComponent> {
   }
 
  private:
+  void AwardKillReward() {
+    if (kill_reward_ <= 0) return;
+    auto* scene = GetOwner()->GetScene();
+    if (!scene) return;
+    auto* player = scene->FindGameObject("Player");
+    if (!player) return;
+    if (auto* gold = player->GetComponent<GoldManagerComponent>())
+      gold->AddGold(kill_reward_);
+  }
+
   void SpawnArrivalExplosion() {
     auto* scene = GetOwner()->GetScene();
     if (!scene) return;
@@ -96,6 +112,8 @@ class EnemyComponent : public BehaviorComponent<EnemyComponent> {
   float bob_amplitude_ = 0.15f;
   float bob_speed_ = 2.0f;
   float bob_time_ = 0.0f;
+  int kill_reward_ = 0;
+  bool dead_ = false;
   bool was_moving_ = false;
   GameObject* mesh_go_ = nullptr;
 };

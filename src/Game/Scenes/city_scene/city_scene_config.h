@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 
@@ -55,6 +56,21 @@ struct EnemyConfig {
 
   float ComputeHP(int wave_index) const {
     return base_hp * std::pow(1.0f + hp_growth_rate, static_cast<float>(wave_index));
+  }
+};
+
+struct GoldConfig {
+  int initial_gold = 100;
+  int kill_reward_base = 20;
+  int tower_cost = 50;
+  int building_destroy_cost = 100;
+
+  int ComputeKillReward(int wave_index) const {
+    return kill_reward_base * (std::max)(1, wave_index + 1);
+  }
+
+  int ComputePlacementCost(int destroyed_building_count) const {
+    return tower_cost + building_destroy_cost * destroyed_building_count;
   }
 };
 

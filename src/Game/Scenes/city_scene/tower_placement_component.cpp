@@ -14,6 +14,7 @@
 #include "Map/nav_grid.h"
 #include "Map/nav_grid_events.h"
 #include "Scenes/city_scene/city_scene_config.h"
+#include "Scenes/city_scene/gold_manager_component.h"
 #include "SceneSetting/active_camera_setting.h"
 #include "Scenes/city_scene/tower_component.h"
 #include "game_context.h"
@@ -157,8 +158,14 @@ void TowerPlacementComponent::UpdateSelected() {
   }
 
   if (input_->GetKeyDown(Keyboard::KeyCode::Space)) {
-    PlaceTower();
-    Deactivate();
+    const CitySceneConfig::GoldConfig gold_cfg;
+    int total_cost = gold_cfg.ComputePlacementCost(static_cast<int>(highlighted_instances_.size()));
+    auto* player = GetOwner()->GetScene()->FindGameObject("Player");
+    auto* gold = player ? player->GetComponent<GoldManagerComponent>() : nullptr;
+    if (gold && gold->TrySpendGold(total_cost)) {
+      PlaceTower();
+      Deactivate();
+    }
   }
 }
 
