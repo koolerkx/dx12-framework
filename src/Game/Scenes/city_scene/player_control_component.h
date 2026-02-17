@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include "Component/behavior_component.h"
+#include "Framework/Event/event_scope.hpp"
 #include "Graphic/Pipeline/pixel_shader_descriptors.h"
 
 class TowerPlacementComponent;
@@ -32,6 +33,7 @@ class PlayerControlComponent : public BehaviorComponent<PlayerControlComponent> 
   void UpdateEnemyHover();
   void ClearEnemyHover();
 
+  EventScope event_scope_;
   NavGrid* nav_ = nullptr;
   PlayerMode mode_ = PlayerMode::Normal;
   InputSystem* input_ = nullptr;

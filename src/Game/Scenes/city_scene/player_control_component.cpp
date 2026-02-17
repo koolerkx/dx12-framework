@@ -8,7 +8,9 @@
 #include "Framework/Math/Math.h"
 #include "Map/ground_ray_caster.h"
 #include "SceneSetting/active_camera_setting.h"
+#include "Scenes/city_scene/city_scene_events.h"
 #include "Scenes/city_scene/enemy_component.h"
+#include "Scenes/city_scene/hud_manager_component.h"
 #include "Scenes/city_scene/pulse_path_component.h"
 #include "Scenes/city_scene/tower_placement_component.h"
 #include "game_context.h"
@@ -22,15 +24,23 @@ void PlayerControlComponent::OnInit() {
   auto* pulse_go = GetOwner()->GetScene()->CreateGameObject("PulsePath");
   pulse_go->SetParent(GetOwner());
   pulse_path_ = pulse_go->AddComponent<PulsePathComponent>(PulsePathComponent::Props{});
+
+  event_scope_.Subscribe<ToggleTowerPlacementEvent>(
+    *GetContext()->GetEventBus(), [this](const ToggleTowerPlacementEvent&) {
+      if (mode_ == PlayerMode::Normal) {
+        ClearEnemyHover();
+        EnterPlacingMode();
+      } else if (mode_ == PlayerMode::PlacingTower) {
+        auto* placement = GetOwner()->GetComponent<TowerPlacementComponent>();
+        if (placement && placement->IsActive()) {
+          placement->Deactivate();
+        }
+      }
+    });
 }
 
 void PlayerControlComponent::OnUpdate(float /*dt*/) {
   if (mode_ == PlayerMode::Normal) {
-    if (input_->GetKeyDown(Keyboard::KeyCode::F)) {
-      ClearEnemyHover();
-      EnterPlacingMode();
-      return;
-    }
     UpdateEnemyHover();
   }
 }

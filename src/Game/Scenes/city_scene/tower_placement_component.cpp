@@ -20,6 +20,7 @@
 #include "Scenes/city_scene/city_scene_events.h"
 #include "Scenes/city_scene/enemy_component.h"
 #include "Scenes/city_scene/game_state_manager_component.h"
+#include "Scenes/city_scene/hud_manager_component.h"
 #include "SceneSetting/active_camera_setting.h"
 #include "Scenes/city_scene/tower_component.h"
 #include "game_context.h"
@@ -111,6 +112,7 @@ void TowerPlacementComponent::Deactivate() {
   ClearHighlights();
   DestroyPreview();
   TransitionTo(PlacementState::Inactive);
+  GetContext()->GetEventBus()->Emit(TowerPlacementExitedEvent{});
   if (on_finished_) {
     auto callback = std::move(on_finished_);
     on_finished_ = nullptr;
@@ -130,6 +132,10 @@ void TowerPlacementComponent::UpdateHovering() {
   auto [mx, my] = input_->GetMousePosition();
   if (!camera_) return;
 
+  auto* hud_go = GetOwner()->GetScene()->FindGameObject("HUD");
+  auto* hud = hud_go ? hud_go->GetComponent<HudManagerComponent>() : nullptr;
+  bool over_ui = hud && hud->IsMouseOverUI(mx, my);
+
   auto* gfx = GetContext()->GetGraphic();
   float screen_w = static_cast<float>(gfx->GetFrameBufferWidth());
   float screen_h = static_cast<float>(gfx->GetFrameBufferHeight());
@@ -140,12 +146,12 @@ void TowerPlacementComponent::UpdateHovering() {
     UpdateOverlapHighlights();
   }
 
-  if (input_->GetMouseButtonDown(Mouse::Button::Right)) {
+  if (!over_ui && input_->GetMouseButtonDown(Mouse::Button::Right)) {
     Deactivate();
     return;
   }
 
-  if (input_->GetMouseButtonDown(Mouse::Button::Left)) {
+  if (!over_ui && input_->GetMouseButtonDown(Mouse::Button::Left)) {
     if (IsOverlappingEnemySpawn()) {
       GetContext()->GetEventBus()->Emit(OverlapEnemySpawnEvent{});
       return;
@@ -158,7 +164,12 @@ void TowerPlacementComponent::UpdateHovering() {
 }
 
 void TowerPlacementComponent::UpdateSelected() {
-  if (input_->GetMouseButtonDown(Mouse::Button::Right)) {
+  auto [mx, my] = input_->GetMousePosition();
+  auto* hud_go = GetOwner()->GetScene()->FindGameObject("HUD");
+  auto* hud = hud_go ? hud_go->GetComponent<HudManagerComponent>() : nullptr;
+  bool over_ui = hud && hud->IsMouseOverUI(mx, my);
+
+  if (!over_ui && input_->GetMouseButtonDown(Mouse::Button::Right)) {
     DestroyPreview();
     CreatePreview(selection_a_model_);
     UpdatePreviewPosition();
@@ -411,6 +422,10 @@ void TowerPlacementComponent::UpdateTowerHoverRadar() {
   if (!cam) return;
 
   auto [mx, my] = input_->GetMousePosition();
+
+  auto* hud_go = GetOwner()->GetScene()->FindGameObject("HUD");
+  auto* hud = hud_go ? hud_go->GetComponent<HudManagerComponent>() : nullptr;
+  if (hud && hud->IsMouseOverUI(mx, my)) return;
   auto* gfx = GetContext()->GetGraphic();
   float screen_w = static_cast<float>(gfx->GetFrameBufferWidth());
   float screen_h = static_cast<float>(gfx->GetFrameBufferHeight());

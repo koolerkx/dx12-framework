@@ -5,6 +5,8 @@
 #include "Component/Renderer/ui_glass_renderer.h"
 #include "Component/Renderer/ui_sprite_renderer.h"
 #include "Component/Renderer/ui_text_renderer.h"
+#include "Framework/Event/event_bus.hpp"
+#include "Framework/Input/input.h"
 #include "game_context.h"
 #include "game_object.h"
 #include "scene.h"
@@ -160,6 +162,7 @@ void HudManagerComponent::OnInit() {
 
   icon_slots_.push_back({.root = icon_go, .glass = icon_glass, .icon = icon_sprite});
 
+  input_ = GetContext()->GetInput();
   SubscribeEvents();
   UpdateLayout();
 }
@@ -202,11 +205,19 @@ void HudManagerComponent::SubscribeEvents() {
   event_scope_.Subscribe<OverlapEnemySpawnEvent>(bus, [this](const OverlapEnemySpawnEvent&) {
     ShowAlert(L"Overlapping enemy spawn!", 3.0f);
   });
+
+  event_scope_.Subscribe<TowerPlacementExitedEvent>(bus, [this](const TowerPlacementExitedEvent&) {
+    icon_state_ = IconState::Normal;
+    if (!icon_slots_.empty()) {
+      icon_slots_[0].glass->SetTintColor({1.0f, 1.0f, 1.0f, 0.1f});
+    }
+  });
 }
 
 void HudManagerComponent::OnUpdate(float dt) {
   UpdateFadePanel(message_fade_, dt);
   UpdateFadePanel(alert_fade_, dt);
+  UpdateIconInteraction();
 }
 
 void HudManagerComponent::OnRender(FramePacket& /*packet*/) {
@@ -280,6 +291,17 @@ void HudManagerComponent::UpdateLayout() {
   set_pos(hint_text_->GetOwner(), PADDING * s, PADDING * s);
   hint_text_->SetPixelSize(SMALL_TEXT_SIZE * s);
 
+  panel_rects_.clear();
+  panel_rects_.push_back({SAFE_AREA * s, SAFE_AREA * s, INFO_PANEL.width * s, INFO_PANEL.height * s});
+  panel_rects_.push_back({hint_x, SAFE_AREA * s, HINT_PANEL.width * s, HINT_PANEL.height * s});
+
+  if (message_fade_.panel->IsActive()) {
+    panel_rects_.push_back({msg_x, SAFE_AREA * s, MESSAGE_PANEL.width * s, MESSAGE_PANEL.height * s});
+  }
+  if (alert_fade_.panel->IsActive()) {
+    panel_rects_.push_back({alert_x, alert_y, ALERT_PANEL.width * s, ALERT_PANEL.height * s});
+  }
+
   for (size_t i = 0; i < icon_slots_.size(); ++i) {
     float icon_x = (SAFE_AREA + static_cast<float>(i) * 140.0f) * s;
     float icon_y = screen_h - (SAFE_AREA + ICON_SLOT.height) * s;
@@ -288,6 +310,8 @@ void HudManagerComponent::UpdateLayout() {
     set_pos(icon_slots_[i].root, icon_x, icon_y);
     icon_slots_[i].glass->SetSize({icon_size, icon_size});
     icon_slots_[i].icon->SetSize({icon_size, icon_size});
+
+    panel_rects_.push_back({icon_x, icon_y, icon_size, icon_size});
   }
 }
 
@@ -343,4 +367,62 @@ void HudManagerComponent::ShowCountdownMessage(const std::wstring& text) {
     message_fade_.text->SetColor({1.0f, 1.0f, 1.0f, 0.0f});
     message_fade_.glass->SetTintAlpha(0.0f);
   }
+}
+
+bool HudManagerComponent::IsMouseOverUI(float mx, float my) const {
+  for (const auto& r : panel_rects_) {
+    if (mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h) {
+      return true;
+    }
+  }
+  return false;
+}
+
+int HudManagerComponent::HitTestIconSlot(float mx, float my) const {
+  auto* graphic = GetOwner()->GetContext()->GetGraphic();
+  float screen_h = static_cast<float>(graphic->GetFrameBufferHeight());
+  float s = screen_h / DESIGN_HEIGHT;
+
+  for (size_t i = 0; i < icon_slots_.size(); ++i) {
+    float icon_x = (SAFE_AREA + static_cast<float>(i) * 140.0f) * s;
+    float icon_y = screen_h - (SAFE_AREA + ICON_SLOT.height) * s;
+    float icon_size = ICON_SLOT.width * s;
+
+    if (mx >= icon_x && mx <= icon_x + icon_size && my >= icon_y && my <= icon_y + icon_size) {
+      return static_cast<int>(i);
+    }
+  }
+  return -1;
+}
+
+void HudManagerComponent::UpdateIconInteraction() {
+  auto [mx, my] = input_->GetMousePosition();
+  int hovered_slot = HitTestIconSlot(mx, my);
+
+  if (input_->GetMouseButtonDown(Mouse::Button::Left) && hovered_slot == 0) {
+    if (icon_state_ == IconState::Active) {
+      icon_state_ = IconState::Normal;
+    } else {
+      icon_state_ = IconState::Active;
+    }
+    GetContext()->GetEventBus()->Emit(ToggleTowerPlacementEvent{});
+  } else if (icon_state_ != IconState::Active) {
+    icon_state_ = (hovered_slot == 0) ? IconState::Hovered : IconState::Normal;
+  }
+
+  if (icon_slots_.empty()) return;
+
+  Math::Vector4 tint;
+  switch (icon_state_) {
+    case IconState::Hovered:
+      tint = {0.3f, 0.5f, 1.0f, 0.2f};
+      break;
+    case IconState::Active:
+      tint = {1.0f, 0.85f, 0.0f, 0.25f};
+      break;
+    default:
+      tint = {1.0f, 1.0f, 1.0f, 0.1f};
+      break;
+  }
+  icon_slots_[0].glass->SetTintColor(tint);
 }

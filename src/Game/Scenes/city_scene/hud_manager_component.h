@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -10,6 +11,7 @@
 class UIGlassRenderer;
 class UITextRenderer;
 class UISpriteRenderer;
+class InputSystem;
 class GameObject;
 
 class HudManagerComponent : public BehaviorComponent<HudManagerComponent> {
@@ -22,7 +24,15 @@ class HudManagerComponent : public BehaviorComponent<HudManagerComponent> {
   void OnUpdate(float dt) override;
   void OnRender(FramePacket& packet) override;
 
+  bool IsMouseOverUI(float mx, float my) const;
+  int HitTestIconSlot(float mx, float my) const;
+
  private:
+  struct PanelRect {
+    float x, y, w, h;
+  };
+
+  enum class IconState : uint8_t { Normal, Hovered, Active };
   struct IconSlot {
     GameObject* root = nullptr;
     UIGlassRenderer* glass = nullptr;
@@ -49,6 +59,7 @@ class HudManagerComponent : public BehaviorComponent<HudManagerComponent> {
 
   void UpdateLayout();
   void UpdateFadePanel(FadePanel& fade, float dt);
+  void UpdateIconInteraction();
   void SubscribeEvents();
 
   EventScope event_scope_;
@@ -67,6 +78,10 @@ class HudManagerComponent : public BehaviorComponent<HudManagerComponent> {
   UITextRenderer* hint_text_ = nullptr;
 
   std::vector<IconSlot> icon_slots_;
+  std::vector<PanelRect> panel_rects_;
+
+  IconState icon_state_ = IconState::Normal;
+  InputSystem* input_ = nullptr;
 
   int wave_ = 1;
   int hp_ = 100;

@@ -39,3 +39,11 @@ struct OverlapEnemyEvent : Event<OverlapEnemyEvent> {
 struct OverlapEnemySpawnEvent : Event<OverlapEnemySpawnEvent> {
   static constexpr std::string_view EventName = "city.overlap_enemy_spawn";
 };
+
+struct ToggleTowerPlacementEvent : Event<ToggleTowerPlacementEvent> {
+  static constexpr std::string_view EventName = "city.toggle_tower_placement";
+};
+
+struct TowerPlacementExitedEvent : Event<TowerPlacementExitedEvent> {
+  static constexpr std::string_view EventName = "city.tower_placement_exited";
+};
