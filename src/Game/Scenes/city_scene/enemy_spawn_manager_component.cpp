@@ -44,16 +44,16 @@ void EnemySpawnManagerComponent::OnReset() {
   enemy_counter_ = 0;
 }
 
-void EnemySpawnManagerComponent::SpawnEnemy(int spawner_index) {
+void EnemySpawnManagerComponent::SpawnEnemy(int spawner_index, int wave_index) {
   if (spawner_index < 0 || spawner_index >= static_cast<int>(enemy_spawners_.size())) return;
-  SpawnEnemyAt(enemy_spawners_[spawner_index]);
+  SpawnEnemyAt(enemy_spawners_[spawner_index], wave_index);
 }
 
 int EnemySpawnManagerComponent::GetSpawnerCount() const {
   return static_cast<int>(enemy_spawners_.size());
 }
 
-void EnemySpawnManagerComponent::SpawnEnemyAt(GameObject* spawner) {
+void EnemySpawnManagerComponent::SpawnEnemyAt(GameObject* spawner, int wave_index) {
   if (!enemy_model_) return;
 
   auto spawner_pos = spawner->GetTransform()->GetWorldPosition();
@@ -75,7 +75,7 @@ void EnemySpawnManagerComponent::SpawnEnemyAt(GameObject* spawner) {
   auto extents = enemy_model_->bounds.GetExtents();
   float base_radius = (std::max)(extents.x, extents.z);
   enemy->AddComponent<SphereColliderComponent>(base_radius);
-  enemy->AddComponent<EnemyComponent>(EnemyComponent::Props{.hp = 2.0f});
+  enemy->AddComponent<EnemyComponent>(EnemyComponent::Props{.hp = ENEMY.ComputeHP(wave_index)});
   enemy->AddComponent<HpBarComponent>(HpBarComponent::Props{});
   enemy->AddComponent<ObjectMovementComponent>(ObjectMovementComponent::Props{
     .nav = nav_,

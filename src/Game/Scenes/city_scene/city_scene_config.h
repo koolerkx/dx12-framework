@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <cstdint>
 
 #include "Framework/Math/Math.h"
@@ -49,6 +50,12 @@ struct EnemyConfig {
   float move_speed = 1.0f;
   float size_scale = 0.75f;
   float agent_size_scale = 0.5f;
+  float base_hp = 2.0f;
+  float hp_growth_rate = 0.2f;
+
+  float ComputeHP(int wave_index) const {
+    return base_hp * std::pow(1.0f + hp_growth_rate, static_cast<float>(wave_index));
+  }
 };
 
 struct BorderWallConfig {

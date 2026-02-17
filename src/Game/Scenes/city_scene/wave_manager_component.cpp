@@ -32,7 +32,7 @@ void WaveManagerComponent::OnUpdate(float dt) {
         sp.interval_timer += dt;
         if (sp.interval_timer >= current_config_.spawn_interval) {
           sp.interval_timer -= current_config_.spawn_interval;
-          spawn_manager_->SpawnEnemy(sp.spawner_index);
+          spawn_manager_->SpawnEnemy(sp.spawner_index, current_wave_);
           ++sp.spawned_so_far;
         }
       }

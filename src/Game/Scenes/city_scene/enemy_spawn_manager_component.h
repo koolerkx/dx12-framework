@@ -21,11 +21,11 @@ class EnemySpawnManagerComponent : public BehaviorComponent<EnemySpawnManagerCom
   void OnStart() override;
   void OnReset() override;
 
-  void SpawnEnemy(int spawner_index);
+  void SpawnEnemy(int spawner_index, int wave_index);
   int GetSpawnerCount() const;
 
  private:
-  void SpawnEnemyAt(GameObject* spawner);
+  void SpawnEnemyAt(GameObject* spawner, int wave_index);
 
   NavGrid* nav_ = nullptr;
   std::vector<GameObject*> enemy_spawners_;
