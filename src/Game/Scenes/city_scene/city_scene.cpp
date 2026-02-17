@@ -5,9 +5,9 @@
 
 #include "Asset/asset_manager.h"
 #include "Component/Collider/box_collider_component.h"
-#include "Component/Collider/sphere_collider_component.h"
 #include "Component/Renderer/instanced_model_renderer.h"
 #include "Component/Renderer/mesh_renderer.h"
+#include "Component/Renderer/ui_glass_renderer.h"
 #include "Component/camera_component.h"
 #include "Component/enemy_spawn_component.h"
 #include "Component/player_spawn_component.h"
@@ -142,6 +142,11 @@ void CityScene::OnEnter(AssetManager& asset_manager) {
     map_data->mesh_resources.size(),
     nav_grid_.GetWidth(),
     nav_grid_.GetHeight());
+
+  auto* glass_panel = CreateGameObject("GlassPanel", {.position = {100.0f, 100.0f, 0.0f}});
+  glass_panel->AddComponent<UIGlassRenderer>(UIGlassRenderer::Props{
+    .size = {300.0f, 400.0f},
+  });
 
   auto& bus = *GetContext()->GetEventBus();
   GetEventScope().Subscribe<KeyDownEvent>(bus, [this](const KeyDownEvent& e) {

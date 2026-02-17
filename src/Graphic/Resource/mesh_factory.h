@@ -395,6 +395,66 @@ class MeshFactory {
     return out_mesh.Create(device, vertices.data(), vertices.size(), indices.data(), indices.size());
   }
 
+  static bool CreateRoundedRect(ID3D12Device* device, Mesh& out_mesh, float corner_radius = 0.1f, uint32_t corner_segments = 8) {
+    struct Vertex {
+      float pos[3];
+      float uv[2];
+      float color[4];
+    };
+
+    constexpr float PI = Math::Pi;
+    constexpr float HALF = 0.5f;
+    float r = corner_radius;
+
+    std::vector<Vertex> vertices;
+    std::vector<uint16_t> indices;
+
+    auto add_vertex = [&](float x, float y) -> uint16_t {
+      float u = x + HALF;
+      float v = HALF - y;
+      vertices.push_back({{x, y, 0.0f}, {u, v}, {1, 1, 1, 1}});
+      return static_cast<uint16_t>(vertices.size() - 1);
+    };
+
+    uint16_t center = add_vertex(0.0f, 0.0f);
+
+    float inner_x = HALF - r;
+    float inner_y = HALF - r;
+
+    struct CornerDef {
+      float cx, cy;
+      float start_angle;
+    };
+    CornerDef corners[] = {
+      {+inner_x, +inner_y, 0.0f},
+      {-inner_x, +inner_y, PI * 0.5f},
+      {-inner_x, -inner_y, PI},
+      {+inner_x, -inner_y, PI * 1.5f},
+    };
+
+    std::vector<uint16_t> perimeter;
+
+    for (auto& [cx, cy, start] : corners) {
+      for (uint32_t j = 0; j <= corner_segments; ++j) {
+        float angle = start + static_cast<float>(j) / corner_segments * (PI * 0.5f);
+        float x = cx + r * cosf(angle);
+        float y = cy + r * sinf(angle);
+        uint16_t idx = add_vertex(x, y);
+        if (j == 0 && !perimeter.empty() && perimeter.back() == idx) continue;
+        perimeter.push_back(idx);
+      }
+    }
+
+    for (size_t i = 0; i < perimeter.size(); ++i) {
+      size_t next = (i + 1) % perimeter.size();
+      indices.push_back(center);
+      indices.push_back(perimeter[i]);
+      indices.push_back(perimeter[next]);
+    }
+
+    return out_mesh.Create(device, vertices.data(), vertices.size(), indices.data(), indices.size());
+  }
+
   static bool CreateSphere(ID3D12Device* device, Mesh& out_mesh, uint32_t segments = 32, uint32_t rings = 16) {
     struct Vertex {
       float pos[3];

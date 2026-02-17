@@ -141,6 +141,9 @@ add_library(graphic STATIC
   Render/outline_pass.h
   Render/outline_pass.cpp
 
+  Render/ui_blur_pass_group.h
+  Render/ui_blur_pass_group.cpp
+
   Render/vignette_pass.h
   Render/vignette_pass.cpp
 
@@ -204,6 +207,7 @@ target_add_hlsl_auto(graphic "6.6"
   "${CMAKE_SOURCE_DIR}/shaders/laser_beam.ps.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/path_pulse.ps.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/chromatic_aberration.ps.hlsl"
+  "${CMAKE_SOURCE_DIR}/shaders/ui_glass.ps.hlsl"
 )
 
 # manually add shaders files

@@ -45,6 +45,8 @@ add_library(game STATIC
     Component/Renderer/text_renderer.cpp
     Component/Renderer/ui_sprite_renderer.h
     Component/Renderer/ui_sprite_renderer.cpp
+    Component/Renderer/ui_glass_renderer.h
+    Component/Renderer/ui_glass_renderer.cpp
     Component/Renderer/ui_text_renderer.h
     Component/Renderer/ui_text_renderer.cpp
     Component/Renderer/particle_emitter.h

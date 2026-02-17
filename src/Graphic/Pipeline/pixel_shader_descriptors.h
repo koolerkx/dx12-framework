@@ -186,4 +186,19 @@ struct PathPulseShader {
   static_assert(sizeof(Params) == 48);
 };
 
+struct UIGlassShader {
+  static constexpr ShaderId ID = 34;
+  using VertexType = Vertex::SpriteVertex;
+
+  static constexpr RSPreset RS_PRESET = RSPreset::Standard;
+  static constexpr std::string_view NAME = "UIGlass";
+  static constexpr std::wstring_view VS_PATH = L"Content/shaders/sprite.vs.cso";
+  static constexpr std::wstring_view PS_PATH = L"Content/shaders/ui_glass.ps.cso";
+  static constexpr ShaderRenderHints HINTS = {};
+
+  static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
+    return VertexType::GetInputLayout();
+  }
+};
+
 }  // namespace Graphics

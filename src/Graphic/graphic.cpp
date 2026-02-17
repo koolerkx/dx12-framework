@@ -29,6 +29,7 @@
 #include "Render/smaa_pass_group.h"
 #include "Render/ssao_pass_group.h"
 #include "Render/chromatic_aberration_pass.h"
+#include "Render/ui_blur_pass_group.h"
 #include "Render/vignette_pass.h"
 
 using Math::Vector3;
@@ -299,6 +300,15 @@ void Graphic::BuildRenderPipeline() {
     blit_source = smaa_group.GetOutput();
   }
 
+  UIBlurPassGroup ui_blur("UI Blur");
+  ui_blur.Build(*render_graph_, blit_source, {
+    .device = device_.Get(),
+    .shader_manager = &render_services_->GetShaderManager(),
+    .screen_width = frame_buffer_width_,
+    .screen_height = frame_buffer_height_,
+  });
+  ui_blur_rt_ = ui_blur.GetBlurredOutput();
+
   PassSetup blit_setup;
   blit_setup.resource_writes = {backbuffer};
   blit_setup.resource_reads = {blit_source};
@@ -333,6 +343,9 @@ void Graphic::BuildRenderPipeline() {
 
   PassSetup backbuffer_setup;
   backbuffer_setup.resource_writes = {backbuffer};
+  if (ui_blur_rt_ != RenderGraphHandle::Invalid) {
+    backbuffer_setup.resource_reads = {ui_blur_rt_};
+  }
 
   auto ui_camera_from_packet = [](const RenderFrameContext&, const FramePacket& packet) { return packet.ui_camera; };
   render_graph_->AddPass(std::make_unique<MaterialPass>(MaterialPass::MaterialPassProps{
@@ -576,6 +589,10 @@ void Graphic::SetCascadeCount(uint32_t count) {
 
 uint32_t Graphic::GetNormalDepthSrvIndex() const {
   return render_graph_->GetSrvIndex(preview_handles_.normal_depth_rt);
+}
+
+uint32_t Graphic::GetUIBlurSrvIndex() const {
+  return render_graph_->GetSrvIndex(ui_blur_rt_);
 }
 
 void Graphic::RequestPipelineRebuild() {

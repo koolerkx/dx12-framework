@@ -475,7 +475,8 @@ using AllShaders = std::tuple<SpriteShader,
   RadarRangeShader,
   LaserBeamShader,
   PathPulseShader,
-  PostProcessChromaticAberrationShader>;
+  PostProcessChromaticAberrationShader,
+  UIGlassShader>;
 
 [[maybe_unused]] constexpr size_t SHADER_COUNT = std::tuple_size_v<AllShaders>;
 

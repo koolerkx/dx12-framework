@@ -34,7 +34,7 @@ struct TextLayoutProps;
 }
 
 // Quad for 3D, Rect for 2D
-enum class DefaultMesh { Quad, Cube, Plane, Rect, Sphere, Cylinder };
+enum class DefaultMesh { Quad, Cube, Plane, Rect, Sphere, Cylinder, RoundedRect };
 
 class AssetManager {
  public:

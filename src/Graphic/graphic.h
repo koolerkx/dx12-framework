@@ -177,6 +177,7 @@ class Graphic {
   };
 
   uint32_t GetNormalDepthSrvIndex() const;
+  uint32_t GetUIBlurSrvIndex() const;
 
   RenderGraph* GetRenderGraph() {
     return render_graph_.get();
@@ -243,6 +244,7 @@ class Graphic {
 
   RenderConfig render_config_;
   RenderGraphHandle ssao_handle_ = RenderGraphHandle::Invalid;
+  RenderGraphHandle ui_blur_rt_ = RenderGraphHandle::Invalid;
   bool pending_pipeline_rebuild_ = false;
 
   ShadowFrameData shadow_frame_data_;
