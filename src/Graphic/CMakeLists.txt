@@ -198,6 +198,7 @@ target_add_hlsl_auto(graphic "6.6"
   "${CMAKE_SOURCE_DIR}/shaders/neon_grid.ps.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/radar_range.ps.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/laser_beam.ps.hlsl"
+  "${CMAKE_SOURCE_DIR}/shaders/path_pulse.ps.hlsl"
 )
 
 # manually add shaders files

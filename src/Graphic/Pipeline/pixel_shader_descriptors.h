@@ -147,4 +147,43 @@ struct LaserBeamShader {
   static_assert(sizeof(Params) == 48);
 };
 
+struct PathPulseShader {
+  static constexpr ShaderId ID = 32;
+  using VertexType = Vertex::Basic3DVertex;
+
+  static constexpr RSPreset RS_PRESET = RSPreset::Standard;
+  static constexpr std::string_view NAME = "PathPulse";
+  static constexpr std::wstring_view VS_PATH = L"Content/shaders/basic.vs.cso";
+  static constexpr std::wstring_view PS_PATH = L"Content/shaders/path_pulse.ps.cso";
+  static constexpr ShaderRenderHints HINTS = {};
+
+  static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
+    return VertexType::GetInputLayout();
+  }
+
+  static constexpr RenderLayer RENDER_LAYER = RenderLayer::Transparent;
+  static constexpr RenderTagMask RENDER_TAGS = 0;
+
+  static Rendering::RenderSettings DefaultRenderSettings() {
+    return {
+      .blend_mode = Rendering::BlendMode::Additive,
+      .depth_test = true,
+      .double_sided = true,
+      .render_target_format = Rendering::RenderTargetFormat::HDR,
+    };
+  }
+
+  struct Params {
+    float pulse_r, pulse_g, pulse_b;
+    float emissive_intensity = 8.0f;
+    float pulse_speed = 4.0f;
+    float pulse_frequency = 10.0f;
+    float pulse_width = 1.0f;
+    float distance_offset = 0;
+    float segment_length = 0;
+    float _pad[3] = {0, 0, 0};
+  };
+  static_assert(sizeof(Params) == 48);
+};
+
 }  // namespace Graphics

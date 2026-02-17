@@ -4,6 +4,8 @@
 #include <string>
 
 #include "Asset/asset_manager.h"
+#include "Component/Collider/box_collider_component.h"
+#include "Component/Collider/sphere_collider_component.h"
 #include "Component/enemy_spawn_component.h"
 #include "Component/model_component.h"
 #include "Component/player_spawn_component.h"
@@ -72,6 +74,11 @@ void EnemySpawnManagerComponent::SpawnEnemy() {
   enemy_mesh->SetTransient(true);
   enemy_mesh->SetParent(enemy);
   enemy_mesh->AddComponent<ModelComponent>(ModelComponent::Props{.model = enemy_model_});
+
+  enemy->AddComponent<BoxColliderComponent>(enemy_model_->bounds, enemy->GetTransform()->GetWorldMatrix());
+  auto extents = enemy_model_->bounds.GetExtents();
+  float circumscribed_radius = Math::Vector3(extents.x, extents.y, extents.z).Length();
+  enemy->AddComponent<SphereColliderComponent>(circumscribed_radius);
 
   const cfg::EnemyConfig ENEMY;
   enemy->AddComponent<EnemyComponent>(EnemyComponent::Props{.hp = 2.0f});

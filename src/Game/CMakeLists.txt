@@ -54,6 +54,8 @@ add_library(game STATIC
     Component/Collider/collider_component.h
     Component/Collider/box_collider_component.h
     Component/Collider/box_collider_component.cpp
+    Component/Collider/sphere_collider_component.h
+    Component/Collider/sphere_collider_component.cpp
     Component/nav_grid_component.h
     Component/nav_grid_component.cpp
     Component/player_spawn_component.h
@@ -107,6 +109,8 @@ add_library(game STATIC
     Scenes/city_scene/projectile_component.cpp
     Scenes/city_scene/enemy_spawn_manager_component.h
     Scenes/city_scene/enemy_spawn_manager_component.cpp
+    Scenes/city_scene/pulse_path_component.h
+    Scenes/city_scene/pulse_path_component.cpp
 
     Map/map_data.h
     Map/ground_ray_caster.h

@@ -5,6 +5,7 @@
 
 #include "Asset/asset_manager.h"
 #include "Component/Collider/box_collider_component.h"
+#include "Component/Collider/sphere_collider_component.h"
 #include "Component/Renderer/instanced_model_renderer.h"
 #include "Component/Renderer/mesh_renderer.h"
 #include "Component/camera_component.h"

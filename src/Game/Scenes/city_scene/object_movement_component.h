@@ -29,6 +29,9 @@ class ObjectMovementComponent : public BehaviorComponent<ObjectMovementComponent
   void MoveToXZ(Math::Vector2 target_xz);
   bool IsMoving() const;
 
+  const std::vector<Math::Vector2>& GetWaypoints() const { return waypoints_; }
+  size_t GetCurrentWaypointIndex() const { return current_waypoint_; }
+
  private:
   void MoveAlongPath(float dt);
   void ResetToSpawn();

@@ -44,7 +44,7 @@ struct DebugDrawConfig {
 };
 
 struct EnemyConfig {
-  float move_speed = 3.0f;
+  float move_speed = 1.0f;
 };
 
 struct BorderWallConfig {
