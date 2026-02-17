@@ -109,6 +109,9 @@ add_library(game STATIC
     Scenes/city_scene/projectile_component.cpp
     Scenes/city_scene/enemy_spawn_manager_component.h
     Scenes/city_scene/enemy_spawn_manager_component.cpp
+    Scenes/city_scene/wave_stage_config.h
+    Scenes/city_scene/wave_manager_component.h
+    Scenes/city_scene/wave_manager_component.cpp
     Scenes/city_scene/pulse_path_component.h
     Scenes/city_scene/pulse_path_component.cpp
 

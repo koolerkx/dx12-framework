@@ -4,7 +4,6 @@
 #include <vector>
 
 #include "Component/behavior_component.h"
-#include "Framework/Event/event_scope.hpp"
 #include "Framework/Math/Math.h"
 
 class NavGrid;
@@ -22,10 +21,12 @@ class EnemySpawnManagerComponent : public BehaviorComponent<EnemySpawnManagerCom
   void OnStart() override;
   void OnReset() override;
 
- private:
-  void SpawnEnemy();
+  void SpawnEnemy(int spawner_index);
+  int GetSpawnerCount() const;
 
-  EventScope event_scope_;
+ private:
+  void SpawnEnemyAt(GameObject* spawner);
+
   NavGrid* nav_ = nullptr;
   std::vector<GameObject*> enemy_spawners_;
   Math::Vector2 player_spawn_xz_ = {};

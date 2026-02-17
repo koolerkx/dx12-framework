@@ -137,7 +137,8 @@ class ModelComponent : public Component<ModelComponent> {
         child_node.transform.scale.z * scale_factor,
       };
 
-      auto* child_go = scene->CreateGameObject(child_node.name, transform_props);
+      std::string node_name = parent->GetName() + "_" + child_node.name;
+      auto* child_go = scene->CreateGameObject(node_name, transform_props);
       child_go->SetTransient(true);
       child_go->SetParent(parent);
 
@@ -174,7 +175,7 @@ class ModelComponent : public Component<ModelComponent> {
           }
 
           if (split_mesh_to_children_) {
-            std::string mesh_name = child_node.name + "_mesh" + std::to_string(i);
+            std::string mesh_name = node_name + "_mesh" + std::to_string(i);
             auto* mesh_go = scene->CreateGameObject(mesh_name);
             mesh_go->SetTransient(true);
             mesh_go->SetParent(child_go);

@@ -26,7 +26,7 @@ class EnemyComponent : public BehaviorComponent<EnemyComponent> {
   }
 
   void OnStart() override {
-    mesh_go_ = GetOwner()->FindChild("EnemyMesh");
+    mesh_go_ = GetOwner()->FindChild(GetOwner()->GetName() + "_Mesh");
   }
 
   void OnUpdate(float dt) override {

@@ -21,6 +21,7 @@
 #include "Scenes/city_scene/city_scene_config.h"
 #include "Scenes/city_scene/enemy_spawn_manager_component.h"
 #include "Scenes/city_scene/player_control_component.h"
+#include "Scenes/city_scene/wave_manager_component.h"
 #include "Scripts/free_camera_controller.h"
 #include "scene_id.h"
 #include "scene_manager.h"
@@ -172,6 +173,7 @@ void CityScene::SpawnEnemyManager() {
   enemy_manager->AddComponent<EnemySpawnManagerComponent>(EnemySpawnManagerComponent::Props{
     .nav = &nav_grid_,
   });
+  enemy_manager->AddComponent<WaveManagerComponent>(WaveManagerComponent::Props{});
 }
 
 void CityScene::SpawnBorderWalls(const MapData& map_data) {

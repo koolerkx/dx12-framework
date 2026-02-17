@@ -1,6 +1,5 @@
 #include "Scenes/city_scene/enemy_spawn_manager_component.h"
 
-#include <random>
 #include <string>
 
 #include "Asset/asset_manager.h"
@@ -9,7 +8,6 @@
 #include "Component/model_component.h"
 #include "Component/player_spawn_component.h"
 #include "Component/transform_component.h"
-#include "Framework/Event/input_events.h"
 #include "Scenes/city_scene/city_scene_config.h"
 #include "Scenes/city_scene/enemy_component.h"
 #include "Scenes/city_scene/hp_bar_component.h"
@@ -38,13 +36,6 @@ void EnemySpawnManagerComponent::OnStart() {
       player_spawn_xz_ = {pos.x, pos.z};
     }
   }
-
-  auto* bus = GetContext()->GetEventBus().get();
-  event_scope_.Subscribe<KeyDownEvent>(*bus, [this](const KeyDownEvent& e) {
-    if (e.key == Keyboard::KeyCode::P) {
-      SpawnEnemy();
-    }
-  });
 }
 
 void EnemySpawnManagerComponent::OnReset() {
@@ -53,12 +44,17 @@ void EnemySpawnManagerComponent::OnReset() {
   enemy_counter_ = 0;
 }
 
-void EnemySpawnManagerComponent::SpawnEnemy() {
-  if (enemy_spawners_.empty() || !enemy_model_) return;
+void EnemySpawnManagerComponent::SpawnEnemy(int spawner_index) {
+  if (spawner_index < 0 || spawner_index >= static_cast<int>(enemy_spawners_.size())) return;
+  SpawnEnemyAt(enemy_spawners_[spawner_index]);
+}
 
-  static std::mt19937 rng{std::random_device{}()};
-  std::uniform_int_distribution<size_t> dist(0, enemy_spawners_.size() - 1);
-  auto* spawner = enemy_spawners_[dist(rng)];
+int EnemySpawnManagerComponent::GetSpawnerCount() const {
+  return static_cast<int>(enemy_spawners_.size());
+}
+
+void EnemySpawnManagerComponent::SpawnEnemyAt(GameObject* spawner) {
+  if (!enemy_model_) return;
 
   auto spawner_pos = spawner->GetTransform()->GetWorldPosition();
   Math::Vector3 spawn_pos = {spawner_pos.x, 0.5f, spawner_pos.z};
@@ -71,7 +67,7 @@ void EnemySpawnManagerComponent::SpawnEnemy() {
   auto* enemy = scene->CreateGameObject(name, {.position = spawn_pos, .scale = {s, s, s}});
   enemy->SetParent(GetOwner());
 
-  auto* enemy_mesh = scene->CreateGameObject("EnemyMesh");
+  auto* enemy_mesh = scene->CreateGameObject(name + "_Mesh");
   enemy_mesh->SetTransient(true);
   enemy_mesh->SetParent(enemy);
   enemy_mesh->AddComponent<ModelComponent>(ModelComponent::Props{.model = enemy_model_});

@@ -25,11 +25,11 @@ void HpBarComponent::OnStart() {
   fill_width_ = bar_width_;
   fill_height_ = bar_height;
 
-  auto create_layer = [&](const std::string& suffix, const char* texture_path) -> SpriteRenderer* {
+  auto create_layer = [&](const std::string& suffix, const char* texture_path, float y_extra = 0.0f) -> SpriteRenderer* {
     auto* go = scene->CreateGameObject(GetOwner()->GetName() + "_" + suffix);
     go->SetTransient(true);
     go->SetParent(GetOwner());
-    go->GetTransform()->Apply({.position = {0.0f, y_offset_, 0.0f}});
+    go->GetTransform()->Apply({.position = {0.0f, y_offset_ + y_extra, 0.0f}});
 
     return go->AddComponent<SpriteRenderer>(SpriteRenderer::Props{
       .texture_path = texture_path,
@@ -40,7 +40,7 @@ void HpBarComponent::OnStart() {
   };
 
   create_layer("HpBack", HP_BAR.texture_back);
-  main_renderer_ = create_layer("HpMain", HP_BAR.texture_main);
+  main_renderer_ = create_layer("HpMain", HP_BAR.texture_main, 0.001f);
 }
 
 void HpBarComponent::OnUpdate(float /*dt*/) {
