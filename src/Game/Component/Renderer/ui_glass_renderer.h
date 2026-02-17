@@ -11,13 +11,22 @@ using Math::Vector4;
 
 class UIGlassRenderer : public Component<UIGlassRenderer> {
  public:
+  // Default values here are the single source of truth for glass appearance.
   struct Props {
     Vector2 size = {200, 100};
     Vector4 tint_color = {1.0f, 1.0f, 1.0f, 0.1f};
-    float distortion_strength = 0.02f;
-    float tint_alpha = 0.15f;
+    // float distortion_strength = 0.02f;  // UV offset magnitude for refraction (higher = more warping)
+    float distortion_strength = 0.1f;  // UV offset magnitude for refraction (higher = more warping)
+    float tint_alpha = 0.15f;           // blend factor between blurred background and tint color
     int layer_id = 0;
     Vector2 pivot = {0.0f, 0.0f};
+    float chromatic_strength = 0.01f;        // R/G/B channel separation along distortion direction
+    float fresnel_power = 1.5f;              // exponent controlling rim light falloff (higher = thinner rim)
+    float fresnel_intensity = 0.3f;          // brightness of the rim/edge glow
+    float specular_intensity = 0.15f;        // peak brightness of the fake specular highlight blob
+    float specular_sharpness = 8.0f;         // gaussian falloff rate (higher = smaller, sharper highlight)
+    Vector2 specular_offset = {0.3f, 0.3f};  // highlight center offset from panel center in UV space
+    float edge_shadow_strength = 0.0f;       // darkening at panel edges via smoothstep vignette
   };
 
   UIGlassRenderer(GameObject* owner) : Component(owner) {
@@ -30,6 +39,13 @@ class UIGlassRenderer : public Component<UIGlassRenderer> {
     tint_alpha_ = props.tint_alpha;
     layer_id_ = props.layer_id;
     ui_pivot_ = props.pivot;
+    chromatic_strength_ = props.chromatic_strength;
+    fresnel_power_ = props.fresnel_power;
+    fresnel_intensity_ = props.fresnel_intensity;
+    specular_intensity_ = props.specular_intensity;
+    specular_sharpness_ = props.specular_sharpness;
+    specular_offset_ = props.specular_offset;
+    edge_shadow_strength_ = props.edge_shadow_strength;
   }
 
   void SetSize(const Vector2& size) {
@@ -60,4 +76,11 @@ class UIGlassRenderer : public Component<UIGlassRenderer> {
   float tint_alpha_ = 0.15f;
   int layer_id_ = 0;
   Vector2 ui_pivot_ = {0.0f, 0.0f};
+  float chromatic_strength_ = 0.005f;
+  float fresnel_power_ = 3.0f;
+  float fresnel_intensity_ = 0.3f;
+  float specular_intensity_ = 0.15f;
+  float specular_sharpness_ = 8.0f;
+  Vector2 specular_offset_ = {0.3f, 0.3f};
+  float edge_shadow_strength_ = 1.0f;
 };

@@ -1,5 +1,6 @@
 #include "ui_glass_renderer.h"
 
+#include <cstdio>
 #include <cstring>
 
 #include "Component/transform_component.h"
@@ -18,27 +19,47 @@ void UIGlassRenderer::OnRender(FramePacket& packet) {
   uint32_t blur_srv_index = graphic->GetUIBlurSrvIndex();
 
   struct GlassParams {
-    uint32_t blur_srv_index;
-    float distortion_strength;
-    float tint_alpha;
-    float _pad;
+    uint32_t blur_srv_index;    // SRV index into bindless texture array for blurred background
+    float distortion_strength;  // UV offset magnitude for refraction (higher = more warping)
+    float tint_alpha;           // blend factor between blurred background and tint color
+    float chromatic_strength;   // R/G/B channel separation along distortion direction
     float tint_r, tint_g, tint_b, tint_a;
+    float fresnel_power;       // exponent controlling rim light falloff (higher = thinner rim)
+    float fresnel_intensity;   // brightness of the rim/edge glow
+    float specular_intensity;  // peak brightness of the fake specular highlight blob
+    float specular_sharpness;  // gaussian falloff rate (higher = smaller, sharper highlight)
+    float specular_offset_x;   // highlight center offset from panel center in UV space
+    float specular_offset_y;
+    float edge_shadow_strength;  // darkening at panel edges via smoothstep vignette
+    float panel_aspect;          // width / height for uniform corner rounding
   };
-  static_assert(sizeof(GlassParams) == 32);
+  static_assert(sizeof(GlassParams) == 64);
 
   GlassParams params{
     .blur_srv_index = blur_srv_index,
     .distortion_strength = distortion_strength_,
     .tint_alpha = tint_alpha_,
-    ._pad = 0.0f,
+    .chromatic_strength = chromatic_strength_,
     .tint_r = tint_color_.x,
     .tint_g = tint_color_.y,
     .tint_b = tint_color_.z,
     .tint_a = tint_color_.w,
+    .fresnel_power = fresnel_power_,
+    .fresnel_intensity = fresnel_intensity_,
+    .specular_intensity = specular_intensity_,
+    .specular_sharpness = specular_sharpness_,
+    .specular_offset_x = specular_offset_.x,
+    .specular_offset_y = specular_offset_.y,
+    .edge_shadow_strength = edge_shadow_strength_,
+    .panel_aspect = size_.x / size_.y,
   };
 
   DrawCommand cmd;
-  cmd.mesh = context->GetAssetManager().GetDefaultMesh(DefaultMesh::RoundedRect);
+  float aspect = size_.x / size_.y;
+  char mesh_key[64];
+  std::snprintf(mesh_key, sizeof(mesh_key), "glass_rounded_rect:%.3f", aspect);
+  cmd.mesh = context->GetAssetManager().CreateRoundedRect(mesh_key, aspect);
+  if (!cmd.mesh) cmd.mesh = context->GetAssetManager().GetDefaultMesh(DefaultMesh::RoundedRect);
   cmd.material = material_mgr.GetOrCreateMaterial(Graphics::UIGlassShader::ID, {});
   cmd.material_instance.material = cmd.material;
   cmd.color = {1, 1, 1, 1};

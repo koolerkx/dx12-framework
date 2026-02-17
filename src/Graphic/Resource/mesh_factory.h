@@ -395,7 +395,8 @@ class MeshFactory {
     return out_mesh.Create(device, vertices.data(), vertices.size(), indices.data(), indices.size());
   }
 
-  static bool CreateRoundedRect(ID3D12Device* device, Mesh& out_mesh, float corner_radius = 0.1f, uint32_t corner_segments = 8) {
+  static bool CreateRoundedRect(
+      ID3D12Device* device, Mesh& out_mesh, float corner_radius = 0.1f, uint32_t corner_segments = 8, float aspect_ratio = 1.0f) {
     struct Vertex {
       float pos[3];
       float uv[2];
@@ -404,7 +405,9 @@ class MeshFactory {
 
     constexpr float PI = Math::Pi;
     constexpr float HALF = 0.5f;
-    float r = corner_radius;
+
+    float r_x = (aspect_ratio >= 1.0f) ? corner_radius / aspect_ratio : corner_radius;
+    float r_y = (aspect_ratio >= 1.0f) ? corner_radius : corner_radius * aspect_ratio;
 
     std::vector<Vertex> vertices;
     std::vector<uint16_t> indices;
@@ -418,8 +421,8 @@ class MeshFactory {
 
     uint16_t center = add_vertex(0.0f, 0.0f);
 
-    float inner_x = HALF - r;
-    float inner_y = HALF - r;
+    float inner_x = HALF - r_x;
+    float inner_y = HALF - r_y;
 
     struct CornerDef {
       float cx, cy;
@@ -437,8 +440,8 @@ class MeshFactory {
     for (auto& [cx, cy, start] : corners) {
       for (uint32_t j = 0; j <= corner_segments; ++j) {
         float angle = start + static_cast<float>(j) / corner_segments * (PI * 0.5f);
-        float x = cx + r * cosf(angle);
-        float y = cy + r * sinf(angle);
+        float x = cx + r_x * cosf(angle);
+        float y = cy + r_y * sinf(angle);
         uint16_t idx = add_vertex(x, y);
         if (j == 0 && !perimeter.empty() && perimeter.back() == idx) continue;
         perimeter.push_back(idx);

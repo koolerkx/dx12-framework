@@ -64,6 +64,8 @@ class AssetManager {
   using CubeCornerColors = std::array<Math::Vector4, 8>;
   const Mesh* CreateCube(const std::string& key, const CubeCornerColors& corner_colors);
 
+  const Mesh* CreateRoundedRect(const std::string& key, float aspect_ratio);
+
   const Mesh* GetDefaultMesh(DefaultMesh type) const;
   std::optional<DefaultMesh> FindDefaultMeshType(const Mesh* mesh) const;
 
