@@ -140,6 +140,18 @@ struct BulletHitSparksConfig {
   float spawn_radius = 0.1f;
 };
 
+struct TowerPlacementConfig {
+  float grid_snap_offset_x = 0.5f;
+  float grid_snap_offset_z = 0.25f;
+  float pulse_scale_min = 0.75f;
+  float pulse_scale_max = 0.9f;
+  float pulse_speed = 3.0f;
+  float tower_half_extent = 0.375f;
+  float tower_half_height = 0.5f;
+  float tower_scale = 0.75f;
+  float radar_y_offset = 0.05f;
+};
+
 struct ArrivalScreenEffectConfig {
   float shake_intensity = 0.3f;
   float shake_duration = 0.4f;

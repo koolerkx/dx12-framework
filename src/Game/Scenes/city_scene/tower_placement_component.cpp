@@ -22,19 +22,7 @@
 
 namespace {
 
-struct TowerPlacementConfig {
-  float grid_snap_offset_x = 0.5f;
-  float grid_snap_offset_z = 0.25f;
-  float pulse_scale_min = 0.75f;
-  float pulse_scale_max = 0.9f;
-  float pulse_speed = 3.0f;
-  float tower_half_extent = 0.375f;
-  float tower_half_height = 0.5f;
-  float tower_scale = 0.75f;
-  float radar_y_offset = 0.05f;
-};
-
-constexpr TowerPlacementConfig TOWER_CFG;
+constexpr CitySceneConfig::TowerPlacementConfig TOWER_CFG;
 
 struct RadarColor {
   float r, g, b;
@@ -224,8 +212,9 @@ void TowerPlacementComponent::PlaceTower() {
   Math::AABB removed_area = HideOverlappedInstances();
 
   auto* scene = GetOwner()->GetScene();
+  float s = TOWER_CFG.tower_scale;
   auto* tower =
-    scene->CreateGameObject("Tower_" + std::to_string(tower_count_++), {.position = {snapped_xz_.x, 0.0f, snapped_xz_.y}});
+    scene->CreateGameObject("Tower_" + std::to_string(tower_count_++), {.position = {snapped_xz_.x, 0.0f, snapped_xz_.y}, .scale = {s, s, s}});
   tower->AddComponent<ModelComponent>(ModelComponent::Props{.model = tower_model_});
   tower->AddComponent<TowerComponent>(TowerComponent::Props{});
   placed_towers_.push_back({snapped_xz_, TowerComponent::Props{}.range, tower});
