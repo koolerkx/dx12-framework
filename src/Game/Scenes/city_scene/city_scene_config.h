@@ -59,6 +59,10 @@ struct EnemyConfig {
   }
 };
 
+struct PlayerSpawnConfig {
+  int max_health = 10;
+};
+
 struct GoldConfig {
   int initial_gold = 100;
   int kill_reward_base = 20;
@@ -172,6 +176,43 @@ struct ArrivalScreenEffectConfig {
   float shake_intensity = 0.3f;
   float shake_duration = 0.4f;
   float chromatic_aberration_intensity = 1.0f;
+};
+
+struct BaseDestroyedExplosionConfig {
+  const char* texture = "Content/textures/427_fire.png";
+  DirectX::XMUINT2 sheet_size = {512, 576};
+  DirectX::XMUINT2 frame_size = {64, 64};
+  uint32_t start_row = 5;
+  uint32_t frames_per_row = 8;
+  uint32_t frame_count = 8;
+  float fps = 8.0f;
+  float sprite_size = 8.0f;
+  Math::Vector3 emissive_color = {1.0f, 0.2f, 0.0f};
+  float emissive_intensity = 6.0f;
+};
+
+struct BaseDestroyedSparksConfig {
+  const char* texture = "Content/textures/sun_additive.png";
+  uint32_t burst_count = 100;
+  float lifetime = 0.8f;
+  Math::Vector2 size = {0.25f, 0.25f};
+  Math::Vector4 start_color = {3.0f, 2.0f, 1.0f, 1.0f};
+  Math::Vector4 end_color = {1.0f, 0.2f, 0.0f, 0.0f};
+  float start_speed = 20.0f;
+  float speed_variation = 8.0f;
+  Math::Vector3 gravity = {0.0f, -3.0f, 0.0f};
+  float drag = 3.0f;
+  float end_size = 0.0f;
+  float lifetime_variation = 0.5f;
+  float size_variation = 0.4f;
+  float emissive_intensity = 6.0f;
+  float spawn_radius = 0.5f;
+};
+
+struct BaseDestroyedScreenEffectConfig {
+  float shake_intensity = 0.8f;
+  float shake_duration = 1.0f;
+  float chromatic_aberration_intensity = 3.0f;
 };
 
 }  // namespace CitySceneConfig

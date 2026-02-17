@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "Component/Renderer/particle_emitter.h"
 #include "Component/Renderer/sprite_renderer.h"
 #include "Scenes/city_scene/city_scene_config.h"
@@ -7,6 +9,11 @@
 #include "scene.h"
 
 namespace CitySceneEffect {
+
+inline std::string MakeUniqueEffectName(const char* prefix) {
+  static int counter = 0;
+  return std::string(prefix) + "_" + std::to_string(counter++);
+}
 
 struct ExplosionParams {
   const char* texture;
@@ -48,7 +55,7 @@ inline ExplosionParams FromBulletHitConfig(const CitySceneConfig::BulletHitConfi
 }
 
 inline void SpawnExplosion(IScene* scene, const Math::Vector3& position, const ExplosionParams& p, const char* name = "Explosion") {
-  auto* effect_go = scene->CreateGameObject(name, {.position = position});
+  auto* effect_go = scene->CreateGameObject(MakeUniqueEffectName(name), {.position = position});
   effect_go->SetTransient(true);
 
   auto c = p.emissive_color * p.emissive_intensity;
@@ -104,6 +111,17 @@ inline SparksParams FromExplosionSparksConfig(const CitySceneConfig::ExplosionSp
     cfg.lifetime_variation, cfg.size_variation, cfg.emissive_intensity, cfg.spawn_radius};
 }
 
+inline ExplosionParams FromBaseDestroyedConfig(const CitySceneConfig::BaseDestroyedExplosionConfig& cfg) {
+  return {cfg.texture, cfg.sheet_size, cfg.frame_size, cfg.start_row, cfg.frames_per_row,
+    cfg.frame_count, cfg.fps, cfg.sprite_size, cfg.emissive_color, cfg.emissive_intensity};
+}
+
+inline SparksParams FromBaseDestroyedSparksConfig(const CitySceneConfig::BaseDestroyedSparksConfig& cfg) {
+  return {cfg.texture, cfg.burst_count, cfg.lifetime, cfg.size, cfg.start_color, cfg.end_color,
+    cfg.start_speed, cfg.speed_variation, cfg.gravity, cfg.drag, cfg.end_size,
+    cfg.lifetime_variation, cfg.size_variation, cfg.emissive_intensity, cfg.spawn_radius};
+}
+
 inline SparksParams FromBulletHitSparksConfig(const CitySceneConfig::BulletHitSparksConfig& cfg) {
   return {cfg.texture, cfg.burst_count, cfg.lifetime, cfg.size, cfg.start_color, cfg.end_color,
     cfg.start_speed, cfg.speed_variation, cfg.gravity, cfg.drag, cfg.end_size,
@@ -111,7 +129,7 @@ inline SparksParams FromBulletHitSparksConfig(const CitySceneConfig::BulletHitSp
 }
 
 inline void SpawnExplosionSparks(IScene* scene, const Math::Vector3& position, const SparksParams& p, const char* name = "ExplosionSparks") {
-  auto* effect_go = scene->CreateGameObject(name, {.position = position});
+  auto* effect_go = scene->CreateGameObject(MakeUniqueEffectName(name), {.position = position});
   effect_go->SetTransient(true);
 
   auto* emitter = effect_go->AddComponent<ParticleEmitter>(ParticleEmitter::Props{

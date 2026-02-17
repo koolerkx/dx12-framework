@@ -6,7 +6,7 @@
 #include "Component/transform_component.h"
 #include "Scenes/city_scene/city_scene_config.h"
 #include "Scenes/city_scene/explosion_effect.h"
-#include "Scenes/city_scene/gold_manager_component.h"
+#include "Scenes/city_scene/game_state_manager_component.h"
 #include "Scenes/city_scene/object_movement_component.h"
 #include "Scripts/camera_shake_controller.h"
 #include "Scripts/screen_effect_controller.h"
@@ -82,7 +82,7 @@ class EnemyComponent : public BehaviorComponent<EnemyComponent> {
     if (!scene) return;
     auto* player = scene->FindGameObject("Player");
     if (!player) return;
-    if (auto* gold = player->GetComponent<GoldManagerComponent>())
+    if (auto* gold = player->GetComponent<GameStateManagerComponent>())
       gold->AddGold(kill_reward_);
   }
 
@@ -104,6 +104,15 @@ class EnemyComponent : public BehaviorComponent<EnemyComponent> {
       if (auto* screen_fx = camera_go->GetComponent<ScreenEffectController>())
         screen_fx->TriggerChromaticAberration(fx_cfg.chromatic_aberration_intensity);
     }
+
+    DamagePlayerSpawn(scene);
+  }
+
+  void DamagePlayerSpawn(IScene* scene) {
+    auto* player = scene->FindGameObject("Player");
+    if (!player) return;
+    if (auto* state = player->GetComponent<GameStateManagerComponent>())
+      state->TakeDamage();
   }
 
   float hp_ = 2.0f;

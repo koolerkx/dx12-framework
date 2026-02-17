@@ -20,9 +20,8 @@
 #include "Map/map_loader.h"
 #include "Scenes/city_scene/city_scene_config.h"
 #include "Scenes/city_scene/enemy_spawn_manager_component.h"
-#include "Scenes/city_scene/gold_manager_component.h"
+#include "Scenes/city_scene/game_state_manager_component.h"
 #include "Scenes/city_scene/player_control_component.h"
-#include "Scenes/city_scene/wave_manager_component.h"
 #include "Scripts/camera_shake_controller.h"
 #include "Scripts/free_camera_controller.h"
 #include "Scripts/screen_effect_controller.h"
@@ -132,7 +131,7 @@ void CityScene::OnEnter(AssetManager& asset_manager) {
   CreateSpawnCubes(*map_data);
 
   auto* player = CreateGameObject("Player");
-  player->AddComponent<GoldManagerComponent>();
+  player->AddComponent<GameStateManagerComponent>(GameStateManagerComponent::Props{});
   player->AddComponent<PlayerControlComponent>(PlayerControlComponent::Props{.nav = &nav_grid_});
 
   Logger::LogFormat(LogLevel::Info,
@@ -177,7 +176,6 @@ void CityScene::SpawnEnemyManager() {
   enemy_manager->AddComponent<EnemySpawnManagerComponent>(EnemySpawnManagerComponent::Props{
     .nav = &nav_grid_,
   });
-  enemy_manager->AddComponent<WaveManagerComponent>(WaveManagerComponent::Props{});
 }
 
 void CityScene::SpawnBorderWalls(const MapData& map_data) {
