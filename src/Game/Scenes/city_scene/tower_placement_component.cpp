@@ -2,6 +2,7 @@
 
 #include "Asset/asset_manager.h"
 #include "Component/Collider/box_collider_component.h"
+#include "Component/Collider/sphere_collider_component.h"
 #include "Component/Renderer/instanced_model_renderer.h"
 #include "Component/Renderer/mesh_renderer.h"
 #include "Component/camera_component.h"
@@ -13,7 +14,11 @@
 #include "Map/ground_ray_caster.h"
 #include "Map/nav_grid.h"
 #include "Map/nav_grid_events.h"
+#include "Component/enemy_spawn_component.h"
+#include "Framework/Event/event_bus.hpp"
 #include "Scenes/city_scene/city_scene_config.h"
+#include "Scenes/city_scene/city_scene_events.h"
+#include "Scenes/city_scene/enemy_component.h"
 #include "Scenes/city_scene/game_state_manager_component.h"
 #include "SceneSetting/active_camera_setting.h"
 #include "Scenes/city_scene/tower_component.h"
@@ -141,6 +146,10 @@ void TowerPlacementComponent::UpdateHovering() {
   }
 
   if (input_->GetMouseButtonDown(Mouse::Button::Left)) {
+    if (IsOverlappingEnemySpawn()) {
+      GetContext()->GetEventBus()->Emit(OverlapEnemySpawnEvent{});
+      return;
+    }
     DestroyPreview();
     CreatePreview(selection_b_model_);
     UpdatePreviewPosition();
@@ -158,6 +167,11 @@ void TowerPlacementComponent::UpdateSelected() {
   }
 
   if (input_->GetKeyDown(Keyboard::KeyCode::Space)) {
+    if (IsPlacementBlocked()) {
+      GetContext()->GetEventBus()->Emit(OverlapEnemyEvent{});
+      return;
+    }
+
     const CitySceneConfig::GoldConfig gold_cfg;
     int total_cost = gold_cfg.ComputePlacementCost(static_cast<int>(highlighted_instances_.size()));
     auto* player = GetOwner()->GetScene()->FindGameObject("Player");
@@ -246,6 +260,52 @@ Math::AABB TowerPlacementComponent::ComputePreviewBounds() const {
   if (!selection_a_model_) return {};
   Math::Vector3 offset(snapped_xz_.x, 0.0f, snapped_xz_.y);
   return {selection_a_model_->bounds.min + offset, selection_a_model_->bounds.max + offset};
+}
+
+Math::AABB TowerPlacementComponent::ComputeTowerBounds() const {
+  float he = TOWER_CFG.tower_half_extent;
+  float hh = TOWER_CFG.tower_half_height;
+  return {
+    {snapped_xz_.x - he, 0.0f, snapped_xz_.y - he},
+    {snapped_xz_.x + he, hh * 2.0f, snapped_xz_.y + he},
+  };
+}
+
+bool TowerPlacementComponent::IsOverlappingEnemySpawn() const {
+  auto* scene = GetOwner()->GetScene();
+  if (!scene) return false;
+
+  Math::AABB tower_bounds = ComputeTowerBounds();
+  for (const auto& go : scene->GetGameObjects()) {
+    if (go->GetComponent<EnemySpawnComponent>()) {
+      auto spawn_pos = go->GetTransform()->GetWorldPosition();
+      constexpr CitySceneConfig::SpawnCubeConfig SPAWN;
+      float half = SPAWN.scale * 0.5f;
+      Math::AABB spawn_bounds = {
+        {spawn_pos.x - half, spawn_pos.y - half, spawn_pos.z - half},
+        {spawn_pos.x + half, spawn_pos.y + half, spawn_pos.z + half},
+      };
+      if (tower_bounds.Intersects(spawn_bounds)) return true;
+    }
+  }
+  return false;
+}
+
+bool TowerPlacementComponent::IsPlacementBlocked() const {
+  auto* scene = GetOwner()->GetScene();
+  if (!scene) return true;
+
+  Math::AABB tower_bounds = ComputeTowerBounds();
+  auto* enemy_manager = scene->FindGameObject("EnemyManager");
+  if (enemy_manager) {
+    for (auto* child : enemy_manager->GetChildren()) {
+      if (child->IsPendingDestroy()) continue;
+      if (!child->GetComponent<EnemyComponent>()) continue;
+      auto* sphere = child->GetComponent<SphereColliderComponent>();
+      if (sphere && tower_bounds.Intersects(sphere->GetWorldBounds())) return true;
+    }
+  }
+  return false;
 }
 
 static std::string ExtractRendererGoName(const std::string& instance_id) {

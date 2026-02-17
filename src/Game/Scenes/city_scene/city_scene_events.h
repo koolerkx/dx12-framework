@@ -31,3 +31,11 @@ struct InsufficientGoldEvent : Event<InsufficientGoldEvent> {
 struct EnemyReachedBaseEvent : Event<EnemyReachedBaseEvent> {
   static constexpr std::string_view EventName = "city.enemy_reached_base";
 };
+
+struct OverlapEnemyEvent : Event<OverlapEnemyEvent> {
+  static constexpr std::string_view EventName = "city.overlap_enemy";
+};
+
+struct OverlapEnemySpawnEvent : Event<OverlapEnemySpawnEvent> {
+  static constexpr std::string_view EventName = "city.overlap_enemy_spawn";
+};

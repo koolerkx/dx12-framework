@@ -194,6 +194,14 @@ void HudManagerComponent::SubscribeEvents() {
   event_scope_.Subscribe<EnemyReachedBaseEvent>(bus, [this](const EnemyReachedBaseEvent&) {
     ShowAlert(L"Base under attack!", 3.0f);
   });
+
+  event_scope_.Subscribe<OverlapEnemyEvent>(bus, [this](const OverlapEnemyEvent&) {
+    ShowAlert(L"Overlapping enemy!", 3.0f);
+  });
+
+  event_scope_.Subscribe<OverlapEnemySpawnEvent>(bus, [this](const OverlapEnemySpawnEvent&) {
+    ShowAlert(L"Overlapping enemy spawn!", 3.0f);
+  });
 }
 
 void HudManagerComponent::OnUpdate(float dt) {
