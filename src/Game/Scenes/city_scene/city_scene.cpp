@@ -18,6 +18,7 @@
 #include "Map/map_loader.h"
 #include "Scenes/city_scene/city_scene_config.h"
 #include "Scenes/city_scene/enemy_component.h"
+#include "Scenes/city_scene/hp_bar_component.h"
 #include "Scenes/city_scene/object_movement_component.h"
 #include "Scenes/city_scene/player_control_component.h"
 #include "Scripts/free_camera_controller.h"
@@ -178,6 +179,7 @@ void CityScene::SpawnEnemyManager() {
   });
   enemy->AddComponent<BoxColliderComponent>(UNIT_CUBE_BOUNDS, enemy->GetTransform()->GetWorldMatrix());
   enemy->AddComponent<EnemyComponent>(EnemyComponent::Props{.hp = 2.0f});
+  enemy->AddComponent<HpBarComponent>(HpBarComponent::Props{});
 
   enemy->AddComponent<ObjectMovementComponent>(ObjectMovementComponent::Props{
     .nav = &nav_grid_,

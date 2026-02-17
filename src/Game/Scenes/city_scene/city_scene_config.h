@@ -57,4 +57,13 @@ struct SpawnCubeConfig {
   float scale = 0.5f;
 };
 
+struct HpBarConfig {
+  float bar_width = 1.0f;
+  float y_offset = 1.2f;
+  float fill_px_w = 271.0f;
+  float fill_px_h = 21.0f;
+  const char* texture_back = "Content/textures/hp_bar_back.png";
+  const char* texture_main = "Content/textures/hp_bar_main.png";
+};
+
 }  // namespace CitySceneConfig

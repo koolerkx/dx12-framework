@@ -11,7 +11,8 @@ class EnemyComponent : public BehaviorComponent<EnemyComponent> {
   };
 
   using BehaviorComponent::BehaviorComponent;
-  EnemyComponent(GameObject* owner, const Props& props) : BehaviorComponent(owner), hp_(props.hp), contact_damage_(props.contact_damage) {
+  EnemyComponent(GameObject* owner, const Props& props)
+    : BehaviorComponent(owner), hp_(props.hp), max_hp_(props.hp), contact_damage_(props.contact_damage) {
   }
 
   void TakeDamage(float amount) {
@@ -24,11 +25,15 @@ class EnemyComponent : public BehaviorComponent<EnemyComponent> {
   float GetHP() const {
     return hp_;
   }
+  float GetMaxHP() const {
+    return max_hp_;
+  }
   float GetContactDamage() const {
     return contact_damage_;
   }
 
  private:
   float hp_ = 2.0f;
+  float max_hp_ = 2.0f;
   float contact_damage_ = 1.0f;
 };
