@@ -48,6 +48,7 @@ void HpBarComponent::OnUpdate(float /*dt*/) {
   hp_ratio = (std::min)(hp_ratio, 1.0f);
 
   main_renderer_->SetSize({fill_width_ * hp_ratio, fill_height_});
-  main_renderer_->SetPivot({1.0f / (2.0f * hp_ratio), 0.5f});
+  main_renderer_->SetPivot({1.0f - 1.0f / (2.0f * hp_ratio), 0.5f});
+  main_renderer_->SetUVOffset({1.0f - hp_ratio, 0.0f});
   main_renderer_->SetUVScale({hp_ratio, 1.0f});
 }
