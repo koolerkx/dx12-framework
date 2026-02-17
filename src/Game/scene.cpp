@@ -121,9 +121,9 @@ void IScene::DebugFixedUpdate(float dt) {
 }
 
 void IScene::DebugUpdateRootObjects(float dt) {
-  for (auto& obj : game_objects_) {
-    if (obj->GetParent() == nullptr) {
-      obj->DebugUpdate(dt);
+  for (size_t i = 0; i < game_objects_.size(); ++i) {
+    if (game_objects_[i]->GetParent() == nullptr) {
+      game_objects_[i]->DebugUpdate(dt);
     }
   }
 }
@@ -173,9 +173,11 @@ void IScene::Render(FramePacket& packet) {
 }
 
 void IScene::UpdateRootObjects(float dt) {
-  for (auto& obj : game_objects_) {
-    if (obj->GetParent() == nullptr) {
-      obj->Update(dt);
+  // Index-based loop: OnUpdate may create new GameObjects (e.g. transient visual effects),
+  // which appends to game_objects_ and would invalidate range-for iterators.
+  for (size_t i = 0; i < game_objects_.size(); ++i) {
+    if (game_objects_[i]->GetParent() == nullptr) {
+      game_objects_[i]->Update(dt);
     }
   }
 }
