@@ -44,10 +44,7 @@ struct DebugDrawConfig {
 };
 
 struct EnemyConfig {
-  Math::Vector3 spawn_position = {0.0f, 0.5f, 10.0f};
-  float scale = 0.5f;
   float move_speed = 3.0f;
-  Math::Vector2 initial_target_xz = {5.0f, 0.0f};
 };
 
 struct BorderWallConfig {

@@ -56,6 +56,8 @@ add_library(game STATIC
     Component/Collider/box_collider_component.cpp
     Component/nav_grid_component.h
     Component/nav_grid_component.cpp
+    Component/player_spawn_component.h
+    Component/enemy_spawn_component.h
 
     Serialization/scene_serializer.h
     Serialization/scene_serializer.cpp
@@ -103,6 +105,8 @@ add_library(game STATIC
     Scenes/city_scene/tower_component.cpp
     Scenes/city_scene/projectile_component.h
     Scenes/city_scene/projectile_component.cpp
+    Scenes/city_scene/enemy_spawn_manager_component.h
+    Scenes/city_scene/enemy_spawn_manager_component.cpp
 
     Map/map_data.h
     Map/ground_ray_caster.h

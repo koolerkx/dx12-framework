@@ -7,9 +7,9 @@
 #include "Component/Collider/box_collider_component.h"
 #include "Component/Renderer/instanced_model_renderer.h"
 #include "Component/Renderer/mesh_renderer.h"
-#include "Component/model_component.h"
 #include "Component/camera_component.h"
-#include "Component/spawn_point_component.h"
+#include "Component/enemy_spawn_component.h"
+#include "Component/player_spawn_component.h"
 #include "Component/transform_component.h"
 #include "Debug/debug_drawer.h"
 #include "Framework/Core/color.h"
@@ -18,9 +18,7 @@
 #include "Framework/Math/Math.h"
 #include "Map/map_loader.h"
 #include "Scenes/city_scene/city_scene_config.h"
-#include "Scenes/city_scene/enemy_component.h"
-#include "Scenes/city_scene/hp_bar_component.h"
-#include "Scenes/city_scene/object_movement_component.h"
+#include "Scenes/city_scene/enemy_spawn_manager_component.h"
 #include "Scenes/city_scene/player_control_component.h"
 #include "Scripts/free_camera_controller.h"
 #include "scene_id.h"
@@ -120,7 +118,9 @@ void CityScene::OnEnter(AssetManager& asset_manager) {
   }
 
   constexpr cfg::NavGridConfig NAV;
-  nav_grid_.Build(*map_data, obstacle_bounds, {.cell_size = NAV.cell_size, .block_threshold = NAV.block_threshold, .show_debug_grid = NAV.show_debug_grid});
+  nav_grid_.Build(*map_data,
+    obstacle_bounds,
+    {.cell_size = NAV.cell_size, .block_threshold = NAV.block_threshold, .show_debug_grid = NAV.show_debug_grid});
 
   SpawnBorderWalls(*map_data);
   SpawnEnemyManager();
@@ -168,27 +168,8 @@ void CityScene::OnDebugDraw(DebugDrawer& drawer) {
 
 void CityScene::SpawnEnemyManager() {
   auto* enemy_manager = CreateGameObject("EnemyManager");
-
-  const cfg::EnemyConfig ENEMY;
-
-  auto& assets = GetContext()->GetAssetManager();
-  auto enemy_model = assets.LoadModel(cfg::PATHS.enemy_model, cfg::FBX_UNIT_SCALE);
-
-  auto* enemy = CreateGameObject("Enemy", {.position = ENEMY.spawn_position});
-  enemy->SetParent(enemy_manager);
-
-  auto* enemy_mesh = CreateGameObject("EnemyMesh");
-  enemy_mesh->SetTransient(true);
-  enemy_mesh->SetParent(enemy);
-  enemy_mesh->AddComponent<ModelComponent>(ModelComponent::Props{.model = enemy_model});
-  enemy->AddComponent<EnemyComponent>(EnemyComponent::Props{.hp = 2.0f});
-  enemy->AddComponent<HpBarComponent>(HpBarComponent::Props{});
-
-  enemy->AddComponent<ObjectMovementComponent>(ObjectMovementComponent::Props{
+  enemy_manager->AddComponent<EnemySpawnManagerComponent>(EnemySpawnManagerComponent::Props{
     .nav = &nav_grid_,
-    .move_speed = ENEMY.move_speed,
-    .initial_target_xz = ENEMY.initial_target_xz,
-    .has_initial_target = true,
   });
 }
 
@@ -235,7 +216,7 @@ void CityScene::CreateSpawnCubes(const MapData& map_data) {
 
   for (size_t i = 0; i < spawn_it->items.size(); ++i) {
     const auto& item = spawn_it->items[i];
-    SpawnType type = (i == 0) ? SpawnType::Player : SpawnType::Enemy;
+    bool is_player = (i == 0);
 
     float x = item.transform.x + map_data.origin_x;
     float z = item.transform.z + map_data.origin_z;
@@ -243,7 +224,12 @@ void CityScene::CreateSpawnCubes(const MapData& map_data) {
 
     std::string name = "SpawnPoint_" + std::to_string(i);
     auto* go = CreateGameObject(name, {.position = {x, y, z}, .scale = {SPAWN.scale, SPAWN.scale, SPAWN.scale}});
-    go->AddComponent<SpawnPointComponent>(SpawnPointComponent::Props{.type = type});
+
+    if (is_player) {
+      go->AddComponent<PlayerSpawnComponent>();
+    } else {
+      go->AddComponent<EnemySpawnComponent>();
+    }
   }
 }
 

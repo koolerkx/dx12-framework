@@ -1,0 +1,85 @@
+#include "Scenes/city_scene/enemy_spawn_manager_component.h"
+
+#include <random>
+#include <string>
+
+#include "Asset/asset_manager.h"
+#include "Component/enemy_spawn_component.h"
+#include "Component/model_component.h"
+#include "Component/player_spawn_component.h"
+#include "Component/transform_component.h"
+#include "Framework/Event/input_events.h"
+#include "Scenes/city_scene/city_scene_config.h"
+#include "Scenes/city_scene/enemy_component.h"
+#include "Scenes/city_scene/hp_bar_component.h"
+#include "Scenes/city_scene/object_movement_component.h"
+#include "game_context.h"
+#include "game_object.h"
+#include "scene.h"
+
+namespace cfg = CitySceneConfig;
+
+EnemySpawnManagerComponent::EnemySpawnManagerComponent(GameObject* owner, const Props& props) : BehaviorComponent(owner), nav_(props.nav) {
+}
+
+void EnemySpawnManagerComponent::OnStart() {
+  auto& assets = GetContext()->GetAssetManager();
+  enemy_model_ = assets.LoadModel(cfg::PATHS.enemy_model, cfg::FBX_UNIT_SCALE);
+
+  auto* scene = GetOwner()->GetScene();
+  for (const auto& go : scene->GetGameObjects()) {
+    if (go->GetComponent<EnemySpawnComponent>()) {
+      enemy_spawners_.push_back(go.get());
+    }
+    if (go->GetComponent<PlayerSpawnComponent>()) {
+      auto* transform = go->GetTransform();
+      auto pos = transform->GetWorldPosition();
+      player_spawn_xz_ = {pos.x, pos.z};
+    }
+  }
+
+  auto* bus = GetContext()->GetEventBus().get();
+  event_scope_.Subscribe<KeyDownEvent>(*bus, [this](const KeyDownEvent& e) {
+    if (e.key == Keyboard::KeyCode::P) {
+      SpawnEnemy();
+    }
+  });
+}
+
+void EnemySpawnManagerComponent::OnReset() {
+  enemy_spawners_.clear();
+  enemy_model_.reset();
+  enemy_counter_ = 0;
+}
+
+void EnemySpawnManagerComponent::SpawnEnemy() {
+  if (enemy_spawners_.empty() || !enemy_model_) return;
+
+  static std::mt19937 rng{std::random_device{}()};
+  std::uniform_int_distribution<size_t> dist(0, enemy_spawners_.size() - 1);
+  auto* spawner = enemy_spawners_[dist(rng)];
+
+  auto spawner_pos = spawner->GetTransform()->GetWorldPosition();
+  Math::Vector3 spawn_pos = {spawner_pos.x, 0.5f, spawner_pos.z};
+
+  std::string name = "Enemy_" + std::to_string(enemy_counter_++);
+  auto* scene = GetOwner()->GetScene();
+
+  auto* enemy = scene->CreateGameObject(name, {.position = spawn_pos});
+  enemy->SetParent(GetOwner());
+
+  auto* enemy_mesh = scene->CreateGameObject("EnemyMesh");
+  enemy_mesh->SetTransient(true);
+  enemy_mesh->SetParent(enemy);
+  enemy_mesh->AddComponent<ModelComponent>(ModelComponent::Props{.model = enemy_model_});
+
+  const cfg::EnemyConfig ENEMY;
+  enemy->AddComponent<EnemyComponent>(EnemyComponent::Props{.hp = 2.0f});
+  enemy->AddComponent<HpBarComponent>(HpBarComponent::Props{});
+  enemy->AddComponent<ObjectMovementComponent>(ObjectMovementComponent::Props{
+    .nav = nav_,
+    .move_speed = ENEMY.move_speed,
+    .initial_target_xz = player_spawn_xz_,
+    .has_initial_target = true,
+  });
+}
