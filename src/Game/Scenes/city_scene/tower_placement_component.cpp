@@ -228,7 +228,7 @@ void TowerPlacementComponent::PlaceTower() {
     scene->CreateGameObject("Tower_" + std::to_string(tower_count_++), {.position = {snapped_xz_.x, 0.0f, snapped_xz_.y}});
   tower->AddComponent<ModelComponent>(ModelComponent::Props{.model = tower_model_});
   tower->AddComponent<TowerComponent>(TowerComponent::Props{});
-  placed_towers_.push_back({snapped_xz_, TowerComponent::Props{}.range});
+  placed_towers_.push_back({snapped_xz_, TowerComponent::Props{}.range, tower});
 
   if (nav_) {
     float he = TOWER_CFG.tower_half_extent;
@@ -356,11 +356,19 @@ void TowerPlacementComponent::UpdateTowerHoverRadar() {
 
   auto [mx, my] = input_->GetMousePosition();
   auto hit = GroundRayCaster::ScreenToGroundXZ(mx, my, screen_width_, screen_height_, cam->GetCameraData());
+  auto unhover_tower = [this]() {
+    if (hovered_tower_go_) {
+      if (auto* tc = hovered_tower_go_->GetComponent<TowerComponent>()) tc->SetHighlighted(false);
+      hovered_tower_go_ = nullptr;
+    }
+  };
+
   if (!hit) {
     if (hover_radar_go_) {
       hover_radar_go_->Destroy();
       hover_radar_go_ = nullptr;
     }
+    unhover_tower();
     return;
   }
 
@@ -377,9 +385,12 @@ void TowerPlacementComponent::UpdateTowerHoverRadar() {
       if (hover_radar_go_) {
         hover_radar_go_->Destroy();
       }
+      unhover_tower();
       Math::Vector3 pos = {tower.grid_xz.x, 0.0f, tower.grid_xz.y};
       hover_radar_go_ = CreateRadarDisc(GetOwner()->GetScene(), pos, tower.range, RADAR_COLOR_PLACED);
       hovered_tower_xz_ = tower.grid_xz;
+      hovered_tower_go_ = tower.game_object;
+      if (auto* tc = hovered_tower_go_->GetComponent<TowerComponent>()) tc->SetHighlighted(true);
       return;
     }
   }
@@ -388,6 +399,7 @@ void TowerPlacementComponent::UpdateTowerHoverRadar() {
     hover_radar_go_->Destroy();
     hover_radar_go_ = nullptr;
   }
+  unhover_tower();
 }
 
 void TowerPlacementComponent::ClearHighlights() {

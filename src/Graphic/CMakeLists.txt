@@ -197,6 +197,7 @@ target_add_hlsl_auto(graphic "6.6"
   "${CMAKE_SOURCE_DIR}/shaders/depth_normal_instanced.vs.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/neon_grid.ps.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/radar_range.ps.hlsl"
+  "${CMAKE_SOURCE_DIR}/shaders/laser_beam.ps.hlsl"
 )
 
 # manually add shaders files

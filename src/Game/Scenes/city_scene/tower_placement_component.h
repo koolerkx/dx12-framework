@@ -79,11 +79,13 @@ class TowerPlacementComponent : public BehaviorComponent<TowerPlacementComponent
   struct PlacedTower {
     Math::Vector2 grid_xz;
     float range;
+    GameObject* game_object = nullptr;
   };
 
   GameObject* preview_go_ = nullptr;
   GameObject* radar_go_ = nullptr;
   GameObject* hover_radar_go_ = nullptr;
+  GameObject* hovered_tower_go_ = nullptr;
   Math::Vector2 hovered_tower_xz_ = {};
   std::vector<PlacedTower> placed_towers_;
   Math::Vector2 snapped_xz_ = {};

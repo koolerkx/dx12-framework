@@ -108,4 +108,43 @@ struct RadarRangeShader {
   static_assert(sizeof(Params) == 32);
 };
 
+struct LaserBeamShader {
+  static constexpr ShaderId ID = 31;
+  using VertexType = Vertex::Basic3DVertex;
+
+  static constexpr RSPreset RS_PRESET = RSPreset::Standard;
+  static constexpr std::string_view NAME = "LaserBeam";
+  static constexpr std::wstring_view VS_PATH = L"Content/shaders/basic.vs.cso";
+  static constexpr std::wstring_view PS_PATH = L"Content/shaders/laser_beam.ps.cso";
+  static constexpr ShaderRenderHints HINTS = {};
+
+  static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
+    return VertexType::GetInputLayout();
+  }
+
+  static constexpr RenderLayer RENDER_LAYER = RenderLayer::Transparent;
+  static constexpr RenderTagMask RENDER_TAGS = 0;
+
+  static Rendering::RenderSettings DefaultRenderSettings() {
+    return {
+      .blend_mode = Rendering::BlendMode::Additive,
+      .depth_test = true,
+      .double_sided = true,
+      .render_target_format = Rendering::RenderTargetFormat::HDR,
+    };
+  }
+
+  struct Params {
+    float laser_r, laser_g, laser_b;
+    float emissive_intensity;
+    float pulse_speed;
+    float pulse_frequency;
+    float beam_width;
+    float end_fade_ratio;
+    float end_fade_power;
+    float _pad[3] = {0, 0, 0};
+  };
+  static_assert(sizeof(Params) == 48);
+};
+
 }  // namespace Graphics

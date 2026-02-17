@@ -99,6 +99,7 @@ void AssetManager::CreateDefaultMeshes() {
   register_default(DefaultMesh::Rect, "default:rect", [](auto* d, auto& m) { return MeshFactory::CreateRect(d, m); });
   register_default(DefaultMesh::Plane, "default:plane", [](auto* d, auto& m) { return MeshFactory::CreatePlane(d, m, 10, 10); });
   register_default(DefaultMesh::Sphere, "default:sphere", [](auto* d, auto& m) { return MeshFactory::CreateSphere(d, m, 32, 16); });
+  register_default(DefaultMesh::Cylinder, "default:cylinder", [](auto* d, auto& m) { return MeshFactory::CreateCylinder(d, m); });
 }
 
 void AssetManager::CreateTextureFromPixels(const std::string& cache_key, const uint8_t* pixels, uint32_t width, uint32_t height) {

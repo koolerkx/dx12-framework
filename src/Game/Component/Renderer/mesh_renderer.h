@@ -33,6 +33,8 @@ inline std::string DefaultMeshToString(DefaultMesh type) {
       return "Rect";
     case DefaultMesh::Sphere:
       return "Sphere";
+    case DefaultMesh::Cylinder:
+      return "Cylinder";
   }
   return "Cube";
 }
@@ -42,6 +44,7 @@ inline DefaultMesh ParseDefaultMesh(const std::string& name) {
   if (name == "Plane") return DefaultMesh::Plane;
   if (name == "Rect") return DefaultMesh::Rect;
   if (name == "Sphere") return DefaultMesh::Sphere;
+  if (name == "Cylinder") return DefaultMesh::Cylinder;
   return DefaultMesh::Cube;
 }
 

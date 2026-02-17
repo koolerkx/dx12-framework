@@ -277,6 +277,72 @@ class MeshFactory {
     return out_mesh.Create(device, vertices, 4, indices, 6);
   }
 
+  static bool CreateCylinder(ID3D12Device* device, Mesh& out_mesh, uint32_t segments = 8) {
+    struct Vertex {
+      float pos[3];
+      float normal[3];
+      float uv[2];
+      float color[4];
+      float tangent[4];
+    };
+
+    constexpr float PI = Math::Pi;
+    constexpr float RADIUS = 0.5f;
+    constexpr float HALF_HEIGHT = 0.5f;
+
+    std::vector<Vertex> vertices;
+    vertices.reserve((segments + 1) * 2);
+
+    for (uint32_t i = 0; i <= segments; ++i) {
+      float u = static_cast<float>(i) / segments;
+      float angle = u * 2.0f * PI;
+      float cos_a = cosf(angle);
+      float sin_a = sinf(angle);
+
+      float nx = cos_a;
+      float nz = sin_a;
+
+      float tx = -sin_a;
+      float tz = cos_a;
+
+      vertices.push_back({
+        {nx * RADIUS, -HALF_HEIGHT, nz * RADIUS},
+        {nx, 0.0f, nz},
+        {0.0f, u},
+        {1.0f, 1.0f, 1.0f, 1.0f},
+        {tx, 0.0f, tz, 1.0f},
+      });
+
+      vertices.push_back({
+        {nx * RADIUS, HALF_HEIGHT, nz * RADIUS},
+        {nx, 0.0f, nz},
+        {1.0f, u},
+        {1.0f, 1.0f, 1.0f, 1.0f},
+        {tx, 0.0f, tz, 1.0f},
+      });
+    }
+
+    std::vector<uint16_t> indices;
+    indices.reserve(segments * 6);
+
+    for (uint32_t i = 0; i < segments; ++i) {
+      uint16_t bl = static_cast<uint16_t>(i * 2);
+      uint16_t tl = static_cast<uint16_t>(i * 2 + 1);
+      uint16_t br = static_cast<uint16_t>((i + 1) * 2);
+      uint16_t tr = static_cast<uint16_t>((i + 1) * 2 + 1);
+
+      indices.push_back(bl);
+      indices.push_back(br);
+      indices.push_back(tl);
+
+      indices.push_back(tl);
+      indices.push_back(br);
+      indices.push_back(tr);
+    }
+
+    return out_mesh.Create(device, vertices.data(), vertices.size(), indices.data(), indices.size());
+  }
+
   static bool CreatePlane(ID3D12Device* device, Mesh& out_mesh, uint32_t subdivisions_x = 1, uint32_t subdivisions_z = 1) {
     struct Vertex {
       float pos[3];
