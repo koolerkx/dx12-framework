@@ -15,11 +15,12 @@
 namespace {
 
 constexpr float DESIGN_HEIGHT = 1080.0f;
+constexpr float UI_SCALE = 1.5f;
 constexpr float SAFE_AREA = 48.0f;
 constexpr float PADDING = 16.0f;
-constexpr float TEXT_SIZE = 28.0f;
-constexpr float SMALL_TEXT_SIZE = 24.0f;
-constexpr float TEXT_LINE_HEIGHT = 38.0f;
+constexpr float TEXT_SIZE = 32.0f;
+constexpr float SMALL_TEXT_SIZE = 28.0f;
+constexpr float TEXT_LINE_HEIGHT = 36.0f;
 constexpr float FADE_SPEED = 5.0f;
 constexpr float FADE_EPSILON = 0.001f;
 
@@ -33,8 +34,8 @@ constexpr PanelLayout MESSAGE_PANEL = {480.0f, 68.0f};
 constexpr PanelLayout ALERT_PANEL = {360.0f, 52.0f};
 constexpr PanelLayout HINT_PANEL = {264.0f, 240.0f};
 constexpr PanelLayout ICON_SLOT = {128.0f, 128.0f};
-constexpr PanelLayout CONFIRM_BUTTON = {200.0f, 44.0f};
-constexpr float BUTTON_GAP = 8.0f;
+constexpr PanelLayout CONFIRM_BUTTON = {300.0f, 66.0f};
+constexpr float BUTTON_GAP = 12.0f;
 
 float MoveToward(float current, float target, float max_delta) {
   if (target > current) {
@@ -303,7 +304,7 @@ void HudManagerComponent::UpdateLayout() {
   auto* graphic = GetOwner()->GetContext()->GetGraphic();
   float screen_w = static_cast<float>(graphic->GetFrameBufferWidth());
   float screen_h = static_cast<float>(graphic->GetFrameBufferHeight());
-  float s = screen_h / DESIGN_HEIGHT;
+  float s = (screen_h / DESIGN_HEIGHT) * UI_SCALE;
 
   auto set_pos = [](GameObject* go, float x, float y) {
     go->GetTransform()->SetPosition({x, y, 0.0f});
@@ -464,7 +465,7 @@ bool HudManagerComponent::IsMouseOverUI(float mx, float my) const {
 int HudManagerComponent::HitTestIconSlot(float mx, float my) const {
   auto* graphic = GetOwner()->GetContext()->GetGraphic();
   float screen_h = static_cast<float>(graphic->GetFrameBufferHeight());
-  float s = screen_h / DESIGN_HEIGHT;
+  float s = (screen_h / DESIGN_HEIGHT) * UI_SCALE;
 
   for (size_t i = 0; i < icon_slots_.size(); ++i) {
     float icon_x = (SAFE_AREA + static_cast<float>(i) * 140.0f) * s;
