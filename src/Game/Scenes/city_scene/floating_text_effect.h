@@ -56,4 +56,9 @@ inline void SpawnCostText(IScene* scene, const Math::Vector3& position, int cost
   SpawnFloatingText(scene, position, text, cfg.reward_color, cfg);
 }
 
+inline void SpawnWarningText(IScene* scene, const Math::Vector3& position, const std::wstring& text) {
+  const CitySceneConfig::FloatingTextConfig cfg;
+  SpawnFloatingText(scene, position, text, cfg.warning_color, cfg);
+}
+
 }  // namespace CitySceneEffect

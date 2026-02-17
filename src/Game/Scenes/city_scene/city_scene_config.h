@@ -173,6 +173,7 @@ struct FloatingTextConfig {
   float world_height = 0.5f;
   Math::Vector4 damage_color = {3.0f, 0.2f, 0.2f, 1.0f};
   Math::Vector4 reward_color = {3.0f, 2.5f, 0.2f, 1.0f};
+  Math::Vector4 warning_color = {3.0f, 1.5f, 0.2f, 1.0f};
 };
 
 struct TowerPlacementConfig {

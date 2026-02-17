@@ -15,6 +15,7 @@
 #include "Map/nav_grid.h"
 #include "Map/nav_grid_events.h"
 #include "Component/enemy_spawn_component.h"
+#include "Component/player_spawn_component.h"
 #include "Framework/Event/event_bus.hpp"
 #include "Scenes/city_scene/city_scene_config.h"
 #include "Scenes/city_scene/city_scene_events.h"
@@ -81,6 +82,9 @@ void TowerPlacementComponent::OnStart() {
   event_scope_.Subscribe<TowerPlacementConfirmedEvent>(bus, [this](const TowerPlacementConfirmedEvent&) {
     if (state_ != PlacementState::Selected) return;
     if (IsPlacementBlocked()) {
+      const CitySceneConfig::FloatingTextConfig txt_cfg;
+      CitySceneEffect::SpawnWarningText(GetOwner()->GetScene(),
+        {snapped_xz_.x, txt_cfg.y_offset, snapped_xz_.y}, L"Blocked!");
       GetContext()->GetEventBus()->Emit(OverlapEnemyEvent{});
       return;
     }
@@ -94,6 +98,10 @@ void TowerPlacementComponent::OnStart() {
         {snapped_xz_.x, txt_cfg.y_offset, snapped_xz_.y}, total_cost);
       PlaceTower();
       Deactivate();
+    } else {
+      const CitySceneConfig::FloatingTextConfig txt_cfg;
+      CitySceneEffect::SpawnWarningText(GetOwner()->GetScene(),
+        {snapped_xz_.x, txt_cfg.y_offset, snapped_xz_.y}, L"No Gold!");
     }
   });
 
@@ -182,7 +190,10 @@ void TowerPlacementComponent::UpdateHovering() {
   }
 
   if (!over_ui && input_->GetMouseButtonDown(Mouse::Button::Left)) {
-    if (IsOverlappingEnemySpawn()) {
+    if (IsOverlappingEnemySpawn() || IsOverlappingExistingTower()) {
+      const CitySceneConfig::FloatingTextConfig txt_cfg;
+      CitySceneEffect::SpawnWarningText(GetOwner()->GetScene(),
+        {snapped_xz_.x, txt_cfg.y_offset, snapped_xz_.y}, L"Blocked!");
       GetContext()->GetEventBus()->Emit(OverlapEnemySpawnEvent{});
       return;
     }
@@ -303,7 +314,7 @@ bool TowerPlacementComponent::IsOverlappingEnemySpawn() const {
 
   Math::AABB tower_bounds = ComputeTowerBounds();
   for (const auto& go : scene->GetGameObjects()) {
-    if (go->GetComponent<EnemySpawnComponent>()) {
+    if (go->GetComponent<EnemySpawnComponent>() || go->GetComponent<PlayerSpawnComponent>()) {
       auto spawn_pos = go->GetTransform()->GetWorldPosition();
       constexpr CitySceneConfig::SpawnCubeConfig SPAWN;
       float half = SPAWN.scale * 0.5f;
@@ -313,6 +324,20 @@ bool TowerPlacementComponent::IsOverlappingEnemySpawn() const {
       };
       if (tower_bounds.Intersects(spawn_bounds)) return true;
     }
+  }
+  return false;
+}
+
+bool TowerPlacementComponent::IsOverlappingExistingTower() const {
+  constexpr float TOWER_HE = CitySceneConfig::TowerPlacementConfig{}.tower_half_extent;
+  Math::AABB new_bounds = ComputeTowerBounds();
+  for (const auto& tower : placed_towers_) {
+    if (tower.game_object && tower.game_object->IsPendingDestroy()) continue;
+    Math::AABB existing = {
+      {tower.grid_xz.x - TOWER_HE, 0.0f, tower.grid_xz.y - TOWER_HE},
+      {tower.grid_xz.x + TOWER_HE, 1.0f, tower.grid_xz.y + TOWER_HE},
+    };
+    if (new_bounds.Intersects(existing)) return true;
   }
   return false;
 }

@@ -53,6 +53,7 @@ class TowerPlacementComponent : public BehaviorComponent<TowerPlacementComponent
   Math::AABB ComputeTowerBounds() const;
   bool IsPlacementBlocked() const;
   bool IsOverlappingEnemySpawn() const;
+  bool IsOverlappingExistingTower() const;
   void UpdateOverlapHighlights();
   void ClearHighlights();
   Math::AABB HideOverlappedInstances();
