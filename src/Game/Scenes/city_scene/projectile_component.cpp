@@ -43,6 +43,6 @@ void ProjectileComponent::OnUpdate(float dt) {
   transform->SetPosition(new_pos);
 
   float yaw_rad = std::atan2(direction.x, direction.z);
-  float yaw_deg = yaw_rad * (180.0f / DirectX::XM_PI);
+  float yaw_deg = yaw_rad * (180.0f / DirectX::XM_PI) + 180.0f;
   transform->SetRotationEulerDegree(0.0f, yaw_deg, 0.0f);
 }

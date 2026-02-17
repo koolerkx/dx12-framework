@@ -1,18 +1,22 @@
 #include "tower_component.h"
 
-#include "Component/Renderer/mesh_renderer.h"
+#include "Asset/asset_manager.h"
+#include "Component/model_component.h"
 #include "Component/transform_component.h"
-#include "Framework/Core/color.h"
 #include "Framework/Math/Math.h"
+#include "Scenes/city_scene/city_scene_config.h"
 #include "Scenes/city_scene/enemy_component.h"
 #include "Scenes/city_scene/projectile_component.h"
 #include "game_object.h"
 #include "scene.h"
 
+namespace cfg = CitySceneConfig;
+
 using Math::Vector3;
 
 void TowerComponent::OnStart() {
   enemy_manager_ = GetOwner()->GetScene()->FindGameObject("EnemyManager");
+  projectile_model_ = GetContext()->GetAssetManager().LoadModel(cfg::PATHS.projectile_model, cfg::FBX_UNIT_SCALE);
 }
 
 void TowerComponent::OnUpdate(float dt) {
@@ -56,13 +60,10 @@ void TowerComponent::SpawnProjectile(GameObject* target) {
   auto tower_pos = GetOwner()->GetTransform()->GetWorldPosition();
 
   auto* projectile =
-    scene->CreateGameObject("Projectile_" + std::to_string(global_projectile_id++), {.position = tower_pos, .scale = {0.2f, 0.2f, 0.2f}});
+    scene->CreateGameObject("Projectile_" + std::to_string(global_projectile_id++), {.position = tower_pos});
   projectile->SetTransient(true);
 
-  projectile->AddComponent<MeshRenderer>(MeshRenderer::Props{
-    .mesh_type = DefaultMesh::Cube,
-    .color = colors::Cyan,
-  });
+  projectile->AddComponent<ModelComponent>(ModelComponent::Props{.model = projectile_model_});
 
   projectile->AddComponent<ProjectileComponent>(ProjectileComponent::Props{
     .target = target,

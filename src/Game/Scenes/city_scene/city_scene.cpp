@@ -7,6 +7,7 @@
 #include "Component/Collider/box_collider_component.h"
 #include "Component/Renderer/instanced_model_renderer.h"
 #include "Component/Renderer/mesh_renderer.h"
+#include "Component/model_component.h"
 #include "Component/camera_component.h"
 #include "Component/spawn_point_component.h"
 #include "Component/transform_component.h"
@@ -169,15 +170,17 @@ void CityScene::SpawnEnemyManager() {
   auto* enemy_manager = CreateGameObject("EnemyManager");
 
   const cfg::EnemyConfig ENEMY;
-  const Math::AABB UNIT_CUBE_BOUNDS = {{-0.5f, -0.5f, -0.5f}, {0.5f, 0.5f, 0.5f}};
 
-  auto* enemy = CreateGameObject("Enemy", {.position = ENEMY.spawn_position, .scale = {ENEMY.scale, ENEMY.scale, ENEMY.scale}});
+  auto& assets = GetContext()->GetAssetManager();
+  auto enemy_model = assets.LoadModel(cfg::PATHS.enemy_model, cfg::FBX_UNIT_SCALE);
+
+  auto* enemy = CreateGameObject("Enemy", {.position = ENEMY.spawn_position});
   enemy->SetParent(enemy_manager);
-  enemy->AddComponent<MeshRenderer>(MeshRenderer::Props{
-    .mesh_type = DefaultMesh::Cube,
-    .color = colors::Red,
-  });
-  enemy->AddComponent<BoxColliderComponent>(UNIT_CUBE_BOUNDS, enemy->GetTransform()->GetWorldMatrix());
+
+  auto* enemy_mesh = CreateGameObject("EnemyMesh");
+  enemy_mesh->SetTransient(true);
+  enemy_mesh->SetParent(enemy);
+  enemy_mesh->AddComponent<ModelComponent>(ModelComponent::Props{.model = enemy_model});
   enemy->AddComponent<EnemyComponent>(EnemyComponent::Props{.hp = 2.0f});
   enemy->AddComponent<HpBarComponent>(HpBarComponent::Props{});
 

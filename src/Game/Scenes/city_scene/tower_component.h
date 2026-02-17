@@ -1,7 +1,10 @@
 #pragma once
 
+#include <memory>
+
 #include "Component/behavior_component.h"
 
+struct ModelData;
 class GameObject;
 
 class TowerComponent : public BehaviorComponent<TowerComponent> {
@@ -29,4 +32,5 @@ class TowerComponent : public BehaviorComponent<TowerComponent> {
   float damage_ = 1.0f;
   float shoot_timer_ = 0.0f;
   GameObject* enemy_manager_ = nullptr;
+  std::shared_ptr<ModelData> projectile_model_;
 };

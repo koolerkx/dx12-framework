@@ -72,6 +72,7 @@ class TowerPlacementComponent : public BehaviorComponent<TowerPlacementComponent
 
   std::shared_ptr<ModelData> selection_a_model_;
   std::shared_ptr<ModelData> selection_b_model_;
+  std::shared_ptr<ModelData> tower_model_;
 
   GameObject* preview_go_ = nullptr;
   Math::Vector2 snapped_xz_ = {};

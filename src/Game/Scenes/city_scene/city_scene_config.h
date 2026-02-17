@@ -11,6 +11,9 @@ namespace CitySceneConfig {
   const char* map = "Content/map/City.yaml";
   const char* tower_selection_a = "Content/models/tower/selection-a.fbx";
   const char* tower_selection_b = "Content/models/tower/selection-b.fbx";
+  const char* enemy_model = "Content/models/tower/enemy-ufo-a.fbx";
+  const char* projectile_model = "Content/models/tower/weapon-ammo-bullet.fbx";
+  const char* tower_model = "Content/models/tower2/tower-square-build-f.fbx";
 } PATHS;
 
 struct LightConfig {

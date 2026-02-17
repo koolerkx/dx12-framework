@@ -40,9 +40,11 @@ void TowerPlacementComponent::OnStart() {
   auto* context = GetContext();
   input_ = context->GetInput();
 
+  namespace cfg = CitySceneConfig;
   auto& assets = context->GetAssetManager();
-  selection_a_model_ = assets.LoadModel(CitySceneConfig::PATHS.tower_selection_a, CitySceneConfig::FBX_UNIT_SCALE);
-  selection_b_model_ = assets.LoadModel(CitySceneConfig::PATHS.tower_selection_b, CitySceneConfig::FBX_UNIT_SCALE);
+  selection_a_model_ = assets.LoadModel(cfg::PATHS.tower_selection_a, cfg::FBX_UNIT_SCALE);
+  selection_b_model_ = assets.LoadModel(cfg::PATHS.tower_selection_b, cfg::FBX_UNIT_SCALE);
+  tower_model_ = assets.LoadModel(cfg::PATHS.tower_model, cfg::FBX_UNIT_SCALE);
 }
 
 void TowerPlacementComponent::OnUpdate(float dt) {
@@ -173,13 +175,9 @@ void TowerPlacementComponent::PlaceTower() {
   Math::AABB removed_area = HideOverlappedInstances();
 
   auto* scene = GetOwner()->GetScene();
-  float s = TOWER_CFG.tower_scale;
   auto* tower =
-    scene->CreateGameObject("Tower_" + std::to_string(tower_count_++), {.position = {snapped_xz_.x, TOWER_CFG.tower_half_height, snapped_xz_.y}, .scale = {s, s, s}});
-  tower->AddComponent<MeshRenderer>(MeshRenderer::Props{
-    .mesh_type = DefaultMesh::Cube,
-    .color = colors::Green,
-  });
+    scene->CreateGameObject("Tower_" + std::to_string(tower_count_++), {.position = {snapped_xz_.x, 0.0f, snapped_xz_.y}});
+  tower->AddComponent<ModelComponent>(ModelComponent::Props{.model = tower_model_});
   tower->AddComponent<TowerComponent>(TowerComponent::Props{});
 
   if (nav_) {
