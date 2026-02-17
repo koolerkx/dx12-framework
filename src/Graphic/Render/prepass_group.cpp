@@ -1,5 +1,6 @@
 #include "prepass_group.h"
 
+#include "Framework/Core/color.h"
 #include "Render/depth_normal_pass.h"
 #include "Render/render_graph.h"
 
@@ -10,6 +11,7 @@ void PrepassGroup::Build(RenderGraph& graph, const Props& props) {
     .width = props.context.width,
     .height = props.context.height,
     .device = props.context.device,
+    .clear_color = colors::TransparentBlack,
   });
 
   prepass_depth_ = graph.CreateDepthBuffer({

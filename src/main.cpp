@@ -108,6 +108,10 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
     event_generator.Update();
 
     game.OnUpdate(dt);
+    if (context.IsQuitRequested()) {
+      DestroyWindow(app.GetHwnd());
+      return;
+    }
     game.OnRender();
   };
 

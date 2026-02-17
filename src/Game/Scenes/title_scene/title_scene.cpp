@@ -1,6 +1,7 @@
 #include "Scenes/title_scene/title_scene.h"
 
 #include "Asset/asset_manager.h"
+#include "Component/Renderer/mesh_renderer.h"
 #include "Component/Renderer/particle_emitter.h"
 #include "Component/Renderer/ui_glass_renderer.h"
 #include "Component/Renderer/ui_sprite_renderer.h"
@@ -9,6 +10,8 @@
 #include "Component/transform_component.h"
 #include "Framework/Input/input.h"
 #include "Graphic/graphic.h"
+#include "Math/Math.h"
+#include "ProceduralTexture/procedural_texture_factory.h"
 #include "game_context.h"
 #include "game_object.h"
 #include "scene_id.h"
@@ -28,6 +31,27 @@ constexpr float PADDING = 24.0f;
 constexpr float SPRITE_PADDING = 16.0f;
 constexpr float TEXT_SIZE = 28.0f;
 
+constexpr float RANDOM_DIRECTION_RANGE = 0.2f;
+ParticleEmitter::SpawnFn SpawnEnvironmentParticle() {
+  return [](std::mt19937& rng) -> ParticleEmitter::SpawnParams {
+    std::uniform_real_distribution<float> angle_dist(0.0f, Math::TwoPi);
+    std::uniform_real_distribution<float> radius_dist(0.0f, 1.0f);
+    std::uniform_real_distribution<float> x_offset(-RANDOM_DIRECTION_RANGE, RANDOM_DIRECTION_RANGE);
+    std::uniform_real_distribution<float> y_offset(-RANDOM_DIRECTION_RANGE, RANDOM_DIRECTION_RANGE);
+    std::uniform_real_distribution<float> z_offset(-RANDOM_DIRECTION_RANGE, RANDOM_DIRECTION_RANGE);
+
+    float angle = angle_dist(rng);
+    float r = std::sqrt(radius_dist(rng));
+
+    float x = r * std::cos(angle);
+    float z = r * std::sin(angle);
+
+    return {
+      .offset = {x, 0.0f, z},
+      .direction = Vector3{x_offset(rng), 1.0f, z_offset(rng)}.Normalized(),
+    };
+  };
+}
 }  // namespace
 
 void TitleScene::OnEnter(AssetManager& asset_manager) {
@@ -40,48 +64,100 @@ void TitleScene::OnEnter(AssetManager& asset_manager) {
   auto* camera = camera_obj->AddComponent<CameraComponent>();
   GetCameraSetting().Register(camera);
 
+  auto procedural_pixels = GenerateProceduralTexture({.size = 64, .falloff = 10.0f, .shape = ProceduralShape::Circle});
+  asset_manager.CreateTextureFromPixels("procedural:circle_64", procedural_pixels.data(), 64, 64);
+
+  auto* blue_go = CreateGameObject("Title_Particles_Blue", {.position = {0.0f, 0.0f, 6.0f}});
+  auto* blue_emitter = blue_go->AddComponent<ParticleEmitter>(ParticleEmitter::Props{
+    .texture_path = "procedural:circle_64",
+    .max_particles = 1000,
+    .emit_rate = 150.0f,
+    .particle_lifetime = 6.0f,
+    .particle_size = {0.15f, 0.15f},
+    .start_color = {0.2f, 0.5f, 1.0f, 1.0f},
+    .end_color = {0.1f, 0.3f, 0.9f, 0.0f},
+    .start_speed = 0.4f,
+    .speed_variation = 0.2f,
+    .gravity = {0.0f, 0.0f, 0.0f},
+    .loop = true,
+    .blend_mode = Rendering::BlendMode::Additive,
+    .spawn_offset = {0.0f, -2.0f, 2.0f},
+    .spawn_shape = SpawnShape::Custom,
+    .spawn_radius = 5.0f,
+    .fade_in_ratio = 0.1f,
+    .fade_out_ratio = 0.4f,
+    .emissive_intensity = 5.0f,
+    .spawn_fn = SpawnEnvironmentParticle(),
+  });
+  blue_emitter->Play();
+
+  auto* red_go = CreateGameObject("Title_Particles_Red", {.position = {0.0f, 0.0f, 4.0f}});
+  auto* red_emitter = red_go->AddComponent<ParticleEmitter>(ParticleEmitter::Props{
+    .texture_path = "procedural:circle_64",
+    .max_particles = 1000,
+    .emit_rate = 100.0f,
+    .particle_lifetime = 4.0f,
+    .particle_size = {0.2f, 0.2f},
+    .start_color = {1.0f, 0.3f, 0.1f, 0.9f},
+    .end_color = {0.8f, 0.1f, 0.0f, 0.0f},
+    .start_speed = 0.5f,
+    .speed_variation = 0.2f,
+    .gravity = {0.0f, 0.0f, 0.0f},
+    .loop = true,
+    .blend_mode = Rendering::BlendMode::Additive,
+    .spawn_offset = {0.0f, -2.0f, 2.0f},
+    .spawn_shape = SpawnShape::Custom,
+    .spawn_radius = 5.0f,
+    .fade_in_ratio = 0.1f,
+    .fade_out_ratio = 0.4f,
+    .emissive_intensity = 5.0f,
+    .spawn_fn = SpawnEnvironmentParticle(),
+  });
+  red_emitter->Play();
+
   auto* root = CreateGameObject("Title_Root");
 
   logo_panel_ = CreateGameObject("Title_LogoPanel");
   logo_panel_->SetParent(root);
   logo_glass_ = logo_panel_->AddComponent<UIGlassRenderer>(UIGlassRenderer::Props{
-      .layer_id = 1,
+    .layer_id = 1,
   });
 
   logo_sprite_go_ = CreateGameObject("Title_LogoSprite");
   logo_sprite_go_->SetParent(logo_panel_);
   logo_sprite_ = logo_sprite_go_->AddComponent<UISpriteRenderer>(UISpriteRenderer::Props{
-      .texture_path = "Content/textures/white.png",
+    .texture_path = "Content/textures/title_1.png",
   });
+  logo_sprite_->SetUVScale({1, -1});
 
   start_btn_ = CreateGameObject("Title_StartBtn");
   start_btn_->SetParent(root);
   start_glass_ = start_btn_->AddComponent<UIGlassRenderer>(UIGlassRenderer::Props{
-      .layer_id = 1,
+    .layer_id = 1,
   });
 
   start_label_go_ = CreateGameObject("Title_StartLabel");
   start_label_go_->SetParent(start_btn_);
   start_label_ = start_label_go_->AddComponent<UITextRenderer>(UITextRenderer::Props{
-      .text = L"Start",
-      .pixel_size = TEXT_SIZE,
-      .h_align = Text::HorizontalAlign::Center,
-      .pivot = {0.5f, 0.0f},
+    .text = L"Start",
+    .pixel_size = TEXT_SIZE,
+    .h_align = Text::HorizontalAlign::Center,
+    .pivot = {0.5f, 0.0f},
   });
 
   leave_btn_ = CreateGameObject("Title_LeaveBtn");
   leave_btn_->SetParent(root);
   leave_glass_ = leave_btn_->AddComponent<UIGlassRenderer>(UIGlassRenderer::Props{
-      .layer_id = 1,
+    .layer_id = 1,
   });
 
   leave_label_go_ = CreateGameObject("Title_LeaveLabel");
   leave_label_go_->SetParent(leave_btn_);
   leave_label_ = leave_label_go_->AddComponent<UITextRenderer>(UITextRenderer::Props{
-      .text = L"Leave",
-      .pixel_size = TEXT_SIZE,
-      .h_align = Text::HorizontalAlign::Center,
-      .pivot = {0.5f, 0.0f},
+    .text = L"Leave",
+    .pixel_size = TEXT_SIZE,
+    .h_align = Text::HorizontalAlign::Center,
+    .pivot = {0.5f, 0.0f},
   });
 
   UpdateLayout();
@@ -93,9 +169,7 @@ void TitleScene::OnExit() {
 void TitleScene::OnPreUpdate(float /*dt*/) {
   auto [mx, my] = input_->GetMousePosition();
 
-  auto hit_test = [](float mx, float my, const Rect& r) {
-    return mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h;
-  };
+  auto hit_test = [](float mx, float my, const Rect& r) { return mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h; };
 
   static const Math::Vector4 HOVER_TINT = {0.3f, 0.5f, 1.0f, 0.2f};
   static const Math::Vector4 DEFAULT_TINT = {1.0f, 1.0f, 1.0f, 0.1f};
@@ -145,9 +219,7 @@ void TitleScene::UpdateLayout() {
   float btn_row_x = block_x + (block_w - total_btn_row_w) / 2.0f;
   float btn_y = logo_y + logo_h + pad;
 
-  auto set_pos = [](GameObject* go, float x, float y) {
-    go->GetTransform()->SetPosition({x, y, 0.0f});
-  };
+  auto set_pos = [](GameObject* go, float x, float y) { go->GetTransform()->SetPosition({x, y, 0.0f}); };
 
   set_pos(logo_panel_, logo_x, logo_y);
   logo_glass_->SetSize({logo_w, logo_h});

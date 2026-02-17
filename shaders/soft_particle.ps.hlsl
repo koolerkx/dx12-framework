@@ -30,7 +30,7 @@ float4 main(PSIN input) : SV_TARGET {
   float2 screenUV = input.position.xy / g_FrameCB.screenSize;
   float sceneDepth = g_Textures[g_SoftParticleCB.depthSrvIndex].SampleLevel(
       g_Samplers[SAMPLER_LINEAR_CLAMP], screenUV, 0).w;
-  float particleDepth = input.position.w;
+  float particleDepth = 1.0 / input.position.w;
 
   if (sceneDepth > 0.0) {
     float depthDiff = sceneDepth - particleDepth;
