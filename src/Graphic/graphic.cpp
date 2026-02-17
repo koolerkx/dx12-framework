@@ -28,6 +28,7 @@
 #include "Render/skybox_pass.h"
 #include "Render/smaa_pass_group.h"
 #include "Render/ssao_pass_group.h"
+#include "Render/chromatic_aberration_pass.h"
 #include "Render/vignette_pass.h"
 
 using Math::Vector3;
@@ -276,6 +277,12 @@ void Graphic::BuildRenderPipeline() {
         .config = &render_config_.vignette,
       });
     ldr_output = vignette_group.GetOutput();
+  }
+
+  {
+    ChromaticAberrationPassGroup ca_group;
+    ca_group.Build(*render_graph_, ldr_output, {.context = ctx, .config = &render_config_.chromatic_aberration});
+    ldr_output = ca_group.GetOutput();
   }
 
   RenderGraphHandle blit_source = ldr_output;

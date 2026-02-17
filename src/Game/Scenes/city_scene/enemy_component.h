@@ -4,9 +4,13 @@
 
 #include "Component/behavior_component.h"
 #include "Component/transform_component.h"
+#include "Scenes/city_scene/city_scene_config.h"
 #include "Scenes/city_scene/explosion_effect.h"
 #include "Scenes/city_scene/object_movement_component.h"
+#include "Scripts/camera_shake_controller.h"
+#include "Scripts/screen_effect_controller.h"
 #include "game_object.h"
+#include "scene.h"
 
 class EnemyComponent : public BehaviorComponent<EnemyComponent> {
  public:
@@ -76,6 +80,14 @@ class EnemyComponent : public BehaviorComponent<EnemyComponent> {
 
     const CitySceneConfig::ExplosionSparksConfig sparks_cfg;
     CitySceneEffect::SpawnExplosionSparks(scene, pos, CitySceneEffect::FromExplosionSparksConfig(sparks_cfg), "ArrivalSparks");
+
+    const CitySceneConfig::ArrivalScreenEffectConfig fx_cfg;
+    auto* camera_go = scene->FindGameObject("MainCamera");
+    if (camera_go) {
+      if (auto* shake = camera_go->GetComponent<CameraShakeController>()) shake->Trigger(fx_cfg.shake_intensity, fx_cfg.shake_duration);
+      if (auto* screen_fx = camera_go->GetComponent<ScreenEffectController>())
+        screen_fx->TriggerChromaticAberration(fx_cfg.chromatic_aberration_intensity);
+    }
   }
 
   float hp_ = 2.0f;

@@ -22,7 +22,9 @@
 #include "Scenes/city_scene/enemy_spawn_manager_component.h"
 #include "Scenes/city_scene/player_control_component.h"
 #include "Scenes/city_scene/wave_manager_component.h"
+#include "Scripts/camera_shake_controller.h"
 #include "Scripts/free_camera_controller.h"
+#include "Scripts/screen_effect_controller.h"
 #include "scene_id.h"
 #include "scene_manager.h"
 
@@ -245,5 +247,7 @@ void CityScene::SetupCamera() {
     .rotation_speed = CAM.rotation_speed,
     .smoothness = CAM.smoothness,
   });
+  camera_obj->AddComponent<CameraShakeController>();
+  camera_obj->AddComponent<ScreenEffectController>();
   GetCameraSetting().Register(camera);
 }

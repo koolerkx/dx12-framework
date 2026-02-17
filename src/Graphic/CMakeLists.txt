@@ -144,11 +144,15 @@ add_library(graphic STATIC
   Render/vignette_pass.h
   Render/vignette_pass.cpp
 
+  Render/chromatic_aberration_pass.h
+  Render/chromatic_aberration_pass.cpp
+
   Rendering/fog_config.h
   Rendering/ssao_config.h
   Rendering/smaa_config.h
   Rendering/outline_config.h
   Rendering/vignette_config.h
+  Rendering/chromatic_aberration_config.h
 )
 
 target_link_libraries(graphic PUBLIC framework)
@@ -199,6 +203,7 @@ target_add_hlsl_auto(graphic "6.6"
   "${CMAKE_SOURCE_DIR}/shaders/radar_range.ps.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/laser_beam.ps.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/path_pulse.ps.hlsl"
+  "${CMAKE_SOURCE_DIR}/shaders/chromatic_aberration.ps.hlsl"
 )
 
 # manually add shaders files

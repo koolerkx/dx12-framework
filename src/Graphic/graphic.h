@@ -29,6 +29,7 @@
 #include "Rendering/outline_config.h"
 #include "Rendering/smaa_config.h"
 #include "Rendering/ssao_config.h"
+#include "Rendering/chromatic_aberration_config.h"
 #include "Rendering/vignette_config.h"
 #include "Resource/Buffer/instance_buffer_manager.h"
 #include "Resource/Buffer/structured_buffer.h"
@@ -49,6 +50,7 @@ class Graphic {
     FogConfig fog;
     OutlineConfig outline;
     VignetteConfig vignette;
+    ChromaticAberrationConfig chromatic_aberration;
   };
 
   struct GraphicInitProps {
@@ -210,6 +212,9 @@ class Graphic {
   }
   VignetteConfig& GetVignetteConfig() {
     return render_config_.vignette;
+  }
+  ChromaticAberrationConfig& GetChromaticAberrationConfig() {
+    return render_config_.chromatic_aberration;
   }
 
   void SetWireframeMode(bool enabled) {

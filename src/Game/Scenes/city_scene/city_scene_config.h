@@ -133,4 +133,10 @@ struct BulletHitSparksConfig {
   float spawn_radius = 0.1f;
 };
 
+struct ArrivalScreenEffectConfig {
+  float shake_intensity = 0.3f;
+  float shake_duration = 0.4f;
+  float chromatic_aberration_intensity = 1.0f;
+};
+
 }  // namespace CitySceneConfig
