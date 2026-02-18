@@ -32,6 +32,8 @@ constexpr float SPRITE_PADDING = 16.0f;
 constexpr float TEXT_SIZE = 28.0f;
 
 constexpr float RANDOM_DIRECTION_RANGE = 0.2f;
+constexpr float PARALLAX_MAX_ANGLE = 12.0f;
+constexpr float PARALLAX_SMOOTHNESS = 3.0f;
 ParticleEmitter::SpawnFn SpawnEnvironmentParticle() {
   return [](std::mt19937& rng) -> ParticleEmitter::SpawnParams {
     std::uniform_real_distribution<float> angle_dist(0.0f, Math::TwoPi);
@@ -62,17 +64,18 @@ void TitleScene::OnEnter(AssetManager& asset_manager) {
 
   auto* camera_obj = CreateGameObject("TitleCamera");
   auto* camera = camera_obj->AddComponent<CameraComponent>();
+  camera_transform_ = camera_obj->GetTransform();
   GetCameraSetting().Register(camera);
 
   auto procedural_pixels = GenerateProceduralTexture({.size = 64, .falloff = 10.0f, .shape = ProceduralShape::Circle});
   asset_manager.CreateTextureFromPixels("procedural:circle_64", procedural_pixels.data(), 64, 64);
 
-  auto* blue_go = CreateGameObject("Title_Particles_Blue", {.position = {0.0f, 0.0f, 6.0f}});
+  auto* blue_go = CreateGameObject("Title_Particles_Blue", {.position = {0.0f, 0.0f, 12.0f}});
   auto* blue_emitter = blue_go->AddComponent<ParticleEmitter>(ParticleEmitter::Props{
     .texture_path = "procedural:circle_64",
-    .max_particles = 1000,
-    .emit_rate = 150.0f,
-    .particle_lifetime = 6.0f,
+    .max_particles = 1500,
+    .emit_rate = 200.0f,
+    .particle_lifetime = 10.0f,
     .particle_size = {0.15f, 0.15f},
     .start_color = {0.2f, 0.5f, 1.0f, 1.0f},
     .end_color = {0.1f, 0.3f, 0.9f, 0.0f},
@@ -83,20 +86,20 @@ void TitleScene::OnEnter(AssetManager& asset_manager) {
     .blend_mode = Rendering::BlendMode::Additive,
     .spawn_offset = {0.0f, -2.0f, 2.0f},
     .spawn_shape = SpawnShape::Custom,
-    .spawn_radius = 5.0f,
+    .spawn_radius = 10.0f,
     .fade_in_ratio = 0.1f,
     .fade_out_ratio = 0.4f,
-    .emissive_intensity = 5.0f,
+    .emissive_intensity = 10.0f,
     .spawn_fn = SpawnEnvironmentParticle(),
   });
   blue_emitter->Play();
 
-  auto* red_go = CreateGameObject("Title_Particles_Red", {.position = {0.0f, 0.0f, 4.0f}});
+  auto* red_go = CreateGameObject("Title_Particles_Red", {.position = {0.0f, 0.0f, 6.0f}});
   auto* red_emitter = red_go->AddComponent<ParticleEmitter>(ParticleEmitter::Props{
     .texture_path = "procedural:circle_64",
     .max_particles = 1000,
     .emit_rate = 100.0f,
-    .particle_lifetime = 4.0f,
+    .particle_lifetime = 10.0f,
     .particle_size = {0.2f, 0.2f},
     .start_color = {1.0f, 0.3f, 0.1f, 0.9f},
     .end_color = {0.8f, 0.1f, 0.0f, 0.0f},
@@ -110,7 +113,7 @@ void TitleScene::OnEnter(AssetManager& asset_manager) {
     .spawn_radius = 5.0f,
     .fade_in_ratio = 0.1f,
     .fade_out_ratio = 0.4f,
-    .emissive_intensity = 5.0f,
+    .emissive_intensity = 10.0f,
     .spawn_fn = SpawnEnvironmentParticle(),
   });
   red_emitter->Play();
@@ -166,8 +169,19 @@ void TitleScene::OnEnter(AssetManager& asset_manager) {
 void TitleScene::OnExit() {
 }
 
-void TitleScene::OnPreUpdate(float /*dt*/) {
+void TitleScene::OnPreUpdate(float dt) {
   auto [mx, my] = input_->GetMousePosition();
+
+  auto* graphic = GetContext()->GetGraphic();
+  float screen_w = static_cast<float>(graphic->GetFrameBufferWidth());
+  float screen_h = static_cast<float>(graphic->GetFrameBufferHeight());
+  float norm_x = (mx / screen_w) - 0.5f;
+  float norm_y = (my / screen_h) - 0.5f;
+
+  Vector3 current_euler = camera_transform_->GetRotationDegrees();
+  Vector3 target_euler = {norm_y * -PARALLAX_MAX_ANGLE, norm_x * -PARALLAX_MAX_ANGLE, 0.0f};
+  float smooth_t = 1.0f - std::exp(-PARALLAX_SMOOTHNESS * dt);
+  camera_transform_->SetRotationEulerDegree(Vector3::Lerp(current_euler, target_euler, smooth_t));
 
   auto hit_test = [](float mx, float my, const Rect& r) { return mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h; };
 

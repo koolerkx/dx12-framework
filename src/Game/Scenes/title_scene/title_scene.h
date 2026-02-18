@@ -3,6 +3,7 @@
 #include "scene.h"
 
 class InputSystem;
+class TransformComponent;
 class UIGlassRenderer;
 class UISpriteRenderer;
 class UITextRenderer;
@@ -18,6 +19,7 @@ class TitleScene : public IScene {
   void UpdateLayout();
 
   InputSystem* input_ = nullptr;
+  TransformComponent* camera_transform_ = nullptr;
 
   UIGlassRenderer* logo_glass_ = nullptr;
   UISpriteRenderer* logo_sprite_ = nullptr;
