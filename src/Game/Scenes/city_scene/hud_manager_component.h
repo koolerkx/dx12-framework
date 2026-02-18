@@ -51,6 +51,14 @@ class HudManagerComponent : public BehaviorComponent<HudManagerComponent> {
     bool is_countdown = false;
   };
 
+  enum class HintMode : uint8_t { Normal, PlacingTower, ConfirmingTower };
+
+  struct HintRow {
+    GameObject* root = nullptr;
+    UITextRenderer* text = nullptr;
+    std::vector<UISpriteRenderer*> icons;
+  };
+
   void SetWave(int wave);
   void SetHealth(int hp);
   void SetGold(int gold);
@@ -66,6 +74,10 @@ class HudManagerComponent : public BehaviorComponent<HudManagerComponent> {
   void SetConfirmPanelVisible(bool visible);
   void SetGameplayHudVisible(bool visible);
   void SubscribeEvents();
+  void BuildHintPanel();
+  void SetHintMode(HintMode mode);
+  HintRow CreateHintRow(const char* name, const wchar_t* label,
+                        const std::vector<std::string>& icon_paths);
 
   EventScope event_scope_;
 
@@ -80,7 +92,11 @@ class HudManagerComponent : public BehaviorComponent<HudManagerComponent> {
 
   GameObject* hint_panel_ = nullptr;
   UIGlassRenderer* hint_glass_ = nullptr;
-  UITextRenderer* hint_text_ = nullptr;
+  std::vector<HintRow> common_hint_rows_;
+  HintRow normal_hint_row_;
+  HintRow placing_tower_hint_row_;
+  HintRow confirming_tower_hint_row_;
+  HintMode hint_mode_ = HintMode::Normal;
 
   struct ButtonSlot {
     GameObject* root = nullptr;
