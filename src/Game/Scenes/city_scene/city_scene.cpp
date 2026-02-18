@@ -27,6 +27,9 @@
 #include "Scripts/camera_shake_controller.h"
 #include "Scripts/free_camera_controller.h"
 #include "Scripts/screen_effect_controller.h"
+#include "Graphic/graphic.h"
+#include "game_context.h"
+#include "play_state.h"
 #include "scene_id.h"
 #include "scene_manager.h"
 
@@ -149,6 +152,16 @@ void CityScene::OnEnter(AssetManager& asset_manager) {
   auto* hud = CreateGameObject("HUD");
   hud->AddComponent<HudManagerComponent>();
 
+  transition_overlay_.Create(this, "SceneTransitionOverlay");
+  if (GetContext()->GetPlayState() == PlayState::Playing) {
+    auto* graphic = GetContext()->GetGraphic();
+    float screen_w = static_cast<float>(graphic->GetFrameBufferWidth());
+    float screen_h = static_cast<float>(graphic->GetFrameBufferHeight());
+    transition_overlay_.SetOpaque();
+    transition_overlay_.UpdateLayout(screen_w, screen_h);
+    transition_overlay_.FadeOut();
+  }
+
   auto& bus = *GetContext()->GetEventBus();
   GetEventScope().Subscribe<KeyDownEvent>(bus, [this](const KeyDownEvent& e) {
     if (e.key == Keyboard::KeyCode::F1) GetContext()->GetSceneManager()->RequestLoad(SceneId::TEST_SCENE);
@@ -161,6 +174,17 @@ void CityScene::OnEnter(AssetManager& asset_manager) {
 }
 
 void CityScene::OnExit() {
+}
+
+void CityScene::OnPreUpdate(float dt) {
+  transition_overlay_.Update(dt);
+}
+
+void CityScene::OnRender(FramePacket& /*packet*/) {
+  auto* graphic = GetContext()->GetGraphic();
+  float screen_w = static_cast<float>(graphic->GetFrameBufferWidth());
+  float screen_h = static_cast<float>(graphic->GetFrameBufferHeight());
+  transition_overlay_.UpdateLayout(screen_w, screen_h);
 }
 
 void CityScene::OnDebugDraw(DebugDrawer& drawer) {

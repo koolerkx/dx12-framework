@@ -14,6 +14,7 @@
 #include "ProceduralTexture/procedural_texture_factory.h"
 #include "game_context.h"
 #include "game_object.h"
+#include "play_state.h"
 #include "scene_id.h"
 #include "scene_manager.h"
 
@@ -150,20 +151,21 @@ void TitleScene::OnEnter(AssetManager& asset_manager) {
   logo_panel_ = CreateGameObject("Title_LogoPanel");
   logo_panel_->SetParent(root);
   logo_glass_ = logo_panel_->AddComponent<UIGlassRenderer>(UIGlassRenderer::Props{
-    .layer_id = 1,
+    .layer_id = 20,
   });
 
   logo_sprite_go_ = CreateGameObject("Title_LogoSprite");
   logo_sprite_go_->SetParent(logo_panel_);
   logo_sprite_ = logo_sprite_go_->AddComponent<UISpriteRenderer>(UISpriteRenderer::Props{
     .texture_path = "Content/textures/title_1.png",
+    .layer_id = 10,
   });
   logo_sprite_->SetUVScale({1, -1});
 
   start_btn_ = CreateGameObject("Title_StartBtn");
   start_btn_->SetParent(root);
   start_glass_ = start_btn_->AddComponent<UIGlassRenderer>(UIGlassRenderer::Props{
-    .layer_id = 1,
+    .layer_id = 20,
   });
 
   start_label_go_ = CreateGameObject("Title_StartLabel");
@@ -173,12 +175,13 @@ void TitleScene::OnEnter(AssetManager& asset_manager) {
     .pixel_size = TEXT_SIZE,
     .h_align = Text::HorizontalAlign::Center,
     .pivot = {0.5f, 0.0f},
+    .layer_id = 10,
   });
 
   leave_btn_ = CreateGameObject("Title_LeaveBtn");
   leave_btn_->SetParent(root);
   leave_glass_ = leave_btn_->AddComponent<UIGlassRenderer>(UIGlassRenderer::Props{
-    .layer_id = 1,
+    .layer_id = 20,
   });
 
   leave_label_go_ = CreateGameObject("Title_LeaveLabel");
@@ -188,7 +191,18 @@ void TitleScene::OnEnter(AssetManager& asset_manager) {
     .pixel_size = TEXT_SIZE,
     .h_align = Text::HorizontalAlign::Center,
     .pivot = {0.5f, 0.0f},
+    .layer_id = 10,
   });
+
+  transition_overlay_.Create(this, "SceneTransitionOverlay");
+  if (GetContext()->GetPlayState() == PlayState::Playing) {
+    auto* graphic = GetContext()->GetGraphic();
+    float screen_w = static_cast<float>(graphic->GetFrameBufferWidth());
+    float screen_h = static_cast<float>(graphic->GetFrameBufferHeight());
+    transition_overlay_.SetOpaque();
+    transition_overlay_.UpdateLayout(screen_w, screen_h);
+    transition_overlay_.FadeOut();
+  }
 
   UpdateLayout();
 }
@@ -197,6 +211,8 @@ void TitleScene::OnExit() {
 }
 
 void TitleScene::OnPreUpdate(float dt) {
+  transition_overlay_.Update(dt);
+
   auto [mx, my] = input_->GetMousePosition();
 
   auto* graphic = GetContext()->GetGraphic();
@@ -209,6 +225,8 @@ void TitleScene::OnPreUpdate(float dt) {
   Vector3 target_euler = {norm_y * -PARALLAX_MAX_ANGLE + CAMERA_DEFAULT_PITCH, norm_x * -PARALLAX_MAX_ANGLE, 0.0f};
   float smooth_t = 1.0f - std::exp(-PARALLAX_SMOOTHNESS * dt);
   camera_transform_->SetRotationEulerDegree(Vector3::Lerp(current_euler, target_euler, smooth_t));
+
+  if (transition_overlay_.IsFadingIn()) return;
 
   auto hit_test = [](float mx, float my, const Rect& r) { return mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h; };
 
@@ -223,7 +241,9 @@ void TitleScene::OnPreUpdate(float dt) {
 
   if (input_->GetMouseButtonDown(Mouse::Button::Left)) {
     if (over_start) {
-      GetContext()->GetSceneManager()->RequestLoad(SceneId::CITY_SCENE);
+      transition_overlay_.FadeIn([this]() {
+        GetContext()->GetSceneManager()->RequestLoad(SceneId::CITY_SCENE);
+      });
     } else if (over_leave) {
       GetContext()->RequestQuit();
     }
@@ -232,6 +252,11 @@ void TitleScene::OnPreUpdate(float dt) {
 
 void TitleScene::OnRender(FramePacket& /*packet*/) {
   UpdateLayout();
+
+  auto* graphic = GetContext()->GetGraphic();
+  float screen_w = static_cast<float>(graphic->GetFrameBufferWidth());
+  float screen_h = static_cast<float>(graphic->GetFrameBufferHeight());
+  transition_overlay_.UpdateLayout(screen_w, screen_h);
 }
 
 void TitleScene::UpdateLayout() {

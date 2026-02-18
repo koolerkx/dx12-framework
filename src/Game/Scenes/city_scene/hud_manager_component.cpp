@@ -7,10 +7,10 @@
 #include "Component/Renderer/ui_text_renderer.h"
 #include "Framework/Event/event_bus.hpp"
 #include "Framework/Input/input.h"
+#include "Scenes/city_scene/city_scene_events.h"
 #include "game_context.h"
 #include "game_object.h"
 #include "scene.h"
-#include "Scenes/city_scene/city_scene_events.h"
 #include "scene_events.h"
 #include "scene_id.h"
 #include "scene_manager.h"
@@ -246,6 +246,8 @@ void HudManagerComponent::OnInit() {
   restart_button_.root->SetActive(false);
   title_button_.root->SetActive(false);
 
+  gameover_overlay_.Create(scene, "GameOverTransitionOverlay");
+
   input_ = GetContext()->GetInput();
   SubscribeEvents();
   UpdateLayout();
@@ -254,13 +256,9 @@ void HudManagerComponent::OnInit() {
 void HudManagerComponent::SubscribeEvents() {
   auto& bus = *GetContext()->GetEventBus();
 
-  event_scope_.Subscribe<GoldChangedEvent>(bus, [this](const GoldChangedEvent& e) {
-    SetGold(e.gold);
-  });
+  event_scope_.Subscribe<GoldChangedEvent>(bus, [this](const GoldChangedEvent& e) { SetGold(e.gold); });
 
-  event_scope_.Subscribe<HealthChangedEvent>(bus, [this](const HealthChangedEvent& e) {
-    SetHealth(e.health);
-  });
+  event_scope_.Subscribe<HealthChangedEvent>(bus, [this](const HealthChangedEvent& e) { SetHealth(e.health); });
 
   event_scope_.Subscribe<WaveStartEvent>(bus, [this](const WaveStartEvent& e) {
     SetWave(e.wave);
@@ -274,21 +272,14 @@ void HudManagerComponent::SubscribeEvents() {
     ShowCountdownMessage(buf);
   });
 
-  event_scope_.Subscribe<InsufficientGoldEvent>(bus, [this](const InsufficientGoldEvent&) {
-    ShowAlert(L"Not enough gold!", 3.0f);
-  });
+  event_scope_.Subscribe<InsufficientGoldEvent>(bus, [this](const InsufficientGoldEvent&) { ShowAlert(L"Not enough gold!", 3.0f); });
 
-  event_scope_.Subscribe<EnemyReachedBaseEvent>(bus, [this](const EnemyReachedBaseEvent&) {
-    ShowAlert(L"Base under attack!", 3.0f);
-  });
+  event_scope_.Subscribe<EnemyReachedBaseEvent>(bus, [this](const EnemyReachedBaseEvent&) { ShowAlert(L"Base under attack!", 3.0f); });
 
-  event_scope_.Subscribe<OverlapEnemyEvent>(bus, [this](const OverlapEnemyEvent&) {
-    ShowAlert(L"Overlapping enemy!", 3.0f);
-  });
+  event_scope_.Subscribe<OverlapEnemyEvent>(bus, [this](const OverlapEnemyEvent&) { ShowAlert(L"Overlapping enemy!", 3.0f); });
 
-  event_scope_.Subscribe<OverlapEnemySpawnEvent>(bus, [this](const OverlapEnemySpawnEvent&) {
-    ShowAlert(L"Overlapping enemy spawn!", 3.0f);
-  });
+  event_scope_.Subscribe<OverlapEnemySpawnEvent>(
+    bus, [this](const OverlapEnemySpawnEvent&) { ShowAlert(L"Overlapping enemy spawn!", 3.0f); });
 
   event_scope_.Subscribe<TowerPlacementExitedEvent>(bus, [this](const TowerPlacementExitedEvent&) {
     icon_state_ = IconState::Normal;
@@ -303,9 +294,7 @@ void HudManagerComponent::SubscribeEvents() {
     SetConfirmPanelVisible(true);
   });
 
-  event_scope_.Subscribe<TowerPlacementCancelledEvent>(bus, [this](const TowerPlacementCancelledEvent&) {
-    SetConfirmPanelVisible(false);
-  });
+  event_scope_.Subscribe<TowerPlacementCancelledEvent>(bus, [this](const TowerPlacementCancelledEvent&) { SetConfirmPanelVisible(false); });
 
   event_scope_.Subscribe<GameOverEvent>(bus, [this](const GameOverEvent& e) {
     SetGameplayHudVisible(false);
@@ -322,10 +311,13 @@ void HudManagerComponent::SubscribeEvents() {
 }
 
 void HudManagerComponent::OnUpdate(float dt) {
+  gameover_overlay_.Update(dt);
   UpdateFadePanel(message_fade_, dt);
   UpdateFadePanel(alert_fade_, dt);
   if (gameover_active_) {
-    UpdateGameOverInteraction();
+    if (!gameover_overlay_.IsFadingIn()) {
+      UpdateGameOverInteraction();
+    }
     return;
   }
   UpdateIconInteraction();
@@ -334,6 +326,11 @@ void HudManagerComponent::OnUpdate(float dt) {
 
 void HudManagerComponent::OnRender(FramePacket& /*packet*/) {
   UpdateLayout();
+
+  auto* graphic = GetOwner()->GetContext()->GetGraphic();
+  float screen_w = static_cast<float>(graphic->GetFrameBufferWidth());
+  float screen_h = static_cast<float>(graphic->GetFrameBufferHeight());
+  gameover_overlay_.UpdateLayout(screen_w, screen_h);
 }
 
 void HudManagerComponent::UpdateFadePanel(FadePanel& fade, float dt) {
@@ -365,9 +362,7 @@ void HudManagerComponent::UpdateLayout() {
   float screen_h = static_cast<float>(graphic->GetFrameBufferHeight());
   float s = (screen_h / DESIGN_HEIGHT) * UI_SCALE;
 
-  auto set_pos = [](GameObject* go, float x, float y) {
-    go->GetTransform()->SetPosition({x, y, 0.0f});
-  };
+  auto set_pos = [](GameObject* go, float x, float y) { go->GetTransform()->SetPosition({x, y, 0.0f}); };
 
   set_pos(info_panel_, SAFE_AREA * s, SAFE_AREA * s);
   info_glass_->SetSize({INFO_PANEL.width * s, INFO_PANEL.height * s});
@@ -639,9 +634,7 @@ void HudManagerComponent::SetGameplayHudVisible(bool visible) {
 void HudManagerComponent::UpdateGameOverInteraction() {
   auto [mx, my] = input_->GetMousePosition();
 
-  auto hit_test = [](float mx, float my, const PanelRect& r) {
-    return mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h;
-  };
+  auto hit_test = [](float mx, float my, const PanelRect& r) { return mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h; };
 
   static const Math::Vector4 HOVER_TINT = {0.3f, 0.5f, 1.0f, 0.2f};
   static const Math::Vector4 DEFAULT_TINT = {1.0f, 1.0f, 1.0f, 0.1f};
@@ -654,9 +647,9 @@ void HudManagerComponent::UpdateGameOverInteraction() {
 
   if (input_->GetMouseButtonDown(Mouse::Button::Left)) {
     if (over_restart) {
-      GetContext()->GetEventBus()->Emit(RestartGameEvent{});
+      gameover_overlay_.FadeIn([this]() { GetContext()->GetEventBus()->Emit(RestartGameEvent{}); });
     } else if (over_title) {
-      GetContext()->GetSceneManager()->RequestLoad(SceneId::TITLE_SCENE);
+      gameover_overlay_.FadeIn([this]() { GetContext()->GetSceneManager()->RequestLoad(SceneId::TITLE_SCENE); });
     }
   }
 }
@@ -666,9 +659,7 @@ void HudManagerComponent::UpdateConfirmPanelInteraction() {
 
   auto [mx, my] = input_->GetMousePosition();
 
-  auto hit_test = [](float mx, float my, const PanelRect& r) {
-    return mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h;
-  };
+  auto hit_test = [](float mx, float my, const PanelRect& r) { return mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h; };
 
   static const Math::Vector4 HOVER_TINT = {0.3f, 0.5f, 1.0f, 0.2f};
   static const Math::Vector4 DEFAULT_TINT = {1.0f, 1.0f, 1.0f, 0.1f};

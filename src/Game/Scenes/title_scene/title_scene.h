@@ -1,5 +1,6 @@
 #pragma once
 
+#include "SceneSetting/scene_transition_overlay.h"
 #include "scene.h"
 
 class InputSystem;
@@ -41,4 +42,6 @@ class TitleScene : public IScene {
   };
   Rect start_rect_{};
   Rect leave_rect_{};
+
+  SceneTransitionOverlay transition_overlay_;
 };

@@ -2,12 +2,15 @@
 
 #include "Map/map_data.h"
 #include "Map/nav_grid.h"
+#include "SceneSetting/scene_transition_overlay.h"
 #include "scene.h"
 
 class CityScene : public IScene {
  public:
   void OnEnter(AssetManager& asset_manager) override;
   void OnExit() override;
+  void OnPreUpdate(float dt) override;
+  void OnRender(FramePacket& packet) override;
   void OnDebugDraw(DebugDrawer& drawer) override;
 
  private:
@@ -18,4 +21,5 @@ class CityScene : public IScene {
   void CreateSpawnCubes(const MapData& map_data);
 
   NavGrid nav_grid_;
+  SceneTransitionOverlay transition_overlay_;
 };

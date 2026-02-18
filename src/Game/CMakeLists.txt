@@ -73,6 +73,8 @@ add_library(game STATIC
     SceneSetting/background_setting.h
     SceneSetting/background_setting.cpp
     SceneSetting/shadow_setting.h
+    SceneSetting/scene_transition_overlay.h
+    SceneSetting/scene_transition_overlay.cpp
 
     Scripts/free_camera_controller.h
     Scripts/free_camera_controller.cpp

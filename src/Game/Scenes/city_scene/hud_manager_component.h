@@ -7,6 +7,7 @@
 #include "Component/behavior_component.h"
 #include "Framework/Event/event_scope.hpp"
 #include "Graphic/Frame/frame_packet.h"
+#include "SceneSetting/scene_transition_overlay.h"
 
 class UIGlassRenderer;
 class UITextRenderer;
@@ -107,6 +108,8 @@ class HudManagerComponent : public BehaviorComponent<HudManagerComponent> {
   ButtonSlot restart_button_;
   ButtonSlot title_button_;
   bool gameover_active_ = false;
+
+  SceneTransitionOverlay gameover_overlay_;
 
   int wave_ = 1;
   int hp_ = 100;
