@@ -5,10 +5,10 @@
 
 #include "Asset/asset_manager.h"
 #include "Component/Collider/box_collider_component.h"
+#include "Component/Renderer/instanced_mesh_renderer.h"
 #include "Component/Renderer/instanced_model_renderer.h"
 #include "Component/Renderer/mesh_renderer.h"
 #include "Component/Renderer/ui_glass_renderer.h"
-#include "Scenes/city_scene/hud_manager_component.h"
 #include "Component/camera_component.h"
 #include "Component/enemy_spawn_component.h"
 #include "Component/player_spawn_component.h"
@@ -23,6 +23,7 @@
 #include "Scenes/city_scene/city_scene_events.h"
 #include "Scenes/city_scene/enemy_spawn_manager_component.h"
 #include "Scenes/city_scene/game_state_manager_component.h"
+#include "Scenes/city_scene/hud_manager_component.h"
 #include "Scenes/city_scene/player_control_component.h"
 #include "Scripts/camera_shake_controller.h"
 #include "Scripts/free_camera_controller.h"
@@ -32,6 +33,7 @@
 #include "play_state.h"
 #include "scene_id.h"
 #include "scene_manager.h"
+
 
 namespace cfg = CitySceneConfig;
 
@@ -168,9 +170,8 @@ void CityScene::OnEnter(AssetManager& asset_manager) {
     if (e.key == Keyboard::KeyCode::F2) GetContext()->GetSceneManager()->RequestLoad(SceneId::MODEL_SCENE);
   });
 
-  GetEventScope().Subscribe<RestartGameEvent>(bus, [this](const RestartGameEvent&) {
-    GetContext()->GetSceneManager()->RequestLoad(SceneId::CITY_SCENE);
-  });
+  GetEventScope().Subscribe<RestartGameEvent>(
+    bus, [this](const RestartGameEvent&) { GetContext()->GetSceneManager()->RequestLoad(SceneId::CITY_SCENE); });
 }
 
 void CityScene::OnExit() {
@@ -217,34 +218,38 @@ void CityScene::SpawnBorderWalls(const MapData& map_data) {
   if (bounds.min_x > bounds.max_x) return;
 
   constexpr cfg::BorderWallConfig WALL;
-  auto* wall_root = CreateGameObject("BorderWalls");
-  int wall_index = 0;
-
-  auto spawn_cube = [&](float x, float z) {
-    auto* cube = CreateGameObject("wall_" + std::to_string(wall_index++), {.position = {x, WALL.cube_y, z}});
-    cube->SetParent(wall_root);
-    cube->AddComponent<MeshRenderer>(MeshRenderer::Props{
-      .mesh_type = DefaultMesh::Cube,
-      .color = colors::White,
-    });
-  };
 
   float wall_min_x = bounds.min_x - WALL.margin;
   float wall_max_x = bounds.max_x;
   float wall_min_z = bounds.min_z - WALL.margin;
   float wall_max_z = bounds.max_z;
 
+  std::vector<MeshInstanceEntry> entries;
+
+  auto add_instance = [&](float x, float z) {
+    entries.push_back({
+      .world = Matrix4::CreateTranslation({x, WALL.cube_y, z}),
+      .color = {1.0f, 1.0f, 1.0f, 1.0f},
+    });
+  };
+
   for (float x = wall_min_x; x <= wall_max_x; x += 1.0f) {
     float cx = x + 0.5f;
-    spawn_cube(cx, wall_min_z + 0.5f);
-    spawn_cube(cx, wall_max_z + 0.5f);
+    add_instance(cx, wall_min_z + 0.5f);
+    add_instance(cx, wall_max_z + 0.5f);
   }
 
   for (float z = wall_min_z + 1.0f; z < wall_max_z; z += 1.0f) {
     float cz = z + 0.5f;
-    spawn_cube(wall_min_x + 0.5f, cz);
-    spawn_cube(wall_max_x + 0.5f, cz);
+    add_instance(wall_min_x + 0.5f, cz);
+    add_instance(wall_max_x + 0.5f, cz);
   }
+
+  auto* wall_obj = CreateGameObject("BorderWalls");
+  wall_obj->AddComponent<InstancedMeshRenderer>(InstancedMeshRenderer::Props{
+    .mesh_type = DefaultMesh::Cube,
+    .instances = std::move(entries),
+  });
 }
 
 void CityScene::CreateSpawnCubes(const MapData& map_data) {
