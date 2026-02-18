@@ -78,7 +78,7 @@ void HudManagerComponent::OnInit() {
   auto* wave_go = scene->CreateGameObject("HUD_WaveText");
   wave_go->SetParent(info_panel_);
   wave_text_ = wave_go->AddComponent<UITextRenderer>(UITextRenderer::Props{
-    .text = L"Wave: 1",
+    .text = L"ウェーブ 1",
     .pixel_size = TEXT_SIZE,
     .pivot = {0.0f, 0.0f},
   });
@@ -94,7 +94,7 @@ void HudManagerComponent::OnInit() {
   auto* gold_go = scene->CreateGameObject("HUD_GoldText");
   gold_go->SetParent(info_panel_);
   gold_text_ = gold_go->AddComponent<UITextRenderer>(UITextRenderer::Props{
-    .text = L"Gold: 0",
+    .text = L"ゴールド: 0",
     .pixel_size = TEXT_SIZE,
     .pivot = {0.0f, 0.0f},
   });
@@ -183,7 +183,7 @@ void HudManagerComponent::OnInit() {
   auto* cost_go = scene->CreateGameObject("HUD_CostText");
   cost_go->SetParent(confirm_panel_);
   cost_text_ = cost_go->AddComponent<UITextRenderer>(UITextRenderer::Props{
-    .text = L"Cost: 0",
+    .text = L"コスト: 0",
     .pixel_size = TEXT_SIZE,
     .h_align = Text::HorizontalAlign::Center,
     .pivot = {0.5f, 0.0f},
@@ -208,8 +208,8 @@ void HudManagerComponent::OnInit() {
     return slot;
   };
 
-  confirm_button_ = create_button("HUD_ConfirmBtn", L"Confirm");
-  cancel_button_ = create_button("HUD_CancelBtn", L"Cancel");
+  confirm_button_ = create_button("HUD_ConfirmBtn", L"確認");
+  cancel_button_ = create_button("HUD_CancelBtn", L"キャンセル");
   SetConfirmPanelVisible(false);
 
   gameover_panel_ = scene->CreateGameObject("HUD_GameOverPanel");
@@ -222,7 +222,7 @@ void HudManagerComponent::OnInit() {
   auto* go_title = scene->CreateGameObject("HUD_GameOverTitle");
   go_title->SetParent(gameover_panel_);
   gameover_title_text_ = go_title->AddComponent<UITextRenderer>(UITextRenderer::Props{
-    .text = L"GAME OVER",
+    .text = L"ゲームオーバー",
     .pixel_size = GAMEOVER_TITLE_SIZE,
     .h_align = Text::HorizontalAlign::Center,
     .pivot = {0.5f, 0.0f},
@@ -237,9 +237,9 @@ void HudManagerComponent::OnInit() {
     .pivot = {0.5f, 0.0f},
   });
 
-  restart_button_ = create_button("HUD_RestartBtn", L"Restart");
+  restart_button_ = create_button("HUD_RestartBtn", L"リスタート");
   restart_button_.glass->SetLayerId(3);
-  title_button_ = create_button("HUD_TitleBtn", L"Back to Title");
+  title_button_ = create_button("HUD_TitleBtn", L"タイトルへ戻る");
   title_button_.glass->SetLayerId(3);
 
   gameover_panel_->SetActive(false);
@@ -262,24 +262,31 @@ void HudManagerComponent::SubscribeEvents() {
 
   event_scope_.Subscribe<WaveStartEvent>(bus, [this](const WaveStartEvent& e) {
     SetWave(e.wave);
-    ShowMessage(L"Wave " + std::to_wstring(e.wave + 1) + L"!", 3.0f);
+    ShowMessage(L"ウェーブ " + std::to_wstring(e.wave) + L"!", 3.0f);
     message_fade_.is_countdown = false;
   });
 
   event_scope_.Subscribe<WaveCountdownEvent>(bus, [this](const WaveCountdownEvent& e) {
     wchar_t buf[64];
-    swprintf_s(buf, L"Next Wave in %.1fs", e.seconds_remaining);
+    swprintf_s(buf, L"次のウェーブまで、あと%.1f秒", e.seconds_remaining);
     ShowCountdownMessage(buf);
   });
 
-  event_scope_.Subscribe<InsufficientGoldEvent>(bus, [this](const InsufficientGoldEvent&) { ShowAlert(L"Not enough gold!", 3.0f); });
+  event_scope_.Subscribe<InsufficientGoldEvent>(bus, [this](const InsufficientGoldEvent&) {
+    ShowAlert(L"ゴールドが足りません！", 3.0f);
+  });
 
-  event_scope_.Subscribe<EnemyReachedBaseEvent>(bus, [this](const EnemyReachedBaseEvent&) { ShowAlert(L"Base under attack!", 3.0f); });
+  event_scope_.Subscribe<EnemyReachedBaseEvent>(bus, [this](const EnemyReachedBaseEvent&) {
+    ShowAlert(L"拠点が攻撃されています！", 3.0f);
+  });
 
-  event_scope_.Subscribe<OverlapEnemyEvent>(bus, [this](const OverlapEnemyEvent&) { ShowAlert(L"Overlapping enemy!", 3.0f); });
+  event_scope_.Subscribe<OverlapEnemyEvent>(bus, [this](const OverlapEnemyEvent&) {
+    ShowAlert(L"敵と重なっています！", 3.0f);
+  });
 
-  event_scope_.Subscribe<OverlapEnemySpawnEvent>(
-    bus, [this](const OverlapEnemySpawnEvent&) { ShowAlert(L"Overlapping enemy spawn!", 3.0f); });
+  event_scope_.Subscribe<OverlapEnemySpawnEvent>(bus, [this](const OverlapEnemySpawnEvent&) {
+    ShowAlert(L"敵の出現地点と重なっています！", 3.0f);
+  });
 
   event_scope_.Subscribe<TowerPlacementExitedEvent>(bus, [this](const TowerPlacementExitedEvent&) {
     icon_state_ = IconState::Normal;
@@ -291,7 +298,7 @@ void HudManagerComponent::SubscribeEvents() {
   });
 
   event_scope_.Subscribe<TowerPlacementSelectedEvent>(bus, [this](const TowerPlacementSelectedEvent& e) {
-    cost_text_->SetText(L"Cost: " + std::to_wstring(e.cost));
+    cost_text_->SetText(L"コスト: " + std::to_wstring(e.cost));
     SetConfirmPanelVisible(true);
     SetHintMode(HintMode::ConfirmingTower);
   });
@@ -305,7 +312,7 @@ void HudManagerComponent::SubscribeEvents() {
     SetGameplayHudVisible(false);
 
     wchar_t buf[128];
-    swprintf_s(buf, L"Wave: %d  |  Kills: %d", e.wave, e.kill_count);
+    swprintf_s(buf, L"ウェーブ: %d  |  撃破数: %d", e.wave, e.kill_count);
     gameover_stats_text_->SetText(buf);
 
     gameover_panel_->SetActive(true);
@@ -565,7 +572,7 @@ void HudManagerComponent::UpdateLayout() {
 
 void HudManagerComponent::SetWave(int wave) {
   wave_ = wave;
-  wave_text_->SetText(L"Wave: " + std::to_wstring(wave + 1));
+  wave_text_->SetText(L"ウェーブ " + std::to_wstring(wave));
 }
 
 void HudManagerComponent::SetHealth(int hp) {
@@ -575,7 +582,7 @@ void HudManagerComponent::SetHealth(int hp) {
 
 void HudManagerComponent::SetGold(int gold) {
   gold_ = gold;
-  gold_text_->SetText(L"Gold: " + std::to_wstring(gold));
+  gold_text_->SetText(L"ゴールド: " + std::to_wstring(gold));
 }
 
 void HudManagerComponent::ShowMessage(const std::wstring& text, float duration) {

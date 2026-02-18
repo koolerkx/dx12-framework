@@ -171,7 +171,7 @@ void TitleScene::OnEnter(AssetManager& asset_manager) {
   start_label_go_ = CreateGameObject("Title_StartLabel");
   start_label_go_->SetParent(start_btn_);
   start_label_ = start_label_go_->AddComponent<UITextRenderer>(UITextRenderer::Props{
-    .text = L"Start",
+    .text = L"スタート",
     .pixel_size = TEXT_SIZE,
     .h_align = Text::HorizontalAlign::Center,
     .pivot = {0.5f, 0.0f},
@@ -187,7 +187,7 @@ void TitleScene::OnEnter(AssetManager& asset_manager) {
   leave_label_go_ = CreateGameObject("Title_LeaveLabel");
   leave_label_go_->SetParent(leave_btn_);
   leave_label_ = leave_label_go_->AddComponent<UITextRenderer>(UITextRenderer::Props{
-    .text = L"Leave",
+    .text = L"終了",
     .pixel_size = TEXT_SIZE,
     .h_align = Text::HorizontalAlign::Center,
     .pivot = {0.5f, 0.0f},
