@@ -264,7 +264,7 @@ void HudManagerComponent::SubscribeEvents() {
 
   event_scope_.Subscribe<WaveStartEvent>(bus, [this](const WaveStartEvent& e) {
     SetWave(e.wave);
-    ShowMessage(L"Wave " + std::to_wstring(e.wave) + L"!", 3.0f);
+    ShowMessage(L"Wave " + std::to_wstring(e.wave + 1) + L"!", 3.0f);
     message_fade_.is_countdown = false;
   });
 
@@ -503,7 +503,7 @@ void HudManagerComponent::UpdateLayout() {
 
 void HudManagerComponent::SetWave(int wave) {
   wave_ = wave;
-  wave_text_->SetText(L"Wave: " + std::to_wstring(wave));
+  wave_text_->SetText(L"Wave: " + std::to_wstring(wave + 1));
 }
 
 void HudManagerComponent::SetHealth(int hp) {
