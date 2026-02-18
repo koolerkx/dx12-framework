@@ -18,7 +18,7 @@ class UIGlassRenderer : public Component<UIGlassRenderer> {
     // float distortion_strength = 0.02f;  // UV offset magnitude for refraction (higher = more warping)
     float distortion_strength = 0.1f;  // UV offset magnitude for refraction (higher = more warping)
     float tint_alpha = 0.15f;          // blend factor between blurred background and tint color
-    std::optional<int> layer_id;
+    std::optional<int> layer_id = std::nullopt;
     Vector2 pivot = {0.0f, 0.0f};
     float chromatic_strength = 0.1f;         // R/G/B channel separation along distortion direction
     float fresnel_power = 1.5f;              // exponent controlling rim light falloff (higher = thinner rim)

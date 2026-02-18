@@ -23,7 +23,7 @@ class UISpriteRenderer : public Component<UISpriteRenderer> {
     std::string texture_path;
     Vector4 color = {1, 1, 1, 1};
     Vector2 size = {100, 100};
-    std::optional<int> layer_id;
+    std::optional<int> layer_id = std::nullopt;
     Vector2 pivot = {0.0f, 0.0f};
   };
 
