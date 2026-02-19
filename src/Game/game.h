@@ -18,6 +18,7 @@ class Game {
   struct Props {
     GameContext* context = nullptr;
     bool auto_play = false;
+    bool debug_draw_enabled = true;
     SceneDefaults scene_defaults;
   };
 

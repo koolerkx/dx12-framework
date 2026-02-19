@@ -114,6 +114,7 @@ AppConfig ConfigLoader::LoadFromFile(const std::filesystem::path& path) {
   config.window_width = root.ReadUint("WindowWidth", config.window_width);
   config.window_height = root.ReadUint("WindowHeight", config.window_height);
   config.vsync = root.ReadBool("VSync", config.vsync);
+  config.debug_draw_enabled = root.ReadBool("DebugDraw", config.debug_draw_enabled);
 
   if (root.HasKey("Bloom")) LoadBloomConfig(root.GetMap("Bloom"), config.bloom);
   if (root.HasKey("SSAO")) LoadSSAOConfig(root.GetMap("SSAO"), config.ssao);

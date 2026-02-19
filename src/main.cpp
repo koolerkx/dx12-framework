@@ -87,6 +87,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
 #ifndef ENABLE_EDITOR
     .auto_play = true,
 #endif
+    .debug_draw_enabled = config.debug_draw_enabled,
     .scene_defaults = config.scene_defaults,
   });
 

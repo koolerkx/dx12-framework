@@ -28,6 +28,7 @@ void Game::Initialize(const Props& props) {
     if (debug_drawer_.get() == nullptr) {
       debug_drawer_ = std::make_unique<DebugDrawer>(context_->GetGraphic());
     }
+    debug_drawer_->SetEnabled(props.debug_draw_enabled);
     context_->SetDebugDrawer(debug_drawer_.get());
   }
 

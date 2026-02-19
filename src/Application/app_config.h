@@ -20,4 +20,5 @@ struct AppConfig {
   OutlineConfig outline;
   VignetteConfig vignette;
   SceneDefaults scene_defaults;
+  bool debug_draw_enabled = false;
 };
