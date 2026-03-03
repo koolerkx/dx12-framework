@@ -86,8 +86,11 @@ class AssetManager {
 
  private:
   void CreateDefaultMeshes();
+  void FreeMeshHandlesForModel(const ModelData& model_data);
+
   std::unordered_map<DefaultMesh, const Mesh*> default_meshes_;
   std::unordered_map<std::string, std::shared_ptr<ModelData>> model_cache_;  // router table to graphic layers
+  std::unordered_map<std::string, MeshHandle> mesh_handle_cache_;
   std::shared_ptr<Texture> default_white_texture_;
 
   class Impl;

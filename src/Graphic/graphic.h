@@ -35,6 +35,7 @@
 #include "Resource/Buffer/structured_buffer.h"
 #include "Resource/Font/sprite_font_manager.h"
 #include "Resource/Texture/texture_manager.h"
+#include "Resource/Mesh/mesh_buffer_pool.h"
 #include "Resource/mesh_registry.h"
 #include "Resource/render_services.h"
 
@@ -108,6 +109,10 @@ class Graphic {
 
   Font::SpriteFontManager& GetSpriteFontManager() {
     return render_services_->GetFontManager();
+  }
+
+  MeshBufferPool& GetMeshBufferPool() {
+    return render_services_->GetMeshBufferPool();
   }
 
   MeshRegistry& GetMeshRegistry() {

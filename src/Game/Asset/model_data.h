@@ -9,6 +9,7 @@
 
 #include "Framework/Math/Math.h"
 #include "Framework/Model/node_hierarchy.h"
+#include "Graphic/Resource/Mesh/mesh_buffer_pool.h"
 #include "Graphic/Resource/Texture/texture.h"
 #include "Graphic/Resource/mesh.h"
 
@@ -22,6 +23,7 @@ struct ModelSurfaceMaterial {
 
 struct ModelSubMeshEntry {
   const Mesh* mesh = nullptr;
+  MeshHandle mesh_handle;
   std::shared_ptr<Texture> albedo_texture;
   std::shared_ptr<Texture> normal_texture;
   std::shared_ptr<Texture> metallic_roughness_texture;

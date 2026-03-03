@@ -10,6 +10,7 @@
 #include "Graphic/Pipeline/vertex_types.h"
 #include "Graphic/Resource/Font/sprite_font_manager.h"
 #include "Graphic/Resource/Texture/texture_manager.h"
+#include "Graphic/Resource/Mesh/mesh_buffer_pool.h"
 #include "Graphic/Resource/mesh_factory.h"
 #include "Graphic/Resource/mesh_registry.h"
 #include "Graphic/graphic.h"
@@ -20,7 +21,7 @@ class AssetManager::Impl {
   Graphic* graphic = nullptr;
   TextureManager* texture_manager = nullptr;
   Font::SpriteFontManager* font_manager = nullptr;
-  // Todo: AudioManager* audio_manager = nullptr;
+  MeshBufferPool* mesh_buffer_pool = nullptr;
 };
 
 // must defined in cpp
@@ -34,12 +35,18 @@ bool AssetManager::Initialize(Graphic* graphic) {
   impl_->graphic = graphic;
   impl_->texture_manager = &graphic->GetTextureManager();
   impl_->font_manager = &graphic->GetSpriteFontManager();
+  impl_->mesh_buffer_pool = &graphic->GetMeshBufferPool();
   CreateDefaultMeshes();
   default_white_texture_ = impl_->texture_manager->LoadTextureSRGB("Content/textures/white.png");
   return true;
 }
 
 void AssetManager::Shutdown() {
+  for (auto& [key, model_data] : model_cache_) {
+    if (model_data) FreeMeshHandlesForModel(*model_data);
+  }
+  model_cache_.clear();
+  mesh_handle_cache_.clear();
   impl_.reset();
 }
 
@@ -259,6 +266,8 @@ std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path, floa
   Math::Vector3 bounds_max(
     -(std::numeric_limits<float>::max)(), -(std::numeric_limits<float>::max)(), -(std::numeric_limits<float>::max)());
 
+  std::vector<MeshHandle> mesh_handles_from_pool;
+
   auto mesh_cb = [&](const Model::MeshData<Graphics::Vertex::ModelVertex>& mesh_data) -> const Mesh* {
     std::string key = path + scale_suffix + "#" + mesh_data.name + "_" + std::to_string(mesh_counter++);
     mesh_material_indices.push_back(mesh_data.material_index);
@@ -269,6 +278,19 @@ std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path, floa
       bounds_min = Math::Vector3::Min(bounds_min, pos);
       bounds_max = Math::Vector3::Max(bounds_max, pos);
     }
+
+    if (auto cache_it = mesh_handle_cache_.find(key); cache_it != mesh_handle_cache_.end()) {
+      mesh_handles_from_pool.push_back(cache_it->second);
+      return mesh_registry.Find(key);
+    }
+
+    auto alloc = impl_->mesh_buffer_pool->Allocate(
+      std::span{mesh_data.vertices.data(), mesh_data.vertices.size()},
+      std::span{mesh_data.indices.data(), mesh_data.indices.size()});
+    if (alloc.success) {
+      mesh_handle_cache_[key] = alloc.handle;
+    }
+    mesh_handles_from_pool.push_back(alloc.handle);
 
     if (auto* existing = mesh_registry.Find(key)) {
       return existing;
@@ -321,6 +343,7 @@ std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path, floa
 
     ModelSubMeshEntry entry;
     entry.mesh = result.mesh_handles[i];
+    entry.mesh_handle = mesh_handles_from_pool[i];
     entry.surface_material_index = mat_idx;
     entry.albedo_texture = resolve_texture(material_albedo_texture_indices, mat_idx);
     entry.normal_texture = resolve_texture(material_normal_texture_indices, mat_idx);
@@ -332,6 +355,14 @@ std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path, floa
 
   model_cache_[cache_key] = model_data;
   return model_data;
+}
+
+void AssetManager::FreeMeshHandlesForModel(const ModelData& model_data) {
+  for (const auto& entry : model_data.sub_meshes) {
+    if (entry.mesh_handle.IsValid()) {
+      impl_->mesh_buffer_pool->Free(entry.mesh_handle);
+    }
+  }
 }
 
 bool AssetManager::LoadFont(Font::FontFamily family, const std::string& fnt_path, const std::string& texture_path) {
