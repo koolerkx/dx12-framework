@@ -3,7 +3,7 @@
 #include "Component/behavior_component.h"
 
 class SpriteRenderer;
-class EnemyComponent;
+class HealthComponent;
 
 class HpBarComponent : public BehaviorComponent<HpBarComponent> {
  public:
@@ -24,7 +24,7 @@ class HpBarComponent : public BehaviorComponent<HpBarComponent> {
   float fill_width_ = 0.0f;
   float fill_height_ = 0.0f;
 
-  EnemyComponent* enemy_ = nullptr;
+  HealthComponent* health_ = nullptr;
   SpriteRenderer* main_renderer_ = nullptr;
   float max_hp_ = 1.0f;
 };

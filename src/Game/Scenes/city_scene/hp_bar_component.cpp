@@ -4,7 +4,7 @@
 
 #include "Component/Renderer/sprite_renderer.h"
 #include "Scenes/city_scene/city_scene_config.h"
-#include "Scenes/city_scene/enemy_component.h"
+#include "Scenes/city_scene/health_component.h"
 #include "game_object.h"
 #include "scene.h"
 
@@ -15,8 +15,8 @@ HpBarComponent::HpBarComponent(GameObject* owner, const Props& props)
 }
 
 void HpBarComponent::OnStart() {
-  enemy_ = GetOwner()->GetComponent<EnemyComponent>();
-  max_hp_ = enemy_->GetMaxHP();
+  health_ = GetOwner()->GetComponent<HealthComponent>();
+  max_hp_ = health_->GetMaxHP();
 
   auto* scene = GetOwner()->GetScene();
 
@@ -44,7 +44,7 @@ void HpBarComponent::OnStart() {
 }
 
 void HpBarComponent::OnUpdate(float /*dt*/) {
-  float hp_ratio = (std::max)(enemy_->GetHP() / max_hp_, 0.01f);
+  float hp_ratio = (std::max)(health_->GetHP() / max_hp_, 0.01f);
   hp_ratio = (std::min)(hp_ratio, 1.0f);
 
   main_renderer_->SetSize({fill_width_ * hp_ratio, fill_height_});

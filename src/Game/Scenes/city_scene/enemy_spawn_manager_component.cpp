@@ -10,6 +10,7 @@
 #include "Component/transform_component.h"
 #include "Scenes/city_scene/city_scene_config.h"
 #include "Scenes/city_scene/enemy_component.h"
+#include "Scenes/city_scene/health_component.h"
 #include "Scenes/city_scene/hp_bar_component.h"
 #include "Scenes/city_scene/object_movement_component.h"
 #include "game_context.h"
@@ -76,9 +77,16 @@ void EnemySpawnManagerComponent::SpawnEnemyAt(GameObject* spawner, int wave_inde
   float base_radius = (std::max)(extents.x, extents.z);
   enemy->AddComponent<SphereColliderComponent>(base_radius);
   const cfg::GoldConfig GOLD;
-  enemy->AddComponent<EnemyComponent>(EnemyComponent::Props{
-    .hp = ENEMY.ComputeHP(wave_index),
+  auto* enemy_comp = enemy->AddComponent<EnemyComponent>(EnemyComponent::Props{
     .kill_reward = GOLD.ComputeKillReward(wave_index),
+  });
+  enemy->AddComponent<HealthComponent>(HealthComponent::Props{
+    .max_hp = ENEMY.ComputeHP(wave_index),
+    .on_health_depleted =
+      [enemy_comp] {
+        enemy_comp->AwardKillReward();
+        enemy_comp->GetOwner()->Destroy();
+      },
   });
   enemy->AddComponent<HpBarComponent>(HpBarComponent::Props{});
   enemy->AddComponent<ObjectMovementComponent>(ObjectMovementComponent::Props{

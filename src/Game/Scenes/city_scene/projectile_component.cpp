@@ -4,20 +4,19 @@
 
 #include "Component/transform_component.h"
 #include "Framework/Math/Math.h"
-#include "Scenes/city_scene/enemy_component.h"
 #include "Scenes/city_scene/explosion_effect.h"
 #include "Scenes/city_scene/floating_text_effect.h"
+#include "Scenes/city_scene/health_component.h"
 #include "game_context.h"
 #include "game_object.h"
 #include "scene_events.h"
+
 
 using Math::Vector3;
 
 void ProjectileComponent::OnStart() {
   auto* bus = GetContext()->GetEventBus().get();
-  event_scope_.Subscribe<GameOverEvent>(*bus, [this](const GameOverEvent&) {
-    is_running_ = false;
-  });
+  event_scope_.Subscribe<GameOverEvent>(*bus, [this](const GameOverEvent&) { is_running_ = false; });
 }
 
 void ProjectileComponent::OnUpdate(float dt) {
@@ -43,12 +42,11 @@ void ProjectileComponent::OnUpdate(float dt) {
   float step = speed_ * dt;
 
   if (distance < hit_radius_ || step >= distance) {
-    auto* enemy = target_->GetComponent<EnemyComponent>();
-    if (enemy) {
-      enemy->TakeDamage(damage_);
+    auto* health = target_->GetComponent<HealthComponent>();
+    if (health) {
+      health->TakeDamage(damage_);
       const CitySceneConfig::FloatingTextConfig txt_cfg;
-      CitySceneEffect::SpawnDamageText(GetOwner()->GetScene(),
-        target_pos + Vector3(0, txt_cfg.y_offset, 0), damage_);
+      CitySceneEffect::SpawnDamageText(GetOwner()->GetScene(), target_pos + Vector3(0, txt_cfg.y_offset, 0), damage_);
     }
     SpawnBulletHitExplosion(target_pos);
     GetOwner()->Destroy();
@@ -68,10 +66,8 @@ void ProjectileComponent::SpawnBulletHitExplosion(const Vector3& hit_position) {
   auto* scene = GetOwner()->GetScene();
   if (!scene) return;
   const CitySceneConfig::BulletHitConfig cfg;
-  CitySceneEffect::SpawnExplosion(scene, hit_position,
-    CitySceneEffect::FromBulletHitConfig(cfg), "BulletHit");
+  CitySceneEffect::SpawnExplosion(scene, hit_position, CitySceneEffect::FromBulletHitConfig(cfg), "BulletHit");
 
   const CitySceneConfig::BulletHitSparksConfig sparks_cfg;
-  CitySceneEffect::SpawnExplosionSparks(scene, hit_position,
-    CitySceneEffect::FromBulletHitSparksConfig(sparks_cfg), "BulletHitSparks");
+  CitySceneEffect::SpawnExplosionSparks(scene, hit_position, CitySceneEffect::FromBulletHitSparksConfig(sparks_cfg), "BulletHitSparks");
 }

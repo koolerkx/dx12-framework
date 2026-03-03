@@ -11,11 +11,9 @@
 #include "game_object.h"
 #include "scene_events.h"
 
-
 class EnemyComponent : public BehaviorComponent<EnemyComponent> {
  public:
   struct Props {
-    float hp = 2.0f;
     float contact_damage = 1.0f;
     float bob_amplitude = 0.15f;
     float bob_speed = 2.0f;
@@ -25,8 +23,6 @@ class EnemyComponent : public BehaviorComponent<EnemyComponent> {
   using BehaviorComponent::BehaviorComponent;
   EnemyComponent(GameObject* owner, const Props& props)
       : BehaviorComponent(owner),
-        hp_(props.hp),
-        max_hp_(props.hp),
         contact_damage_(props.contact_damage),
         bob_amplitude_(props.bob_amplitude),
         bob_speed_(props.bob_speed),
@@ -59,27 +55,6 @@ class EnemyComponent : public BehaviorComponent<EnemyComponent> {
     transform->SetAnchor(anchor);
   }
 
-  void TakeDamage(float amount) {
-    if (dead_) return;
-    hp_ -= amount;
-    if (hp_ <= 0.0f) {
-      dead_ = true;
-      AwardKillReward();
-      GetOwner()->Destroy();
-    }
-  }
-
-  float GetHP() const {
-    return hp_;
-  }
-  float GetMaxHP() const {
-    return max_hp_;
-  }
-  float GetContactDamage() const {
-    return contact_damage_;
-  }
-
- private:
   void AwardKillReward() {
     if (kill_reward_ <= 0) return;
     auto pos = GetOwner()->GetTransform()->GetWorldPosition();
@@ -89,14 +64,16 @@ class EnemyComponent : public BehaviorComponent<EnemyComponent> {
     });
   }
 
-  float hp_ = 2.0f;
-  float max_hp_ = 2.0f;
+  float GetContactDamage() const {
+    return contact_damage_;
+  }
+
+ private:
   float contact_damage_ = 1.0f;
   float bob_amplitude_ = 0.15f;
   float bob_speed_ = 2.0f;
   float bob_time_ = 0.0f;
   int kill_reward_ = 0;
-  bool dead_ = false;
   bool is_running_ = true;
   bool was_moving_ = false;
   EventScope event_scope_;
