@@ -120,8 +120,15 @@ add_library(game STATIC
     Scenes/city_scene/enemy_spawn_manager_component.h
     Scenes/city_scene/enemy_spawn_manager_component.cpp
     Scenes/city_scene/wave_stage_config.h
-    Scenes/city_scene/game_state_manager_component.h
-    Scenes/city_scene/game_state_manager_component.cpp
+    Scenes/city_scene/currency_component.h
+    Scenes/city_scene/currency_component.cpp
+    Scenes/city_scene/health_component.h
+    Scenes/city_scene/base_health_component.h
+    Scenes/city_scene/base_health_component.cpp
+    Scenes/city_scene/game_match_component.h
+    Scenes/city_scene/game_match_component.cpp
+    Scenes/city_scene/wave_controller_component.h
+    Scenes/city_scene/wave_controller_component.cpp
     Scenes/city_scene/pulse_path_component.h
     Scenes/city_scene/pulse_path_component.cpp
     Scenes/city_scene/floating_text_component.h

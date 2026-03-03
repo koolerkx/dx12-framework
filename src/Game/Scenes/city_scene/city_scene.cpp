@@ -18,22 +18,24 @@
 #include "Framework/Event/input_events.h"
 #include "Framework/Logging/logger.h"
 #include "Framework/Math/Math.h"
+#include "Graphic/graphic.h"
 #include "Map/map_loader.h"
+#include "Scenes/city_scene/base_health_component.h"
 #include "Scenes/city_scene/city_scene_config.h"
 #include "Scenes/city_scene/city_scene_events.h"
+#include "Scenes/city_scene/currency_component.h"
 #include "Scenes/city_scene/enemy_spawn_manager_component.h"
-#include "Scenes/city_scene/game_state_manager_component.h"
+#include "Scenes/city_scene/game_match_component.h"
 #include "Scenes/city_scene/hud_manager_component.h"
 #include "Scenes/city_scene/player_control_component.h"
+#include "Scenes/city_scene/wave_controller_component.h"
 #include "Scripts/camera_shake_controller.h"
 #include "Scripts/free_camera_controller.h"
 #include "Scripts/screen_effect_controller.h"
-#include "Graphic/graphic.h"
 #include "game_context.h"
 #include "play_state.h"
 #include "scene_id.h"
 #include "scene_manager.h"
-
 
 namespace cfg = CitySceneConfig;
 
@@ -139,7 +141,10 @@ void CityScene::OnEnter(AssetManager& asset_manager) {
   CreateSpawnCubes(*map_data);
 
   auto* player = CreateGameObject("Player");
-  player->AddComponent<GameStateManagerComponent>(GameStateManagerComponent::Props{});
+  player->AddComponent<CurrencyComponent>(CurrencyComponent::Props{});
+  player->AddComponent<BaseHealthComponent>(BaseHealthComponent::Props{});
+  player->AddComponent<GameMatchComponent>(GameMatchComponent::Props{});
+  player->AddComponent<WaveControllerComponent>(WaveControllerComponent::Props{});
   player->AddComponent<PlayerControlComponent>(PlayerControlComponent::Props{.nav = &nav_grid_});
 
   Logger::LogFormat(LogLevel::Info,

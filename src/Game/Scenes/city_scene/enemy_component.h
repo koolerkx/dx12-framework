@@ -5,10 +5,12 @@
 #include "Component/behavior_component.h"
 #include "Component/transform_component.h"
 #include "Framework/Event/event_scope.hpp"
+#include "Scenes/city_scene/base_health_component.h"
 #include "Scenes/city_scene/city_scene_config.h"
+#include "Scenes/city_scene/currency_component.h"
 #include "Scenes/city_scene/explosion_effect.h"
 #include "Scenes/city_scene/floating_text_effect.h"
-#include "Scenes/city_scene/game_state_manager_component.h"
+#include "Scenes/city_scene/game_match_component.h"
 #include "Scenes/city_scene/object_movement_component.h"
 #include "Scripts/camera_shake_controller.h"
 #include "Scripts/screen_effect_controller.h"
@@ -16,6 +18,7 @@
 #include "game_object.h"
 #include "scene.h"
 #include "scene_events.h"
+
 
 class EnemyComponent : public BehaviorComponent<EnemyComponent> {
  public:
@@ -41,9 +44,7 @@ class EnemyComponent : public BehaviorComponent<EnemyComponent> {
   void OnStart() override {
     mesh_go_ = GetOwner()->FindChild(GetOwner()->GetName() + "_Mesh");
     auto* bus = GetContext()->GetEventBus().get();
-    event_scope_.Subscribe<GameOverEvent>(*bus, [this](const GameOverEvent&) {
-      is_running_ = false;
-    });
+    event_scope_.Subscribe<GameOverEvent>(*bus, [this](const GameOverEvent&) { is_running_ = false; });
   }
 
   void OnUpdate(float dt) override {
@@ -92,9 +93,11 @@ class EnemyComponent : public BehaviorComponent<EnemyComponent> {
     if (!scene) return;
     auto* player = scene->FindGameObject("Player");
     if (!player) return;
-    if (auto* state = player->GetComponent<GameStateManagerComponent>()) {
-      state->IncrementKillCount();
-      state->AddGold(kill_reward_);
+    if (auto* match = player->GetComponent<GameMatchComponent>()) {
+      match->IncrementKillCount();
+    }
+    if (auto* currency = player->GetComponent<CurrencyComponent>()) {
+      currency->AddGold(kill_reward_);
       const CitySceneConfig::FloatingTextConfig txt_cfg;
       auto pos = GetOwner()->GetTransform()->GetWorldPosition();
       CitySceneEffect::SpawnRewardText(scene, pos + Math::Vector3(0, txt_cfg.y_offset, 0), kill_reward_);
@@ -126,8 +129,7 @@ class EnemyComponent : public BehaviorComponent<EnemyComponent> {
   void DamagePlayerSpawn(IScene* scene) {
     auto* player = scene->FindGameObject("Player");
     if (!player) return;
-    if (auto* state = player->GetComponent<GameStateManagerComponent>())
-      state->TakeDamage();
+    if (auto* health = player->GetComponent<BaseHealthComponent>()) health->TakeDamage();
   }
 
   float hp_ = 2.0f;
