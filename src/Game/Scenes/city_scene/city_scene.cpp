@@ -25,6 +25,8 @@
 #include "Scenes/city_scene/city_scene_events.h"
 #include "Scenes/city_scene/currency_component.h"
 #include "Scenes/city_scene/enemy_spawn_manager_component.h"
+#include "Scenes/city_scene/explosion_effect.h"
+#include "Scenes/city_scene/floating_text_effect.h"
 #include "Scenes/city_scene/game_match_component.h"
 #include "Scenes/city_scene/hud_manager_component.h"
 #include "Scenes/city_scene/player_control_component.h"
@@ -37,6 +39,7 @@
 #include "play_state.h"
 #include "scene_id.h"
 #include "scene_manager.h"
+
 
 CityScene::CityScene() = default;
 CityScene::~CityScene() = default;
@@ -175,6 +178,8 @@ void CityScene::OnEnter(AssetManager& asset_manager) {
     transition_overlay_.FadeOut();
   }
 
+  RegisterEventHandlers();
+
   auto& bus = *GetContext()->GetEventBus();
   GetEventScope().Subscribe<KeyDownEvent>(bus, [this](const KeyDownEvent& e) {
     if (e.key == Keyboard::KeyCode::F1) GetContext()->GetSceneManager()->RequestLoad(SceneId::TEST_SCENE);
@@ -302,6 +307,54 @@ void CityScene::SetupCamera() {
   camera_obj->AddComponent<CameraShakeController>();
   camera_obj->AddComponent<ScreenEffectController>();
   GetCameraSetting().Register(camera);
+}
+
+void CityScene::RegisterEventHandlers() {
+  auto& bus = *GetContext()->GetEventBus();
+  auto& scope = GetEventScope();
+
+  scope.Subscribe<EntityDeathEvent>(bus, [this](const EntityDeathEvent& e) {
+    auto* player = FindGameObject("Player");
+    if (!player) return;
+
+    if (auto* match = player->GetComponent<GameMatchComponent>()) match->IncrementKillCount();
+
+    if (auto* currency = player->GetComponent<CurrencyComponent>()) {
+      currency->AddGold(e.kill_reward);
+      const CitySceneConfig::FloatingTextConfig txt_cfg;
+      CitySceneEffect::SpawnRewardText(this, e.position + Math::Vector3(0, txt_cfg.y_offset, 0), e.kill_reward);
+    }
+  });
+
+  scope.Subscribe<BaseDestroyedEvent>(bus, [this](const BaseDestroyedEvent&) {
+    auto* player = FindGameObject("Player");
+    if (!player) return;
+
+    if (auto* match = player->GetComponent<GameMatchComponent>()) match->SetGameOver();
+  });
+
+  scope.Subscribe<EnemyArrivedEvent>(bus, [this](const EnemyArrivedEvent& e) {
+    auto* player = FindGameObject("Player");
+    if (!player) return;
+
+    if (auto* health = player->GetComponent<BaseHealthComponent>()) health->TakeDamage();
+
+    const CitySceneConfig::ArrivalExplosionConfig explosion_cfg;
+    auto pos = e.position;
+    pos.y += explosion_cfg.y_offset;
+    CitySceneEffect::SpawnExplosion(this, pos, CitySceneEffect::FromArrivalConfig(explosion_cfg), "ArrivalExplosion");
+
+    const CitySceneConfig::ExplosionSparksConfig sparks_cfg;
+    CitySceneEffect::SpawnExplosionSparks(this, pos, CitySceneEffect::FromExplosionSparksConfig(sparks_cfg), "ArrivalSparks");
+
+    const CitySceneConfig::ArrivalScreenEffectConfig fx_cfg;
+    auto* camera_go = FindGameObject("MainCamera");
+    if (camera_go) {
+      if (auto* shake = camera_go->GetComponent<CameraShakeController>()) shake->Trigger(fx_cfg.shake_intensity, fx_cfg.shake_duration);
+      if (auto* screen_fx = camera_go->GetComponent<ScreenEffectController>())
+        screen_fx->TriggerChromaticAberration(fx_cfg.chromatic_aberration_intensity);
+    }
+  });
 }
 
 void CityScene::SetupCameraBounds(const MapData& map_data) {

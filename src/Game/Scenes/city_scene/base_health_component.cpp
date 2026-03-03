@@ -7,7 +7,6 @@
 #include "Scenes/city_scene/city_scene_config.h"
 #include "Scenes/city_scene/city_scene_events.h"
 #include "Scenes/city_scene/explosion_effect.h"
-#include "Scenes/city_scene/game_match_component.h"
 #include "Scripts/camera_shake_controller.h"
 #include "Scripts/screen_effect_controller.h"
 #include "game_context.h"
@@ -35,10 +34,7 @@ void BaseHealthComponent::TakeDamage(int amount) {
   bus->Emit(EnemyReachedBaseEvent{});
 
   if (health_ <= 0) {
-    auto* match = GetOwner()->GetComponent<GameMatchComponent>();
-    if (match) {
-      match->SetGameOver();
-    }
+    GetContext()->GetEventBus()->Emit(BaseDestroyedEvent{});
     SpawnBaseDestroyedEffect();
   }
 }

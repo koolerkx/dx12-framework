@@ -5,18 +5,10 @@
 #include "Component/behavior_component.h"
 #include "Component/transform_component.h"
 #include "Framework/Event/event_scope.hpp"
-#include "Scenes/city_scene/base_health_component.h"
-#include "Scenes/city_scene/city_scene_config.h"
-#include "Scenes/city_scene/currency_component.h"
-#include "Scenes/city_scene/explosion_effect.h"
-#include "Scenes/city_scene/floating_text_effect.h"
-#include "Scenes/city_scene/game_match_component.h"
+#include "Scenes/city_scene/city_scene_events.h"
 #include "Scenes/city_scene/object_movement_component.h"
-#include "Scripts/camera_shake_controller.h"
-#include "Scripts/screen_effect_controller.h"
 #include "game_context.h"
 #include "game_object.h"
-#include "scene.h"
 #include "scene_events.h"
 
 
@@ -52,7 +44,8 @@ class EnemyComponent : public BehaviorComponent<EnemyComponent> {
 
     auto* movement = GetOwner()->GetComponent<ObjectMovementComponent>();
     if (movement && was_moving_ && !movement->IsMoving()) {
-      SpawnArrivalExplosion();
+      auto pos = GetOwner()->GetTransform()->GetWorldPosition();
+      GetContext()->GetEventBus()->Emit(EnemyArrivedEvent{.position = pos});
       GetOwner()->Destroy();
       return;
     }
@@ -89,47 +82,11 @@ class EnemyComponent : public BehaviorComponent<EnemyComponent> {
  private:
   void AwardKillReward() {
     if (kill_reward_ <= 0) return;
-    auto* scene = GetOwner()->GetScene();
-    if (!scene) return;
-    auto* player = scene->FindGameObject("Player");
-    if (!player) return;
-    if (auto* match = player->GetComponent<GameMatchComponent>()) {
-      match->IncrementKillCount();
-    }
-    if (auto* currency = player->GetComponent<CurrencyComponent>()) {
-      currency->AddGold(kill_reward_);
-      const CitySceneConfig::FloatingTextConfig txt_cfg;
-      auto pos = GetOwner()->GetTransform()->GetWorldPosition();
-      CitySceneEffect::SpawnRewardText(scene, pos + Math::Vector3(0, txt_cfg.y_offset, 0), kill_reward_);
-    }
-  }
-
-  void SpawnArrivalExplosion() {
-    auto* scene = GetOwner()->GetScene();
-    if (!scene) return;
-    const CitySceneConfig::ArrivalExplosionConfig cfg;
     auto pos = GetOwner()->GetTransform()->GetWorldPosition();
-    pos.y += cfg.y_offset;
-    CitySceneEffect::SpawnExplosion(scene, pos, CitySceneEffect::FromArrivalConfig(cfg), "ArrivalExplosion");
-
-    const CitySceneConfig::ExplosionSparksConfig sparks_cfg;
-    CitySceneEffect::SpawnExplosionSparks(scene, pos, CitySceneEffect::FromExplosionSparksConfig(sparks_cfg), "ArrivalSparks");
-
-    const CitySceneConfig::ArrivalScreenEffectConfig fx_cfg;
-    auto* camera_go = scene->FindGameObject("MainCamera");
-    if (camera_go) {
-      if (auto* shake = camera_go->GetComponent<CameraShakeController>()) shake->Trigger(fx_cfg.shake_intensity, fx_cfg.shake_duration);
-      if (auto* screen_fx = camera_go->GetComponent<ScreenEffectController>())
-        screen_fx->TriggerChromaticAberration(fx_cfg.chromatic_aberration_intensity);
-    }
-
-    DamagePlayerSpawn(scene);
-  }
-
-  void DamagePlayerSpawn(IScene* scene) {
-    auto* player = scene->FindGameObject("Player");
-    if (!player) return;
-    if (auto* health = player->GetComponent<BaseHealthComponent>()) health->TakeDamage();
+    GetContext()->GetEventBus()->Emit(EntityDeathEvent{
+      .kill_reward = kill_reward_,
+      .position = pos,
+    });
   }
 
   float hp_ = 2.0f;

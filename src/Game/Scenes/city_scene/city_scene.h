@@ -26,6 +26,7 @@ class CityScene : public IScene {
   void SpawnEnemyManager();
   void SpawnBorderWalls(const MapData& map_data);
   void CreateSpawnCubes(const MapData& map_data);
+  void RegisterEventHandlers();
 
   NavGrid nav_grid_;
   SceneTransitionOverlay transition_overlay_;

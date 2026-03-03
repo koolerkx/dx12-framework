@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Framework/Event/event.hpp"
+#include "Framework/Math/Math.h"
 
 struct GoldChangedEvent : Event<GoldChangedEvent> {
   static constexpr std::string_view EventName = "city.gold_changed";
@@ -63,4 +64,19 @@ struct TowerPlacementConfirmedEvent : Event<TowerPlacementConfirmedEvent> {
 
 struct RestartGameEvent : Event<RestartGameEvent> {
   static constexpr std::string_view EventName = "city.restart_game";
+};
+
+struct EntityDeathEvent : Event<EntityDeathEvent> {
+  static constexpr std::string_view EventName = "city.entity_death";
+  int kill_reward;
+  Math::Vector3 position;
+};
+
+struct BaseDestroyedEvent : Event<BaseDestroyedEvent> {
+  static constexpr std::string_view EventName = "city.base_destroyed";
+};
+
+struct EnemyArrivedEvent : Event<EnemyArrivedEvent> {
+  static constexpr std::string_view EventName = "city.enemy_arrived";
+  Math::Vector3 position;
 };
