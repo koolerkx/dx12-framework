@@ -47,6 +47,13 @@ add_library(graphic STATIC
   Resource/Buffer/instance_buffer_manager.h
   Resource/Buffer/instance_buffer_manager.cpp
 
+  Resource/Allocator/free_block_allocator.h
+  Resource/Allocator/free_block_allocator.cpp
+
+  Resource/Mesh/mesh_descriptor.h
+  Resource/Mesh/mesh_buffer_pool.h
+  Resource/Mesh/mesh_buffer_pool.cpp
+
   Resource/mesh.h
   Resource/mesh.cpp
   Resource/mesh_registry.h

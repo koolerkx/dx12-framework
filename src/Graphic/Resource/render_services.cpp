@@ -1,6 +1,7 @@
 #include "render_services.h"
 
 #include "Font/sprite_font_manager.h"
+#include "Mesh/mesh_buffer_pool.h"
 #include "Pipeline/material_manager.h"
 #include "Pipeline/shader_manager.h"
 #include "Texture/texture_manager.h"
@@ -49,12 +50,19 @@ bool RenderServices::Initialize(const CreateInfo& info) {
   }
   Font::LoadDefaultFonts(*font_manager_);
 
+  mesh_buffer_pool_ = std::make_unique<MeshBufferPool>();
+  if (!mesh_buffer_pool_->Initialize({info.device, info.execute_sync, info.get_current_fence_value})) {
+    Logger::LogFormat(LogLevel::Fatal, LogCategory::Graphic, Logger::Here(), "Failed to initialize MeshBufferPool");
+    return false;
+  }
+
   Logger::LogFormat(LogLevel::Info, LogCategory::Graphic, Logger::Here(), "RenderServices initialized");
   return true;
 }
 
 void RenderServices::OnFrameBegin([[maybe_unused]] uint32_t frame_index, uint64_t completed_fence) {
   texture_manager_->ProcessDeferredFrees(completed_fence);
+  mesh_buffer_pool_->ProcessDeferredFrees(completed_fence);
 }
 
 void RenderServices::OnFrameEnd() {

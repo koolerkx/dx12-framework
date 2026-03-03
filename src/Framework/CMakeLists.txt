@@ -2,6 +2,9 @@ add_library(framework STATIC
   Core/types.h
   Core/utils.h
 
+  # Handle
+  Handle/handle.h
+
   # GameInput
   Input/input.h
   Input/keyboard.h

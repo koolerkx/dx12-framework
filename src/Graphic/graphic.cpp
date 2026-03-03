@@ -11,6 +11,7 @@
 
 #include "Core/types.h"
 #include "Frame/frame_packet.h"
+#include "Resource/Mesh/mesh_buffer_pool.h"
 #include "Framework/Logging/logger.h"
 #include "Framework/Math/Math.h"
 #include "Presentation/swapchain_manager.h"
@@ -526,7 +527,8 @@ RenderFrameContext Graphic::BeginFrame() {
     .render_graph = render_graph_.get(),
     .shadow_data = &shadow_frame_data_,
     .point_light_srv = point_light_buffers_[frame_index].GetGPUAddress(),
-    .ssao_srv_index = (ssao_handle_ != RenderGraphHandle::Invalid) ? render_graph_->GetSrvIndex(ssao_handle_) : UINT32_MAX};
+    .ssao_srv_index = (ssao_handle_ != RenderGraphHandle::Invalid) ? render_graph_->GetSrvIndex(ssao_handle_) : UINT32_MAX,
+    .mesh_buffer_pool = &render_services_->GetMeshBufferPool()};
 }
 
 void Graphic::EndFrame(const RenderFrameContext& frame) {

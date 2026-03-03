@@ -137,6 +137,7 @@ bool ShaderManager::CreateStandardRS() {
         // Instance data structured buffer
         .AddRootSRV(0, 3)  // Slot 8: InstanceBuffer (t0, space3)
         .AddRootCBV(5, 0)  // Slot 9: Custom (b5)
+        .AddRootSRV(0, 4)  // Slot 10: MeshDescriptors (t0, space4)
         .AddStaticSampler(SamplerPresets::CreateComparisonSampler(0).SetRegisterSpace(2))
         .Build(device_);
 

@@ -11,6 +11,7 @@
 #include "Framework/Math/Math.h"
 #include "Render/shadow_config.h"
 
+class MeshBufferPool;
 class RenderGraph;
 
 struct ShadowFrameData {
@@ -42,4 +43,6 @@ struct RenderFrameContext {
   uint32_t point_light_count = 0;
 
   uint32_t ssao_srv_index = UINT32_MAX;
+
+  MeshBufferPool* mesh_buffer_pool = nullptr;
 };
