@@ -113,8 +113,10 @@ add_library(game STATIC
     Scenes/city_scene/enemy_component.h
     Scenes/city_scene/hp_bar_component.h
     Scenes/city_scene/hp_bar_component.cpp
-    Scenes/city_scene/tower_component.h
-    Scenes/city_scene/tower_component.cpp
+    Scenes/city_scene/turret_component.h
+    Scenes/city_scene/turret_component.cpp
+    Scenes/city_scene/turret_system.h
+    Scenes/city_scene/turret_system.cpp
     Scenes/city_scene/projectile_component.h
     Scenes/city_scene/projectile_component.cpp
     Scenes/city_scene/enemy_spawn_manager_component.h

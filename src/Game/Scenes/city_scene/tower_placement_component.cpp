@@ -23,7 +23,7 @@
 #include "Scenes/city_scene/enemy_component.h"
 #include "Scenes/city_scene/floating_text_effect.h"
 #include "Scenes/city_scene/hud_manager_component.h"
-#include "Scenes/city_scene/tower_component.h"
+#include "Scenes/city_scene/turret_component.h"
 #include "game_context.h"
 #include "game_object.h"
 #include "scene.h"
@@ -236,7 +236,7 @@ void TowerPlacementComponent::CreatePreview(const std::shared_ptr<ModelData>& mo
   preview_go_->AddComponent<ModelComponent>(ModelComponent::Props{.model = model});
 
   Math::Vector3 pos = {snapped_xz_.x, 0.0f, snapped_xz_.y};
-  radar_go_ = CreateRadarDisc(scene, pos, TowerComponent::Props{}.range, RADAR_COLOR_PREVIEW);
+  radar_go_ = CreateRadarDisc(scene, pos, TurretComponent::Props{}.range, RADAR_COLOR_PREVIEW);
 }
 
 void TowerPlacementComponent::DestroyPreview() {
@@ -276,8 +276,8 @@ void TowerPlacementComponent::PlaceTower() {
   auto* tower = scene->CreateGameObject(
     "Tower_" + std::to_string(tower_count_++), {.position = {snapped_xz_.x, 0.0f, snapped_xz_.y}, .scale = {s, s, s}});
   tower->AddComponent<ModelComponent>(ModelComponent::Props{.model = tower_model_});
-  tower->AddComponent<TowerComponent>(TowerComponent::Props{});
-  placed_towers_.push_back({snapped_xz_, TowerComponent::Props{}.range, tower});
+  tower->AddComponent<TurretComponent>(TurretComponent::Props{});
+  placed_towers_.push_back({snapped_xz_, TurretComponent::Props{}.range, tower});
 
   if (nav_) {
     float he = TOWER_CFG.tower_half_extent;
@@ -474,7 +474,7 @@ void TowerPlacementComponent::UpdateTowerHoverRadar() {
   auto hit = GroundRayCaster::ScreenToGroundXZ(mx, my, screen_w, screen_h, cam->GetCameraData());
   auto unhover_tower = [this]() {
     if (hovered_tower_go_) {
-      if (auto* tc = hovered_tower_go_->GetComponent<TowerComponent>()) tc->SetHighlighted(false);
+      if (auto* tc = hovered_tower_go_->GetComponent<TurretComponent>()) tc->SetHighlighted(false);
       hovered_tower_go_ = nullptr;
     }
   };
@@ -506,7 +506,7 @@ void TowerPlacementComponent::UpdateTowerHoverRadar() {
       hover_radar_go_ = CreateRadarDisc(GetOwner()->GetScene(), pos, tower.range, RADAR_COLOR_PLACED);
       hovered_tower_xz_ = tower.grid_xz;
       hovered_tower_go_ = tower.game_object;
-      if (auto* tc = hovered_tower_go_->GetComponent<TowerComponent>()) tc->SetHighlighted(true);
+      if (auto* tc = hovered_tower_go_->GetComponent<TurretComponent>()) tc->SetHighlighted(true);
       return;
     }
   }

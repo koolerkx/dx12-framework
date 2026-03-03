@@ -31,6 +31,7 @@
 #include "Scenes/city_scene/hud_manager_component.h"
 #include "Scenes/city_scene/player_control_component.h"
 #include "Scenes/city_scene/wave_controller_component.h"
+#include "Scenes/city_scene/turret_system.h"
 #include "Scenes/city_scene/wave_system.h"
 #include "Scripts/camera_shake_controller.h"
 #include "Scripts/free_camera_controller.h"
@@ -167,6 +168,7 @@ void CityScene::OnEnter(AssetManager& asset_manager) {
   hud->AddComponent<HudManagerComponent>();
 
   wave_system_ = std::make_unique<WaveSystem>(this);
+  turret_system_ = std::make_unique<TurretSystem>(this);
 
   transition_overlay_.Create(this, "SceneTransitionOverlay");
   if (GetContext()->GetPlayState() == PlayState::Playing) {
@@ -191,12 +193,14 @@ void CityScene::OnEnter(AssetManager& asset_manager) {
 }
 
 void CityScene::OnExit() {
+  turret_system_.reset();
   wave_system_.reset();
 }
 
 void CityScene::OnPreUpdate(float dt) {
   transition_overlay_.Update(dt);
   if (wave_system_) wave_system_->Update(dt);
+  if (turret_system_) turret_system_->Update(dt);
 }
 
 void CityScene::OnRender(FramePacket& /*packet*/) {

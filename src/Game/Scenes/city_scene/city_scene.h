@@ -7,6 +7,7 @@
 #include "SceneSetting/scene_transition_overlay.h"
 #include "scene.h"
 
+class TurretSystem;
 class WaveSystem;
 
 class CityScene : public IScene {
@@ -31,4 +32,5 @@ class CityScene : public IScene {
   NavGrid nav_grid_;
   SceneTransitionOverlay transition_overlay_;
   std::unique_ptr<WaveSystem> wave_system_;
+  std::unique_ptr<TurretSystem> turret_system_;
 };
