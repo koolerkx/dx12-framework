@@ -29,6 +29,7 @@
 #include "Scenes/city_scene/hud_manager_component.h"
 #include "Scenes/city_scene/player_control_component.h"
 #include "Scenes/city_scene/wave_controller_component.h"
+#include "Scenes/city_scene/wave_system.h"
 #include "Scripts/camera_shake_controller.h"
 #include "Scripts/free_camera_controller.h"
 #include "Scripts/screen_effect_controller.h"
@@ -36,6 +37,9 @@
 #include "play_state.h"
 #include "scene_id.h"
 #include "scene_manager.h"
+
+CityScene::CityScene() = default;
+CityScene::~CityScene() = default;
 
 namespace cfg = CitySceneConfig;
 
@@ -159,6 +163,8 @@ void CityScene::OnEnter(AssetManager& asset_manager) {
   auto* hud = CreateGameObject("HUD");
   hud->AddComponent<HudManagerComponent>();
 
+  wave_system_ = std::make_unique<WaveSystem>(this);
+
   transition_overlay_.Create(this, "SceneTransitionOverlay");
   if (GetContext()->GetPlayState() == PlayState::Playing) {
     auto* graphic = GetContext()->GetGraphic();
@@ -180,10 +186,12 @@ void CityScene::OnEnter(AssetManager& asset_manager) {
 }
 
 void CityScene::OnExit() {
+  wave_system_.reset();
 }
 
 void CityScene::OnPreUpdate(float dt) {
   transition_overlay_.Update(dt);
+  if (wave_system_) wave_system_->Update(dt);
 }
 
 void CityScene::OnRender(FramePacket& /*packet*/) {

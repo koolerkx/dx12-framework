@@ -32,15 +32,47 @@ class WaveControllerComponent : public BehaviorComponent<WaveControllerComponent
   WaveControllerComponent(GameObject* owner, const Props& props);
 
   void OnStart() override;
-  void OnUpdate(float dt) override;
 
   int GetCurrentWave() const {
     return current_wave_;
   }
+  const CitySceneConfig::WaveTimingConfig& GetWaveTiming() const {
+    return props_.wave_timing;
+  }
+
+  WaveState GetWaveState() const {
+    return wave_state_;
+  }
+
+  void SetWaveState(WaveState state) {
+    wave_state_ = state;
+  }
+
+  float GetTimer() const {
+    return timer_;
+  }
+
+  void SetTimer(float t) {
+    timer_ = t;
+  }
+
+  void IncrementWave() {
+    ++current_wave_;
+  }
+
+  EnemySpawnManagerComponent* GetSpawnManager() const {
+    return spawn_manager_;
+  }
+
+  WaveStageConfig& GetCurrentConfig() {
+    return current_config_;
+  }
+
+  std::vector<SpawnerProgress>& GetSpawnerProgress() {
+    return spawner_progress_;
+  }
 
  private:
-  void StartWave();
-
   Props props_;
   EnemySpawnManagerComponent* spawn_manager_ = nullptr;
   WaveStageConfig current_config_;
