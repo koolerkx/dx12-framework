@@ -2,7 +2,7 @@
 #include <string>
 
 #include "Component/billboard_type.h"
-#include "Component/component.h"
+#include "Component/renderer_component.h"
 #include "Component/pivot_type.h"
 #include "Component/render_settings.h"
 #include "Framework/Core/utils.h"
@@ -18,7 +18,7 @@ using Math::Matrix4;
 using Math::Vector2;
 using Math::Vector4;
 
-class TextRenderer : public Component<TextRenderer> {
+class TextRenderer : public RendererComponent<TextRenderer> {
  public:
   struct Props {
     std::wstring text;
@@ -32,10 +32,10 @@ class TextRenderer : public Component<TextRenderer> {
     bool double_sided = false;
   };
 
-  TextRenderer(GameObject* owner) : Component(owner) {
+  TextRenderer(GameObject* owner) : RendererComponent(owner) {
   }
 
-  TextRenderer(GameObject* owner, const Props& props) : Component(owner) {
+  TextRenderer(GameObject* owner, const Props& props) : RendererComponent(owner) {
     if (!props.text.empty()) SetText(props.text);
     SetFont(props.font);
     SetPixelSize(props.pixel_size);

@@ -6,7 +6,6 @@
 
 #include "Component/behavior_component.h"
 #include "Framework/Event/event_scope.hpp"
-#include "Graphic/Frame/frame_packet.h"
 #include "SceneSetting/scene_transition_overlay.h"
 
 class UIGlassRenderer;
@@ -23,7 +22,6 @@ class HudManagerComponent : public BehaviorComponent<HudManagerComponent> {
 
   void OnInit() override;
   void OnUpdate(float dt) override;
-  void OnRender(FramePacket& packet) override;
 
   bool IsMouseOverUI(float mx, float my) const;
   int HitTestIconSlot(float mx, float my) const;

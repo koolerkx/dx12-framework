@@ -7,11 +7,12 @@
 #include "game_object.h"
 
 InstancedMeshRenderer::InstancedMeshRenderer(GameObject* owner, const Props& props)
-    : Component(owner), mesh_type_(props.mesh_type), entries_(props.instances) {
+    : RendererComponent(owner), mesh_type_(props.mesh_type), entries_(props.instances) {
   instance_count_ = static_cast<uint32_t>(entries_.size());
 }
 
 void InstancedMeshRenderer::OnInit() {
+  RendererComponent::OnInit();
   if (instance_count_ == 0) return;
 
   auto* context = GetOwner()->GetContext();
@@ -72,10 +73,11 @@ void InstancedMeshRenderer::OnRender(FramePacket& packet) {
 }
 
 void InstancedMeshRenderer::OnDestroy() {
-  if (buffer_handle_ == InstanceBufferHandle::Invalid) return;
-
-  auto* graphic = GetOwner()->GetContext()->GetGraphic();
-  uint64_t fence_value = graphic->GetCurrentFenceValue();
-  graphic->GetInstanceBufferManager().Destroy(buffer_handle_, fence_value);
-  buffer_handle_ = InstanceBufferHandle::Invalid;
+  if (buffer_handle_ != InstanceBufferHandle::Invalid) {
+    auto* graphic = GetOwner()->GetContext()->GetGraphic();
+    uint64_t fence_value = graphic->GetCurrentFenceValue();
+    graphic->GetInstanceBufferManager().Destroy(buffer_handle_, fence_value);
+    buffer_handle_ = InstanceBufferHandle::Invalid;
+  }
+  RendererComponent::OnDestroy();
 }

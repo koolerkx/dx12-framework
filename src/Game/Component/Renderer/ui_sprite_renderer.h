@@ -2,7 +2,7 @@
 #include <optional>
 
 #include "Asset/asset_handle.h"
-#include "Component/component.h"
+#include "Component/renderer_component.h"
 #include "Component/pivot_type.h"
 #include "Component/render_settings.h"
 #include "Component/sprite_sheet_animator.h"
@@ -17,7 +17,7 @@
 using Math::Vector2;
 using Math::Vector4;
 
-class UISpriteRenderer : public Component<UISpriteRenderer> {
+class UISpriteRenderer : public RendererComponent<UISpriteRenderer> {
  public:
   struct Props {
     std::string texture_path;
@@ -27,10 +27,10 @@ class UISpriteRenderer : public Component<UISpriteRenderer> {
     Vector2 pivot = {0.0f, 0.0f};
   };
 
-  UISpriteRenderer(GameObject* owner) : Component(owner) {
+  UISpriteRenderer(GameObject* owner) : RendererComponent(owner) {
   }
 
-  UISpriteRenderer(GameObject* owner, const Props& props) : Component(owner) {
+  UISpriteRenderer(GameObject* owner, const Props& props) : RendererComponent(owner) {
     if (!props.texture_path.empty()) SetTexturePath(props.texture_path);
 
     SetColor(props.color);

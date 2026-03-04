@@ -7,7 +7,7 @@
 #include "game_object.h"
 
 InstancedModelRenderer::InstancedModelRenderer(GameObject* owner, const Props& props)
-    : Component(owner), model_(props.model), entries_(props.instances) {
+    : RendererComponent(owner), model_(props.model), entries_(props.instances) {
   instance_count_ = static_cast<uint32_t>(entries_.size());
   for (uint32_t i = 0; i < instance_count_; ++i) {
     id_to_index_[entries_[i].id] = i;
@@ -15,6 +15,7 @@ InstancedModelRenderer::InstancedModelRenderer(GameObject* owner, const Props& p
 }
 
 void InstancedModelRenderer::OnInit() {
+  RendererComponent::OnInit();
   if (instance_count_ == 0) return;
 
   auto& manager = GetOwner()->GetContext()->GetGraphic()->GetInstanceBufferManager();
@@ -100,12 +101,13 @@ void InstancedModelRenderer::OnRender(FramePacket& packet) {
 }
 
 void InstancedModelRenderer::OnDestroy() {
-  if (buffer_handle_ == InstanceBufferHandle::Invalid) return;
-
-  auto* graphic = GetOwner()->GetContext()->GetGraphic();
-  uint64_t fence_value = graphic->GetCurrentFenceValue();
-  graphic->GetInstanceBufferManager().Destroy(buffer_handle_, fence_value);
-  buffer_handle_ = InstanceBufferHandle::Invalid;
+  if (buffer_handle_ != InstanceBufferHandle::Invalid) {
+    auto* graphic = GetOwner()->GetContext()->GetGraphic();
+    uint64_t fence_value = graphic->GetCurrentFenceValue();
+    graphic->GetInstanceBufferManager().Destroy(buffer_handle_, fence_value);
+    buffer_handle_ = InstanceBufferHandle::Invalid;
+  }
+  RendererComponent::OnDestroy();
 }
 
 void InstancedModelRenderer::UpdateById(const std::string& id, std::function<InstanceProps(const InstanceProps&)> modifier) {

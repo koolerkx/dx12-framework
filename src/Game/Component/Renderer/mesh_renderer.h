@@ -4,7 +4,7 @@
 
 #include "Asset/asset_handle.h"
 #include "Asset/asset_manager.h"
-#include "Component/component.h"
+#include "Component/renderer_component.h"
 #include "Component/render_settings.h"
 #include "Component/transform_component.h"
 #include "Framework/Math/Math.h"
@@ -91,7 +91,7 @@ struct TextureBinding {
 
 enum class TextureSlot : uint8_t { Albedo, Normal, MetallicRoughness, Emissive };
 
-class MeshRenderer : public Component<MeshRenderer> {
+class MeshRenderer : public RendererComponent<MeshRenderer> {
  public:
   struct Props {
     DefaultMesh mesh_type = DefaultMesh::Cube;
@@ -117,9 +117,9 @@ class MeshRenderer : public Component<MeshRenderer> {
     float emissive_intensity = 1.0f;
   };
 
-  using Component::Component;
+  using RendererComponent::RendererComponent;
 
-  MeshRenderer(GameObject* owner, const Props& props) : Component(owner) {
+  MeshRenderer(GameObject* owner, const Props& props) : RendererComponent(owner) {
     mesh_handle_ = props.mesh_handle;
     if (props.mesh) {
       SetMesh(props.mesh);

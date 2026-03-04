@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Component/component.h"
+#include "Component/renderer_component.h"
 #include "Component/transform_component.h"
 #include "Debug/debug_drawer.h"
 #include "Framework/Math/Math.h"
@@ -8,7 +8,7 @@
 #include "Graphic/Frame/frame_packet.h"
 #include "game_object.h"
 
-class PointLightComponent : public Component<PointLightComponent> {
+class PointLightComponent : public RendererComponent<PointLightComponent> {
  public:
   struct Props {
     Math::Vector3 color = {1.0f, 1.0f, 1.0f};
@@ -17,9 +17,9 @@ class PointLightComponent : public Component<PointLightComponent> {
     float falloff = 2.0f;
   };
 
-  using Component::Component;
+  using RendererComponent::RendererComponent;
 
-  PointLightComponent(GameObject* owner, const Props& props) : Component(owner) {
+  PointLightComponent(GameObject* owner, const Props& props) : RendererComponent(owner) {
     color_ = props.color;
     intensity_ = props.intensity;
     radius_ = props.radius;

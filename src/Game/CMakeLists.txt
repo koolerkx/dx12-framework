@@ -24,6 +24,8 @@ add_library(game STATIC
 
     Component/component.h
     Component/component.cpp
+    Component/renderer_component.h
+    Component/renderer_component.cpp
     Component/transform_component.h
     Component/transform_component.cpp
     Component/camera_component.h

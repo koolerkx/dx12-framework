@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "Asset/asset_manager.h"
-#include "Component/component.h"
+#include "Component/renderer_component.h"
 #include "Framework/Math/Math.h"
 #include "Graphic/Frame/frame_packet.h"
 #include "Graphic/Resource/Buffer/instance_buffer_handle.h"
@@ -17,14 +17,14 @@ struct MeshInstanceEntry {
   Vector4 overlay_color = {0.0f, 0.0f, 0.0f, 0.0f};
 };
 
-class InstancedMeshRenderer : public Component<InstancedMeshRenderer> {
+class InstancedMeshRenderer : public RendererComponent<InstancedMeshRenderer> {
  public:
   struct Props {
     DefaultMesh mesh_type = DefaultMesh::Cube;
     std::vector<MeshInstanceEntry> instances;
   };
 
-  using Component::Component;
+  using RendererComponent::RendererComponent;
   InstancedMeshRenderer(GameObject* owner, const Props& props);
 
   void OnInit() override;

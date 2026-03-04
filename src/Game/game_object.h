@@ -23,7 +23,6 @@ class GameObject {
   void FixedUpdate(float dt);
   void DebugUpdate(float dt);
   void DebugFixedUpdate(float dt);
-  void Render(FramePacket& packet);
   void DebugDraw(DebugDrawer& drawer);
 
   bool IsStarted() const {

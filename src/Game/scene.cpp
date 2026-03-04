@@ -91,6 +91,7 @@ void IScene::Exit() {
   gameobject_uuid_map_.clear();
   component_uuid_map_.clear();
   game_objects_.clear();
+  render_system_.Clear();
   is_started_ = false;
 }
 
@@ -167,9 +168,7 @@ void IScene::Render(FramePacket& packet) {
   packet.shadow = shadow_setting_.ToConfig();
 
   render_system_.Render(packet);
-  RenderRootObjects(packet);
 
-  // Call derived class custom rendering (e.g., debug visualization)
   OnRender(packet);
 }
 
@@ -187,14 +186,6 @@ void IScene::FixedUpdateRootObjects(float dt) {
   for (auto& obj : game_objects_) {
     if (obj->GetParent() == nullptr) {
       obj->FixedUpdate(dt);
-    }
-  }
-}
-
-void IScene::RenderRootObjects(FramePacket& packet) {
-  for (auto& obj : game_objects_) {
-    if (obj->GetParent() == nullptr) {
-      obj->Render(packet);
     }
   }
 }

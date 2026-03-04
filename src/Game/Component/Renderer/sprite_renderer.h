@@ -3,7 +3,7 @@
 
 #include "Asset/asset_handle.h"
 #include "Component/billboard_type.h"
-#include "Component/component.h"
+#include "Component/renderer_component.h"
 #include "Component/pivot_type.h"
 #include "Component/render_settings.h"
 #include "Component/sprite_sheet_animator.h"
@@ -21,7 +21,7 @@ using Math::Vector2;
 using Math::Vector3;
 using Math::Vector4;
 
-class SpriteRenderer : public Component<SpriteRenderer> {
+class SpriteRenderer : public RendererComponent<SpriteRenderer> {
  public:
   struct Props {
     std::string texture_path;
@@ -33,10 +33,10 @@ class SpriteRenderer : public Component<SpriteRenderer> {
     bool double_sided = false;
   };
 
-  SpriteRenderer(GameObject* owner) : Component(owner) {
+  SpriteRenderer(GameObject* owner) : RendererComponent(owner) {
   }
 
-  SpriteRenderer(GameObject* owner, const Props& props) : Component(owner) {
+  SpriteRenderer(GameObject* owner, const Props& props) : RendererComponent(owner) {
     if (!props.texture_path.empty()) SetTexturePath(props.texture_path);
 
     SetColor(props.color);

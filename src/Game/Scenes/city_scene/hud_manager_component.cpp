@@ -326,6 +326,14 @@ void HudManagerComponent::OnUpdate(float dt) {
   gameover_overlay_.Update(dt);
   UpdateFadePanel(message_fade_, dt);
   UpdateFadePanel(alert_fade_, dt);
+
+  UpdateLayout();
+
+  auto* graphic = GetOwner()->GetContext()->GetGraphic();
+  float screen_w = static_cast<float>(graphic->GetFrameBufferWidth());
+  float screen_h = static_cast<float>(graphic->GetFrameBufferHeight());
+  gameover_overlay_.UpdateLayout(screen_w, screen_h);
+
   if (gameover_active_) {
     if (!gameover_overlay_.IsFadingIn()) {
       UpdateGameOverInteraction();
@@ -334,15 +342,6 @@ void HudManagerComponent::OnUpdate(float dt) {
   }
   UpdateIconInteraction();
   UpdateConfirmPanelInteraction();
-}
-
-void HudManagerComponent::OnRender(FramePacket& /*packet*/) {
-  UpdateLayout();
-
-  auto* graphic = GetOwner()->GetContext()->GetGraphic();
-  float screen_w = static_cast<float>(graphic->GetFrameBufferWidth());
-  float screen_h = static_cast<float>(graphic->GetFrameBufferHeight());
-  gameover_overlay_.UpdateLayout(screen_w, screen_h);
 }
 
 void HudManagerComponent::UpdateFadePanel(FadePanel& fade, float dt) {

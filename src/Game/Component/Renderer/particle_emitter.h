@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "Asset/asset_handle.h"
-#include "Component/component.h"
+#include "Component/renderer_component.h"
 #include "Component/render_settings.h"
 #include "Component/transform_component.h"
 #include "Framework/Math/Math.h"
@@ -23,7 +23,7 @@ using Math::Vector4;
 
 enum class SpawnShape : uint8_t { Point, Disk, Custom };
 
-class ParticleEmitter : public Component<ParticleEmitter> {
+class ParticleEmitter : public RendererComponent<ParticleEmitter> {
  public:
   struct SpawnParams {
     Vector3 offset;

@@ -96,19 +96,6 @@ void GameObject::DebugFixedUpdate(float dt) {
   }
 }
 
-void GameObject::Render(FramePacket& packet) {
-  if (!active_) return;
-  const size_t count = components_.size();
-  for (size_t i = 0; i < count; ++i) {
-    if (components_[i]->is_started_ && components_[i]->IsEnabled()) {
-      components_[i]->OnRender(packet);
-    }
-  }
-  for (auto* child : children_) {
-    child->Render(packet);
-  }
-}
-
 void GameObject::DebugDraw(DebugDrawer& drawer) {
   if (!active_) return;
   const size_t count = components_.size();

@@ -10,10 +10,10 @@
 
 thread_local std::mt19937 ParticleEmitter::rng_{std::random_device{}()};
 
-ParticleEmitter::ParticleEmitter(GameObject* owner) : Component(owner), spawn_fn_(SpawnFromCenter()) {
+ParticleEmitter::ParticleEmitter(GameObject* owner) : RendererComponent(owner), spawn_fn_(SpawnFromCenter()) {
 }
 
-ParticleEmitter::ParticleEmitter(GameObject* owner, const Props& props) : Component(owner) {
+ParticleEmitter::ParticleEmitter(GameObject* owner, const Props& props) : RendererComponent(owner) {
   if (!props.texture_path.empty()) SetTexturePath(props.texture_path);
   max_particles_ = props.max_particles;
   emit_rate_ = props.emit_rate;

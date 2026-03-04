@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Component/component.h"
+#include "Component/renderer_component.h"
 #include "Component/pivot_type.h"
 #include "Framework/Math/Math.h"
 #include "Graphic/Frame/frame_packet.h"
@@ -9,7 +9,7 @@
 using Math::Vector2;
 using Math::Vector4;
 
-class UIGlassRenderer : public Component<UIGlassRenderer> {
+class UIGlassRenderer : public RendererComponent<UIGlassRenderer> {
  public:
   // Default values here are the single source of truth for glass appearance.
   struct Props {
@@ -31,10 +31,10 @@ class UIGlassRenderer : public Component<UIGlassRenderer> {
     float darken = 0.2f;  // 0.0 = no darkening, 1.0 = fully black
   };
 
-  UIGlassRenderer(GameObject* owner) : Component(owner) {
+  UIGlassRenderer(GameObject* owner) : RendererComponent(owner) {
   }
 
-  UIGlassRenderer(GameObject* owner, const Props& props) : Component(owner) {
+  UIGlassRenderer(GameObject* owner, const Props& props) : RendererComponent(owner) {
     size_ = props.size;
     tint_color_ = props.tint_color;
     distortion_strength_ = props.distortion_strength;

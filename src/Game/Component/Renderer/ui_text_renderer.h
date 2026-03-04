@@ -2,7 +2,7 @@
 #include <optional>
 #include <string>
 
-#include "Component/component.h"
+#include "Component/renderer_component.h"
 #include "Component/pivot_type.h"
 #include "Component/render_settings.h"
 #include "Framework/Core/utils.h"
@@ -17,7 +17,7 @@
 using Math::Vector2;
 using Math::Vector4;
 
-class UITextRenderer : public Component<UITextRenderer> {
+class UITextRenderer : public RendererComponent<UITextRenderer> {
  public:
   struct Props {
     std::wstring text;
@@ -30,10 +30,10 @@ class UITextRenderer : public Component<UITextRenderer> {
     std::optional<int> layer_id = std::nullopt;
   };
 
-  UITextRenderer(GameObject* owner) : Component(owner) {
+  UITextRenderer(GameObject* owner) : RendererComponent(owner) {
   }
 
-  UITextRenderer(GameObject* owner, const Props& props) : Component(owner) {
+  UITextRenderer(GameObject* owner, const Props& props) : RendererComponent(owner) {
     if (!props.text.empty()) SetText(props.text);
     SetFont(props.font);
     SetPixelSize(props.pixel_size);

@@ -133,6 +133,11 @@ class IScene {
     return event_scope_;
   }
 
+ public:
+  RenderSystem& GetRenderSystem() {
+    return render_system_;
+  }
+
  private:
   void RegisterGameObject(GameObject* obj);
   void UnregisterGameObject(GameObject* obj);
@@ -140,6 +145,8 @@ class IScene {
   void UnregisterGameObjectAndComponents(GameObject* obj);
 
   std::string scene_name_ = "Untitled";
+
+  RenderSystem render_system_;
   std::vector<std::unique_ptr<GameObject>> game_objects_;
   std::unordered_map<framework::UUID, GameObject*> gameobject_uuid_map_;
   std::unordered_map<framework::UUID, IComponentBase*> component_uuid_map_;
@@ -153,7 +160,6 @@ class IScene {
 
   GameContext* context_ = nullptr;
   EventScope event_scope_;
-  RenderSystem render_system_;
 
   void FlushPendingStarts();
   void CleanupDestroyedObjects();
@@ -161,7 +167,6 @@ class IScene {
   void FixedUpdateRootObjects(float dt);
   void DebugUpdateRootObjects(float dt);
   void DebugFixedUpdateRootObjects(float dt);
-  void RenderRootObjects(FramePacket& packet);
   void DebugDrawRootObjects(DebugDrawer& drawer);
   void StartAllObjects();
 

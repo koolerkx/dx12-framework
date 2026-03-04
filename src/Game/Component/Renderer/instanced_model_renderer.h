@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "Asset/model_data.h"
-#include "Component/component.h"
+#include "Component/renderer_component.h"
 #include "Framework/Math/Math.h"
 #include "Graphic/Frame/frame_packet.h"
 #include "Graphic/Resource/Buffer/instance_buffer_handle.h"
@@ -23,7 +23,7 @@ struct InstanceProps {
   bool visible = true;
 };
 
-class InstancedModelRenderer : public Component<InstancedModelRenderer> {
+class InstancedModelRenderer : public RendererComponent<InstancedModelRenderer> {
  public:
   struct InstanceEntry {
     std::string id;
@@ -35,7 +35,7 @@ class InstancedModelRenderer : public Component<InstancedModelRenderer> {
     std::vector<InstanceEntry> instances;
   };
 
-  using Component::Component;
+  using RendererComponent::RendererComponent;
   InstancedModelRenderer(GameObject* owner, const Props& props);
 
   void OnInit() override;

@@ -5,7 +5,6 @@
 #include <typeinfo>
 
 #include "Framework/UUID/uuid.h"
-#include "Graphic/Frame/frame_packet.h"
 
 class DebugDrawer;
 
@@ -57,9 +56,6 @@ class IComponentBase {
   virtual void OnDebugUpdate(float /*dt*/) {
   }
   virtual void OnDebugFixedUpdate(float /*dt*/) {
-  }
-  // Every frame render pass, gated by enabled and started
-  virtual void OnRender(FramePacket& /*packet*/) {
   }
   // Debug visualization, gated by enabled, started, and debug_draw_enabled
   virtual void OnDebugDraw(DebugDrawer& /*drawer*/) {
