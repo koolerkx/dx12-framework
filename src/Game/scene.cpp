@@ -166,6 +166,7 @@ void IScene::Render(FramePacket& packet) {
   packet.lighting = light_setting_.ToConfig();
   packet.shadow = shadow_setting_.ToConfig();
 
+  render_system_.Render(packet);
   RenderRootObjects(packet);
 
   // Call derived class custom rendering (e.g., debug visualization)

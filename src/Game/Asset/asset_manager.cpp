@@ -175,10 +175,8 @@ std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path, floa
   }
 
   auto* texture_manager = impl_->texture_manager;
-  auto* device = impl_->graphic->GetDevice();
-  auto& mesh_registry = impl_->graphic->GetMeshRegistry();
 
-  using Loader = Model::ModelLoader<const Mesh*, std::shared_ptr<Texture>, ModelSurfaceMaterial>;
+  using Loader = Model::ModelLoader<MeshHandle, std::shared_ptr<Texture>, ModelSurfaceMaterial>;
 
   std::filesystem::path model_dir = std::filesystem::path(path).parent_path();
 
@@ -266,9 +264,7 @@ std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path, floa
   Math::Vector3 bounds_max(
     -(std::numeric_limits<float>::max)(), -(std::numeric_limits<float>::max)(), -(std::numeric_limits<float>::max)());
 
-  std::vector<MeshHandle> mesh_handles_from_pool;
-
-  auto mesh_cb = [&](const Model::MeshData<Graphics::Vertex::ModelVertex>& mesh_data) -> const Mesh* {
+  auto mesh_cb = [&](const Model::MeshData<Graphics::Vertex::ModelVertex>& mesh_data) -> MeshHandle {
     std::string key = path + scale_suffix + "#" + mesh_data.name + "_" + std::to_string(mesh_counter++);
     mesh_material_indices.push_back(mesh_data.material_index);
 
@@ -280,8 +276,7 @@ std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path, floa
     }
 
     if (auto cache_it = mesh_handle_cache_.find(key); cache_it != mesh_handle_cache_.end()) {
-      mesh_handles_from_pool.push_back(cache_it->second);
-      return mesh_registry.Find(key);
+      return cache_it->second;
     }
 
     auto alloc = impl_->mesh_buffer_pool->Allocate(
@@ -290,24 +285,12 @@ std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path, floa
     if (alloc.success) {
       mesh_handle_cache_[key] = alloc.handle;
     }
-    mesh_handles_from_pool.push_back(alloc.handle);
-
-    if (auto* existing = mesh_registry.Find(key)) {
-      return existing;
-    }
-
-    // DEPRECATED(Phase4): Remove after bindless migration complete — dual allocation legacy half
-    auto mesh = std::make_unique<Mesh>();
-    if (!mesh->Create(device, mesh_data.vertices.data(), mesh_data.vertices.size(), mesh_data.indices.data(), mesh_data.indices.size())) {
-      Logger::LogFormat(LogLevel::Error, LogCategory::Game, Logger::Here(), "[AssetManager] Failed to create mesh: {}", key);
-      return nullptr;
-    }
-    return mesh_registry.Register(key, std::move(mesh));
+    return alloc.handle;
   };
 
   Model::LoadOptions load_options;
   load_options.global_scale = global_scale;
-  auto result = Loader::Load<Graphics::Vertex::ModelVertex, const Mesh*, ModelSurfaceMaterial, std::shared_ptr<Texture>>(
+  auto result = Loader::Load<Graphics::Vertex::ModelVertex, MeshHandle, ModelSurfaceMaterial, std::shared_ptr<Texture>>(
     path, texture_cb, material_cb, mesh_cb, load_options);
 
   if (!result.success) {
@@ -338,13 +321,12 @@ std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path, floa
 
   model_data->sub_meshes.reserve(result.mesh_handles.size());
   for (size_t i = 0; i < result.mesh_handles.size(); ++i) {
-    if (!result.mesh_handles[i]) continue;
+    if (!result.mesh_handles[i].IsValid()) continue;
 
     uint32_t mat_idx = mesh_material_indices[i];
 
     ModelSubMeshEntry entry;
-    entry.mesh = result.mesh_handles[i];
-    entry.mesh_handle = mesh_handles_from_pool[i];
+    entry.mesh_handle = result.mesh_handles[i];
     entry.surface_material_index = mat_idx;
     entry.albedo_texture = resolve_texture(material_albedo_texture_indices, mat_idx);
     entry.normal_texture = resolve_texture(material_normal_texture_indices, mat_idx);

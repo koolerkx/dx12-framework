@@ -218,6 +218,18 @@ const MeshDescriptor* MeshBufferPool::GetDescriptor(MeshHandle handle) const {
   return &slots_[handle.index].descriptor;
 }
 
+MeshBufferPool::Stats MeshBufferPool::GetStats() const {
+  Stats stats;
+  stats.vertex_used = vertex_allocator_.GetUsedSize();
+  stats.vertex_total = vertex_allocator_.GetTotalSize();
+  stats.index_used = index_allocator_.GetUsedSize();
+  stats.index_total = index_allocator_.GetTotalSize();
+  stats.mesh_count = static_cast<uint32_t>(slots_.size() - free_slots_.size());
+  stats.max_mesh_count = max_mesh_count_;
+  stats.pending_frees = static_cast<uint32_t>(pending_frees_.size());
+  return stats;
+}
+
 bool MeshBufferPool::IsValid(MeshHandle handle) const {
   if (!handle.IsValid()) return false;
   if (handle.index >= slots_.size()) return false;

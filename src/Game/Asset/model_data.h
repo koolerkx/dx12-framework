@@ -11,7 +11,6 @@
 #include "Framework/Model/node_hierarchy.h"
 #include "Graphic/Resource/Mesh/mesh_buffer_pool.h"
 #include "Graphic/Resource/Texture/texture.h"
-#include "Graphic/Resource/mesh.h"
 
 struct ModelSurfaceMaterial {
   DirectX::XMFLOAT4 base_color_factor = {1.0f, 1.0f, 1.0f, 1.0f};
@@ -22,7 +21,6 @@ struct ModelSurfaceMaterial {
 };
 
 struct ModelSubMeshEntry {
-  const Mesh* mesh = nullptr;  // DEPRECATED(Phase4): Remove after bindless migration complete
   MeshHandle mesh_handle;
   std::shared_ptr<Texture> albedo_texture;
   std::shared_ptr<Texture> normal_texture;

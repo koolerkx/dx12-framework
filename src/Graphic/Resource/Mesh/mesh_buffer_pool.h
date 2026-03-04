@@ -55,6 +55,17 @@ class MeshBufferPool {
   const MeshDescriptor* GetDescriptor(MeshHandle handle) const;
   bool IsValid(MeshHandle handle) const;
 
+  struct Stats {
+    uint32_t vertex_used = 0;
+    uint32_t vertex_total = 0;
+    uint32_t index_used = 0;
+    uint32_t index_total = 0;
+    uint32_t mesh_count = 0;
+    uint32_t max_mesh_count = 0;
+    uint32_t pending_frees = 0;
+  };
+  Stats GetStats() const;
+
  private:
   struct SlotData {
     MeshDescriptor descriptor;

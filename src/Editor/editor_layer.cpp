@@ -38,6 +38,7 @@
 #include "Graphic/Pipeline/shader_descriptors.h"
 #include "Graphic/Pipeline/shader_registry.h"
 #include "Graphic/Render/render_graph.h"
+#include "Graphic/Resource/Mesh/mesh_buffer_pool.h"
 #include "Graphic/graphic.h"
 
 
@@ -1063,6 +1064,26 @@ void EditorLayer::DrawDebugPanel() {
       debug_drawer_->SetGlobalOpacity(debug_draw_opacity_);
     }
     ImGui::EndDisabled();
+  }
+
+  ImGui::Separator();
+
+  if (ImGui::CollapsingHeader("Mesh Buffer Pool")) {
+    auto stats = graphic_->GetMeshBufferPool().GetStats();
+
+    float vertex_pct = stats.vertex_total > 0 ? static_cast<float>(stats.vertex_used) / static_cast<float>(stats.vertex_total) : 0.0f;
+    float index_pct = stats.index_total > 0 ? static_cast<float>(stats.index_used) / static_cast<float>(stats.index_total) : 0.0f;
+
+    char vertex_label[64];
+    std::snprintf(vertex_label, sizeof(vertex_label), "Vertices: %u / %u", stats.vertex_used, stats.vertex_total);
+    ImGui::ProgressBar(vertex_pct, ImVec2(-1, 0), vertex_label);
+
+    char index_label[64];
+    std::snprintf(index_label, sizeof(index_label), "Indices: %u / %u", stats.index_used, stats.index_total);
+    ImGui::ProgressBar(index_pct, ImVec2(-1, 0), index_label);
+
+    ImGui::Text("Meshes: %u / %u", stats.mesh_count, stats.max_mesh_count);
+    ImGui::Text("Pending Frees: %u", stats.pending_frees);
   }
 
   ImGui::End();

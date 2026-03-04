@@ -117,7 +117,6 @@ void DepthNormalPass::Execute(const RenderFrameContext& frame, const FramePacket
 
     unified_buffers_bound = false;
 
-    // DEPRECATED(Phase4): Remove after bindless migration complete
     if (draw_cmd.IsStructuredInstanced()) {
       if (!instanced_pipeline_state_) continue;
 
@@ -145,7 +144,6 @@ void DepthNormalPass::Execute(const RenderFrameContext& frame, const FramePacket
     obj_data.normalMatrix = draw_cmd.world_matrix.Inverted().Transposed();
     cmd.SetObjectConstants(obj_data);
 
-    // DEPRECATED(Phase4): Remove after bindless migration complete
     cmd.DrawMesh(draw_cmd.mesh);
   }
 }

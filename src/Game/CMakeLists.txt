@@ -134,6 +134,8 @@ add_library(game STATIC
     Scenes/city_scene/wave_system.h
     Scenes/city_scene/wave_system.cpp
     System/system.h
+    System/render_system.h
+    System/render_system.cpp
     Scenes/city_scene/pulse_path_component.h
     Scenes/city_scene/pulse_path_component.cpp
     Scenes/city_scene/floating_text_component.h

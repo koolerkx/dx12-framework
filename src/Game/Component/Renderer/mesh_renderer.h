@@ -123,7 +123,7 @@ class MeshRenderer : public Component<MeshRenderer> {
     mesh_handle_ = props.mesh_handle;
     if (props.mesh) {
       SetMesh(props.mesh);
-    } else {
+    } else if (!props.mesh_handle.IsValid()) {
       SetDefaultMesh(props.mesh_type);
     }
     if (props.texture) {
@@ -511,7 +511,7 @@ class MeshRenderer : public Component<MeshRenderer> {
   // --- Render ---
 
   void OnRender(FramePacket& packet) override {
-    if (!mesh_) return;
+    if (!mesh_ && !mesh_handle_.IsValid()) return;
 
     auto* transform = GetOwner()->GetTransform();
     if (!transform) return;

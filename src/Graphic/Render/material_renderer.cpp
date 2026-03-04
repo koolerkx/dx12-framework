@@ -194,7 +194,6 @@ void MaterialRenderer::Record(const RenderFrameContext& frame,
   }
 }
 
-// DEPRECATED(Phase4): Remove after bindless migration complete
 void MaterialRenderer::RecordSingle(RenderCommandList& cmd, const DrawCommand& draw_cmd, const Matrix4& view_proj, bool shadow_enabled) {
   cmd.SetMaterialConstants(BuildMaterialCB(draw_cmd.material_instance));
 
@@ -222,7 +221,6 @@ void MaterialRenderer::RecordSingle(RenderCommandList& cmd, const DrawCommand& d
   cmd.DrawMesh(draw_cmd.mesh);
 }
 
-// DEPRECATED(Phase4): Remove after bindless migration complete
 void MaterialRenderer::RecordStructuredInstanced(
   RenderCommandList& cmd, const DrawCommand& draw_cmd, const Matrix4& view_proj, bool shadow_enabled) {
   const auto& mi = draw_cmd.material_instance;

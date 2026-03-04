@@ -17,7 +17,7 @@ using SpriteInstanceData = Graphics::Vertex::SpriteInstance;
 
 struct DrawCommand {
   const Material* material = nullptr;
-  const Mesh* mesh = nullptr;  // DEPRECATED(Phase4): Remove after bindless migration complete
+  const Mesh* mesh = nullptr;
   MeshHandle mesh_handle;
   MaterialInstance material_instance{};
   float depth = 0.0f;

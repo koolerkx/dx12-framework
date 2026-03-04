@@ -248,7 +248,6 @@ void ShadowPass::Execute(const RenderFrameContext& frame, const FramePacket& pac
 
     unified_buffers_bound = false;
 
-    // DEPRECATED(Phase4): Remove after bindless migration complete
     if (draw_cmd.IsStructuredInstanced()) {
       if (!instanced_pipeline_state_) continue;
 
@@ -275,7 +274,6 @@ void ShadowPass::Execute(const RenderFrameContext& frame, const FramePacket& pac
     obj_data.world = draw_cmd.world_matrix;
     cmd.SetObjectConstants(obj_data);
 
-    // DEPRECATED(Phase4): Remove after bindless migration complete
     draw_cmd.mesh->Draw(frame.command_list);
   }
 }

@@ -6,6 +6,7 @@
 
 #include "Framework/Event/event_scope.hpp"
 #include "Graphic/Frame/frame_packet.h"
+#include "System/render_system.h"
 #include "SceneSetting/active_camera_setting.h"
 #include "SceneSetting/active_ui_camera_setting.h"
 #include "SceneSetting/background_setting.h"
@@ -152,6 +153,7 @@ class IScene {
 
   GameContext* context_ = nullptr;
   EventScope event_scope_;
+  RenderSystem render_system_;
 
   void FlushPendingStarts();
   void CleanupDestroyedObjects();

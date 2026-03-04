@@ -153,7 +153,6 @@ class ModelComponent : public Component<ModelComponent> {
           const auto& entry = model_->sub_meshes[mesh_index];
 
           MeshRenderer::Props renderer_props;
-          renderer_props.mesh = entry.mesh;
           renderer_props.mesh_handle = entry.mesh_handle;
           renderer_props.texture = entry.albedo_texture.get();
           renderer_props.shader_id = shader_id_;
