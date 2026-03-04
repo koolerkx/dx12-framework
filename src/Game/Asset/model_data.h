@@ -22,7 +22,7 @@ struct ModelSurfaceMaterial {
 };
 
 struct ModelSubMeshEntry {
-  const Mesh* mesh = nullptr;
+  const Mesh* mesh = nullptr;  // DEPRECATED(Phase4): Remove after bindless migration complete
   MeshHandle mesh_handle;
   std::shared_ptr<Texture> albedo_texture;
   std::shared_ptr<Texture> normal_texture;

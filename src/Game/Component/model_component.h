@@ -154,6 +154,7 @@ class ModelComponent : public Component<ModelComponent> {
 
           MeshRenderer::Props renderer_props;
           renderer_props.mesh = entry.mesh;
+          renderer_props.mesh_handle = entry.mesh_handle;
           renderer_props.texture = entry.albedo_texture.get();
           renderer_props.shader_id = shader_id_;
           renderer_props.render_layer = render_layer_;

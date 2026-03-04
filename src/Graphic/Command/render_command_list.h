@@ -10,6 +10,8 @@
 #include "Pipeline/material.h"
 #include "Pipeline/root_parameter_slots.h"
 #include "Pipeline/vertex_types.h"
+#include "Resource/Mesh/mesh_buffer_pool.h"
+#include "Resource/Mesh/mesh_descriptor.h"
 #include "Resource/mesh.h"
 
 struct Texture;
@@ -144,6 +146,21 @@ class RenderCommandList {
 
   void SetInstanceBufferSRV(D3D12_GPU_VIRTUAL_ADDRESS address) {
     cmd_->SetGraphicsRootShaderResourceView(RootSlot::ToIndex(RootSlot::ShaderResource::InstanceBuffer), address);
+  }
+
+  void SetMeshDescriptorSRV(D3D12_GPU_VIRTUAL_ADDRESS address) {
+    cmd_->SetGraphicsRootShaderResourceView(RootSlot::ToIndex(RootSlot::ShaderResource::MeshDescriptors), address);
+  }
+
+  void BindUnifiedMeshBuffers(MeshBufferPool* pool) {
+    auto vbv = pool->GetVertexBufferView();
+    auto ibv = pool->GetIndexBufferView();
+    cmd_->IASetVertexBuffers(0, 1, &vbv);
+    cmd_->IASetIndexBuffer(&ibv);
+  }
+
+  void DrawBindlessMesh(const MeshDescriptor& desc, uint32_t instance_count = 1) {
+    cmd_->DrawIndexedInstanced(desc.index_count, instance_count, desc.index_offset, desc.vertex_offset, 0);
   }
 
   void DrawMesh(const Mesh* mesh) {

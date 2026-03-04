@@ -11,6 +11,8 @@
 #include "Pipeline/pipeline_state_builder.h"
 #include "Pipeline/shader_descriptors.h"
 #include "Pipeline/shader_manager.h"
+#include "Resource/Mesh/mesh_buffer_pool.h"
+#include "Resource/Mesh/mesh_descriptor.h"
 #include "shadow_config.h"
 
 using Math::Matrix4;
@@ -210,12 +212,43 @@ void ShadowPass::Execute(const RenderFrameContext& frame, const FramePacket& pac
   frame_cb_data.viewProj = light_view_proj;
   cmd.SetFrameConstants(frame_cb_data);
 
+  MeshBufferPool* mesh_pool = frame.mesh_buffer_pool;
+  bool unified_buffers_bound = false;
+
   for (const auto& draw_cmd : packet.commands) {
     if (!HasTag(draw_cmd.tags, RenderTag::CastShadow)) continue;
-    if (!draw_cmd.mesh) continue;
-    // CPU instances (sprites) don't cast shadows — only structured (3D model) instances do
+    if (!draw_cmd.mesh && !draw_cmd.UsesBindlessMesh()) continue;
     if (draw_cmd.IsInstanced()) continue;
 
+    if (draw_cmd.UsesBindlessMesh()) {
+      if (!unified_buffers_bound) {
+        auto vbv = mesh_pool->GetVertexBufferView();
+        auto ibv = mesh_pool->GetIndexBufferView();
+        frame.command_list->IASetVertexBuffers(0, 1, &vbv);
+        frame.command_list->IASetIndexBuffer(&ibv);
+        unified_buffers_bound = true;
+      }
+      const MeshDescriptor* desc = mesh_pool->GetDescriptor(draw_cmd.mesh_handle);
+      if (!desc) continue;
+
+      if (draw_cmd.IsStructuredInstanced()) {
+        if (!instanced_pipeline_state_) continue;
+        frame.command_list->SetPipelineState(instanced_pipeline_state_.Get());
+        cmd.SetInstanceBufferSRV(draw_cmd.instance_buffer_address);
+        frame.command_list->DrawIndexedInstanced(desc->index_count, draw_cmd.instance_count, desc->index_offset, desc->vertex_offset, 0);
+        frame.command_list->SetPipelineState(pipeline_state_.Get());
+      } else {
+        ObjectCB obj_data = {};
+        obj_data.world = draw_cmd.world_matrix;
+        cmd.SetObjectConstants(obj_data);
+        frame.command_list->DrawIndexedInstanced(desc->index_count, 1, desc->index_offset, desc->vertex_offset, 0);
+      }
+      continue;
+    }
+
+    unified_buffers_bound = false;
+
+    // DEPRECATED(Phase4): Remove after bindless migration complete
     if (draw_cmd.IsStructuredInstanced()) {
       if (!instanced_pipeline_state_) continue;
 
@@ -242,6 +275,7 @@ void ShadowPass::Execute(const RenderFrameContext& frame, const FramePacket& pac
     obj_data.world = draw_cmd.world_matrix;
     cmd.SetObjectConstants(obj_data);
 
+    // DEPRECATED(Phase4): Remove after bindless migration complete
     draw_cmd.mesh->Draw(frame.command_list);
   }
 }

@@ -296,6 +296,7 @@ std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path, floa
       return existing;
     }
 
+    // DEPRECATED(Phase4): Remove after bindless migration complete — dual allocation legacy half
     auto mesh = std::make_unique<Mesh>();
     if (!mesh->Create(device, mesh_data.vertices.data(), mesh_data.vertices.size(), mesh_data.indices.data(), mesh_data.indices.size())) {
       Logger::LogFormat(LogLevel::Error, LogCategory::Game, Logger::Here(), "[AssetManager] Failed to create mesh: {}", key);

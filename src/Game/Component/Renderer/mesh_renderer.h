@@ -13,6 +13,7 @@
 #include "Graphic/Pipeline/shader_descriptors.h"
 #include "Graphic/Pipeline/shader_registry.h"
 #include "Graphic/Resource/Texture/texture.h"
+#include "Graphic/Resource/Mesh/mesh_buffer_pool.h"
 #include "Graphic/Resource/mesh.h"
 #include "game_context.h"
 #include "game_object.h"
@@ -95,6 +96,7 @@ class MeshRenderer : public Component<MeshRenderer> {
   struct Props {
     DefaultMesh mesh_type = DefaultMesh::Cube;
     const Mesh* mesh = nullptr;
+    MeshHandle mesh_handle;
     std::string texture_path = "";
     Texture* texture = nullptr;
     Vector4 color = {1, 1, 1, 1};
@@ -118,6 +120,7 @@ class MeshRenderer : public Component<MeshRenderer> {
   using Component::Component;
 
   MeshRenderer(GameObject* owner, const Props& props) : Component(owner) {
+    mesh_handle_ = props.mesh_handle;
     if (props.mesh) {
       SetMesh(props.mesh);
     } else {
@@ -520,6 +523,7 @@ class MeshRenderer : public Component<MeshRenderer> {
     cmd.world_matrix = transform->GetWorldMatrix();
     cmd.color = color_;
     cmd.mesh = mesh_;
+    cmd.mesh_handle = mesh_handle_;
 
     cmd.material = material_mgr.GetOrCreateMaterial(shader_id_, render_settings_);
     cmd.material_instance.material = cmd.material;
@@ -564,6 +568,7 @@ class MeshRenderer : public Component<MeshRenderer> {
 
  private:
   const Mesh* mesh_ = nullptr;
+  MeshHandle mesh_handle_;
   TextureBinding albedo_;
   std::string mesh_type_name_;
   Graphics::ShaderId shader_id_ = Graphics::Basic3DShader::ID;

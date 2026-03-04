@@ -57,6 +57,7 @@ void InstancedModelRenderer::OnRender(FramePacket& packet) {
   for (const auto& entry : model_->sub_meshes) {
     DrawCommand cmd;
     cmd.mesh = entry.mesh;
+    cmd.mesh_handle = entry.mesh_handle;
     cmd.instance_buffer_address = buffer_address;
     cmd.instance_count = instance_count_;
 

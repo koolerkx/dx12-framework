@@ -148,11 +148,14 @@ void MaterialRenderer::Record(const RenderFrameContext& frame,
   Matrix4 view_proj = camera.view_proj;
   const Material* current_material = first_material;
 
+  bool unified_buffers_bound = false;
+  MeshBufferPool* mesh_pool = frame.mesh_buffer_pool;
+
   for (const auto& draw_cmd : commands) {
     if (!draw_cmd.material || !draw_cmd.material->IsValid()) {
       continue;
     }
-    if (!draw_cmd.mesh) {
+    if (!draw_cmd.mesh && !draw_cmd.UsesBindlessMesh()) {
       continue;
     }
 
@@ -161,7 +164,19 @@ void MaterialRenderer::Record(const RenderFrameContext& frame,
       current_material = draw_cmd.material;
     }
 
-    if (draw_cmd.IsStructuredInstanced()) {
+    if (draw_cmd.UsesBindlessMesh()) {
+      if (!unified_buffers_bound) {
+        cmd.BindUnifiedMeshBuffers(mesh_pool);
+        cmd.SetMeshDescriptorSRV(mesh_pool->GetDescriptorBufferAddress());
+        unified_buffers_bound = true;
+      }
+      if (draw_cmd.IsStructuredInstanced()) {
+        RecordBindlessStructuredInstanced(cmd, draw_cmd, view_proj, shadow.enabled, mesh_pool);
+      } else {
+        RecordBindlessSingle(cmd, draw_cmd, view_proj, shadow.enabled, mesh_pool);
+      }
+    } else if (draw_cmd.IsStructuredInstanced()) {
+      unified_buffers_bound = false;
       if (!draw_cmd.material->SupportsStructuredInstancing()) {
         Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(),
           "DrawCommand has structured instance data but material '{}' does not support structured instancing",
@@ -170,13 +185,16 @@ void MaterialRenderer::Record(const RenderFrameContext& frame,
       }
       RecordStructuredInstanced(cmd, draw_cmd, view_proj, shadow.enabled);
     } else if (draw_cmd.IsInstanced()) {
+      unified_buffers_bound = false;
       RecordInstanced(cmd, draw_cmd);
     } else {
+      unified_buffers_bound = false;
       RecordSingle(cmd, draw_cmd, view_proj, shadow.enabled);
     }
   }
 }
 
+// DEPRECATED(Phase4): Remove after bindless migration complete
 void MaterialRenderer::RecordSingle(RenderCommandList& cmd, const DrawCommand& draw_cmd, const Matrix4& view_proj, bool shadow_enabled) {
   cmd.SetMaterialConstants(BuildMaterialCB(draw_cmd.material_instance));
 
@@ -204,6 +222,7 @@ void MaterialRenderer::RecordSingle(RenderCommandList& cmd, const DrawCommand& d
   cmd.DrawMesh(draw_cmd.mesh);
 }
 
+// DEPRECATED(Phase4): Remove after bindless migration complete
 void MaterialRenderer::RecordStructuredInstanced(
   RenderCommandList& cmd, const DrawCommand& draw_cmd, const Matrix4& view_proj, bool shadow_enabled) {
   const auto& mi = draw_cmd.material_instance;
@@ -264,4 +283,58 @@ void MaterialRenderer::RecordInstanced(RenderCommandList& cmd, const DrawCommand
   }
 
   cmd.DrawMeshInstanced(draw_cmd.mesh, draw_cmd.instances);
+}
+
+void MaterialRenderer::RecordBindlessSingle(
+  RenderCommandList& cmd, const DrawCommand& draw_cmd, const Matrix4& view_proj, bool shadow_enabled, MeshBufferPool* pool) {
+  cmd.SetMaterialConstants(BuildMaterialCB(draw_cmd.material_instance));
+
+  ObjectCB obj_data = {};
+  Matrix4 world = draw_cmd.world_matrix;
+  Matrix4 wvp = world * view_proj;
+  obj_data.world = world;
+  obj_data.worldViewProj = wvp;
+  obj_data.normalMatrix = world.Inverted().Transposed();
+  obj_data.color = draw_cmd.color;
+  obj_data.uvOffset = draw_cmd.uv_offset;
+  obj_data.uvScale = draw_cmd.uv_scale;
+  obj_data.samplerIndex = draw_cmd.material_instance.sampler_index;
+  obj_data.flags = flags::If(HasTag(draw_cmd.tags, RenderTag::Lit), ObjectFlags::Lit) |
+                   flags::If(draw_cmd.layer == RenderLayer::Opaque, ObjectFlags::Opaque) |
+                   flags::If(shadow_enabled && HasTag(draw_cmd.tags, RenderTag::ReceiveShadow), ObjectFlags::ReceiveShadow);
+  cmd.SetObjectConstants(obj_data);
+
+  if (draw_cmd.has_custom_data) {
+    CustomCB custom_cb = {};
+    memcpy(custom_cb.data, draw_cmd.custom_data.data(), sizeof(float) * 20);
+    cmd.SetCustomConstants(custom_cb);
+  }
+
+  const MeshDescriptor* desc = pool->GetDescriptor(draw_cmd.mesh_handle);
+  if (desc) {
+    cmd.DrawBindlessMesh(*desc);
+  }
+}
+
+void MaterialRenderer::RecordBindlessStructuredInstanced(
+  RenderCommandList& cmd, const DrawCommand& draw_cmd, const Matrix4& view_proj, bool shadow_enabled, MeshBufferPool* pool) {
+  cmd.SetMaterialConstants(BuildMaterialCB(draw_cmd.material_instance));
+
+  ObjectCB obj_data = {};
+  obj_data.color = draw_cmd.color;
+  obj_data.uvScale = {1.0f, 1.0f};
+  obj_data.samplerIndex = draw_cmd.material_instance.sampler_index;
+  uint32_t flags = 0;
+  if (HasTag(draw_cmd.tags, RenderTag::Lit)) flags |= 1u;
+  if (draw_cmd.layer == RenderLayer::Opaque) flags |= 2u;
+  if (shadow_enabled && HasTag(draw_cmd.tags, RenderTag::ReceiveShadow)) flags |= 4u;
+  obj_data.flags = flags;
+  cmd.SetObjectConstants(obj_data);
+
+  cmd.SetInstanceBufferSRV(draw_cmd.instance_buffer_address);
+
+  const MeshDescriptor* desc = pool->GetDescriptor(draw_cmd.mesh_handle);
+  if (desc) {
+    cmd.DrawBindlessMesh(*desc, draw_cmd.instance_count);
+  }
 }

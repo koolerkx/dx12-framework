@@ -5,6 +5,7 @@
 #include "Framework/Math/Math.h"
 #include "Pipeline/material.h"
 #include "Pipeline/vertex_types.h"
+#include "Resource/Mesh/mesh_buffer_pool.h"
 #include "render_layer.h"
 
 using Math::Matrix4;
@@ -16,7 +17,8 @@ using SpriteInstanceData = Graphics::Vertex::SpriteInstance;
 
 struct DrawCommand {
   const Material* material = nullptr;
-  const Mesh* mesh = nullptr;
+  const Mesh* mesh = nullptr;  // DEPRECATED(Phase4): Remove after bindless migration complete
+  MeshHandle mesh_handle;
   MaterialInstance material_instance{};
   float depth = 0.0f;
 
@@ -37,6 +39,10 @@ struct DrawCommand {
   RenderTagMask tags = 0;
   bool depth_test = true;
   bool depth_write = true;
+
+  [[nodiscard]] bool UsesBindlessMesh() const {
+    return mesh_handle.IsValid();
+  }
 
   [[nodiscard]] bool IsInstanced() const {
     return !instances.empty();

@@ -9,7 +9,7 @@ std::vector<DrawCommand> DrawCommandAggregator::Aggregate(const std::vector<Draw
   std::unordered_map<AggregationKey, std::vector<const DrawCommand*>, AggregationKeyHash> groups;
 
   for (const auto& cmd : input) {
-    if (cmd.IsInstanced() || cmd.IsStructuredInstanced() || !SupportsInstancing(cmd.material)) {
+    if (cmd.IsInstanced() || cmd.IsStructuredInstanced() || cmd.UsesBindlessMesh() || !SupportsInstancing(cmd.material)) {
       output.push_back(cmd);
       continue;
     }

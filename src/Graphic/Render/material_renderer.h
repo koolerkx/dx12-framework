@@ -8,7 +8,9 @@
 #include "Frame/draw_command.h"
 #include "Frame/frame_packet.h"
 #include "Frame/render_frame_context.h"
+#include "Resource/Mesh/mesh_buffer_pool.h"
 #include "draw_command_aggregator.h"
+
 
 class RenderCommandList;
 
@@ -46,6 +48,10 @@ class MaterialRenderer {
   void RecordSingle(RenderCommandList& cmd, const DrawCommand& draw_cmd, const Matrix4& view_proj, bool shadow_enabled);
   void RecordInstanced(RenderCommandList& cmd, const DrawCommand& draw_cmd);
   void RecordStructuredInstanced(RenderCommandList& cmd, const DrawCommand& draw_cmd, const Matrix4& view_proj, bool shadow_enabled);
+  void RecordBindlessSingle(
+    RenderCommandList& cmd, const DrawCommand& draw_cmd, const Matrix4& view_proj, bool shadow_enabled, MeshBufferPool* pool);
+  void RecordBindlessStructuredInstanced(
+    RenderCommandList& cmd, const DrawCommand& draw_cmd, const Matrix4& view_proj, bool shadow_enabled, MeshBufferPool* pool);
 };
 
 class OpaqueRenderer : public MaterialRenderer {
