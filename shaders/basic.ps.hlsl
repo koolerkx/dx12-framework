@@ -51,16 +51,14 @@ float4 main(PSIN input) : SV_TARGET {
 
     float rim = pow(1.0 - saturate(dot(N, V)), mat.rimPower);
     float3 rimLight = mat.rimColor * mat.rimIntensity * rim;
-    if (mat.flags & MATERIAL_FLAG_RIM_SHADOW_AFFECTED) rimLight *= shadow;
+    rimLight *= lerp(1.0, shadow,
+                     HasFlag(mat.flags, MATERIAL_FLAG_RIM_SHADOW_AFFECTED));
 
     float3 pointDiffuse = float3(0, 0, 0);
     float3 pointSpecular = float3(0, 0, 0);
-    if (g_LightingCB.pointLightCount > 0) {
-      CalcPointLightContribution(N, V, input.worldPos,
-                                 g_LightingCB.pointLightCount,
-                                 mat.specularIntensity, mat.specularPower,
-                                 pointDiffuse, pointSpecular);
-    }
+    CalcPointLightContribution(
+        N, V, input.worldPos, g_LightingCB.pointLightCount,
+        mat.specularIntensity, mat.specularPower, pointDiffuse, pointSpecular);
 
     float ao = 1.0;
     if (g_LightingCB.ssaoSrvIndex != 0xFFFFFFFF) {

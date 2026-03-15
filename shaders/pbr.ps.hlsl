@@ -16,8 +16,8 @@ struct PSIN {
 
 Texture2D g_Textures[] : register(t0, space1);
 #include "ConstantBuffer/sampler.hlsli"
-
 #include "ConstantBuffer/shadow_cb.hlsli"
+
 
 static const float PI = 3.14159265359;
 static const float MIN_ROUGHNESS = 0.04;
@@ -61,26 +61,21 @@ float4 main(PSIN input) : SV_TARGET {
 
   float3 N = normalize(input.worldNormal);
 
-  if (mat.flags & MATERIAL_FLAG_HAS_NORMAL_MAP) {
-    float3 T = normalize(input.worldTangent);
-    float3 B = normalize(input.worldBitangent);
-    float3x3 TBN = float3x3(T, B, N);
-    float3 normalMap = g_Textures[mat.normalTextureIndex]
-                           .Sample(g_Samplers[mat.samplerIndex], input.uv)
-                           .rgb;
-    normalMap = normalMap * 2.0 - 1.0;
-    N = normalize(mul(normalMap, TBN));
-  }
+  float3 T = normalize(input.worldTangent);
+  float3 B = normalize(input.worldBitangent);
+  float3x3 TBN = float3x3(T, B, N);
+  float3 normalMap = g_Textures[mat.normalTextureIndex]
+                         .Sample(g_Samplers[mat.samplerIndex], input.uv)
+                         .rgb;
+  normalMap = normalMap * 2.0 - 1.0;
+  float3 tbnNormal = normalize(mul(normalMap, TBN));
+  N = lerp(N, tbnNormal, HasFlag(mat.flags, MATERIAL_FLAG_HAS_NORMAL_MAP));
 
-  float metallic = mat.metallicFactor;
-  float roughness = mat.roughnessFactor;
-
-  if (mat.flags & MATERIAL_FLAG_HAS_METALLIC_ROUGHNESS) {
-    float4 mrSample = g_Textures[mat.metallicRoughnessIndex].Sample(
-        g_Samplers[mat.samplerIndex], input.uv);
-    metallic *= mrSample.b;
-    roughness *= mrSample.g;
-  }
+  float4 mrSample = g_Textures[mat.metallicRoughnessIndex].Sample(
+      g_Samplers[mat.samplerIndex], input.uv);
+  float hasMR = HasFlag(mat.flags, MATERIAL_FLAG_HAS_METALLIC_ROUGHNESS);
+  float metallic = mat.metallicFactor * lerp(1.0, mrSample.b, hasMR);
+  float roughness = mat.roughnessFactor * lerp(1.0, mrSample.g, hasMR);
 
   roughness = max(roughness, MIN_ROUGHNESS);
 
@@ -127,26 +122,22 @@ float4 main(PSIN input) : SV_TARGET {
 
   float3 pointDiffuse = float3(0, 0, 0);
   float3 pointSpecular = float3(0, 0, 0);
-  if (g_LightingCB.pointLightCount > 0) {
-    CalcPointLightContribution(N, V, input.worldPos,
-                               g_LightingCB.pointLightCount, 1.0,
-                               max(2.0 / (roughness * roughness) - 2.0, 1.0),
-                               pointDiffuse, pointSpecular);
-    pointDiffuse *= albedo * (1.0 - metallic);
-  }
+  CalcPointLightContribution(N, V, input.worldPos, g_LightingCB.pointLightCount,
+                             1.0, max(2.0 / (roughness * roughness) - 2.0, 1.0),
+                             pointDiffuse, pointSpecular);
+  pointDiffuse *= albedo * (1.0 - metallic);
 
   float rim = pow(1.0 - saturate(dot(N, V)), mat.rimPower);
   float3 rimLight = mat.rimColor * mat.rimIntensity * rim;
-  if (mat.flags & MATERIAL_FLAG_RIM_SHADOW_AFFECTED)
-    rimLight *= shadow;
+  rimLight *=
+      lerp(1.0, shadow, HasFlag(mat.flags, MATERIAL_FLAG_RIM_SHADOW_AFFECTED));
 
-  float3 emissive = mat.emissiveFactor;
-  if (mat.flags & MATERIAL_FLAG_HAS_EMISSIVE) {
-    float3 emissiveTex = g_Textures[mat.emissiveTextureIndex]
-                             .Sample(g_Samplers[mat.samplerIndex], input.uv)
-                             .rgb;
-    emissive *= emissiveTex;
-  }
+  float3 emissiveTex = g_Textures[mat.emissiveTextureIndex]
+                           .Sample(g_Samplers[mat.samplerIndex], input.uv)
+                           .rgb;
+  float3 emissive =
+      mat.emissiveFactor * lerp(float3(1, 1, 1), emissiveTex,
+                                HasFlag(mat.flags, MATERIAL_FLAG_HAS_EMISSIVE));
 
   float3 finalColor = (directional + ambient + pointDiffuse) * ao +
                       pointSpecular + rimLight + emissive;

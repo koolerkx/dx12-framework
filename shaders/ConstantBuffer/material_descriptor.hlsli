@@ -37,4 +37,8 @@ MaterialDescriptor LoadMaterial(uint materialIndex) {
   return g_Materials[materialIndex];
 }
 
+float HasFlag(uint flags, uint flag) {
+  return (flags & flag) ? 1.0 : 0.0;
+}
+
 #endif
