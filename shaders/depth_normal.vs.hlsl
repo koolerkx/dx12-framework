@@ -1,26 +1,38 @@
 #include "ConstantBuffer/frame_cb.hlsli"
+#include "ConstantBuffer/instance_cb.hlsli"
 #include "ConstantBuffer/object_cb.hlsli"
 
 struct VSInput {
-    float3 position : POSITION;
-    float3 normal   : NORMAL;
+  float3 position : POSITION;
+  float3 normal : NORMAL;
 };
 
 struct VSOutput {
-    float4 position   : SV_POSITION;
-    float3 viewNormal : TEXCOORD0;
-    float  viewDepth  : TEXCOORD1;
+  float4 position : SV_POSITION;
+  float3 viewNormal : TEXCOORD0;
+  float viewDepth : TEXCOORD1;
 };
 
-VSOutput main(VSInput input) {
-    VSOutput output;
+VSOutput main(VSInput input, uint instanceID : SV_InstanceID) {
+  float4x4 worldMat;
+  float3x3 normalMat;
 
-    float4 worldPos = mul(float4(input.position, 1.0), g_ObjectCB.world);
-    output.position = mul(worldPos, g_FrameCB.viewProj);
+  if (g_ObjectCB.flags & OBJECT_FLAG_INSTANCED) {
+    InstanceData inst = g_InstanceBuffer[instanceID];
+    worldMat = inst.world;
+    normalMat = (float3x3)inst.normalMatrix;
+  } else {
+    worldMat = g_ObjectCB.world;
+    normalMat = (float3x3)g_ObjectCB.normalMatrix;
+  }
 
-    float3 worldNormal = normalize(mul(input.normal, (float3x3)g_ObjectCB.normalMatrix));
-    output.viewNormal = normalize(mul(worldNormal, (float3x3)g_FrameCB.view));
-    output.viewDepth = mul(worldPos, g_FrameCB.view).z;
+  VSOutput output;
+  float4 worldPos = mul(float4(input.position, 1.0), worldMat);
+  output.position = mul(worldPos, g_FrameCB.viewProj);
 
-    return output;
+  float3 worldNormal = normalize(mul(input.normal, normalMat));
+  output.viewNormal = normalize(mul(worldNormal, (float3x3)g_FrameCB.view));
+  output.viewDepth = mul(worldPos, g_FrameCB.view).z;
+
+  return output;
 }

@@ -93,6 +93,8 @@ add_library(graphic STATIC
   Render/material_renderer.cpp
   Render/draw_command_aggregator.h
   Render/draw_command_aggregator.cpp
+  Render/bindless_instance_grouper.h
+  Render/bindless_instance_grouper.cpp
 
   Render/render_texture.h
   Render/render_texture.cpp
@@ -210,9 +212,6 @@ target_add_hlsl_auto(graphic "6.6"
   "${CMAKE_SOURCE_DIR}/shaders/outline.ps.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/vignette.ps.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/fog.ps.hlsl"
-  "${CMAKE_SOURCE_DIR}/shaders/model_instanced.vs.hlsl"
-  "${CMAKE_SOURCE_DIR}/shaders/shadow_depth_instanced.vs.hlsl"
-  "${CMAKE_SOURCE_DIR}/shaders/depth_normal_instanced.vs.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/neon_grid.ps.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/radar_range.ps.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/laser_beam.ps.hlsl"

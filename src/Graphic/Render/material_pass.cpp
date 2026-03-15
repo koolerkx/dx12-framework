@@ -7,7 +7,7 @@ MaterialPass::MaterialPass(const MaterialPassProps& props)
 
 void MaterialPass::Execute(const RenderFrameContext& frame, const FramePacket& packet) {
   command_cache_.clear();
-  renderer_->Build(packet, layer_, command_cache_);
+  renderer_->Build(packet, layer_, command_cache_, frame.object_cb_allocator);
 
   CameraData camera = camera_provider_ ? camera_provider_(frame, packet) : packet.main_camera;
 

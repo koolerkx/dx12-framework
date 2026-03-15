@@ -2,7 +2,10 @@
 
 #include <d3d12.h>
 
+#include <vector>
+
 #include "Core/types.h"
+#include "Frame/draw_command.h"
 #include "Frame/render_frame_context.h"
 #include "Render/render_pass.h"
 
@@ -37,5 +40,5 @@ class ShadowPass : public IRenderPass {
   uint32_t cascade_index_;
   char name_buffer_[32];
   ComPtr<ID3D12PipelineState> pipeline_state_;
-  ComPtr<ID3D12PipelineState> instanced_pipeline_state_;
+  std::vector<DrawCommand> grouped_commands_;
 };

@@ -69,7 +69,7 @@ void InstancedMeshRenderer::OnRender(FramePacket& packet) {
   cmd.instance_count = instance_count_;
 
   auto settings = Rendering::RenderSettings::Opaque();
-  cmd.material = material_mgr.GetOrCreateMaterial(Graphics::ModelInstancedShader::ID, settings);
+  cmd.material = material_mgr.GetOrCreateMaterial(Graphics::PBRShader::ID, settings);
   cmd.material_handle = material_handle_;
 
   cmd.layer = RenderLayer::Opaque;

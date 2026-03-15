@@ -24,6 +24,7 @@ enum class ObjectFlags : uint32_t {
   Lit = 1u << 0,
   Opaque = 1u << 1,
   ReceiveShadow = 1u << 2,
+  Instanced = 1u << 3,
 };
 
 namespace flags {

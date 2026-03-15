@@ -8,6 +8,7 @@
 #define OBJECT_FLAG_LIT (1u << 0)
 #define OBJECT_FLAG_OPAQUE (1u << 1)
 #define OBJECT_FLAG_RECEIVE_SHADOW (1u << 2)
+#define OBJECT_FLAG_INSTANCED (1u << 3)
 
 #ifndef OBJECT_CB_SLOT
 #define OBJECT_CB_SLOT b1

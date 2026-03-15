@@ -9,9 +9,11 @@
 #include "Frame/frame_packet.h"
 #include "Frame/render_frame_context.h"
 #include "Resource/Mesh/mesh_buffer_pool.h"
+#include "bindless_instance_grouper.h"
 #include "draw_command_aggregator.h"
 
 
+class DynamicUploadBuffer;
 class RenderCommandList;
 
 namespace SortKey {
@@ -26,7 +28,8 @@ class MaterialRenderer {
   MaterialRenderer() = default;
   virtual ~MaterialRenderer() = default;
 
-  virtual void Build(const FramePacket& packet, RenderLayer target_layer, std::vector<DrawCommand>& out_commands) = 0;
+  virtual void Build(const FramePacket& packet, RenderLayer target_layer, std::vector<DrawCommand>& out_commands,
+    DynamicUploadBuffer* instance_allocator = nullptr) = 0;
 
   virtual void Record(const RenderFrameContext& frame,
     const std::vector<DrawCommand>& commands,
@@ -56,19 +59,24 @@ class MaterialRenderer {
 
 class OpaqueRenderer : public MaterialRenderer {
  public:
-  void Build(const FramePacket& packet, RenderLayer target_layer, std::vector<DrawCommand>& out_commands) override {
+  void Build(const FramePacket& packet, RenderLayer target_layer, std::vector<DrawCommand>& out_commands,
+      DynamicUploadBuffer* instance_allocator = nullptr) override {
     out_commands.clear();
     FilterCommands(packet, target_layer, out_commands);
     out_commands = DrawCommandAggregator::Aggregate(out_commands);
     std::sort(out_commands.begin(), out_commands.end(), [](const DrawCommand& a, const DrawCommand& b) {
       return SortKey::MaterialFirst(a, true) < SortKey::MaterialFirst(b, true);
     });
+    if (instance_allocator) {
+      BindlessInstanceGrouper::Group(out_commands, instance_allocator);
+    }
   }
 };
 
 class TransparentRenderer : public MaterialRenderer {
  public:
-  void Build(const FramePacket& packet, RenderLayer target_layer, std::vector<DrawCommand>& out_commands) override {
+  void Build(const FramePacket& packet, RenderLayer target_layer, std::vector<DrawCommand>& out_commands,
+      DynamicUploadBuffer* /*instance_allocator*/ = nullptr) override {
     out_commands.clear();
     FilterCommands(packet, target_layer, out_commands);
     std::sort(out_commands.begin(), out_commands.end(), [](const DrawCommand& a, const DrawCommand& b) {
@@ -79,7 +87,8 @@ class TransparentRenderer : public MaterialRenderer {
 
 class UiRenderer : public MaterialRenderer {
  public:
-  void Build(const FramePacket& packet, RenderLayer target_layer, std::vector<DrawCommand>& out_commands) override {
+  void Build(const FramePacket& packet, RenderLayer target_layer, std::vector<DrawCommand>& out_commands,
+      DynamicUploadBuffer* /*instance_allocator*/ = nullptr) override {
     out_commands.clear();
     FilterCommands(packet, target_layer, out_commands);
     out_commands = DrawCommandAggregator::Aggregate(out_commands);

@@ -11,6 +11,7 @@
 #include "Pipeline/pipeline_state_builder.h"
 #include "Pipeline/shader_descriptors.h"
 #include "Pipeline/shader_manager.h"
+#include "Render/bindless_instance_grouper.h"
 #include "Resource/Mesh/mesh_buffer_pool.h"
 #include "Resource/Mesh/mesh_descriptor.h"
 #include "shadow_config.h"
@@ -70,25 +71,7 @@ bool ShadowPass::CreatePipelineState() {
       .SetName(L"ShadowPass_PSO")
       .Build(device_);
 
-  if (!pipeline_state_) return false;
-
-  auto* instanced_vs = shader_manager_->GetVertexShader<Graphics::ShadowDepthInstancedShader>();
-  if (instanced_vs) {
-    instanced_pipeline_state_ =
-      PipelineStateBuilder()
-        .SetRootSignature(root_signature)
-        .SetVertexShader(instanced_vs)
-        .SetInputLayout(Graphics::ShadowDepthInstancedShader::GetInputLayout())
-        .SetCullMode(D3D12_CULL_MODE_BACK)
-        .EnableDepthTest()
-        .SetDepthBias(
-          ShadowHardwareConfig::DEPTH_BIAS, ShadowHardwareConfig::DEPTH_BIAS_CLAMP, ShadowHardwareConfig::SLOPE_SCALED_DEPTH_BIAS)
-        .SetDepthStencilFormat(DXGI_FORMAT_D32_FLOAT)
-        .SetName(L"ShadowPass_Instanced_PSO")
-        .Build(device_);
-  }
-
-  return true;
+  return pipeline_state_ != nullptr;
 }
 
 Matrix4 ShadowPass::ComputeLightViewProj(
@@ -212,14 +195,19 @@ void ShadowPass::Execute(const RenderFrameContext& frame, const FramePacket& pac
   frame_cb_data.viewProj = light_view_proj;
   cmd.SetFrameConstants(frame_cb_data);
 
-  MeshBufferPool* mesh_pool = frame.mesh_buffer_pool;
-  bool unified_buffers_bound = false;
-
+  grouped_commands_.clear();
   for (const auto& draw_cmd : packet.commands) {
     if (!HasTag(draw_cmd.tags, RenderTag::CastShadow)) continue;
     if (!draw_cmd.mesh && !draw_cmd.UsesBindlessMesh()) continue;
     if (draw_cmd.IsInstanced()) continue;
+    grouped_commands_.push_back(draw_cmd);
+  }
+  BindlessInstanceGrouper::GroupForPrepass(grouped_commands_, frame.object_cb_allocator);
 
+  MeshBufferPool* mesh_pool = frame.mesh_buffer_pool;
+  bool unified_buffers_bound = false;
+
+  for (const auto& draw_cmd : grouped_commands_) {
     if (draw_cmd.UsesBindlessMesh()) {
       if (!unified_buffers_bound) {
         auto vbv = mesh_pool->GetVertexBufferView();
@@ -232,11 +220,11 @@ void ShadowPass::Execute(const RenderFrameContext& frame, const FramePacket& pac
       if (!desc) continue;
 
       if (draw_cmd.IsStructuredInstanced()) {
-        if (!instanced_pipeline_state_) continue;
-        frame.command_list->SetPipelineState(instanced_pipeline_state_.Get());
+        ObjectCB obj_data = {};
+        obj_data.flags = static_cast<uint32_t>(ObjectFlags::Instanced);
+        cmd.SetObjectConstants(obj_data);
         cmd.SetInstanceBufferSRV(draw_cmd.instance_buffer_address);
         frame.command_list->DrawIndexedInstanced(desc->index_count, draw_cmd.instance_count, desc->index_offset, desc->vertex_offset, 0);
-        frame.command_list->SetPipelineState(pipeline_state_.Get());
       } else {
         ObjectCB obj_data = {};
         obj_data.world = draw_cmd.world_matrix;
@@ -249,9 +237,9 @@ void ShadowPass::Execute(const RenderFrameContext& frame, const FramePacket& pac
     unified_buffers_bound = false;
 
     if (draw_cmd.IsStructuredInstanced()) {
-      if (!instanced_pipeline_state_) continue;
-
-      frame.command_list->SetPipelineState(instanced_pipeline_state_.Get());
+      ObjectCB obj_data = {};
+      obj_data.flags = static_cast<uint32_t>(ObjectFlags::Instanced);
+      cmd.SetObjectConstants(obj_data);
       cmd.SetInstanceBufferSRV(draw_cmd.instance_buffer_address);
 
       const Mesh* mesh = draw_cmd.mesh;
@@ -265,8 +253,6 @@ void ShadowPass::Execute(const RenderFrameContext& frame, const FramePacket& pac
         frame.command_list->DrawIndexedInstanced(
           sub.indexCount, draw_cmd.instance_count, sub.startIndexLocation, sub.baseVertexLocation, 0);
       }
-
-      frame.command_list->SetPipelineState(pipeline_state_.Get());
       continue;
     }
 

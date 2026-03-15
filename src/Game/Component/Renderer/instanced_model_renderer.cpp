@@ -100,7 +100,7 @@ void InstancedModelRenderer::OnRender(FramePacket& packet) {
     cmd.instance_count = instance_count_;
 
     auto settings = Rendering::RenderSettings::Opaque();
-    cmd.material = material_mgr.GetOrCreateMaterial(Graphics::ModelInstancedShader::ID, settings);
+    cmd.material = material_mgr.GetOrCreateMaterial(Graphics::PBRShader::ID, settings);
 
     if (i < submesh_material_handles_.size()) {
       cmd.material_handle = submesh_material_handles_[i];
