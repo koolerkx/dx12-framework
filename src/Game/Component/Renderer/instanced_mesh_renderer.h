@@ -7,6 +7,7 @@
 #include "Framework/Math/Math.h"
 #include "Graphic/Frame/frame_packet.h"
 #include "Graphic/Resource/Buffer/instance_buffer_handle.h"
+#include "Graphic/Resource/Material/material_handle.h"
 
 using Math::Matrix4;
 using Math::Vector4;
@@ -37,6 +38,7 @@ class InstancedMeshRenderer : public RendererComponent<InstancedMeshRenderer> {
   std::vector<MeshInstanceEntry> entries_;
 
   InstanceBufferHandle buffer_handle_ = InstanceBufferHandle::Invalid;
+  MaterialHandle material_handle_;
   uint32_t instance_count_ = 0;
   bool dirty_ = true;
 };

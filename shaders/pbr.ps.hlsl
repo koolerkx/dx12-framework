@@ -1,6 +1,5 @@
 #include "ConstantBuffer/frame_cb.hlsli"
 #include "ConstantBuffer/lighting_cb.hlsli"
-#include "ConstantBuffer/material_cb.hlsli"
 #include "ConstantBuffer/material_descriptor.hlsli"
 #include "ConstantBuffer/object_cb.hlsli"
 
@@ -46,56 +45,10 @@ float3 FresnelSchlick(float cosTheta, float3 F0) {
 }
 
 float4 main(PSIN input) : SV_TARGET {
-  uint albedoIdx;
-  uint normalIdx;
-  uint mrIdx;
-  uint emissiveIdx;
-  uint matFlags;
-  float specIntensity;
-  float specPow;
-  float rimInt;
-  float rimPow;
-  float3 rimCol;
-  float metallicVal;
-  float roughnessVal;
-  uint samplerIdx;
-  float3 emissiveVal;
+  MaterialDescriptor mat = LoadMaterial(g_ObjectCB.materialDescriptorIndex);
 
-  if (UseBindlessMaterial(g_ObjectCB.materialDescriptorIndex)) {
-    MaterialDescriptor mat = LoadMaterial(g_ObjectCB.materialDescriptorIndex);
-    albedoIdx     = mat.albedoTextureIndex;
-    normalIdx     = mat.normalTextureIndex;
-    mrIdx         = mat.metallicRoughnessIndex;
-    emissiveIdx   = mat.emissiveTextureIndex;
-    matFlags      = mat.flags;
-    specIntensity = mat.specularIntensity;
-    specPow       = mat.specularPower;
-    rimInt        = mat.rimIntensity;
-    rimPow        = mat.rimPower;
-    rimCol        = mat.rimColor;
-    metallicVal   = mat.metallicFactor;
-    roughnessVal  = mat.roughnessFactor;
-    samplerIdx    = mat.samplerIndex;
-    emissiveVal   = mat.emissiveFactor;
-  } else {
-    albedoIdx     = g_MaterialData.albedoTextureIndex;
-    normalIdx     = g_MaterialData.normalTextureIndex;
-    mrIdx         = g_MaterialData.metallicRoughnessIndex;
-    emissiveIdx   = g_MaterialData.emissiveTextureIndex;
-    matFlags      = g_MaterialData.flags;
-    specIntensity = g_MaterialData.specularIntensity;
-    specPow       = g_MaterialData.specularPower;
-    rimInt        = g_MaterialData.rimIntensity;
-    rimPow        = g_MaterialData.rimPower;
-    rimCol        = g_MaterialData.rimColor;
-    metallicVal   = g_MaterialData.metallicFactor;
-    roughnessVal  = g_MaterialData.roughnessFactor;
-    samplerIdx    = g_ObjectCB.samplerIndex;
-    emissiveVal   = g_MaterialData.emissiveFactor;
-  }
-
-  float4 albedoTex = g_Textures[albedoIdx].Sample(
-      g_Samplers[samplerIdx], input.uv);
+  float4 albedoTex = g_Textures[mat.albedoTextureIndex].Sample(
+      g_Samplers[mat.samplerIndex], input.uv);
   float4 baseColor = albedoTex * input.color * g_ObjectCB.color;
 
   if ((g_ObjectCB.flags & OBJECT_FLAG_OPAQUE) && baseColor.a < 0.5) {
@@ -108,24 +61,23 @@ float4 main(PSIN input) : SV_TARGET {
 
   float3 N = normalize(input.worldNormal);
 
-  if (matFlags & MATERIAL_FLAG_HAS_NORMAL_MAP) {
+  if (mat.flags & MATERIAL_FLAG_HAS_NORMAL_MAP) {
     float3 T = normalize(input.worldTangent);
     float3 B = normalize(input.worldBitangent);
     float3x3 TBN = float3x3(T, B, N);
-    float3 normalMap =
-        g_Textures[normalIdx]
-            .Sample(g_Samplers[samplerIdx], input.uv)
-            .rgb;
+    float3 normalMap = g_Textures[mat.normalTextureIndex]
+                           .Sample(g_Samplers[mat.samplerIndex], input.uv)
+                           .rgb;
     normalMap = normalMap * 2.0 - 1.0;
     N = normalize(mul(normalMap, TBN));
   }
 
-  float metallic = metallicVal;
-  float roughness = roughnessVal;
+  float metallic = mat.metallicFactor;
+  float roughness = mat.roughnessFactor;
 
-  if (matFlags & MATERIAL_FLAG_HAS_METALLIC_ROUGHNESS) {
-    float4 mrSample = g_Textures[mrIdx].Sample(
-        g_Samplers[samplerIdx], input.uv);
+  if (mat.flags & MATERIAL_FLAG_HAS_METALLIC_ROUGHNESS) {
+    float4 mrSample = g_Textures[mat.metallicRoughnessIndex].Sample(
+        g_Samplers[mat.samplerIndex], input.uv);
     metallic *= mrSample.b;
     roughness *= mrSample.g;
   }
@@ -168,8 +120,9 @@ float4 main(PSIN input) : SV_TARGET {
   float ao = 1.0;
   if (g_LightingCB.ssaoSrvIndex != 0xFFFFFFFF) {
     float2 screenUV = input.position.xy / g_FrameCB.screenSize;
-    ao =
-        g_Textures[g_LightingCB.ssaoSrvIndex].Sample(g_Samplers[SAMPLER_LINEAR_CLAMP], screenUV).r;
+    ao = g_Textures[g_LightingCB.ssaoSrvIndex]
+             .Sample(g_Samplers[SAMPLER_LINEAR_CLAMP], screenUV)
+             .r;
   }
 
   float3 pointDiffuse = float3(0, 0, 0);
@@ -182,16 +135,16 @@ float4 main(PSIN input) : SV_TARGET {
     pointDiffuse *= albedo * (1.0 - metallic);
   }
 
-  float rim = pow(1.0 - saturate(dot(N, V)), rimPow);
-  float3 rimLight = rimCol * rimInt * rim;
-  if (matFlags & MATERIAL_FLAG_RIM_SHADOW_AFFECTED) rimLight *= shadow;
+  float rim = pow(1.0 - saturate(dot(N, V)), mat.rimPower);
+  float3 rimLight = mat.rimColor * mat.rimIntensity * rim;
+  if (mat.flags & MATERIAL_FLAG_RIM_SHADOW_AFFECTED)
+    rimLight *= shadow;
 
-  float3 emissive = emissiveVal;
-  if (matFlags & MATERIAL_FLAG_HAS_EMISSIVE) {
-    float3 emissiveTex =
-        g_Textures[emissiveIdx]
-            .Sample(g_Samplers[samplerIdx], input.uv)
-            .rgb;
+  float3 emissive = mat.emissiveFactor;
+  if (mat.flags & MATERIAL_FLAG_HAS_EMISSIVE) {
+    float3 emissiveTex = g_Textures[mat.emissiveTextureIndex]
+                             .Sample(g_Samplers[mat.samplerIndex], input.uv)
+                             .rgb;
     emissive *= emissiveTex;
   }
 

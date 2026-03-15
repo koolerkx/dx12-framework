@@ -1,7 +1,7 @@
-#include "ConstantBuffer/object_cb.hlsli"
-#include "ConstantBuffer/material_cb.hlsli"
-#include "ConstantBuffer/frame_cb.hlsli"
 #include "ConstantBuffer/custom_cb.hlsli"
+#include "ConstantBuffer/frame_cb.hlsli"
+#include "ConstantBuffer/material_descriptor.hlsli"
+#include "ConstantBuffer/object_cb.hlsli"
 
 Texture2D g_Textures[] : register(t0, space1);
 #include "ConstantBuffer/sampler.hlsli"
@@ -21,15 +21,18 @@ struct PSIN {
 };
 
 float4 main(PSIN input) : SV_TARGET {
-  float4 texColor = g_Textures[g_MaterialData.albedoTextureIndex].Sample(
-      g_Samplers[g_ObjectCB.samplerIndex], input.uv);
+  MaterialDescriptor mat = LoadMaterial(g_ObjectCB.materialDescriptorIndex);
+  float4 texColor = g_Textures[mat.albedoTextureIndex].Sample(
+      g_Samplers[mat.samplerIndex], input.uv);
 
   float4 finalColor = texColor * input.color;
   finalColor.rgb *= g_SoftParticleCB.emissiveIntensity;
 
   float2 screenUV = input.position.xy / g_FrameCB.screenSize;
-  float sceneDepth = g_Textures[g_SoftParticleCB.depthSrvIndex].SampleLevel(
-      g_Samplers[SAMPLER_LINEAR_CLAMP], screenUV, 0).w;
+  float sceneDepth =
+      g_Textures[g_SoftParticleCB.depthSrvIndex]
+          .SampleLevel(g_Samplers[SAMPLER_LINEAR_CLAMP], screenUV, 0)
+          .w;
   float particleDepth = 1.0 / input.position.w;
 
   if (sceneDepth > 0.0) {

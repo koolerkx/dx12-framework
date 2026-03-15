@@ -14,7 +14,7 @@ std::vector<DrawCommand> DrawCommandAggregator::Aggregate(const std::vector<Draw
       continue;
     }
 
-    AggregationKey key{.material = cmd.material, .mesh = cmd.mesh, .sampler_index = cmd.material_instance.sampler_index};
+    AggregationKey key{.material = cmd.material, .mesh = cmd.mesh, .material_handle_index = cmd.material_handle.index};
     groups[key].push_back(&cmd);
   }
 
@@ -27,7 +27,7 @@ std::vector<DrawCommand> DrawCommandAggregator::Aggregate(const std::vector<Draw
     DrawCommand instanced_cmd;
     instanced_cmd.material = key.material;
     instanced_cmd.mesh = key.mesh;
-    instanced_cmd.material_instance = commands[0]->material_instance;
+    instanced_cmd.material_handle = commands[0]->material_handle;
     instanced_cmd.layer = commands[0]->layer;
     instanced_cmd.tags = commands[0]->tags;
     instanced_cmd.instances.reserve(commands.size());

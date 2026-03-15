@@ -12,6 +12,7 @@
 #include "Game/Asset/asset_manager.h"
 #include "Graphic/Frame/frame_packet.h"
 #include "Graphic/Resource/Font/sprite_font_manager.h"
+#include "Graphic/Resource/Material/material_handle.h"
 #include "game_object.h"
 
 using Math::Matrix4;
@@ -217,6 +218,7 @@ class TextRenderer : public RendererComponent<TextRenderer> {
   Matrix4 GetBillboardWorldMatrix(const CameraData& camera) const;
 
   void OnRender(FramePacket& packet) override;
+  void OnDestroy() override;
 
  private:
   void RebuildTextMesh(AssetManager& asset_manager);
@@ -237,6 +239,8 @@ class TextRenderer : public RendererComponent<TextRenderer> {
   Rendering::RenderSettings render_settings_ = Rendering::RenderSettings::Transparent();
 
   bool dirty_ = true;
+  bool material_dirty_ = true;
+  MaterialHandle material_handle_;
   TextMeshHandle text_mesh_handle_;
 
   Billboard::Mode billboard_mode_ = Billboard::Mode::None;

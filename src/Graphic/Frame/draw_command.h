@@ -21,7 +21,6 @@ struct DrawCommand {
   const Mesh* mesh = nullptr;
   MeshHandle mesh_handle;
   MaterialHandle material_handle;
-  MaterialInstance material_instance{};
   float depth = 0.0f;
 
   Matrix4 world_matrix{};

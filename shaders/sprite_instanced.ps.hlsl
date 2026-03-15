@@ -1,5 +1,5 @@
+#include "ConstantBuffer/material_descriptor.hlsli"
 #include "ConstantBuffer/object_cb.hlsli"
-#include "ConstantBuffer/material_cb.hlsli"
 
 Texture2D g_Textures[] : register(t0, space1);
 #include "ConstantBuffer/sampler.hlsli"
@@ -11,12 +11,13 @@ struct PSIN {
 };
 
 float4 main(PSIN input) : SV_TARGET {
-  float4 texColor = g_Textures[g_MaterialData.albedoTextureIndex].Sample(
-      g_Samplers[g_ObjectCB.samplerIndex], input.uv);
+  MaterialDescriptor mat = LoadMaterial(g_ObjectCB.materialDescriptorIndex);
+  float4 texColor = g_Textures[mat.albedoTextureIndex].Sample(
+      g_Samplers[mat.samplerIndex], input.uv);
 
   float4 finalColor = texColor * input.color;
 
-  if ((g_MaterialData.flags & MATERIAL_FLAG_ALPHA_TEST) && finalColor.a < 0.01f) {
+  if ((mat.flags & MATERIAL_FLAG_ALPHA_TEST) && finalColor.a < 0.01f) {
     discard;
   }
 

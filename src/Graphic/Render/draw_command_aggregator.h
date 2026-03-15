@@ -11,10 +11,10 @@ class DrawCommandAggregator {
   struct AggregationKey {
     const Material* material;
     const Mesh* mesh;
-    uint32_t sampler_index;
+    uint32_t material_handle_index;
 
     bool operator==(const AggregationKey& other) const {
-      return material == other.material && mesh == other.mesh && sampler_index == other.sampler_index;
+      return material == other.material && mesh == other.mesh && material_handle_index == other.material_handle_index;
     }
   };
 
@@ -22,7 +22,7 @@ class DrawCommandAggregator {
     size_t operator()(const AggregationKey& key) const {
       size_t h1 = std::hash<const void*>{}(key.material);
       size_t h2 = std::hash<const void*>{}(key.mesh);
-      size_t h3 = std::hash<uint32_t>{}(key.sampler_index);
+      size_t h3 = std::hash<uint32_t>{}(key.material_handle_index);
       return h1 ^ (h2 << 1) ^ (h3 << 2);
     }
   };

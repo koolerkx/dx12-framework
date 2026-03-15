@@ -3,6 +3,7 @@
 #include "Component/render_settings.h"
 #include "Framework/Logging/logger.h"
 #include "Graphic/Resource/Buffer/instance_buffer_manager.h"
+#include "Graphic/Resource/Material/material_descriptor_pool.h"
 #include "game_context.h"
 #include "game_object.h"
 
@@ -18,7 +19,8 @@ void InstancedModelRenderer::OnInit() {
   RendererComponent::OnInit();
   if (instance_count_ == 0) return;
 
-  auto& manager = GetOwner()->GetContext()->GetGraphic()->GetInstanceBufferManager();
+  auto* graphic = GetOwner()->GetContext()->GetGraphic();
+  auto& manager = graphic->GetInstanceBufferManager();
   buffer_handle_ = manager.Create(instance_count_);
 
   if (buffer_handle_ == InstanceBufferHandle::Invalid) {
@@ -27,6 +29,41 @@ void InstancedModelRenderer::OnInit() {
       Logger::Here(),
       "[InstancedModelRenderer] Failed to create instance buffer for {} instances",
       instance_count_);
+  }
+
+  if (model_) {
+    auto* context = GetOwner()->GetContext();
+    auto& pool = graphic->GetMaterialDescriptorPool();
+    submesh_material_handles_.reserve(model_->sub_meshes.size());
+
+    for (const auto& entry : model_->sub_meshes) {
+      Texture* albedo = entry.albedo_texture ? entry.albedo_texture.get() : context->GetAssetManager().GetDefaultWhiteTexture();
+      MaterialDescriptor desc{};
+      desc.albedo_texture_index = albedo ? albedo->GetBindlessIndex() : 0;
+      desc.sampler_index = static_cast<uint32_t>(Rendering::SamplerType::AnisotropicWrap);
+
+      if (entry.normal_texture) {
+        desc.normal_texture_index = entry.normal_texture->GetBindlessIndex();
+        desc.flags |= static_cast<uint32_t>(MaterialFlags::HasNormalMap);
+      }
+      if (entry.metallic_roughness_texture) {
+        desc.metallic_roughness_index = entry.metallic_roughness_texture->GetBindlessIndex();
+        desc.flags |= static_cast<uint32_t>(MaterialFlags::HasMetallicRoughnessMap);
+      }
+      if (entry.emissive_texture) {
+        desc.emissive_texture_index = entry.emissive_texture->GetBindlessIndex();
+        desc.flags |= static_cast<uint32_t>(MaterialFlags::HasEmissiveMap);
+      }
+
+      if (entry.surface_material_index < model_->surface_materials.size()) {
+        const auto& mat = model_->surface_materials[entry.surface_material_index];
+        desc.metallic_factor = mat.metallic_factor;
+        desc.roughness_factor = mat.roughness_factor;
+        desc.emissive_factor = Math::Vector3(mat.emissive_factor.x, mat.emissive_factor.y, mat.emissive_factor.z);
+      }
+
+      submesh_material_handles_.push_back(pool.Allocate(desc));
+    }
   }
 }
 
@@ -55,7 +92,8 @@ void InstancedModelRenderer::OnRender(FramePacket& packet) {
   auto& material_mgr = graphic->GetMaterialManager();
   D3D12_GPU_VIRTUAL_ADDRESS buffer_address = manager.GetAddress(buffer_handle_);
 
-  for (const auto& entry : model_->sub_meshes) {
+  for (size_t i = 0; i < model_->sub_meshes.size(); ++i) {
+    const auto& entry = model_->sub_meshes[i];
     DrawCommand cmd;
     cmd.mesh_handle = entry.mesh_handle;
     cmd.instance_buffer_address = buffer_address;
@@ -64,32 +102,13 @@ void InstancedModelRenderer::OnRender(FramePacket& packet) {
     auto settings = Rendering::RenderSettings::Opaque();
     cmd.material = material_mgr.GetOrCreateMaterial(Graphics::ModelInstancedShader::ID, settings);
 
-    auto* context = GetOwner()->GetContext();
-    Texture* albedo = entry.albedo_texture ? entry.albedo_texture.get() : context->GetAssetManager().GetDefaultWhiteTexture();
-    cmd.material_instance.albedo_texture_index = albedo ? albedo->GetBindlessIndex() : 0;
-    cmd.material_instance.sampler_index = static_cast<uint32_t>(Rendering::SamplerType::AnisotropicWrap);
-
-    if (entry.normal_texture) {
-      cmd.material_instance.normal_texture_index = entry.normal_texture->GetBindlessIndex();
-      cmd.material_instance.has_normal_map = true;
-    }
-    if (entry.metallic_roughness_texture) {
-      cmd.material_instance.metallic_roughness_index = entry.metallic_roughness_texture->GetBindlessIndex();
-      cmd.material_instance.has_metallic_roughness_map = true;
-    }
-    if (entry.emissive_texture) {
-      cmd.material_instance.emissive_texture_index = entry.emissive_texture->GetBindlessIndex();
-      cmd.material_instance.has_emissive_map = true;
+    if (i < submesh_material_handles_.size()) {
+      cmd.material_handle = submesh_material_handles_[i];
     }
 
     if (entry.surface_material_index < model_->surface_materials.size()) {
       const auto& mat = model_->surface_materials[entry.surface_material_index];
       cmd.color = {mat.base_color_factor.x, mat.base_color_factor.y, mat.base_color_factor.z, mat.base_color_factor.w};
-      cmd.material_instance.metallic_factor = mat.metallic_factor;
-      cmd.material_instance.roughness_factor = mat.roughness_factor;
-      cmd.material_instance.emissive_factor[0] = mat.emissive_factor.x;
-      cmd.material_instance.emissive_factor[1] = mat.emissive_factor.y;
-      cmd.material_instance.emissive_factor[2] = mat.emissive_factor.z;
     }
 
     cmd.layer = RenderLayer::Opaque;
@@ -101,11 +120,20 @@ void InstancedModelRenderer::OnRender(FramePacket& packet) {
 }
 
 void InstancedModelRenderer::OnDestroy() {
-  if (buffer_handle_ != InstanceBufferHandle::Invalid) {
-    auto* graphic = GetOwner()->GetContext()->GetGraphic();
-    uint64_t fence_value = graphic->GetCurrentFenceValue();
-    graphic->GetInstanceBufferManager().Destroy(buffer_handle_, fence_value);
-    buffer_handle_ = InstanceBufferHandle::Invalid;
+  auto* graphic = GetOwner()->GetContext()->GetGraphic();
+  if (graphic) {
+    for (auto& handle : submesh_material_handles_) {
+      if (handle.IsValid()) {
+        graphic->GetMaterialDescriptorPool().Free(handle);
+      }
+    }
+    submesh_material_handles_.clear();
+
+    if (buffer_handle_ != InstanceBufferHandle::Invalid) {
+      uint64_t fence_value = graphic->GetCurrentFenceValue();
+      graphic->GetInstanceBufferManager().Destroy(buffer_handle_, fence_value);
+      buffer_handle_ = InstanceBufferHandle::Invalid;
+    }
   }
   RendererComponent::OnDestroy();
 }

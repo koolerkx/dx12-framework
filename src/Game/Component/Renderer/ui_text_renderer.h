@@ -12,6 +12,7 @@
 #include "Game/Asset/asset_manager.h"
 #include "Graphic/Frame/frame_packet.h"
 #include "Graphic/Resource/Font/sprite_font_manager.h"
+#include "Graphic/Resource/Material/material_handle.h"
 #include "game_object.h"
 
 using Math::Vector2;
@@ -198,6 +199,7 @@ class UITextRenderer : public RendererComponent<UITextRenderer> {
   void ApplyEditorData(const EditorData& data);
 
   void OnRender(FramePacket& packet) override;
+  void OnDestroy() override;
 
  private:
   void RebuildTextMesh(AssetManager& asset_manager);
@@ -218,6 +220,8 @@ class UITextRenderer : public RendererComponent<UITextRenderer> {
   Rendering::RenderSettings render_settings_ = Rendering::RenderSettings::UI();
 
   bool dirty_ = true;
+  bool material_dirty_ = true;
+  MaterialHandle material_handle_;
   TextMeshHandle text_mesh_handle_;
 
   Vector2 text_pivot_ = {0.5f, 0.0f};

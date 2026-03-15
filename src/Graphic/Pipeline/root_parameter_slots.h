@@ -10,7 +10,7 @@ enum class ConstantBuffer : uint32_t {
   Frame = 0,     // FrameCB - per-frame constants (view, proj, camera, time, etc)
   Object = 1,    // ObjectCB - per-object constants (world matrix, color, etc)
   Light = 2,     // LightingCB - lighting data
-  Material = 3,  // MaterialCB - material constants (texture indices, specular, rim, etc)
+  Material = 3,  // Reserved (previously MaterialCB)
   Shadow = 4,    // ShadowCB - shadow mapping data (b4)
   Custom = 9,    // CustomCB - per-object custom data (b5)
 };

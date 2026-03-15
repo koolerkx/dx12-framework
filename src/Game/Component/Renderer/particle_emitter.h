@@ -12,6 +12,7 @@
 #include "Framework/Serialize/serialize_node.h"
 #include "Game/Asset/asset_manager.h"
 #include "Graphic/Frame/frame_packet.h"
+#include "Graphic/Resource/Material/material_handle.h"
 #include "Graphic/Resource/Texture/texture.h"
 #include "game_context.h"
 #include "game_object.h"
@@ -103,12 +104,14 @@ class ParticleEmitter : public RendererComponent<ParticleEmitter> {
     if (path.empty()) {
       texture_ = nullptr;
       texture_handle_ = {};
+      material_dirty_ = true;
       return;
     }
     auto* context = GetOwner()->GetContext();
     if (!context) return;
     texture_handle_ = context->GetAssetManager().LoadTexture(path);
     texture_ = texture_handle_.Get();
+    material_dirty_ = true;
   }
 
   EditorData GetEditorData() const {
@@ -233,6 +236,7 @@ class ParticleEmitter : public RendererComponent<ParticleEmitter> {
 
   void OnUpdate(float dt) override;
   void OnRender(FramePacket& packet) override;
+  void OnDestroy() override;
 
   static SpawnFn SpawnFromCenter();
   static SpawnFn SpawnFromDisk();
@@ -274,6 +278,8 @@ class ParticleEmitter : public RendererComponent<ParticleEmitter> {
 
   float emit_accumulator_ = 0.0f;
   bool is_playing_ = false;
+  MaterialHandle material_handle_;
+  bool material_dirty_ = true;
   Rendering::RenderSettings render_settings_;
   SpawnFn spawn_fn_;
   std::function<void()> on_all_dead_;

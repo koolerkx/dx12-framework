@@ -3,6 +3,7 @@
 #include "Component/render_settings.h"
 #include "Framework/Logging/logger.h"
 #include "Graphic/Resource/Buffer/instance_buffer_manager.h"
+#include "Graphic/Resource/Material/material_descriptor_pool.h"
 #include "game_context.h"
 #include "game_object.h"
 
@@ -50,7 +51,17 @@ void InstancedMeshRenderer::OnRender(FramePacket& packet) {
   }
 
   auto& material_mgr = graphic->GetMaterialManager();
+  auto& pool = graphic->GetMaterialDescriptorPool();
   D3D12_GPU_VIRTUAL_ADDRESS buffer_address = manager.GetAddress(buffer_handle_);
+
+  if (!material_handle_.IsValid()) {
+    auto* context = GetOwner()->GetContext();
+    Texture* albedo = context->GetAssetManager().GetDefaultWhiteTexture();
+    MaterialDescriptor desc{};
+    desc.albedo_texture_index = albedo ? albedo->GetBindlessIndex() : 0;
+    desc.sampler_index = static_cast<uint32_t>(Rendering::SamplerType::AnisotropicWrap);
+    material_handle_ = pool.Allocate(desc);
+  }
 
   DrawCommand cmd;
   cmd.mesh = mesh_;
@@ -59,11 +70,7 @@ void InstancedMeshRenderer::OnRender(FramePacket& packet) {
 
   auto settings = Rendering::RenderSettings::Opaque();
   cmd.material = material_mgr.GetOrCreateMaterial(Graphics::ModelInstancedShader::ID, settings);
-
-  auto* context = GetOwner()->GetContext();
-  Texture* albedo = context->GetAssetManager().GetDefaultWhiteTexture();
-  cmd.material_instance.albedo_texture_index = albedo ? albedo->GetBindlessIndex() : 0;
-  cmd.material_instance.sampler_index = static_cast<uint32_t>(Rendering::SamplerType::AnisotropicWrap);
+  cmd.material_handle = material_handle_;
 
   cmd.layer = RenderLayer::Opaque;
   cmd.tags = static_cast<uint32_t>(RenderTag::CastShadow | RenderTag::ReceiveShadow | RenderTag::Lit);
@@ -73,6 +80,13 @@ void InstancedMeshRenderer::OnRender(FramePacket& packet) {
 }
 
 void InstancedMeshRenderer::OnDestroy() {
+  if (material_handle_.IsValid()) {
+    auto* graphic = GetOwner()->GetContext()->GetGraphic();
+    if (graphic) {
+      graphic->GetMaterialDescriptorPool().Free(material_handle_);
+    }
+    material_handle_ = MaterialHandle::Invalid();
+  }
   if (buffer_handle_ != InstanceBufferHandle::Invalid) {
     auto* graphic = GetOwner()->GetContext()->GetGraphic();
     uint64_t fence_value = graphic->GetCurrentFenceValue();

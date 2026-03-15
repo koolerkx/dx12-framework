@@ -5,6 +5,7 @@
 #include "Game/Asset/asset_manager.h"
 #include "Graphic/Pipeline/pixel_shader_descriptors.h"
 #include "Graphic/Pipeline/shader_descriptors.h"
+#include "Graphic/Resource/Material/material_descriptor_pool.h"
 #include "Graphic/graphic.h"
 #include "game_context.h"
 
@@ -111,13 +112,24 @@ void ParticleEmitter::OnRender(FramePacket& packet) {
   auto* context = GetOwner()->GetContext();
   auto* graphic = context->GetGraphic();
   auto& material_mgr = graphic->GetMaterialManager();
+  auto& pool = graphic->GetMaterialDescriptorPool();
+
+  if (!material_handle_.IsValid() || material_dirty_) {
+    MaterialDescriptor desc{};
+    desc.albedo_texture_index = texture_->GetBindlessIndex();
+    desc.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
+    if (!material_handle_.IsValid()) {
+      material_handle_ = pool.Allocate(desc);
+    } else {
+      pool.Update(material_handle_, desc);
+    }
+    material_dirty_ = false;
+  }
 
   DrawCommand cmd;
   cmd.mesh = context->GetAssetManager().GetDefaultMesh(DefaultMesh::Rect);
   cmd.material = material_mgr.GetOrCreateMaterial(Graphics::SoftParticleShader::ID, render_settings_);
-  cmd.material_instance.material = cmd.material;
-  cmd.material_instance.albedo_texture_index = texture_->GetBindlessIndex();
-  cmd.material_instance.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
+  cmd.material_handle = material_handle_;
 
   Graphics::SoftParticleShader::Params params{
     .depth_srv_index = graphic->GetNormalDepthSrvIndex(),
@@ -147,6 +159,17 @@ void ParticleEmitter::OnRender(FramePacket& packet) {
   cmd.depth_test = render_settings_.depth_test;
   cmd.depth_write = render_settings_.depth_write;
   packet.AddCommand(std::move(cmd));
+}
+
+void ParticleEmitter::OnDestroy() {
+  if (material_handle_.IsValid()) {
+    auto* context = GetOwner()->GetContext();
+    if (context && context->GetGraphic()) {
+      context->GetGraphic()->GetMaterialDescriptorPool().Free(material_handle_);
+    }
+    material_handle_ = MaterialHandle::Invalid();
+  }
+  RendererComponent::OnDestroy();
 }
 
 void ParticleEmitter::EmitParticles(float dt) {

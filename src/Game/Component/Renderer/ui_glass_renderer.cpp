@@ -66,7 +66,6 @@ void UIGlassRenderer::OnRender(FramePacket& packet) {
   cmd.mesh = context->GetAssetManager().CreateRoundedRect(mesh_key, aspect, mesh_radius);
   if (!cmd.mesh) cmd.mesh = context->GetAssetManager().GetDefaultMesh(DefaultMesh::RoundedRect);
   cmd.material = material_mgr.GetOrCreateMaterial(Graphics::UIGlassShader::ID, Graphics::UIGlassShader::DefaultRenderSettings());
-  cmd.material_instance.material = cmd.material;
   cmd.color = {1, 1, 1, 1};
 
   static_assert(sizeof(params) <= sizeof(cmd.custom_data));

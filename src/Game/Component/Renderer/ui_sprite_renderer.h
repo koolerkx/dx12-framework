@@ -10,6 +10,7 @@
 #include "Framework/Serialize/serialize_node.h"
 #include "Game/Asset/asset_manager.h"
 #include "Graphic/Frame/frame_packet.h"
+#include "Graphic/Resource/Material/material_handle.h"
 #include "Graphic/Resource/Texture/texture.h"
 #include "game_context.h"
 #include "game_object.h"
@@ -44,6 +45,7 @@ class UISpriteRenderer : public RendererComponent<UISpriteRenderer> {
     texture_ = tex;
     texture_path_.clear();
     texture_handle_ = {};
+    material_dirty_ = true;
   }
 
   void SetTexturePath(const std::string& path) {
@@ -51,12 +53,14 @@ class UISpriteRenderer : public RendererComponent<UISpriteRenderer> {
     if (path.empty()) {
       texture_ = nullptr;
       texture_handle_ = {};
+      material_dirty_ = true;
       return;
     }
     auto* context = GetOwner()->GetContext();
     if (!context) return;
     texture_handle_ = context->GetAssetManager().LoadTexture(path);
     texture_ = texture_handle_.Get();
+    material_dirty_ = true;
   }
   void SetColor(const Vector4& color) {
     color_ = color;
@@ -84,6 +88,7 @@ class UISpriteRenderer : public RendererComponent<UISpriteRenderer> {
   }
   void SetSampler(Rendering::SamplerType type) {
     render_settings_.sampler_type = type;
+    material_dirty_ = true;
   }
   const Rendering::RenderSettings& GetRenderSettings() const {
     return render_settings_;
@@ -169,6 +174,7 @@ class UISpriteRenderer : public RendererComponent<UISpriteRenderer> {
 
   void OnUpdate(float dt) override;
   void OnRender(FramePacket& packet) override;
+  void OnDestroy() override;
 
  private:
   Texture* texture_ = nullptr;
@@ -179,6 +185,9 @@ class UISpriteRenderer : public RendererComponent<UISpriteRenderer> {
   Vector2 uv_offset_ = {0.0f, 0.0f};
   Vector2 uv_scale_ = {1.0f, 1.0f};
   int layer_id_ = 0;
+
+  MaterialHandle material_handle_;
+  bool material_dirty_ = true;
 
   Rendering::RenderSettings render_settings_ = Rendering::RenderSettings::UI();
   Vector2 ui_pivot_ = {0.0f, 0.0f};

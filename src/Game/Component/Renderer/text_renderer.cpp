@@ -4,6 +4,7 @@
 #include "Component/transform_component.h"
 #include "Game/Asset/asset_manager.h"
 #include "Graphic/Pipeline/shader_descriptors.h"
+#include "Graphic/Resource/Material/material_descriptor_pool.h"
 #include "game_context.h"
 
 using Math::Matrix4;
@@ -81,6 +82,7 @@ void TextRenderer::OnRender(FramePacket& packet) {
   if (dirty_) {
     RebuildTextMesh(context->GetAssetManager());
     dirty_ = false;
+    material_dirty_ = true;
   }
 
   if (text_mesh_handle_.GetGlyphCount() == 0) {
@@ -88,6 +90,7 @@ void TextRenderer::OnRender(FramePacket& packet) {
   }
 
   auto& material_mgr = context->GetGraphic()->GetMaterialManager();
+  auto& pool = context->GetGraphic()->GetMaterialDescriptorPool();
   const Material* material = material_mgr.GetOrCreateMaterial(Graphics::SpriteInstancedShader::ID, render_settings_);
   if (!material) return;
 
@@ -95,21 +98,32 @@ void TextRenderer::OnRender(FramePacket& packet) {
   Texture* texture = text_mesh_handle_.GetTexture();
   if (!texture) return;
 
+  if (!material_handle_.IsValid() || material_dirty_) {
+    MaterialDescriptor desc{};
+    desc.albedo_texture_index = texture->GetBindlessIndex();
+    desc.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
+    desc.flags = (render_layer_ != RenderLayer::Transparent)
+                     ? flags::Combine(MaterialFlags::AlphaTest)
+                     : 0u;
+    if (!material_handle_.IsValid()) {
+      material_handle_ = pool.Allocate(desc);
+    } else {
+      pool.Update(material_handle_, desc);
+    }
+    material_dirty_ = false;
+  }
+
   const Mesh* quad_mesh = context->GetAssetManager().GetDefaultMesh(DefaultMesh::Rect);
   if (!quad_mesh) return;
 
   DrawCommand cmd;
   cmd.mesh = quad_mesh;
   cmd.material = material;
+  cmd.material_handle = material_handle_;
 
   Vector3 worldPos = transform->GetWorldPosition();
   Vector3 camPos = packet.main_camera.position;
   cmd.depth = Vector3::DistanceSquared(worldPos, camPos);
-
-  cmd.material_instance.material = cmd.material;
-  cmd.material_instance.albedo_texture_index = texture->GetBindlessIndex();
-  cmd.material_instance.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
-  cmd.material_instance.use_alpha_test = (render_layer_ != RenderLayer::Transparent);
 
   cmd.instances.reserve(text_mesh_handle_.GetGlyphCount());
 
@@ -150,6 +164,17 @@ void TextRenderer::OnRender(FramePacket& packet) {
     cmd.depth_write = render_settings_.depth_write;
     packet.AddCommand(std::move(cmd));
   }
+}
+
+void TextRenderer::OnDestroy() {
+  if (material_handle_.IsValid()) {
+    auto* context = GetOwner()->GetContext();
+    if (context && context->GetGraphic()) {
+      context->GetGraphic()->GetMaterialDescriptorPool().Free(material_handle_);
+    }
+    material_handle_ = MaterialHandle::Invalid();
+  }
+  RendererComponent::OnDestroy();
 }
 
 void TextRenderer::RebuildTextMesh(AssetManager& asset_manager) {

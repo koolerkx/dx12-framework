@@ -118,13 +118,6 @@ class RenderCommandList {
     cmd_->SetGraphicsRootConstantBufferView(RootSlot::ToIndex(RootSlot::ConstantBuffer::Shadow), allocation.gpu_ptr);
   }
 
-  void SetMaterialConstants(const MaterialCB& data) {
-    auto allocation = object_allocator_->Allocate<MaterialCB>();
-    if (!allocation.cpu_ptr) return;
-    memcpy(allocation.cpu_ptr, &data, sizeof(MaterialCB));
-    cmd_->SetGraphicsRootConstantBufferView(RootSlot::ToIndex(RootSlot::ConstantBuffer::Material), allocation.gpu_ptr);
-  }
-
   void SetCustomConstants(const CustomCB& data) {
     auto allocation = object_allocator_->Allocate<CustomCB>();
     if (!allocation.cpu_ptr) return;

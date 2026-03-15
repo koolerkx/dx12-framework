@@ -12,6 +12,7 @@
 #include "Framework/Serialize/serialize_node.h"
 #include "Game/Asset/asset_manager.h"
 #include "Graphic/Frame/frame_packet.h"
+#include "Graphic/Resource/Material/material_handle.h"
 #include "Graphic/Resource/Texture/texture.h"
 #include "game_context.h"
 #include "game_object.h"
@@ -52,6 +53,7 @@ class SpriteRenderer : public RendererComponent<SpriteRenderer> {
     texture_ = tex;
     texture_path_.clear();
     texture_handle_ = {};
+    material_dirty_ = true;
   }
 
   void SetTexturePath(const std::string& path) {
@@ -59,12 +61,14 @@ class SpriteRenderer : public RendererComponent<SpriteRenderer> {
     if (path.empty()) {
       texture_ = nullptr;
       texture_handle_ = {};
+      material_dirty_ = true;
       return;
     }
     auto* context = GetOwner()->GetContext();
     if (!context) return;
     texture_handle_ = context->GetAssetManager().LoadTexture(path);
     texture_ = texture_handle_.Get();
+    material_dirty_ = true;
   }
   void SetColor(const Vector4& color) {
     color_ = color;
@@ -87,6 +91,7 @@ class SpriteRenderer : public RendererComponent<SpriteRenderer> {
   }
   void SetSampler(Rendering::SamplerType type) {
     render_settings_.sampler_type = type;
+    material_dirty_ = true;
   }
   void SetDepthTest(bool enabled) {
     render_settings_.depth_test = enabled;
@@ -202,6 +207,7 @@ class SpriteRenderer : public RendererComponent<SpriteRenderer> {
 
   void OnUpdate(float dt) override;
   void OnRender(FramePacket& packet) override;
+  void OnDestroy() override;
 
  private:
   Matrix4 CalculateWorldMatrix(TransformComponent* transform, const CameraData& camera) const;
@@ -218,6 +224,9 @@ class SpriteRenderer : public RendererComponent<SpriteRenderer> {
   Rendering::RenderSettings render_settings_ = Rendering::RenderSettings::Transparent();
   Billboard::Mode billboard_mode_ = Billboard::Mode::None;
   Vector2 sprite_pivot_ = {0.5f, 0.5f};
+
+  MaterialHandle material_handle_;
+  bool material_dirty_ = true;
 
   RenderLayer render_layer_ = RenderLayer::Transparent;
   RenderTagMask render_tags_ = 0;
