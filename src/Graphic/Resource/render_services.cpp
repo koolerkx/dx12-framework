@@ -1,12 +1,12 @@
 #include "render_services.h"
 
 #include "Font/sprite_font_manager.h"
+#include "Framework/Logging/logger.h"
+#include "Material/material_descriptor_pool.h"
 #include "Mesh/mesh_buffer_pool.h"
 #include "Pipeline/material_manager.h"
 #include "Pipeline/shader_manager.h"
 #include "Texture/texture_manager.h"
-
-#include "Framework/Logging/logger.h"
 
 namespace gfx {
 
@@ -18,7 +18,9 @@ std::unique_ptr<RenderServices> RenderServices::Create(const CreateInfo& info) {
   return services;
 }
 
-RenderServices::~RenderServices() = default;
+RenderServices::~RenderServices() {
+  if (material_descriptor_pool_) material_descriptor_pool_->Shutdown();
+}
 
 bool RenderServices::Initialize(const CreateInfo& info) {
   get_current_fence_value_ = info.get_current_fence_value;
@@ -56,13 +58,20 @@ bool RenderServices::Initialize(const CreateInfo& info) {
     return false;
   }
 
+  material_descriptor_pool_ = std::make_unique<MaterialDescriptorPool>();
+  if (!material_descriptor_pool_->Initialize(info.device, info.get_current_fence_value, info.frame_buffer_count)) {
+    Logger::LogFormat(LogLevel::Fatal, LogCategory::Graphic, Logger::Here(), "Failed to initialize MaterialDescriptorPool");
+    return false;
+  }
+
   Logger::LogFormat(LogLevel::Info, LogCategory::Graphic, Logger::Here(), "RenderServices initialized");
   return true;
 }
 
-void RenderServices::OnFrameBegin([[maybe_unused]] uint32_t frame_index, uint64_t completed_fence) {
+void RenderServices::OnFrameBegin(uint32_t frame_index, uint64_t completed_fence) {
   texture_manager_->ProcessDeferredFrees(completed_fence);
   mesh_buffer_pool_->ProcessDeferredFrees(completed_fence);
+  material_descriptor_pool_->OnFrameBegin(frame_index, completed_fence);
 }
 
 void RenderServices::OnFrameEnd() {

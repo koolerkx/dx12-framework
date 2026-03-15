@@ -152,6 +152,10 @@ class RenderCommandList {
     cmd_->SetGraphicsRootShaderResourceView(RootSlot::ToIndex(RootSlot::ShaderResource::MeshDescriptors), address);
   }
 
+  void SetMaterialDescriptorSRV(D3D12_GPU_VIRTUAL_ADDRESS address) {
+    cmd_->SetGraphicsRootShaderResourceView(RootSlot::ToIndex(RootSlot::ShaderResource::MaterialDescriptors), address);
+  }
+
   void BindUnifiedMeshBuffers(MeshBufferPool* pool) {
     auto vbv = pool->GetVertexBufferView();
     auto ibv = pool->GetIndexBufferView();

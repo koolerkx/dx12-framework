@@ -24,18 +24,19 @@
 #include "Render/material_renderer.h"
 #include "Render/render_graph.h"
 #include "Render/render_graph_handle.h"
+#include "Rendering/chromatic_aberration_config.h"
 #include "Rendering/fog_config.h"
 #include "Rendering/hdr_config.h"
 #include "Rendering/outline_config.h"
 #include "Rendering/smaa_config.h"
 #include "Rendering/ssao_config.h"
-#include "Rendering/chromatic_aberration_config.h"
 #include "Rendering/vignette_config.h"
 #include "Resource/Buffer/instance_buffer_manager.h"
 #include "Resource/Buffer/structured_buffer.h"
 #include "Resource/Font/sprite_font_manager.h"
-#include "Resource/Texture/texture_manager.h"
+#include "Resource/Material/material_descriptor_pool.h"
 #include "Resource/Mesh/mesh_buffer_pool.h"
+#include "Resource/Texture/texture_manager.h"
 #include "Resource/mesh_registry.h"
 #include "Resource/render_services.h"
 
@@ -113,6 +114,10 @@ class Graphic {
 
   MeshBufferPool& GetMeshBufferPool() {
     return render_services_->GetMeshBufferPool();
+  }
+
+  MaterialDescriptorPool& GetMaterialDescriptorPool() {
+    return render_services_->GetMaterialDescriptorPool();
   }
 
   MeshRegistry& GetMeshRegistry() {

@@ -11,11 +11,11 @@
 
 #include "Core/types.h"
 #include "Frame/frame_packet.h"
-#include "Resource/Mesh/mesh_buffer_pool.h"
 #include "Framework/Logging/logger.h"
 #include "Framework/Math/Math.h"
 #include "Presentation/swapchain_manager.h"
 #include "Render/blit_pass.h"
+#include "Render/chromatic_aberration_pass.h"
 #include "Render/debug_pass.h"
 #include "Render/depth_view_pass.h"
 #include "Render/fog_pass.h"
@@ -29,9 +29,10 @@
 #include "Render/skybox_pass.h"
 #include "Render/smaa_pass_group.h"
 #include "Render/ssao_pass_group.h"
-#include "Render/chromatic_aberration_pass.h"
 #include "Render/ui_blur_pass_group.h"
 #include "Render/vignette_pass.h"
+#include "Resource/Mesh/mesh_buffer_pool.h"
+
 
 using Math::Vector3;
 using Math::Vector4;
@@ -101,7 +102,7 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
     return false;
   }
 
-  if (!instance_buffer_manager_.Initialize(device_.Get())) {
+  if (!instance_buffer_manager_.Initialize(device_.Get(), FRAME_BUFFER_COUNT)) {
     Logger::LogFormat(LogLevel::Fatal, LogCategory::Graphic, Logger::Here(), "Failed to initialize instance buffer manager");
     return false;
   }
@@ -302,12 +303,14 @@ void Graphic::BuildRenderPipeline() {
   }
 
   UIBlurPassGroup ui_blur("UI Blur");
-  ui_blur.Build(*render_graph_, blit_source, {
-    .device = device_.Get(),
-    .shader_manager = &render_services_->GetShaderManager(),
-    .screen_width = frame_buffer_width_,
-    .screen_height = frame_buffer_height_,
-  });
+  ui_blur.Build(*render_graph_,
+    blit_source,
+    {
+      .device = device_.Get(),
+      .shader_manager = &render_services_->GetShaderManager(),
+      .screen_width = frame_buffer_width_,
+      .screen_height = frame_buffer_height_,
+    });
   ui_blur_rt_ = ui_blur.GetBlurredOutput();
 
   PassSetup blit_setup;
@@ -499,7 +502,7 @@ RenderFrameContext Graphic::BeginFrame() {
   frame_synchronizer_->WaitForFrame(frame_index);
   uint64_t completed_fence = frame_synchronizer_->GetCompletedValue();
   render_services_->OnFrameBegin(frame_index, completed_fence);
-  instance_buffer_manager_.ProcessDeferredFrees(completed_fence);
+  instance_buffer_manager_.OnFrameBegin(frame_index, completed_fence);
 
   object_cb_allocators_[frame_index]->Reset();
 
@@ -528,7 +531,8 @@ RenderFrameContext Graphic::BeginFrame() {
     .shadow_data = &shadow_frame_data_,
     .point_light_srv = point_light_buffers_[frame_index].GetGPUAddress(),
     .ssao_srv_index = (ssao_handle_ != RenderGraphHandle::Invalid) ? render_graph_->GetSrvIndex(ssao_handle_) : UINT32_MAX,
-    .mesh_buffer_pool = &render_services_->GetMeshBufferPool()};
+    .mesh_buffer_pool = &render_services_->GetMeshBufferPool(),
+    .material_descriptor_pool = &render_services_->GetMaterialDescriptorPool()};
 }
 
 void Graphic::EndFrame(const RenderFrameContext& frame) {

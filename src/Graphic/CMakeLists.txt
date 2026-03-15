@@ -47,6 +47,10 @@ add_library(graphic STATIC
   Resource/Buffer/instance_buffer_manager.h
   Resource/Buffer/instance_buffer_manager.cpp
 
+  Resource/Material/material_handle.h
+  Resource/Material/material_descriptor_pool.h
+  Resource/Material/material_descriptor_pool.cpp
+
   Resource/Allocator/free_block_allocator.h
   Resource/Allocator/free_block_allocator.cpp
 

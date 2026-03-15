@@ -11,6 +11,7 @@ class TextureManager;
 class MaterialManager;
 class ShaderManager;
 class MeshBufferPool;
+class MaterialDescriptorPool;
 
 namespace Font {
 class SpriteFontManager;
@@ -52,6 +53,9 @@ class RenderServices {
   MeshBufferPool& GetMeshBufferPool() {
     return *mesh_buffer_pool_;
   }
+  MaterialDescriptorPool& GetMaterialDescriptorPool() {
+    return *material_descriptor_pool_;
+  }
 
   void OnFrameBegin(uint32_t frame_index, uint64_t completed_fence);
   void OnFrameEnd();
@@ -65,6 +69,7 @@ class RenderServices {
   std::unique_ptr<ShaderManager> shader_manager_;
   std::unique_ptr<Font::SpriteFontManager> font_manager_;
   std::unique_ptr<MeshBufferPool> mesh_buffer_pool_;
+  std::unique_ptr<MaterialDescriptorPool> material_descriptor_pool_;
 
   GetFenceValueFn get_current_fence_value_;
   uint32_t frame_buffer_count_ = 2;

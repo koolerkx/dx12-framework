@@ -7,6 +7,7 @@
 #include "Framework/Logging/logger.h"
 #include "Pipeline/material.h"
 #include "Render/shadow_config.h"
+#include "Resource/Material/material_descriptor_pool.h"
 
 namespace {
 
@@ -145,6 +146,10 @@ void MaterialRenderer::Record(const RenderFrameContext& frame,
   }
   cmd.SetShadowConstants(shadow_cb);
 
+  if (frame.material_descriptor_pool) {
+    cmd.SetMaterialDescriptorSRV(frame.material_descriptor_pool->GetBufferAddress());
+  }
+
   Matrix4 view_proj = camera.view_proj;
   const Material* current_material = first_material;
 
@@ -178,7 +183,9 @@ void MaterialRenderer::Record(const RenderFrameContext& frame,
     } else if (draw_cmd.IsStructuredInstanced()) {
       unified_buffers_bound = false;
       if (!draw_cmd.material->SupportsStructuredInstancing()) {
-        Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(),
+        Logger::LogFormat(LogLevel::Error,
+          LogCategory::Graphic,
+          Logger::Here(),
           "DrawCommand has structured instance data but material '{}' does not support structured instancing",
           draw_cmd.material->GetName());
         continue;
@@ -195,7 +202,9 @@ void MaterialRenderer::Record(const RenderFrameContext& frame,
 }
 
 void MaterialRenderer::RecordSingle(RenderCommandList& cmd, const DrawCommand& draw_cmd, const Matrix4& view_proj, bool shadow_enabled) {
-  cmd.SetMaterialConstants(BuildMaterialCB(draw_cmd.material_instance));
+  if (!draw_cmd.UsesBindlessMaterial()) {
+    cmd.SetMaterialConstants(BuildMaterialCB(draw_cmd.material_instance));
+  }
 
   ObjectCB obj_data = {};
   Matrix4 world = draw_cmd.world_matrix;
@@ -206,10 +215,15 @@ void MaterialRenderer::RecordSingle(RenderCommandList& cmd, const DrawCommand& d
   obj_data.color = draw_cmd.color;
   obj_data.uvOffset = draw_cmd.uv_offset;
   obj_data.uvScale = draw_cmd.uv_scale;
-  obj_data.samplerIndex = draw_cmd.material_instance.sampler_index;
   obj_data.flags = flags::If(HasTag(draw_cmd.tags, RenderTag::Lit), ObjectFlags::Lit) |
                    flags::If(draw_cmd.layer == RenderLayer::Opaque, ObjectFlags::Opaque) |
                    flags::If(shadow_enabled && HasTag(draw_cmd.tags, RenderTag::ReceiveShadow), ObjectFlags::ReceiveShadow);
+  if (draw_cmd.UsesBindlessMaterial()) {
+    obj_data.materialDescriptorIndex = draw_cmd.material_handle.index;
+  } else {
+    obj_data.samplerIndex = draw_cmd.material_instance.sampler_index;
+    obj_data.materialDescriptorIndex = UINT32_MAX;
+  }
   cmd.SetObjectConstants(obj_data);
 
   if (draw_cmd.has_custom_data) {
@@ -223,33 +237,40 @@ void MaterialRenderer::RecordSingle(RenderCommandList& cmd, const DrawCommand& d
 
 void MaterialRenderer::RecordStructuredInstanced(
   RenderCommandList& cmd, const DrawCommand& draw_cmd, const Matrix4& view_proj, bool shadow_enabled) {
-  const auto& mi = draw_cmd.material_instance;
-  MaterialCB mat = {};
-  mat.albedo_texture_index = mi.albedo_texture_index;
-  mat.normal_texture_index = mi.normal_texture_index;
-  mat.metallic_roughness_index = mi.metallic_roughness_index;
-  mat.flags = (mi.use_alpha_test ? 1u : 0u) | (mi.double_sided ? 2u : 0u) | (mi.rim_shadow_affected ? 4u : 0u) |
-              (mi.has_normal_map ? 8u : 0u) | (mi.has_metallic_roughness_map ? 16u : 0u) | (mi.has_emissive_map ? 32u : 0u);
-  mat.specular_intensity = mi.specular_intensity;
-  mat.specular_power = mi.specular_power;
-  mat.rim_intensity = mi.rim_intensity;
-  mat.rim_power = mi.rim_power;
-  mat.rim_color = Vector3(mi.rim_color[0], mi.rim_color[1], mi.rim_color[2]);
-  mat.emissive_texture_index = mi.emissive_texture_index;
-  mat.metallic_factor = mi.metallic_factor;
-  mat.roughness_factor = mi.roughness_factor;
-  mat.emissive_factor = Vector3(mi.emissive_factor[0], mi.emissive_factor[1], mi.emissive_factor[2]);
-  cmd.SetMaterialConstants(mat);
+  if (!draw_cmd.UsesBindlessMaterial()) {
+    const auto& mi = draw_cmd.material_instance;
+    MaterialCB mat = {};
+    mat.albedo_texture_index = mi.albedo_texture_index;
+    mat.normal_texture_index = mi.normal_texture_index;
+    mat.metallic_roughness_index = mi.metallic_roughness_index;
+    mat.flags = (mi.use_alpha_test ? 1u : 0u) | (mi.double_sided ? 2u : 0u) | (mi.rim_shadow_affected ? 4u : 0u) |
+                (mi.has_normal_map ? 8u : 0u) | (mi.has_metallic_roughness_map ? 16u : 0u) | (mi.has_emissive_map ? 32u : 0u);
+    mat.specular_intensity = mi.specular_intensity;
+    mat.specular_power = mi.specular_power;
+    mat.rim_intensity = mi.rim_intensity;
+    mat.rim_power = mi.rim_power;
+    mat.rim_color = Vector3(mi.rim_color[0], mi.rim_color[1], mi.rim_color[2]);
+    mat.emissive_texture_index = mi.emissive_texture_index;
+    mat.metallic_factor = mi.metallic_factor;
+    mat.roughness_factor = mi.roughness_factor;
+    mat.emissive_factor = Vector3(mi.emissive_factor[0], mi.emissive_factor[1], mi.emissive_factor[2]);
+    cmd.SetMaterialConstants(mat);
+  }
 
   ObjectCB obj_data = {};
   obj_data.color = draw_cmd.color;
   obj_data.uvScale = {1.0f, 1.0f};
-  obj_data.samplerIndex = mi.sampler_index;
-  uint32_t flags = 0;
-  if (HasTag(draw_cmd.tags, RenderTag::Lit)) flags |= 1u;
-  if (draw_cmd.layer == RenderLayer::Opaque) flags |= 2u;
-  if (shadow_enabled && HasTag(draw_cmd.tags, RenderTag::ReceiveShadow)) flags |= 4u;
-  obj_data.flags = flags;
+  uint32_t obj_flags = 0;
+  if (HasTag(draw_cmd.tags, RenderTag::Lit)) obj_flags |= 1u;
+  if (draw_cmd.layer == RenderLayer::Opaque) obj_flags |= 2u;
+  if (shadow_enabled && HasTag(draw_cmd.tags, RenderTag::ReceiveShadow)) obj_flags |= 4u;
+  obj_data.flags = obj_flags;
+  if (draw_cmd.UsesBindlessMaterial()) {
+    obj_data.materialDescriptorIndex = draw_cmd.material_handle.index;
+  } else {
+    obj_data.samplerIndex = draw_cmd.material_instance.sampler_index;
+    obj_data.materialDescriptorIndex = UINT32_MAX;
+  }
   cmd.SetObjectConstants(obj_data);
 
   cmd.SetInstanceBufferSRV(draw_cmd.instance_buffer_address);
@@ -262,16 +283,22 @@ void MaterialRenderer::RecordStructuredInstanced(
 
   for (size_t i = 0; i < mesh->GetSubMeshCount(); ++i) {
     const auto& sub = mesh->GetSubMesh(i);
-    cmd.GetNative()->DrawIndexedInstanced(
-      sub.indexCount, draw_cmd.instance_count, sub.startIndexLocation, sub.baseVertexLocation, 0);
+    cmd.GetNative()->DrawIndexedInstanced(sub.indexCount, draw_cmd.instance_count, sub.startIndexLocation, sub.baseVertexLocation, 0);
   }
 }
 
 void MaterialRenderer::RecordInstanced(RenderCommandList& cmd, const DrawCommand& draw_cmd) {
-  cmd.SetMaterialConstants(BuildMaterialCB(draw_cmd.material_instance));
+  if (!draw_cmd.UsesBindlessMaterial()) {
+    cmd.SetMaterialConstants(BuildMaterialCB(draw_cmd.material_instance));
+  }
 
   ObjectCB obj_data = {};
-  obj_data.samplerIndex = draw_cmd.material_instance.sampler_index;
+  if (draw_cmd.UsesBindlessMaterial()) {
+    obj_data.materialDescriptorIndex = draw_cmd.material_handle.index;
+  } else {
+    obj_data.samplerIndex = draw_cmd.material_instance.sampler_index;
+    obj_data.materialDescriptorIndex = UINT32_MAX;
+  }
   cmd.SetObjectConstants(obj_data);
 
   if (draw_cmd.has_custom_data) {
@@ -285,7 +312,9 @@ void MaterialRenderer::RecordInstanced(RenderCommandList& cmd, const DrawCommand
 
 void MaterialRenderer::RecordBindlessSingle(
   RenderCommandList& cmd, const DrawCommand& draw_cmd, const Matrix4& view_proj, bool shadow_enabled, MeshBufferPool* pool) {
-  cmd.SetMaterialConstants(BuildMaterialCB(draw_cmd.material_instance));
+  if (!draw_cmd.UsesBindlessMaterial()) {
+    cmd.SetMaterialConstants(BuildMaterialCB(draw_cmd.material_instance));
+  }
 
   ObjectCB obj_data = {};
   Matrix4 world = draw_cmd.world_matrix;
@@ -296,10 +325,15 @@ void MaterialRenderer::RecordBindlessSingle(
   obj_data.color = draw_cmd.color;
   obj_data.uvOffset = draw_cmd.uv_offset;
   obj_data.uvScale = draw_cmd.uv_scale;
-  obj_data.samplerIndex = draw_cmd.material_instance.sampler_index;
   obj_data.flags = flags::If(HasTag(draw_cmd.tags, RenderTag::Lit), ObjectFlags::Lit) |
                    flags::If(draw_cmd.layer == RenderLayer::Opaque, ObjectFlags::Opaque) |
                    flags::If(shadow_enabled && HasTag(draw_cmd.tags, RenderTag::ReceiveShadow), ObjectFlags::ReceiveShadow);
+  if (draw_cmd.UsesBindlessMaterial()) {
+    obj_data.materialDescriptorIndex = draw_cmd.material_handle.index;
+  } else {
+    obj_data.samplerIndex = draw_cmd.material_instance.sampler_index;
+    obj_data.materialDescriptorIndex = UINT32_MAX;
+  }
   cmd.SetObjectConstants(obj_data);
 
   if (draw_cmd.has_custom_data) {
@@ -316,17 +350,24 @@ void MaterialRenderer::RecordBindlessSingle(
 
 void MaterialRenderer::RecordBindlessStructuredInstanced(
   RenderCommandList& cmd, const DrawCommand& draw_cmd, const Matrix4& view_proj, bool shadow_enabled, MeshBufferPool* pool) {
-  cmd.SetMaterialConstants(BuildMaterialCB(draw_cmd.material_instance));
+  if (!draw_cmd.UsesBindlessMaterial()) {
+    cmd.SetMaterialConstants(BuildMaterialCB(draw_cmd.material_instance));
+  }
 
   ObjectCB obj_data = {};
   obj_data.color = draw_cmd.color;
   obj_data.uvScale = {1.0f, 1.0f};
-  obj_data.samplerIndex = draw_cmd.material_instance.sampler_index;
-  uint32_t flags = 0;
-  if (HasTag(draw_cmd.tags, RenderTag::Lit)) flags |= 1u;
-  if (draw_cmd.layer == RenderLayer::Opaque) flags |= 2u;
-  if (shadow_enabled && HasTag(draw_cmd.tags, RenderTag::ReceiveShadow)) flags |= 4u;
-  obj_data.flags = flags;
+  uint32_t obj_flags = 0;
+  if (HasTag(draw_cmd.tags, RenderTag::Lit)) obj_flags |= 1u;
+  if (draw_cmd.layer == RenderLayer::Opaque) obj_flags |= 2u;
+  if (shadow_enabled && HasTag(draw_cmd.tags, RenderTag::ReceiveShadow)) obj_flags |= 4u;
+  obj_data.flags = obj_flags;
+  if (draw_cmd.UsesBindlessMaterial()) {
+    obj_data.materialDescriptorIndex = draw_cmd.material_handle.index;
+  } else {
+    obj_data.samplerIndex = draw_cmd.material_instance.sampler_index;
+    obj_data.materialDescriptorIndex = UINT32_MAX;
+  }
   cmd.SetObjectConstants(obj_data);
 
   cmd.SetInstanceBufferSRV(draw_cmd.instance_buffer_address);

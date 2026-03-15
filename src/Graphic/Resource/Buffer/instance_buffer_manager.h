@@ -12,7 +12,10 @@
 
 class InstanceBufferManager {
  public:
-  bool Initialize(ID3D12Device* device);
+  bool Initialize(ID3D12Device* device, uint32_t frame_buffer_count);
+
+  void SetCurrentFrame(uint32_t frame_index);
+  void OnFrameBegin(uint32_t frame_index, uint64_t completed_fence_value);
 
   InstanceBufferHandle Create(uint32_t capacity);
   void Update(InstanceBufferHandle handle, const GPUInstanceData* data, uint32_t count);
@@ -20,7 +23,6 @@ class InstanceBufferManager {
   uint32_t GetCount(InstanceBufferHandle handle) const;
 
   void Destroy(InstanceBufferHandle handle, uint64_t fence_value);
-  void ProcessDeferredFrees(uint64_t completed_fence_value);
   void FlushAllPending();
 
   void Shutdown();
@@ -30,7 +32,7 @@ class InstanceBufferManager {
   static constexpr uint32_t SLOT_MASK = (1u << SLOT_BITS) - 1;
 
   struct Entry {
-    Graphics::StructuredBuffer<GPUInstanceData> buffer;
+    std::vector<Graphics::StructuredBuffer<GPUInstanceData>> buffers;
     uint32_t count = 0;
   };
 
@@ -52,7 +54,10 @@ class InstanceBufferManager {
   void ReleaseSlot(uint32_t slot);
 
   ID3D12Device* device_ = nullptr;
+  uint32_t frame_buffer_count_ = 2;
+  uint32_t current_frame_index_ = 0;
   std::vector<Slot> slots_;
   std::vector<uint32_t> free_list_;
   std::vector<PendingFree> pending_frees_;
+  std::vector<uint32_t> pending_sync_;
 };

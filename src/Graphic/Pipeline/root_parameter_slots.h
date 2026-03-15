@@ -25,7 +25,8 @@ enum class DescriptorTable : uint32_t {
 enum class ShaderResource : uint32_t {
   PointLights = 7,       // StructuredBuffer<PointLight> (t0, space2)
   InstanceBuffer = 8,    // StructuredBuffer<InstanceData> (t0, space3)
-  MeshDescriptors = 10,  // StructuredBuffer<MeshDescriptor> (t0, space4)
+  MeshDescriptors = 10,       // StructuredBuffer<MeshDescriptor> (t0, space4)
+  MaterialDescriptors = 11,  // StructuredBuffer<MaterialDescriptor> (t0, space5)
 };
 
 // Bindless sampler heap indices (see shaders/ConstantBuffer/sampler.hlsli)

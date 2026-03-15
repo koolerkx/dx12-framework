@@ -4,20 +4,23 @@
 
 #include "Asset/asset_handle.h"
 #include "Asset/asset_manager.h"
-#include "Component/renderer_component.h"
 #include "Component/render_settings.h"
+#include "Component/renderer_component.h"
 #include "Component/transform_component.h"
 #include "Framework/Math/Math.h"
 #include "Framework/Serialize/serialize_node.h"
 #include "Graphic/Frame/frame_packet.h"
 #include "Graphic/Pipeline/shader_descriptors.h"
 #include "Graphic/Pipeline/shader_registry.h"
-#include "Graphic/Resource/Texture/texture.h"
+#include "Graphic/Resource/Material/material_descriptor_pool.h"
+#include "Graphic/Resource/Material/material_handle.h"
 #include "Graphic/Resource/Mesh/mesh_buffer_pool.h"
+#include "Graphic/Resource/Texture/texture.h"
 #include "Graphic/Resource/mesh.h"
 #include "game_context.h"
 #include "game_object.h"
 #include "scene.h"
+
 
 using Math::Vector3;
 using Math::Vector4;
@@ -168,52 +171,64 @@ class MeshRenderer : public RendererComponent<MeshRenderer> {
 
   void SetTexture(Texture* texture) {
     albedo_.SetDirect(texture);
+    material_dirty_ = true;
   }
   void SetNormalTexture(Texture* texture) {
     normal_.SetDirect(texture);
+    material_dirty_ = true;
   }
   void SetMetallicRoughnessTexture(Texture* texture) {
     metallic_roughness_.SetDirect(texture);
+    material_dirty_ = true;
   }
   void SetEmissiveTexture(Texture* texture) {
     emissive_.SetDirect(texture);
+    material_dirty_ = true;
   }
 
   void SetTexturePath(const std::string& path) {
     if (path.empty()) {
       albedo_.Clear();
+      material_dirty_ = true;
       return;
     }
     auto* context = GetOwner()->GetContext();
     if (!context) return;
     albedo_.LoadByPath(path, [&](const std::string& p) { return context->GetAssetManager().LoadTexture(p); });
+    material_dirty_ = true;
   }
   void SetNormalTexturePath(const std::string& path) {
     if (path.empty()) {
       normal_.Clear();
+      material_dirty_ = true;
       return;
     }
     auto* context = GetOwner()->GetContext();
     if (!context) return;
     normal_.LoadByPath(path, [&](const std::string& p) { return context->GetAssetManager().LoadTextureLinear(p); });
+    material_dirty_ = true;
   }
   void SetMetallicRoughnessPath(const std::string& path) {
     if (path.empty()) {
       metallic_roughness_.Clear();
+      material_dirty_ = true;
       return;
     }
     auto* context = GetOwner()->GetContext();
     if (!context) return;
     metallic_roughness_.LoadByPath(path, [&](const std::string& p) { return context->GetAssetManager().LoadTextureLinear(p); });
+    material_dirty_ = true;
   }
   void SetEmissivePath(const std::string& path) {
     if (path.empty()) {
       emissive_.Clear();
+      material_dirty_ = true;
       return;
     }
     auto* context = GetOwner()->GetContext();
     if (!context) return;
     emissive_.LoadByPath(path, [&](const std::string& p) { return context->GetAssetManager().LoadTexture(p); });
+    material_dirty_ = true;
   }
 
   // --- Texture: deferred loading (editor / mid-frame safe) ---
@@ -251,6 +266,7 @@ class MeshRenderer : public RendererComponent<MeshRenderer> {
       }
     }
     pending_texture_requests_.clear();
+    material_dirty_ = true;
     return true;
   }
 
@@ -318,33 +334,43 @@ class MeshRenderer : public RendererComponent<MeshRenderer> {
   }
   void SetSpecularIntensity(float intensity) {
     specular_intensity_ = intensity;
+    material_dirty_ = true;
   }
   void SetSpecularPower(float power) {
     specular_power_ = power;
+    material_dirty_ = true;
   }
   void SetRimIntensity(float intensity) {
     rim_intensity_ = intensity;
+    material_dirty_ = true;
   }
   void SetRimPower(float power) {
     rim_power_ = power;
+    material_dirty_ = true;
   }
   void SetRimColor(const Vector3& color) {
     rim_color_ = color;
+    material_dirty_ = true;
   }
   void SetRimShadowAffected(bool affected) {
     rim_shadow_affected_ = affected;
+    material_dirty_ = true;
   }
   void SetMetallic(float metallic) {
     metallic_ = metallic;
+    material_dirty_ = true;
   }
   void SetRoughness(float roughness) {
     roughness_ = roughness;
+    material_dirty_ = true;
   }
   void SetEmissiveColor(const Vector3& color) {
     emissive_color_ = color;
+    material_dirty_ = true;
   }
   void SetEmissiveIntensity(float intensity) {
     emissive_intensity_ = intensity;
+    material_dirty_ = true;
   }
   float GetEmissiveIntensity() const {
     return emissive_intensity_;
@@ -506,6 +532,7 @@ class MeshRenderer : public RendererComponent<MeshRenderer> {
     roughness_ = data.roughness;
     emissive_color_ = data.emissive_color;
     emissive_intensity_ = data.emissive_intensity;
+    material_dirty_ = true;
   }
 
   // --- Render ---
@@ -518,37 +545,26 @@ class MeshRenderer : public RendererComponent<MeshRenderer> {
 
     auto* context = GetOwner()->GetContext();
     auto& material_mgr = context->GetGraphic()->GetMaterialManager();
+    auto& pool = context->GetGraphic()->GetMaterialDescriptorPool();
+
+    if (!material_handle_.IsValid() || material_dirty_) {
+      MaterialDescriptor desc = BuildMaterialDescriptor(context);
+      if (!material_handle_.IsValid()) {
+        material_handle_ = pool.Allocate(desc);
+      } else {
+        pool.Update(material_handle_, desc);
+      }
+      material_dirty_ = false;
+    }
 
     DrawCommand cmd;
     cmd.world_matrix = transform->GetWorldMatrix();
     cmd.color = color_;
     cmd.mesh = mesh_;
     cmd.mesh_handle = mesh_handle_;
+    cmd.material_handle = material_handle_;
 
     cmd.material = material_mgr.GetOrCreateMaterial(shader_id_, render_settings_);
-    cmd.material_instance.material = cmd.material;
-    Texture* effective_texture = albedo_.texture ? albedo_.texture : context->GetAssetManager().GetDefaultWhiteTexture();
-    cmd.material_instance.albedo_texture_index = effective_texture ? effective_texture->GetBindlessIndex() : 0;
-    cmd.material_instance.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
-    cmd.material_instance.specular_intensity = specular_intensity_;
-    cmd.material_instance.specular_power = specular_power_;
-    cmd.material_instance.rim_intensity = rim_intensity_;
-    cmd.material_instance.rim_power = rim_power_;
-    cmd.material_instance.rim_color[0] = rim_color_.x;
-    cmd.material_instance.rim_color[1] = rim_color_.y;
-    cmd.material_instance.rim_color[2] = rim_color_.z;
-    cmd.material_instance.rim_shadow_affected = rim_shadow_affected_;
-    cmd.material_instance.normal_texture_index = normal_.texture ? normal_.texture->GetBindlessIndex() : 0;
-    cmd.material_instance.metallic_roughness_index = metallic_roughness_.texture ? metallic_roughness_.texture->GetBindlessIndex() : 0;
-    cmd.material_instance.emissive_texture_index = emissive_.texture ? emissive_.texture->GetBindlessIndex() : 0;
-    cmd.material_instance.has_normal_map = (normal_.texture != nullptr);
-    cmd.material_instance.has_metallic_roughness_map = (metallic_roughness_.texture != nullptr);
-    cmd.material_instance.has_emissive_map = (emissive_.texture != nullptr);
-    cmd.material_instance.metallic_factor = metallic_;
-    cmd.material_instance.roughness_factor = roughness_;
-    cmd.material_instance.emissive_factor[0] = emissive_color_.x * emissive_intensity_;
-    cmd.material_instance.emissive_factor[1] = emissive_color_.y * emissive_intensity_;
-    cmd.material_instance.emissive_factor[2] = emissive_color_.z * emissive_intensity_;
 
     Vector3 worldPos = transform->GetWorldPosition();
     Vector3 camPos = packet.main_camera.position;
@@ -566,9 +582,22 @@ class MeshRenderer : public RendererComponent<MeshRenderer> {
     packet.AddCommand(std::move(cmd));
   }
 
+  void OnDestroy() override {
+    if (material_handle_.IsValid()) {
+      auto* context = GetOwner()->GetContext();
+      if (context && context->GetGraphic()) {
+        context->GetGraphic()->GetMaterialDescriptorPool().Free(material_handle_);
+      }
+      material_handle_ = MaterialHandle::Invalid();
+    }
+    RendererComponent::OnDestroy();
+  }
+
  private:
   const Mesh* mesh_ = nullptr;
   MeshHandle mesh_handle_;
+  MaterialHandle material_handle_;
+  bool material_dirty_ = true;
   TextureBinding albedo_;
   std::string mesh_type_name_;
   Graphics::ShaderId shader_id_ = Graphics::Basic3DShader::ID;
@@ -601,4 +630,29 @@ class MeshRenderer : public RendererComponent<MeshRenderer> {
     std::string path;
   };
   std::vector<PendingTextureRequest> pending_texture_requests_;
+
+  MaterialDescriptor BuildMaterialDescriptor(GameContext* context) const {
+    Texture* effective_texture = albedo_.texture ? albedo_.texture : context->GetAssetManager().GetDefaultWhiteTexture();
+    MaterialDescriptor desc{};
+    desc.albedo_texture_index = effective_texture ? effective_texture->GetBindlessIndex() : 0;
+    desc.normal_texture_index = normal_.texture ? normal_.texture->GetBindlessIndex() : 0;
+    desc.metallic_roughness_index = metallic_roughness_.texture ? metallic_roughness_.texture->GetBindlessIndex() : 0;
+    desc.emissive_texture_index = emissive_.texture ? emissive_.texture->GetBindlessIndex() : 0;
+    desc.flags = flags::If(false, MaterialFlags::AlphaTest) | flags::If(render_settings_.double_sided, MaterialFlags::DoubleSided) |
+                 flags::If(rim_shadow_affected_, MaterialFlags::RimShadowAffected) |
+                 flags::If(normal_.texture != nullptr, MaterialFlags::HasNormalMap) |
+                 flags::If(metallic_roughness_.texture != nullptr, MaterialFlags::HasMetallicRoughnessMap) |
+                 flags::If(emissive_.texture != nullptr, MaterialFlags::HasEmissiveMap);
+    desc.specular_intensity = specular_intensity_;
+    desc.specular_power = specular_power_;
+    desc.rim_intensity = rim_intensity_;
+    desc.rim_power = rim_power_;
+    desc.rim_color = rim_color_;
+    desc.metallic_factor = metallic_;
+    desc.roughness_factor = roughness_;
+    desc.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
+    desc.emissive_factor =
+      Vector3(emissive_color_.x * emissive_intensity_, emissive_color_.y * emissive_intensity_, emissive_color_.z * emissive_intensity_);
+    return desc;
+  }
 };

@@ -11,6 +11,7 @@
 #include "Framework/Math/Math.h"
 #include "Render/shadow_config.h"
 
+class MaterialDescriptorPool;
 class MeshBufferPool;
 class RenderGraph;
 
@@ -45,4 +46,5 @@ struct RenderFrameContext {
   uint32_t ssao_srv_index = UINT32_MAX;
 
   MeshBufferPool* mesh_buffer_pool = nullptr;
+  MaterialDescriptorPool* material_descriptor_pool = nullptr;
 };

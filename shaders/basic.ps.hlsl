@@ -1,6 +1,7 @@
 #include "ConstantBuffer/frame_cb.hlsli"
 #include "ConstantBuffer/lighting_cb.hlsli"
 #include "ConstantBuffer/material_cb.hlsli"
+#include "ConstantBuffer/material_descriptor.hlsli"
 #include "ConstantBuffer/object_cb.hlsli"
 
 struct PSIN {
@@ -17,8 +18,38 @@ Texture2D g_Textures[] : register(t0, space1);
 #include "ConstantBuffer/shadow_cb.hlsli"
 
 float4 main(PSIN input) : SV_TARGET {
-  float4 tex = g_Textures[g_MaterialData.albedoTextureIndex].Sample(
-      g_Samplers[g_ObjectCB.samplerIndex], input.uv);
+  uint albedoIdx;
+  uint matFlags;
+  float specIntensity;
+  float specPow;
+  float rimInt;
+  float rimPow;
+  float3 rimCol;
+  uint samplerIdx;
+
+  if (UseBindlessMaterial(g_ObjectCB.materialDescriptorIndex)) {
+    MaterialDescriptor mat = LoadMaterial(g_ObjectCB.materialDescriptorIndex);
+    albedoIdx     = mat.albedoTextureIndex;
+    matFlags      = mat.flags;
+    specIntensity = mat.specularIntensity;
+    specPow       = mat.specularPower;
+    rimInt        = mat.rimIntensity;
+    rimPow        = mat.rimPower;
+    rimCol        = mat.rimColor;
+    samplerIdx    = mat.samplerIndex;
+  } else {
+    albedoIdx     = g_MaterialData.albedoTextureIndex;
+    matFlags      = g_MaterialData.flags;
+    specIntensity = g_MaterialData.specularIntensity;
+    specPow       = g_MaterialData.specularPower;
+    rimInt        = g_MaterialData.rimIntensity;
+    rimPow        = g_MaterialData.rimPower;
+    rimCol        = g_MaterialData.rimColor;
+    samplerIdx    = g_ObjectCB.samplerIndex;
+  }
+
+  float4 tex = g_Textures[albedoIdx].Sample(
+      g_Samplers[samplerIdx], input.uv);
 
   float4 baseColor = tex * input.color * g_ObjectCB.color;
 
@@ -43,15 +74,14 @@ float4 main(PSIN input) : SV_TARGET {
 
     float3 V = normalize(g_FrameCB.cameraPos - input.worldPos);
     float3 H = normalize(L + V);
-    float spec = pow(saturate(dot(N, H)), g_MaterialData.specularPower);
+    float spec = pow(saturate(dot(N, H)), specPow);
     float3 specular = g_LightingCB.directionalColor *
                       g_LightingCB.lightIntensity *
-                      g_MaterialData.specularIntensity * spec * NdotL * shadow;
+                      specIntensity * spec * NdotL * shadow;
 
-    float rim = pow(1.0 - saturate(dot(N, V)), g_MaterialData.rimPower);
-    float3 rimLight =
-        g_MaterialData.rimColor * g_MaterialData.rimIntensity * rim;
-    if (g_MaterialData.flags & MATERIAL_FLAG_RIM_SHADOW_AFFECTED)
+    float rim = pow(1.0 - saturate(dot(N, V)), rimPow);
+    float3 rimLight = rimCol * rimInt * rim;
+    if (matFlags & MATERIAL_FLAG_RIM_SHADOW_AFFECTED)
       rimLight *= shadow;
 
     float3 pointDiffuse = float3(0, 0, 0);
@@ -59,7 +89,7 @@ float4 main(PSIN input) : SV_TARGET {
     if (g_LightingCB.pointLightCount > 0) {
       CalcPointLightContribution(
           N, V, input.worldPos, g_LightingCB.pointLightCount,
-          g_MaterialData.specularIntensity, g_MaterialData.specularPower,
+          specIntensity, specPow,
           pointDiffuse, pointSpecular);
     }
 

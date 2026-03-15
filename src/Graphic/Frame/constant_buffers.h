@@ -63,7 +63,8 @@ struct alignas(256) ObjectCB {
   Vector2 uvScale;
   uint32_t samplerIndex;
   uint32_t flags;
-  uint32_t _pad[2];
+  uint32_t materialDescriptorIndex;
+  uint32_t _pad;
 };
 static_assert(sizeof(ObjectCB) == 256);
 
@@ -110,6 +111,30 @@ struct alignas(256) CustomCB {
   float data[20];
 };
 static_assert(sizeof(CustomCB) == 256);
+
+struct MaterialDescriptor {
+  uint32_t albedo_texture_index;
+  uint32_t normal_texture_index;
+  uint32_t metallic_roughness_index;
+  uint32_t emissive_texture_index;
+
+  uint32_t flags;
+  float specular_intensity;
+  float specular_power;
+  float rim_intensity;
+
+  float rim_power;
+  Vector3 rim_color;
+
+  float metallic_factor;
+  float roughness_factor;
+  uint32_t sampler_index;
+  float _pad0;
+
+  Vector3 emissive_factor;
+  float _pad1;
+};
+static_assert(sizeof(MaterialDescriptor) == 80);
 
 struct alignas(256) MaterialCB {
   uint32_t albedo_texture_index;

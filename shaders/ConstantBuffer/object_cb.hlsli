@@ -22,7 +22,8 @@ struct ObjectCB {
   float2 uvScale;
   uint samplerIndex;
   uint flags;
-  uint2 _pad;
+  uint materialDescriptorIndex;
+  uint _pad;
 };
 ConstantBuffer<ObjectCB> g_ObjectCB : register(OBJECT_CB_SLOT);
 

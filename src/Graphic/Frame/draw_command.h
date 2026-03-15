@@ -5,6 +5,7 @@
 #include "Framework/Math/Math.h"
 #include "Pipeline/material.h"
 #include "Pipeline/vertex_types.h"
+#include "Resource/Material/material_handle.h"
 #include "Resource/Mesh/mesh_buffer_pool.h"
 #include "render_layer.h"
 
@@ -19,6 +20,7 @@ struct DrawCommand {
   const Material* material = nullptr;
   const Mesh* mesh = nullptr;
   MeshHandle mesh_handle;
+  MaterialHandle material_handle;
   MaterialInstance material_instance{};
   float depth = 0.0f;
 
@@ -42,6 +44,10 @@ struct DrawCommand {
 
   [[nodiscard]] bool UsesBindlessMesh() const {
     return mesh_handle.IsValid();
+  }
+
+  [[nodiscard]] bool UsesBindlessMaterial() const {
+    return material_handle.IsValid();
   }
 
   [[nodiscard]] bool IsInstanced() const {

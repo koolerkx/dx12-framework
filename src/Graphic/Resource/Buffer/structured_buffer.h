@@ -119,6 +119,16 @@ class StructuredBuffer {
     return srv_desc;
   }
 
+  void UpdateAt(uint32_t index, const T& value) {
+    if (mapped_data_ && index < capacity_) {
+      memcpy(&mapped_data_[index], &value, sizeof(T));
+    }
+  }
+
+  T* GetMappedData() const {
+    return mapped_data_;
+  }
+
   uint32_t GetCapacity() const {
     return capacity_;
   }
