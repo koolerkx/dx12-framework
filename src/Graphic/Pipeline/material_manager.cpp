@@ -3,7 +3,7 @@
 #include <sstream>
 
 #include "Framework/Logging/logger.h"
-#include "Game/Component/render_settings.h"
+#include "Framework/Render/render_settings.h"
 #include "Pipeline/pipeline_state_builder.h"
 #include "Pipeline/shader_registry.h"
 

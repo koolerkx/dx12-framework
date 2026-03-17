@@ -9,7 +9,7 @@
 #include "Component/component.h"
 #include "Component/transform_component.h"
 #include "Framework/Model/node_hierarchy.h"
-#include "Graphic/Frame/render_layer.h"
+#include "Framework/Render/render_types.h"
 #include "Graphic/Pipeline/shader_descriptors.h"
 #include "Graphic/Pipeline/shader_registry.h"
 #include "game_context.h"

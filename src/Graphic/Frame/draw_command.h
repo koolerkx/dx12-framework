@@ -3,11 +3,10 @@
 #include <vector>
 
 #include "Framework/Math/Math.h"
+#include "Framework/Render/render_handles.h"
+#include "Framework/Render/render_types.h"
 #include "Pipeline/material.h"
 #include "Pipeline/vertex_types.h"
-#include "Resource/Material/material_handle.h"
-#include "Resource/Mesh/mesh_buffer_pool.h"
-#include "render_layer.h"
 
 using Math::Matrix4;
 using Math::Vector2;

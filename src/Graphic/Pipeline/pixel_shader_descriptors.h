@@ -4,8 +4,8 @@
 #include <span>
 #include <string_view>
 
-#include "Frame/render_layer.h"
-#include "Game/Component/render_settings.h"
+#include "Framework/Render/render_settings.h"
+#include "Framework/Render/render_types.h"
 #include "shader_types.h"
 #include "vertex_types.h"
 

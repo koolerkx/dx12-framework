@@ -1,7 +1,7 @@
 #include "instanced_mesh_renderer.h"
 
-#include "Component/render_settings.h"
 #include "Framework/Logging/logger.h"
+#include "Framework/Render/render_settings.h"
 #include "Graphic/Resource/Buffer/instance_buffer_manager.h"
 #include "Graphic/Resource/Material/material_descriptor_pool.h"
 #include "game_context.h"

@@ -32,7 +32,6 @@ add_library(game STATIC
     Component/camera_component.cpp
     Component/behavior_component.h
     Component/billboard_type.h
-    Component/render_settings.h
     Component/sprite_sheet_animator.h
     Component/sprite_sheet_animator.cpp
     Component/pivot_type.h

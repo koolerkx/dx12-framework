@@ -68,6 +68,13 @@ add_library(framework STATIC
   # ProceduralTexture
   ProceduralTexture/procedural_texture_factory.h
 
+  # Render
+  Render/render_handles.h
+  Render/render_types.h
+  Render/render_settings.h
+  Render/render_request.h
+  Render/instance_data.h
+
   # Serialization
   Serialize/serialize_node.h
   Serialize/serialize_node.cpp

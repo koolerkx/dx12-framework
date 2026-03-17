@@ -2,17 +2,17 @@
 #include <optional>
 #include <string>
 
-#include "Component/renderer_component.h"
 #include "Component/pivot_type.h"
-#include "Component/render_settings.h"
+#include "Component/renderer_component.h"
 #include "Framework/Core/utils.h"
 #include "Framework/Font/text_layout.h"
 #include "Framework/Math/Math.h"
+#include "Framework/Render/render_handles.h"
+#include "Framework/Render/render_settings.h"
 #include "Framework/Serialize/serialize_node.h"
 #include "Game/Asset/asset_manager.h"
 #include "Graphic/Frame/frame_packet.h"
 #include "Graphic/Resource/Font/sprite_font_manager.h"
-#include "Graphic/Resource/Material/material_handle.h"
 #include "game_object.h"
 
 using Math::Vector2;

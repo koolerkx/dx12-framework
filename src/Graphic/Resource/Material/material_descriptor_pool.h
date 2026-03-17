@@ -7,8 +7,9 @@
 #include <vector>
 
 #include "Frame/constant_buffers.h"
+#include "Framework/Render/render_handles.h"
 #include "Resource/Buffer/structured_buffer.h"
-#include "Resource/Material/material_handle.h"
+
 
 struct MaterialDescriptorPoolConfig {
   uint32_t max_material_count = 4096;

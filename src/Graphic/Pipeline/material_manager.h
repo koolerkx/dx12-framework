@@ -8,7 +8,7 @@
 #include <shared_mutex>
 #include <unordered_map>
 
-#include "Game/Component/render_settings.h"
+#include "Framework/Render/render_settings.h"
 #include "Pipeline/shader_manager.h"
 #include "Pipeline/shader_types.h"
 #include "material.h"
@@ -56,8 +56,8 @@ class MaterialManager {
 
     CacheEntry() = default;
     CacheEntry(CacheEntry&& other) noexcept
-        : material(std::move(other.material)),
-          last_used_frame(other.last_used_frame.load(std::memory_order_relaxed)) {}
+        : material(std::move(other.material)), last_used_frame(other.last_used_frame.load(std::memory_order_relaxed)) {
+    }
     CacheEntry& operator=(CacheEntry&& other) noexcept {
       material = std::move(other.material);
       last_used_frame.store(other.last_used_frame.load(std::memory_order_relaxed), std::memory_order_relaxed);

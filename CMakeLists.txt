@@ -12,7 +12,7 @@ option(ENABLE_EDITOR "Enable ImGui editor overlay" OFF)
 option(DYNAMIC_CRT "Use dynamic MSVC runtime (/MD) for RenderDoc compatibility" OFF)
 
 if(MSVC)
-  add_compile_options(/wd4324)
+  add_compile_options(/wd4324 /EHsc)
 
   if(CMAKE_GENERATOR MATCHES "Visual Studio")
     set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<IF:$<CONFIG:Debug,RelWithDebInfo>,EditAndContinue,ProgramDatabase>")

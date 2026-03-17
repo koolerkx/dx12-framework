@@ -10,9 +10,9 @@
 #include "Asset/model_data.h"
 #include "Component/renderer_component.h"
 #include "Framework/Math/Math.h"
+#include "Framework/Render/render_handles.h"
 #include "Graphic/Frame/frame_packet.h"
 #include "Graphic/Resource/Buffer/instance_buffer_handle.h"
-#include "Graphic/Resource/Material/material_handle.h"
 
 using Math::Matrix4;
 using Math::Vector4;

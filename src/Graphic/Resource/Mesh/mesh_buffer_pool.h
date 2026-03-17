@@ -8,15 +8,12 @@
 #include <vector>
 
 #include "Core/types.h"
-#include "Framework/Handle/handle.h"
+#include "Framework/Render/render_handles.h"
 #include "Resource/Allocator/free_block_allocator.h"
 #include "Pipeline/vertex_types.h"
 #include "Resource/Mesh/mesh_descriptor.h"
 
 using Graphics::Vertex::ModelVertex;
-
-struct MeshHandleTag {};
-using MeshHandle = Framework::Handle<MeshHandleTag>;
 
 struct MeshAllocation {
   MeshHandle handle;

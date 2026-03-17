@@ -1,9 +1,13 @@
 #pragma once
 #include <cstdint>
+#include <cstring>
+#include <span>
 #include <vector>
 
 #include "Framework/Core/color.h"
 #include "Framework/Math/Math.h"
+#include "Framework/Render/instance_data.h"
+#include "Framework/Render/render_request.h"
 #include "Graphic/Render/shadow_config.h"
 #include "camera_data.h"
 #include "draw_command.h"
@@ -62,6 +66,18 @@ struct PointLightEntry {
   float falloff = 2.0f;
 };
 
+struct InstanceDataRef {
+  uint32_t offset = 0;
+  uint32_t size = 0;
+  uint32_t count = 0;
+  bool IsValid() const { return size > 0; }
+};
+
+struct InternalInstancedRequest {
+  InstancedRenderRequest request;
+  InstanceDataRef instance_data;
+};
+
 struct FramePacket {
   float time = 0.0f;
   CameraData main_camera;
@@ -72,13 +88,36 @@ struct FramePacket {
   std::vector<DrawCommand> commands;
   std::vector<PointLightEntry> point_lights;
 
+  std::vector<RenderRequest> single_requests;
+  std::vector<InternalInstancedRequest> instanced_requests;
+  std::vector<std::byte> instance_data_pool;
+
   void Clear() {
     commands.clear();
     point_lights.clear();
+    single_requests.clear();
+    instanced_requests.clear();
+    instance_data_pool.clear();
   }
 
   void AddCommand(DrawCommand cmd) {
     commands.emplace_back(std::move(cmd));
+  }
+
+  void Draw(RenderRequest request) {
+    single_requests.emplace_back(std::move(request));
+  }
+
+  void DrawInstanced(InstancedRenderRequest request, std::span<const InstanceData> instances) {
+    uint32_t offset = static_cast<uint32_t>(instance_data_pool.size());
+    uint32_t byte_size = static_cast<uint32_t>(instances.size_bytes());
+    instance_data_pool.resize(instance_data_pool.size() + byte_size);
+    std::memcpy(instance_data_pool.data() + offset, instances.data(), byte_size);
+
+    instanced_requests.push_back({
+      .request = std::move(request),
+      .instance_data = {offset, byte_size, static_cast<uint32_t>(instances.size())},
+    });
   }
 
   void AddPointLight(PointLightEntry entry) {

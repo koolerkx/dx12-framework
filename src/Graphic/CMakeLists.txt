@@ -47,7 +47,6 @@ add_library(graphic STATIC
   Resource/Buffer/instance_buffer_manager.h
   Resource/Buffer/instance_buffer_manager.cpp
 
-  Resource/Material/material_handle.h
   Resource/Material/material_descriptor_pool.h
   Resource/Material/material_descriptor_pool.cpp
 
@@ -75,8 +74,9 @@ add_library(graphic STATIC
   Frame/render_frame_context.h
   Frame/constant_buffers.h
   Frame/camera_data.h
-  Frame/render_layer.h
   Frame/draw_command.h
+  Frame/mesh_geometry.h
+  Frame/resolved_draw_command.h
 
   Command/buffer.h
   Command/command_context.h

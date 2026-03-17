@@ -6,16 +6,17 @@
 
 #include "Asset/asset_handle.h"
 #include "Component/renderer_component.h"
-#include "Component/render_settings.h"
 #include "Component/transform_component.h"
 #include "Framework/Math/Math.h"
+#include "Framework/Render/render_handles.h"
+#include "Framework/Render/render_settings.h"
 #include "Framework/Serialize/serialize_node.h"
 #include "Game/Asset/asset_manager.h"
 #include "Graphic/Frame/frame_packet.h"
-#include "Graphic/Resource/Material/material_handle.h"
 #include "Graphic/Resource/Texture/texture.h"
 #include "game_context.h"
 #include "game_object.h"
+
 
 using Math::Matrix4;
 using Math::Vector2;
@@ -207,8 +208,12 @@ class ParticleEmitter : public RendererComponent<ParticleEmitter> {
     node.ReadVec3("SpawnOffset", spawn_offset_.x, spawn_offset_.y, spawn_offset_.z);
     spawn_shape_ = static_cast<SpawnShape>(node.ReadInt("SpawnShape", static_cast<int>(spawn_shape_)));
     switch (spawn_shape_) {
-      case SpawnShape::Disk: spawn_fn_ = SpawnFromDisk(); break;
-      default: spawn_fn_ = SpawnFromCenter(); break;
+      case SpawnShape::Disk:
+        spawn_fn_ = SpawnFromDisk();
+        break;
+      default:
+        spawn_fn_ = SpawnFromCenter();
+        break;
     }
     spawn_radius_ = node.ReadFloat("SpawnRadius", spawn_radius_);
     fade_in_ratio_ = node.ReadFloat("FadeInRatio", fade_in_ratio_);
