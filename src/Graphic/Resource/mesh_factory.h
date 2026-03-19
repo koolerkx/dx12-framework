@@ -2,13 +2,49 @@
 #include <d3d12.h>
 
 #include <cmath>
+#include <cstddef>
+#include <span>
 #include <vector>
 
 #include "Math/Math.h"
+#include "Pipeline/vertex_types.h"
 #include "mesh.h"
+
+enum class VertexDataLayout { Model, Sprite };
+
+struct MeshData {
+  using SpriteVertex = Graphics::Vertex::SpriteVertex;
+  using ModelVertex = Graphics::Vertex::ModelVertex;
+
+  std::vector<std::byte> vertices;
+  std::vector<uint32_t> indices;
+  uint32_t vertex_count = 0;
+  VertexDataLayout layout = VertexDataLayout::Model;
+
+  std::span<const SpriteVertex> AsSpriteVertices() const {
+    return {reinterpret_cast<const SpriteVertex*>(vertices.data()), vertex_count};
+  }
+  std::span<const ModelVertex> AsModelVertices() const {
+    return {reinterpret_cast<const ModelVertex*>(vertices.data()), vertex_count};
+  }
+};
 
 class MeshFactory {
  public:
+  using SpriteVertex = Graphics::Vertex::SpriteVertex;
+  using ModelVertex = Graphics::Vertex::ModelVertex;
+  using CubeCornerColors = std::array<Math::Vector4, 8>;
+
+  // Raw data methods for MeshBufferPool upload (no GPU resource creation)
+  static MeshData CreateRectData();
+  static MeshData CreateRoundedRectData(float corner_radius = 0.1f, uint32_t corner_segments = 8, float aspect_ratio = 1.0f);
+  static MeshData CreateQuadData();
+  static MeshData CreateCubeData();
+  static MeshData CreateCubeData(const CubeCornerColors& corner_colors);
+  static MeshData CreatePlaneData(uint32_t subdivisions_x = 1, uint32_t subdivisions_z = 1);
+  static MeshData CreateSphereData(uint32_t segments = 32, uint32_t rings = 16);
+  static MeshData CreateCylinderData(uint32_t segments = 8);
+
   static bool CreateCube(ID3D12Device* device, Mesh& out_mesh) {
     struct Vertex {
       float pos[3];
@@ -109,8 +145,6 @@ class MeshFactory {
    *  |/       |/     Z+
    *  0--------1
    */
-  using CubeCornerColors = std::array<Math::Vector4, 8>;
-
   static bool CreateCube(ID3D12Device* device, Mesh& out_mesh, const CubeCornerColors& colors) {
     struct Vertex {
       float pos[3];
@@ -396,7 +430,7 @@ class MeshFactory {
   }
 
   static bool CreateRoundedRect(
-      ID3D12Device* device, Mesh& out_mesh, float corner_radius = 0.1f, uint32_t corner_segments = 8, float aspect_ratio = 1.0f) {
+    ID3D12Device* device, Mesh& out_mesh, float corner_radius = 0.1f, uint32_t corner_segments = 8, float aspect_ratio = 1.0f) {
     struct Vertex {
       float pos[3];
       float uv[2];

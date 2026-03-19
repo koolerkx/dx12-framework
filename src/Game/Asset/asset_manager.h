@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "Framework/Math/Math.h"
+#include "Framework/Render/render_handles.h"
 #include "Resource/mesh.h"
 #include "asset_handle.h"
 #include "model_data.h"
@@ -67,6 +68,8 @@ class AssetManager {
   const Mesh* CreateRoundedRect(const std::string& key, float aspect_ratio, float corner_radius = 0.1f);
 
   const Mesh* GetDefaultMesh(DefaultMesh type) const;
+  MeshHandle GetDefaultMeshHandle(DefaultMesh type) const;
+  MeshHandle GetOrCreateMeshHandle(const std::string& key, const struct MeshData& data);
   std::optional<DefaultMesh> FindDefaultMeshType(const Mesh* mesh) const;
 
   bool LoadFont(Font::FontFamily family, const std::string& fnt_path, const std::string& texture_path);
@@ -86,9 +89,11 @@ class AssetManager {
 
  private:
   void CreateDefaultMeshes();
+  void UploadDefaultMeshesToPool();
   void FreeMeshHandlesForModel(const ModelData& model_data);
 
   std::unordered_map<DefaultMesh, const Mesh*> default_meshes_;
+  std::unordered_map<DefaultMesh, MeshHandle> default_mesh_handles_;
   std::unordered_map<std::string, std::shared_ptr<ModelData>> model_cache_;  // router table to graphic layers
   std::unordered_map<std::string, MeshHandle> mesh_handle_cache_;
   std::shared_ptr<Texture> default_white_texture_;

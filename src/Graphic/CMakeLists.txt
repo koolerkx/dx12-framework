@@ -59,6 +59,7 @@ add_library(graphic STATIC
 
   Resource/mesh.h
   Resource/mesh.cpp
+  Resource/mesh_factory.cpp
   Resource/mesh_registry.h
   Resource/render_services.h
   Resource/render_services.cpp

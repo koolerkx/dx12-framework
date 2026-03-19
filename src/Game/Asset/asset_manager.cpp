@@ -9,8 +9,8 @@
 #include "Framework/Model/model_loader.h"
 #include "Graphic/Pipeline/vertex_types.h"
 #include "Graphic/Resource/Font/sprite_font_manager.h"
-#include "Graphic/Resource/Texture/texture_manager.h"
 #include "Graphic/Resource/Mesh/mesh_buffer_pool.h"
+#include "Graphic/Resource/Texture/texture_manager.h"
 #include "Graphic/Resource/mesh_factory.h"
 #include "Graphic/Resource/mesh_registry.h"
 #include "Graphic/graphic.h"
@@ -37,6 +37,7 @@ bool AssetManager::Initialize(Graphic* graphic) {
   impl_->font_manager = &graphic->GetSpriteFontManager();
   impl_->mesh_buffer_pool = &graphic->GetMeshBufferPool();
   CreateDefaultMeshes();
+  UploadDefaultMeshesToPool();
   default_white_texture_ = impl_->texture_manager->LoadTextureSRGB("Content/textures/white.png");
   return true;
 }
@@ -108,6 +109,47 @@ void AssetManager::CreateDefaultMeshes() {
   register_default(DefaultMesh::Sphere, "default:sphere", [](auto* d, auto& m) { return MeshFactory::CreateSphere(d, m, 32, 16); });
   register_default(DefaultMesh::Cylinder, "default:cylinder", [](auto* d, auto& m) { return MeshFactory::CreateCylinder(d, m); });
   register_default(DefaultMesh::RoundedRect, "default:rounded_rect", [](auto* d, auto& m) { return MeshFactory::CreateRoundedRect(d, m); });
+}
+
+void AssetManager::UploadDefaultMeshesToPool() {
+  if (!impl_->mesh_buffer_pool) return;
+  auto* pool = impl_->mesh_buffer_pool;
+
+  auto upload_model = [&](DefaultMesh type, const MeshData& data) {
+    auto alloc = pool->Allocate(data.AsModelVertices(), std::span<const uint32_t>(data.indices));
+    if (alloc.success) default_mesh_handles_[type] = alloc.handle;
+  };
+
+  auto upload_sprite = [&](DefaultMesh type, const MeshData& data) {
+    auto alloc = pool->Allocate(data.AsSpriteVertices(), std::span<const uint32_t>(data.indices));
+    if (alloc.success) default_mesh_handles_[type] = alloc.handle;
+  };
+
+  upload_model(DefaultMesh::Quad, MeshFactory::CreateQuadData());
+  upload_model(DefaultMesh::Cube, MeshFactory::CreateCubeData());
+  upload_model(DefaultMesh::Plane, MeshFactory::CreatePlaneData(10, 10));
+  upload_model(DefaultMesh::Sphere, MeshFactory::CreateSphereData(32, 16));
+  upload_model(DefaultMesh::Cylinder, MeshFactory::CreateCylinderData());
+  upload_sprite(DefaultMesh::Rect, MeshFactory::CreateRectData());
+  upload_sprite(DefaultMesh::RoundedRect, MeshFactory::CreateRoundedRectData());
+}
+
+MeshHandle AssetManager::GetDefaultMeshHandle(DefaultMesh type) const {
+  auto it = default_mesh_handles_.find(type);
+  if (it != default_mesh_handles_.end()) return it->second;
+  return MeshHandle::Invalid();
+}
+
+MeshHandle AssetManager::GetOrCreateMeshHandle(const std::string& key, const MeshData& data) {
+  auto [it, inserted] = mesh_handle_cache_.try_emplace(key, MeshHandle::Invalid());
+  if (!inserted) return it->second;
+  if (!impl_->mesh_buffer_pool) return MeshHandle::Invalid();
+  MeshAllocation alloc = (data.layout == VertexDataLayout::Sprite)
+                           ? impl_->mesh_buffer_pool->Allocate(data.AsSpriteVertices(), std::span<const uint32_t>(data.indices))
+                           : impl_->mesh_buffer_pool->Allocate(data.AsModelVertices(), std::span<const uint32_t>(data.indices));
+  if (!alloc.success) return MeshHandle::Invalid();
+  it->second = alloc.handle;
+  return alloc.handle;
 }
 
 void AssetManager::CreateTextureFromPixels(const std::string& cache_key, const uint8_t* pixels, uint32_t width, uint32_t height) {
@@ -280,8 +322,7 @@ std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path, floa
     }
 
     auto alloc = impl_->mesh_buffer_pool->Allocate(
-      std::span{mesh_data.vertices.data(), mesh_data.vertices.size()},
-      std::span{mesh_data.indices.data(), mesh_data.indices.size()});
+      std::span{mesh_data.vertices.data(), mesh_data.vertices.size()}, std::span{mesh_data.indices.data(), mesh_data.indices.size()});
     if (alloc.success) {
       mesh_handle_cache_[key] = alloc.handle;
     }
