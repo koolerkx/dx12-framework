@@ -17,8 +17,8 @@ ConstantBuffer<SoftParticleCB> g_SoftParticleCB : register(CUSTOM_CB_SLOT);
 struct PSIN {
   float4 position : SV_POSITION;
   float2 uv : TEXCOORD;
-  float4 color : COLOR;
-  float4 overlayColor : TEXCOORD1;
+  float4 color : BASE_COLOR;
+  float4 overlayColor : OVERLAY_COLOR;
 };
 
 float4 main(PSIN input) : SV_TARGET {

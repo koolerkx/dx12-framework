@@ -7,9 +7,9 @@ struct PSIN {
   float4 position : SV_POSITION;
   float3 worldNormal : NORMAL;
   float2 uv : TEXCOORD0;
-  float4 color : COLOR;
+  float4 color : BASE_COLOR;
   float3 worldPos : TEXCOORD1;
-  float4 overlayColor : TEXCOORD2;
+  float4 overlayColor : OVERLAY_COLOR;
 };
 
 Texture2D g_Textures[] : register(t0, space1);

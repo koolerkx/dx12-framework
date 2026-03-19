@@ -7,7 +7,7 @@ struct VSIN {
 
 struct VSOUT {
   float4 position : SV_POSITION;
-  float4 color : COLOR;
+  float4 color : BASE_COLOR;
 };
 
 VSOUT main(VSIN input) {
