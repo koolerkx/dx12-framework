@@ -1,3 +1,7 @@
+/**
+ * @file presentation_context.h
+ * @brief Manages swap chain presentation: back buffer lifecycle, VSync, and window resize.
+ */
 #pragma once
 
 #include <d3d12.h>
@@ -7,6 +11,7 @@
 #include <memory>
 
 class DescriptorHeapManager;
+class FenceManager;
 class SwapChainManager;
 
 namespace gfx {
@@ -29,22 +34,27 @@ class PresentationContext {
   PresentationContext& operator=(const PresentationContext&) = delete;
   ~PresentationContext();
 
-  bool Resize(uint32_t width, uint32_t height, ID3D12CommandQueue* queue, ID3D12Fence* fence);
+  bool Resize(uint32_t width, uint32_t height, ID3D12CommandQueue* queue, FenceManager& fence_manager);
   void Present();
 
   uint32_t GetCurrentBackBufferIndex() const;
 
-  void SetVSync(bool enable) { vsync_enabled_ = enable; }
-  bool IsVSyncEnabled() const { return vsync_enabled_; }
+  void SetVSync(bool enable) {
+    vsync_enabled_ = enable;
+  }
+  bool IsVSyncEnabled() const {
+    return vsync_enabled_;
+  }
 
-  SwapChainManager& GetSwapChainManager() { return *swap_chain_; }
+  SwapChainManager& GetSwapChainManager() {
+    return *swap_chain_;
+  }
 
  private:
   PresentationContext() = default;
   bool Initialize(
     ID3D12Device* device, IDXGIFactory6* factory, ID3D12CommandQueue* queue, DescriptorHeapManager* heap_manager, const CreateInfo& info);
 
-  void WaitForGpu(ID3D12CommandQueue* queue, ID3D12Fence* fence);
 
   std::unique_ptr<SwapChainManager> swap_chain_;
   DescriptorHeapManager* heap_manager_ = nullptr;

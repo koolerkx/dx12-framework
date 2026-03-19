@@ -1,6 +1,7 @@
 #include "presentation_context.h"
 
 #include "Descriptor/descriptor_heap_manager.h"
+#include "Device/fence_manager.h"
 #include "Framework/Logging/logger.h"
 #include "swapchain_manager.h"
 
@@ -34,12 +35,12 @@ bool PresentationContext::Initialize(
   return true;
 }
 
-bool PresentationContext::Resize(uint32_t width, uint32_t height, ID3D12CommandQueue* queue, ID3D12Fence* fence) {
+bool PresentationContext::Resize(uint32_t width, uint32_t height, ID3D12CommandQueue* queue, FenceManager& fence_manager) {
   if (width == 0 || height == 0) {
     return false;
   }
 
-  WaitForGpu(queue, fence);
+  fence_manager.WaitForGpu(queue);
 
   if (!swap_chain_->Resize(width, height, *heap_manager_)) {
     Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "Failed to resize swap chain");
@@ -60,22 +61,5 @@ uint32_t PresentationContext::GetCurrentBackBufferIndex() const {
   return swap_chain_->GetCurrentBackBufferIndex();
 }
 
-void PresentationContext::WaitForGpu(ID3D12CommandQueue* queue, ID3D12Fence* fence) {
-  if (!queue || !fence) {
-    return;
-  }
-
-  uint64_t current_value = fence->GetCompletedValue();
-  uint64_t signal_value = current_value + 1;
-
-  queue->Signal(fence, signal_value);
-
-  HANDLE event = CreateEventW(nullptr, FALSE, FALSE, nullptr);
-  if (event) {
-    fence->SetEventOnCompletion(signal_value, event);
-    WaitForSingleObject(event, INFINITE);
-    CloseHandle(event);
-  }
-}
 
 }  // namespace gfx

@@ -33,7 +33,6 @@
 #include "Render/vignette_pass.h"
 #include "Resource/Mesh/mesh_buffer_pool.h"
 
-
 using Math::Vector3;
 using Math::Vector4;
 
@@ -384,7 +383,7 @@ bool Graphic::ResizeBuffers(UINT width, UINT height) {
 
   frame_synchronizer_->WaitForGpuIdle(command_queue_.Get());
 
-  if (!presentation_context_->Resize(width, height, command_queue_.Get(), frame_synchronizer_->GetFence())) {
+  if (!presentation_context_->Resize(width, height, command_queue_.Get(), frame_synchronizer_->GetFenceManager())) {
     Logger::LogFormat(LogLevel::Error, LogCategory::Graphic, Logger::Here(), "PresentationContext resize failed");
     return false;
   }
