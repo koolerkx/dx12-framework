@@ -74,9 +74,16 @@ bool CommandContext::CreateCommandList(ID3D12Device* device, D3D12_COMMAND_LIST_
     Logger::LogFormat(LogLevel::Fatal, LogCategory::Graphic, Logger::Here(), "Failed to create command list: 0x{:08X}", hr);
     return false;
   }
-
   command_list_->SetName(L"CommandContext_CommandList");
   command_list_->Close();
+
+  hr = device->CreateCommandList(0, type, utility_allocator_.Get(), nullptr, IID_PPV_ARGS(&utility_command_list_));
+  if (FAILED(hr) || !utility_command_list_) {
+    Logger::LogFormat(LogLevel::Fatal, LogCategory::Graphic, Logger::Here(), "Failed to create utility command list: 0x{:08X}", hr);
+    return false;
+  }
+  utility_command_list_->SetName(L"CommandContext_UtilityCommandList");
+  utility_command_list_->Close();
   return true;
 }
 
@@ -96,12 +103,12 @@ void CommandContext::Execute() {
 
 void CommandContext::Submit(std::function<void(ID3D12GraphicsCommandList*)> recorder) {
   utility_allocator_->Reset();
-  command_list_->Reset(utility_allocator_.Get(), nullptr);
+  utility_command_list_->Reset(utility_allocator_.Get(), nullptr);
 
-  recorder(command_list_.Get());
+  recorder(utility_command_list_.Get());
 
-  command_list_->Close();
-  ID3D12CommandList* lists[] = {command_list_.Get()};
+  utility_command_list_->Close();
+  ID3D12CommandList* lists[] = {utility_command_list_.Get()};
   queue_->ExecuteCommandLists(1, lists);
 }
 

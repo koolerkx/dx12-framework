@@ -46,6 +46,7 @@ class CommandContext {
 
   ComPtr<ID3D12CommandQueue> queue_;
   ComPtr<ID3D12GraphicsCommandList> command_list_;
+  ComPtr<ID3D12GraphicsCommandList> utility_command_list_;
   std::array<ComPtr<ID3D12CommandAllocator>, kMaxFramesInFlight> frame_allocators_;
   ComPtr<ID3D12CommandAllocator> utility_allocator_;
 
