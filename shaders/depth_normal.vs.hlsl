@@ -20,7 +20,7 @@ VSOutput main(VSInput input, uint instanceID : SV_InstanceID) {
   if (g_ObjectCB.flags & OBJECT_FLAG_INSTANCED) {
     InstanceData inst = g_InstanceBuffer[instanceID];
     worldMat = inst.world;
-    normalMat = (float3x3)inst.normalMatrix;
+    normalMat = ComputeNormalMatrix(inst.world);
   } else {
     worldMat = g_ObjectCB.world;
     normalMat = (float3x3)g_ObjectCB.normalMatrix;

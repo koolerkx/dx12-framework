@@ -18,6 +18,7 @@ struct VSOUT {
   float4 position : SV_POSITION;
   float2 uv : TEXCOORD;
   float4 color : COLOR;
+  float4 overlayColor : TEXCOORD1;
 };
 
 VSOUT main(VSIN input) {
@@ -31,6 +32,7 @@ VSOUT main(VSIN input) {
 
   output.uv = input.uv * input.instanceUVScale + input.instanceUVOffset;
   output.color = input.color * input.instanceColor;
+  output.overlayColor = float4(0, 0, 0, 0);
 
   return output;
 }

@@ -4,8 +4,9 @@
 
 struct GPUInstanceData {
   Math::Matrix4 world;
-  Math::Matrix4 normal_matrix;
   Math::Vector4 color;
+  Math::Vector2 uv_offset;
+  Math::Vector2 uv_scale;
   Math::Vector4 overlay_color;
 };
-static_assert(sizeof(GPUInstanceData) == 160);
+static_assert(sizeof(GPUInstanceData) == 112);

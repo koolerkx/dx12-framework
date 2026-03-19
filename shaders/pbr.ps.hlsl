@@ -18,26 +18,24 @@ Texture2D g_Textures[] : register(t0, space1);
 #include "ConstantBuffer/sampler.hlsli"
 #include "ConstantBuffer/shadow_cb.hlsli"
 
-
 static const float PI = 3.14159265359;
 static const float MIN_ROUGHNESS = 0.04;
 
 float DistributionGGX(float NdotH, float roughness) {
   float a = roughness * roughness;
   float a2 = a * a;
-  float denom = NdotH * NdotH * (a2 - 1.0) + 1.0;
-  return a2 / (PI * denom * denom);
+  float d = NdotH * NdotH * (a2 - 1.0) + 1.0;
+  return a2 / (PI * d * d + 0.0001);
 }
 
-float GeometrySchlickGGX(float NdotV, float roughness) {
-  float r = roughness + 1.0;
-  float k = (r * r) / 8.0;
-  return NdotV / (NdotV * (1.0 - k) + k);
+float GeometrySchlickGGX(float NdotV, float k) {
+  return NdotV / (NdotV * (1.0 - k) + k + 0.0001);
 }
 
 float GeometrySmith(float NdotV, float NdotL, float roughness) {
-  return GeometrySchlickGGX(NdotV, roughness) *
-         GeometrySchlickGGX(NdotL, roughness);
+  float r = roughness + 1.0;
+  float k = (r * r) / 8.0;
+  return GeometrySchlickGGX(NdotV, k) * GeometrySchlickGGX(NdotL, k);
 }
 
 float3 FresnelSchlick(float cosTheta, float3 F0) {
@@ -49,27 +47,25 @@ float4 main(PSIN input) : SV_TARGET {
 
   float4 albedoTex = g_Textures[mat.albedoTextureIndex].Sample(
       g_Samplers[mat.samplerIndex], input.uv);
+
   float4 baseColor = albedoTex * input.color * g_ObjectCB.color;
 
-  if ((g_ObjectCB.flags & OBJECT_FLAG_OPAQUE) && baseColor.a < 0.5) {
+  if (HasFlag(mat.flags, MATERIAL_FLAG_ALPHA_TEST) && baseColor.a < 0.5) {
     discard;
-  }
-
-  if (!(g_ObjectCB.flags & OBJECT_FLAG_LIT)) {
-    return baseColor;
   }
 
   float3 N = normalize(input.worldNormal);
 
-  float3 T = normalize(input.worldTangent);
-  float3 B = normalize(input.worldBitangent);
-  float3x3 TBN = float3x3(T, B, N);
-  float3 normalMap = g_Textures[mat.normalTextureIndex]
-                         .Sample(g_Samplers[mat.samplerIndex], input.uv)
-                         .rgb;
-  normalMap = normalMap * 2.0 - 1.0;
-  float3 tbnNormal = normalize(mul(normalMap, TBN));
-  N = lerp(N, tbnNormal, HasFlag(mat.flags, MATERIAL_FLAG_HAS_NORMAL_MAP));
+  if (HasFlag(mat.flags, MATERIAL_FLAG_HAS_NORMAL_MAP)) {
+    float3 T = normalize(input.worldTangent);
+    float3 B = normalize(input.worldBitangent);
+    float3x3 TBN = float3x3(T, B, N);
+    float3 normalMap = g_Textures[mat.normalTextureIndex]
+                           .Sample(g_Samplers[mat.samplerIndex], input.uv)
+                           .rgb;
+    normalMap = normalMap * 2.0 - 1.0;
+    N = normalize(mul(normalMap, TBN));
+  }
 
   float4 mrSample = g_Textures[mat.metallicRoughnessIndex].Sample(
       g_Samplers[mat.samplerIndex], input.uv);
@@ -107,10 +103,10 @@ float4 main(PSIN input) : SV_TARGET {
   float3 diffuse = kD * albedo / PI;
 
   float3 directional = (diffuse + specular) * g_LightingCB.directionalColor *
-                       g_LightingCB.lightIntensity * NdotL * shadowTint;
+                        g_LightingCB.lightIntensity * NdotL * shadowTint;
 
-  float3 ambient =
-      g_LightingCB.ambientColor * g_LightingCB.ambientIntensity * albedo;
+  float3 ambient = g_LightingCB.ambientColor * g_LightingCB.ambientIntensity *
+                    albedo;
 
   float ao = 1.0;
   if (g_LightingCB.ssaoSrvIndex != 0xFFFFFFFF) {
@@ -122,22 +118,26 @@ float4 main(PSIN input) : SV_TARGET {
 
   float3 pointDiffuse = float3(0, 0, 0);
   float3 pointSpecular = float3(0, 0, 0);
-  CalcPointLightContribution(N, V, input.worldPos, g_LightingCB.pointLightCount,
-                             1.0, max(2.0 / (roughness * roughness) - 2.0, 1.0),
-                             pointDiffuse, pointSpecular);
+  CalcPointLightContribution(N, V, input.worldPos,
+      g_LightingCB.pointLightCount,
+      lerp(0.04, 1.0, metallic), max(1.0 / (roughness * roughness), 1.0),
+      pointDiffuse, pointSpecular);
   pointDiffuse *= albedo * (1.0 - metallic);
 
-  float rim = pow(1.0 - saturate(dot(N, V)), mat.rimPower);
-  float3 rimLight = mat.rimColor * mat.rimIntensity * rim;
-  rimLight *=
-      lerp(1.0, shadow, HasFlag(mat.flags, MATERIAL_FLAG_RIM_SHADOW_AFFECTED));
+  float3 emissive = mat.emissiveFactor *
+                    lerp(1.0,
+                         g_Textures[mat.emissiveTextureIndex]
+                             .Sample(g_Samplers[mat.samplerIndex], input.uv)
+                             .rgb,
+                         HasFlag(mat.flags, MATERIAL_FLAG_HAS_EMISSIVE));
 
-  float3 emissiveTex = g_Textures[mat.emissiveTextureIndex]
-                           .Sample(g_Samplers[mat.samplerIndex], input.uv)
-                           .rgb;
-  float3 emissive =
-      mat.emissiveFactor * lerp(float3(1, 1, 1), emissiveTex,
-                                HasFlag(mat.flags, MATERIAL_FLAG_HAS_EMISSIVE));
+  float3 rimLight = float3(0, 0, 0);
+  if (mat.rimIntensity > 0.0) {
+    float rim = pow(1.0 - saturate(dot(N, V)), mat.rimPower);
+    rimLight = mat.rimColor * mat.rimIntensity * rim;
+    rimLight *= lerp(1.0, shadow,
+                     HasFlag(mat.flags, MATERIAL_FLAG_RIM_SHADOW_AFFECTED));
+  }
 
   float3 finalColor = (directional + ambient + pointDiffuse) * ao +
                       pointSpecular + rimLight + emissive;

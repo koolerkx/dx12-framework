@@ -17,6 +17,7 @@ struct PSIN {
   float2 uv : TEXCOORD0;
   float4 color : COLOR;
   float3 worldPos : TEXCOORD1;
+  float4 overlayColor : TEXCOORD2;
 };
 
 float GridLine(float coord, float divisions, float lineWidth) {

@@ -68,15 +68,17 @@ float NormalEdgeSobel(float2 uv, float2 o, float centerDepth) {
 #else
 
 float NormalEdgeDotProduct(float3 centerNormal, float2 uv, float2 o) {
-  float3 nT = normalize(SampleNormalDepth(uv + float2(0, o.y)).xyz);
-  float3 nB = normalize(SampleNormalDepth(uv + float2(0, -o.y)).xyz);
-  float3 nL = normalize(SampleNormalDepth(uv + float2(-o.x, 0)).xyz);
-  float3 nR = normalize(SampleNormalDepth(uv + float2(o.x, 0)).xyz);
+  float4 sT = SampleNormalDepth(uv + float2(0, o.y));
+  float4 sB = SampleNormalDepth(uv + float2(0, -o.y));
+  float4 sL = SampleNormalDepth(uv + float2(-o.x, 0));
+  float4 sR = SampleNormalDepth(uv + float2(o.x, 0));
 
-  float minDot = min(min(dot(centerNormal, nT), dot(centerNormal, nB)),
-                     min(dot(centerNormal, nL), dot(centerNormal, nR)));
+  float dT = dot(centerNormal, (dot(sT.xyz, sT.xyz) > 0.001) ? normalize(sT.xyz) : centerNormal);
+  float dB = dot(centerNormal, (dot(sB.xyz, sB.xyz) > 0.001) ? normalize(sB.xyz) : centerNormal);
+  float dL = dot(centerNormal, (dot(sL.xyz, sL.xyz) > 0.001) ? normalize(sL.xyz) : centerNormal);
+  float dR = dot(centerNormal, (dot(sR.xyz, sR.xyz) > 0.001) ? normalize(sR.xyz) : centerNormal);
 
-  return 1.0 - saturate(minDot);
+  return 1.0 - saturate(min(min(dT, dB), min(dL, dR)));
 }
 
 #endif

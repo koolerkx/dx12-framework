@@ -54,13 +54,13 @@ float3 ReconstructViewPosition(float2 uv, float viewZ) {
 float4 main(PSIN input) : SV_TARGET {
   float4 normalDepth =
       g_Textures[g_SSAOCB.normalDepthSrvIndex].Sample(g_Samplers[SAMPLER_LINEAR_CLAMP], input.uv);
-  float3 viewNormal = normalize(normalDepth.xyz);
   float viewZ = normalDepth.w;
 
-  if (viewZ <= 0.0 || viewZ > 1000.0) {
+  if (viewZ <= 0.0 || viewZ > 1000.0 || dot(normalDepth.xyz, normalDepth.xyz) < 0.001) {
     return 1.0;
   }
 
+  float3 viewNormal = normalize(normalDepth.xyz);
   float3 viewPos = ReconstructViewPosition(input.uv, viewZ);
 
   float randomAngle = Hash(input.position.xy) * 6.28318530718;

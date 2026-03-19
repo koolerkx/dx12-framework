@@ -9,6 +9,7 @@ struct PSIN {
   float2 uv : TEXCOORD0;
   float4 color : COLOR;
   float3 worldPos : TEXCOORD1;
+  float4 overlayColor : TEXCOORD2;
 };
 
 Texture2D g_Textures[] : register(t0, space1);
@@ -72,5 +73,6 @@ float4 main(PSIN input) : SV_TARGET {
                     specular + pointSpecular + rimLight;
   }
 
+  baseColor.rgb += input.overlayColor.rgb * input.overlayColor.a;
   return baseColor;
 }

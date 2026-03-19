@@ -42,8 +42,9 @@ void InstancedMeshRenderer::OnRender(FramePacket& packet) {
     std::vector<GPUInstanceData> gpu_data(instance_count_);
     for (uint32_t i = 0; i < instance_count_; ++i) {
       gpu_data[i].world = entries_[i].world;
-      gpu_data[i].normal_matrix = entries_[i].world.Inverted().Transposed();
       gpu_data[i].color = entries_[i].color;
+      gpu_data[i].uv_offset = {0.0f, 0.0f};
+      gpu_data[i].uv_scale = {1.0f, 1.0f};
       gpu_data[i].overlay_color = entries_[i].overlay_color;
     }
     manager.Update(buffer_handle_, gpu_data.data(), instance_count_);

@@ -28,6 +28,7 @@ struct PSIN {
   float4 position : SV_POSITION;
   float2 uv : TEXCOORD;
   float4 color : COLOR;
+  float4 overlayColor : TEXCOORD1;
 };
 
 static const float SQUIRCLE_POWER = 8.0;

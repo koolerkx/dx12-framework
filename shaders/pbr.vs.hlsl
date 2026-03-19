@@ -19,18 +19,24 @@ VSOUT main(VS_IN_PBR input, uint instanceID : SV_InstanceID) {
   float3x3 normalMat;
   float4 instColor;
   float4 overlayCol;
+  float2 uvOffset;
+  float2 uvScale;
 
   if (g_ObjectCB.flags & OBJECT_FLAG_INSTANCED) {
     InstanceData inst = g_InstanceBuffer[instanceID];
     worldMat = inst.world;
-    normalMat = (float3x3)inst.normalMatrix;
+    normalMat = ComputeNormalMatrix(inst.world);
     instColor = inst.color;
     overlayCol = inst.overlayColor;
+    uvOffset = inst.uvOffset;
+    uvScale = inst.uvScale;
   } else {
     worldMat = g_ObjectCB.world;
     normalMat = (float3x3)g_ObjectCB.normalMatrix;
     instColor = float4(1, 1, 1, 1);
     overlayCol = float4(0, 0, 0, 0);
+    uvOffset = g_ObjectCB.uvOffset;
+    uvScale = g_ObjectCB.uvScale;
   }
 
   VSOUT output;
@@ -43,7 +49,7 @@ VSOUT main(VS_IN_PBR input, uint instanceID : SV_InstanceID) {
   output.worldBitangent =
       cross(output.worldNormal, output.worldTangent) * input.tangent.w;
 
-  output.uv = input.uv * g_ObjectCB.uvScale + g_ObjectCB.uvOffset;
+  output.uv = input.uv * uvScale + uvOffset;
   output.color = input.color * instColor;
   output.overlayColor = overlayCol;
   return output;

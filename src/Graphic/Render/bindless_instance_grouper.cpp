@@ -56,8 +56,9 @@ bool IsGroupableBindlessCommand(const DrawCommand& cmd) {
 GPUInstanceData BuildInstanceData(const DrawCommand& cmd) {
   GPUInstanceData data;
   data.world = cmd.world_matrix;
-  data.normal_matrix = cmd.world_matrix.Inverted().Transposed();
   data.color = cmd.color;
+  data.uv_offset = cmd.uv_offset;
+  data.uv_scale = cmd.uv_scale;
   data.overlay_color = Math::Vector4(0, 0, 0, 0);
   return data;
 }
