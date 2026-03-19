@@ -44,12 +44,20 @@ bool MeshBufferPool::Initialize(const CreateInfo& info, const MeshBufferPoolConf
   }
 
   vertex_capacity_ = config.initial_vertex_capacity;
+  sprite_vertex_capacity_ = config.sprite_vertex_capacity;
   index_capacity_ = config.initial_index_capacity;
   max_mesh_count_ = config.max_mesh_count;
 
   vertex_buffer_ = CreateDefaultBuffer(device_, static_cast<uint64_t>(vertex_capacity_) * sizeof(ModelVertex), L"MeshBufferPool_Vertices");
   if (!vertex_buffer_) {
     Logger::LogFormat(LogLevel::Error, LogCategory::Resource, Logger::Here(), "MeshBufferPool: failed to create vertex buffer");
+    return false;
+  }
+
+  sprite_vertex_buffer_ = CreateDefaultBuffer(
+    device_, static_cast<uint64_t>(sprite_vertex_capacity_) * sizeof(SpriteVertex), L"MeshBufferPool_SpriteVertices");
+  if (!sprite_vertex_buffer_) {
+    Logger::LogFormat(LogLevel::Error, LogCategory::Resource, Logger::Here(), "MeshBufferPool: failed to create sprite vertex buffer");
     return false;
   }
 
@@ -67,13 +75,15 @@ bool MeshBufferPool::Initialize(const CreateInfo& info, const MeshBufferPoolConf
   }
 
   vertex_allocator_.Initialize(vertex_capacity_);
+  sprite_vertex_allocator_.Initialize(sprite_vertex_capacity_);
   index_allocator_.Initialize(index_capacity_);
 
   Logger::LogFormat(LogLevel::Info,
     LogCategory::Resource,
     Logger::Here(),
-    "MeshBufferPool initialized: {} vertices, {} indices, {} max meshes",
+    "MeshBufferPool initialized: {} model vertices, {} sprite vertices, {} indices, {} max meshes",
     vertex_capacity_,
+    sprite_vertex_capacity_,
     index_capacity_,
     max_mesh_count_);
 
@@ -139,6 +149,60 @@ MeshAllocation MeshBufferPool::Allocate(std::span<const ModelVertex> vertices, s
   return {handle, true};
 }
 
+MeshAllocation MeshBufferPool::Allocate(std::span<const SpriteVertex> vertices, std::span<const uint32_t> indices) {
+  if (vertices.empty() || indices.empty()) return {MeshHandle::Invalid(), false};
+
+  auto vertex_count = static_cast<uint32_t>(vertices.size());
+  auto index_count = static_cast<uint32_t>(indices.size());
+
+  uint32_t vertex_offset = sprite_vertex_allocator_.Allocate(vertex_count);
+  if (vertex_offset == FreeBlockAllocator::INVALID_OFFSET) {
+    Logger::LogFormat(LogLevel::Error, LogCategory::Resource, Logger::Here(),
+      "MeshBufferPool: sprite vertex allocation failed ({} vertices requested)", vertex_count);
+    return {MeshHandle::Invalid(), false};
+  }
+
+  uint32_t index_offset = index_allocator_.Allocate(index_count);
+  if (index_offset == FreeBlockAllocator::INVALID_OFFSET) {
+    sprite_vertex_allocator_.Free(vertex_offset, vertex_count);
+    Logger::LogFormat(LogLevel::Error, LogCategory::Resource, Logger::Here(),
+      "MeshBufferPool: index allocation failed ({} indices requested)", index_count);
+    return {MeshHandle::Invalid(), false};
+  }
+
+  uint32_t slot = AllocateSlot();
+  if (slot == UINT32_MAX) {
+    sprite_vertex_allocator_.Free(vertex_offset, vertex_count);
+    index_allocator_.Free(index_offset, index_count);
+    Logger::LogFormat(LogLevel::Error, LogCategory::Resource, Logger::Here(),
+      "MeshBufferPool: no available descriptor slots (max {})", max_mesh_count_);
+    return {MeshHandle::Invalid(), false};
+  }
+
+  UploadRegion(sprite_vertex_buffer_.Get(),
+    static_cast<uint64_t>(vertex_offset) * sizeof(SpriteVertex),
+    vertices.data(),
+    static_cast<uint64_t>(vertex_count) * sizeof(SpriteVertex));
+
+  UploadRegion(index_buffer_.Get(),
+    static_cast<uint64_t>(index_offset) * sizeof(uint32_t),
+    indices.data(),
+    static_cast<uint64_t>(index_count) * sizeof(uint32_t));
+
+  auto& slot_data = slots_[slot];
+  slot_data.descriptor = {vertex_offset, vertex_count, index_offset, index_count};
+  slot_data.layout = VertexLayout::Sprite;
+  slot_data.occupied = true;
+
+  UpdateDescriptorOnGpu(slot);
+
+  MeshHandle handle;
+  handle.index = slot;
+  handle.generation = slot_data.generation;
+
+  return {handle, true};
+}
+
 void MeshBufferPool::Free(MeshHandle handle) {
   if (!IsValid(handle)) return;
 
@@ -153,6 +217,7 @@ void MeshBufferPool::Free(MeshHandle handle) {
     desc.index_offset,
     desc.index_count,
     get_current_fence_value_(),
+    slot_data.layout,
   });
 }
 
@@ -160,7 +225,8 @@ void MeshBufferPool::ProcessDeferredFrees(uint64_t completed_fence_value) {
   auto it = std::remove_if(pending_frees_.begin(), pending_frees_.end(), [&](const PendingFree& pf) {
     if (pf.fence_value <= completed_fence_value) {
       if (pf.slot < slots_.size() && slots_[pf.slot].generation == pf.generation) {
-        vertex_allocator_.Free(pf.vertex_offset, pf.vertex_count);
+        auto& alloc = (pf.layout == VertexLayout::Sprite) ? sprite_vertex_allocator_ : vertex_allocator_;
+        alloc.Free(pf.vertex_offset, pf.vertex_count);
         index_allocator_.Free(pf.index_offset, pf.index_count);
         ReleaseSlot(pf.slot);
       }
@@ -183,6 +249,7 @@ void MeshBufferPool::Shutdown() {
   free_slots_.clear();
 
   vertex_buffer_.Reset();
+  sprite_vertex_buffer_.Reset();
   index_buffer_.Reset();
   descriptor_buffer_.Reset();
 
@@ -195,6 +262,16 @@ D3D12_VERTEX_BUFFER_VIEW MeshBufferPool::GetVertexBufferView() const {
     view.BufferLocation = vertex_buffer_->GetGPUVirtualAddress();
     view.SizeInBytes = vertex_capacity_ * sizeof(ModelVertex);
     view.StrideInBytes = sizeof(ModelVertex);
+  }
+  return view;
+}
+
+D3D12_VERTEX_BUFFER_VIEW MeshBufferPool::GetSpriteVertexBufferView() const {
+  D3D12_VERTEX_BUFFER_VIEW view = {};
+  if (sprite_vertex_buffer_) {
+    view.BufferLocation = sprite_vertex_buffer_->GetGPUVirtualAddress();
+    view.SizeInBytes = sprite_vertex_capacity_ * sizeof(SpriteVertex);
+    view.StrideInBytes = sizeof(SpriteVertex);
   }
   return view;
 }
@@ -216,6 +293,11 @@ D3D12_GPU_VIRTUAL_ADDRESS MeshBufferPool::GetDescriptorBufferAddress() const {
 const MeshDescriptor* MeshBufferPool::GetDescriptor(MeshHandle handle) const {
   if (!IsValid(handle)) return nullptr;
   return &slots_[handle.index].descriptor;
+}
+
+VertexLayout MeshBufferPool::GetVertexLayout(MeshHandle handle) const {
+  if (!IsValid(handle)) return VertexLayout::Model;
+  return slots_[handle.index].layout;
 }
 
 MeshBufferPool::Stats MeshBufferPool::GetStats() const {

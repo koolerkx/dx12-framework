@@ -14,6 +14,9 @@
 #include "Resource/Mesh/mesh_descriptor.h"
 
 using Graphics::Vertex::ModelVertex;
+using Graphics::Vertex::SpriteVertex;
+
+enum class VertexLayout : uint8_t { Model = 0, Sprite = 1 };
 
 struct MeshAllocation {
   MeshHandle handle;
@@ -23,6 +26,7 @@ struct MeshAllocation {
 struct MeshBufferPoolConfig {
   uint32_t initial_vertex_capacity = 1'000'000;
   uint32_t initial_index_capacity = 3'000'000;
+  uint32_t sprite_vertex_capacity = 100'000;
   uint32_t max_mesh_count = 4096;
 };
 
@@ -40,16 +44,19 @@ class MeshBufferPool {
   bool Initialize(const CreateInfo& info, const MeshBufferPoolConfig& config = {});
 
   MeshAllocation Allocate(std::span<const ModelVertex> vertices, std::span<const uint32_t> indices);
+  MeshAllocation Allocate(std::span<const SpriteVertex> vertices, std::span<const uint32_t> indices);
   void Free(MeshHandle handle);
 
   void ProcessDeferredFrees(uint64_t completed_fence_value);
   void Shutdown();
 
   D3D12_VERTEX_BUFFER_VIEW GetVertexBufferView() const;
+  D3D12_VERTEX_BUFFER_VIEW GetSpriteVertexBufferView() const;
   D3D12_INDEX_BUFFER_VIEW GetIndexBufferView() const;
   D3D12_GPU_VIRTUAL_ADDRESS GetDescriptorBufferAddress() const;
 
   const MeshDescriptor* GetDescriptor(MeshHandle handle) const;
+  VertexLayout GetVertexLayout(MeshHandle handle) const;
   bool IsValid(MeshHandle handle) const;
 
   struct Stats {
@@ -67,6 +74,7 @@ class MeshBufferPool {
   struct SlotData {
     MeshDescriptor descriptor;
     uint32_t generation = 0;
+    VertexLayout layout = VertexLayout::Model;
     bool occupied = false;
   };
 
@@ -78,6 +86,7 @@ class MeshBufferPool {
     uint32_t index_offset;
     uint32_t index_count;
     uint64_t fence_value;
+    VertexLayout layout = VertexLayout::Model;
   };
 
   void UploadRegion(ID3D12Resource* dest, uint64_t dest_offset, const void* data, uint64_t size);
@@ -90,13 +99,16 @@ class MeshBufferPool {
   GetFenceValueFn get_current_fence_value_;
 
   ComPtr<ID3D12Resource> vertex_buffer_;
+  ComPtr<ID3D12Resource> sprite_vertex_buffer_;
   ComPtr<ID3D12Resource> index_buffer_;
   ComPtr<ID3D12Resource> descriptor_buffer_;
 
   FreeBlockAllocator vertex_allocator_;
+  FreeBlockAllocator sprite_vertex_allocator_;
   FreeBlockAllocator index_allocator_;
 
   uint32_t vertex_capacity_ = 0;
+  uint32_t sprite_vertex_capacity_ = 0;
   uint32_t index_capacity_ = 0;
   uint32_t max_mesh_count_ = 0;
 
