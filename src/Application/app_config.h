@@ -2,12 +2,13 @@
 #include <cstdint>
 
 #include "Game/scene_defaults.h"
-#include "Graphic/Rendering/hdr_config.h"
 #include "Graphic/Rendering/fog_config.h"
+#include "Graphic/Rendering/hdr_config.h"
 #include "Graphic/Rendering/outline_config.h"
 #include "Graphic/Rendering/smaa_config.h"
 #include "Graphic/Rendering/ssao_config.h"
 #include "Graphic/Rendering/vignette_config.h"
+
 
 struct AppConfig {
   uint32_t window_width = 1920;
@@ -21,4 +22,5 @@ struct AppConfig {
   VignetteConfig vignette;
   SceneDefaults scene_defaults;
   bool debug_draw_enabled = false;
+  float editor_bg_color[4] = {0.15f, 0.15f, 0.15f, 1.0f};
 };

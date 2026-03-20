@@ -127,5 +127,11 @@ AppConfig ConfigLoader::LoadFromFile(const std::filesystem::path& path) {
     LoadSceneDefaults(root.GetMap("SceneDefaults"), config.scene_defaults);
   }
 
+  if (root.HasKey("Editor")) {
+    auto editor = root.GetMap("Editor");
+    editor.ReadVec4(
+      "BackgroundColor", config.editor_bg_color[0], config.editor_bg_color[1], config.editor_bg_color[2], config.editor_bg_color[3]);
+  }
+
   return config;
 }

@@ -46,8 +46,12 @@ class InputSystem {
     gamepad_handler_.Update(game_input_.Get());
   }
 
-  void SetEnabled(bool enabled) { enabled_ = enabled; }
-  bool IsEnabled() const { return enabled_; }
+  void SetEnabled(bool enabled) {
+    enabled_ = enabled;
+  }
+  bool IsEnabled() const {
+    return enabled_;
+  }
 
   bool GetKey(Keyboard::KeyCode key) const {
     return keyboard_handler_.GetKey(key);
@@ -99,7 +103,20 @@ class InputSystem {
   }
 
   std::pair<float, float> GetMousePosition() const {
-    return mouse_handler_.GetPosition();
+    auto [x, y] = mouse_handler_.GetPosition();
+    if (has_viewport_transform_) {
+      x = (x - viewport_offset_x_) * viewport_scale_x_;
+      y = (y - viewport_offset_y_) * viewport_scale_y_;
+    }
+    return {x, y};
+  }
+
+  void SetViewportTransform(float offset_x, float offset_y, float scale_x, float scale_y) {
+    viewport_offset_x_ = offset_x;
+    viewport_offset_y_ = offset_y;
+    viewport_scale_x_ = scale_x;
+    viewport_scale_y_ = scale_y;
+    has_viewport_transform_ = true;
   }
 
   std::pair<int64_t, int64_t> GetMouseDelta() const {
@@ -179,4 +196,10 @@ class InputSystem {
   KeyboardHandler keyboard_handler_;
   MouseHandler mouse_handler_;
   GamepadHandler gamepad_handler_;
+
+  bool has_viewport_transform_ = false;
+  float viewport_offset_x_ = 0;
+  float viewport_offset_y_ = 0;
+  float viewport_scale_x_ = 1;
+  float viewport_scale_y_ = 1;
 };

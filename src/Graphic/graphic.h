@@ -149,6 +149,13 @@ class Graphic {
     return frame_buffer_height_;
   }
 
+  uint32_t GetSceneWidth() const {
+    return scene_width_;
+  }
+  uint32_t GetSceneHeight() const {
+    return scene_height_;
+  }
+
   gfx::DeviceContext* GetDeviceContext() const {
     return device_context_.get();
   }
@@ -177,6 +184,7 @@ class Graphic {
     RenderGraphHandle normal_preview_rt = RenderGraphHandle::Invalid;
     RenderGraphHandle linear_depth_preview_rt = RenderGraphHandle::Invalid;
     RenderGraphHandle ssao_rt = RenderGraphHandle::Invalid;
+    RenderGraphHandle viewport_rt = RenderGraphHandle::Invalid;
     RenderGraphHandle shadow_maps[ShadowCascadeConfig::MAX_CASCADES];
     uint32_t shadow_map_count = 0;
   };
@@ -249,6 +257,7 @@ class Graphic {
   RenderConfig render_config_;
   RenderGraphHandle ssao_handle_ = RenderGraphHandle::Invalid;
   RenderGraphHandle ui_blur_rt_ = RenderGraphHandle::Invalid;
+  RenderGraphHandle viewport_rt_ = RenderGraphHandle::Invalid;
   bool pending_pipeline_rebuild_ = false;
 
   ShadowFrameData shadow_frame_data_;
@@ -257,6 +266,8 @@ class Graphic {
 
   UINT frame_buffer_width_ = 0;
   UINT frame_buffer_height_ = 0;
+  uint32_t scene_width_ = 0;
+  uint32_t scene_height_ = 0;
 
   PerFrameConstantBuffer<FrameCB> frame_cb_storage_;
   std::vector<std::unique_ptr<DynamicUploadBuffer>> object_cb_allocators_;

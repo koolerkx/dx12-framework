@@ -158,6 +158,17 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
 
 void Graphic::BuildRenderPipeline() {
   auto backbuffer = render_graph_->ImportBackbuffer("backbuffer");
+
+  viewport_rt_ = render_graph_->CreateRenderTexture({
+    .name = "viewport_rt",
+    .format = DXGI_FORMAT_R8G8B8A8_UNORM,
+    .width = frame_buffer_width_,
+    .height = frame_buffer_height_,
+    .device = device_.Get(),
+  });
+  scene_width_ = frame_buffer_width_;
+  scene_height_ = frame_buffer_height_;
+
   PipelineContext ctx{device_.Get(), &render_services_->GetShaderManager(), frame_buffer_width_, frame_buffer_height_};
 
   ShadowPassGroup shadow_group;
@@ -308,7 +319,7 @@ void Graphic::BuildRenderPipeline() {
   ui_blur_rt_ = ui_blur.GetBlurredOutput();
 
   PassSetup blit_setup;
-  blit_setup.resource_writes = {backbuffer};
+  blit_setup.resource_writes = {viewport_rt_};
   blit_setup.resource_reads = {blit_source};
 
   render_graph_->AddPass(std::make_unique<BlitPass>(BlitPassProps{
@@ -328,7 +339,7 @@ void Graphic::BuildRenderPipeline() {
   }
 
   PassSetup depth_view_setup;
-  depth_view_setup.resource_writes = {backbuffer};
+  depth_view_setup.resource_writes = {viewport_rt_};
   depth_view_setup.resource_reads = {scene_depth};
 
   render_graph_->AddPass(std::make_unique<DepthViewPass>(DepthViewPassProps{
@@ -340,7 +351,7 @@ void Graphic::BuildRenderPipeline() {
   }));
 
   PassSetup backbuffer_setup;
-  backbuffer_setup.resource_writes = {backbuffer};
+  backbuffer_setup.resource_writes = {viewport_rt_};
   if (ui_blur_rt_ != RenderGraphHandle::Invalid) {
     backbuffer_setup.resource_reads = {ui_blur_rt_};
   }
@@ -354,6 +365,18 @@ void Graphic::BuildRenderPipeline() {
     .camera = ui_camera_from_packet,
   }));
 
+  {
+    PassSetup present_blit;
+    present_blit.resource_writes = {backbuffer};
+    present_blit.resource_reads = {viewport_rt_};
+    render_graph_->AddPass(std::make_unique<BlitPass>(BlitPassProps{
+      .device = device_.Get(),
+      .shader_manager = &render_services_->GetShaderManager(),
+      .pass_setup = present_blit,
+      .source_handle = viewport_rt_,
+    }));
+  }
+
   preview_handles_.scene_rt = scene_rt;
   preview_handles_.tonemap_rt = postfx.GetLdrOutput();
   preview_handles_.normal_depth_rt = prepass.GetNormalDepthRT();
@@ -361,6 +384,7 @@ void Graphic::BuildRenderPipeline() {
   preview_handles_.depth_preview_rt = preview_output.depth_preview_rt;
   preview_handles_.normal_preview_rt = preview_output.normal_preview_rt;
   preview_handles_.linear_depth_preview_rt = preview_output.linear_depth_preview_rt;
+  preview_handles_.viewport_rt = viewport_rt_;
   preview_handles_.shadow_map_count = active_cascade_count_;
   for (uint32_t i = 0; i < active_cascade_count_; ++i) {
     preview_handles_.shadow_maps[i] = shadow_depth_handles_[i];
@@ -385,6 +409,8 @@ bool Graphic::ResizeBuffers(UINT width, UINT height) {
 
   render_graph_->Resize(device_.Get(), width, height);
 
+  scene_width_ = width;
+  scene_height_ = height;
   frame_buffer_width_ = width;
   frame_buffer_height_ = height;
 
@@ -406,6 +432,9 @@ void Graphic::SetOverlayRenderer(OverlayRenderFunc renderer) {
 }
 
 void Graphic::MarkActivePreviewResources() {
+  if (viewport_rt_ != RenderGraphHandle::Invalid) {
+    render_graph_->MarkExternallyReferenced(viewport_rt_);
+  }
   if (preview_pipeline_active_) {
     render_graph_->MarkExternallyReferenced(preview_handles_.scene_rt);
     render_graph_->MarkExternallyReferenced(preview_handles_.depth_preview_rt);
@@ -529,15 +558,23 @@ RenderFrameContext Graphic::BeginFrame() {
 }
 
 void Graphic::EndFrame(const RenderFrameContext& frame) {
+  auto* cmd = frame.command_list;
+
   if (overlay_renderer_) {
     auto& swapchain = presentation_context_->GetSwapChainManager();
     auto rtv = swapchain.GetCurrentRTV();
-    frame.command_list->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
-    descriptor_heap_manager_.SetDescriptorHeaps(frame.command_list);
-    overlay_renderer_(frame.command_list);
+    cmd->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
+
+    D3D12_VIEWPORT vp = {0, 0, static_cast<float>(frame_buffer_width_), static_cast<float>(frame_buffer_height_), 0, 1};
+    D3D12_RECT scissor = {0, 0, static_cast<LONG>(frame_buffer_width_), static_cast<LONG>(frame_buffer_height_)};
+    cmd->RSSetViewports(1, &vp);
+    cmd->RSSetScissorRects(1, &scissor);
+
+    descriptor_heap_manager_.SetDescriptorHeaps(cmd);
+    overlay_renderer_(cmd);
   }
 
-  render_graph_->FinalizeFrame(frame.command_list);
+  render_graph_->FinalizeFrame(cmd);
   command_context_->Execute();
 
   uint64_t fence_value = frame_synchronizer_->SignalFrame(command_queue_.Get(), frame.frame_index);

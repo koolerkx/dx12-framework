@@ -10,6 +10,7 @@
 #ifdef ENABLE_EDITOR
 #include "Editor/editor_layer.h"
 #endif
+#include "Application/config_loader.h"
 #include "Core/utils.h"
 #include "Framework/Event/event_bus.hpp"
 #include "Framework/Event/input_event_generator.h"
@@ -17,7 +18,6 @@
 #include "Framework/Input/input.h"
 #include "Framework/Logging/logger.h"
 #include "Framework/Logging/sinks.h"
-#include "Application/config_loader.h"
 #include "Game/game.h"
 #include "Game/game_context.h"
 #include "Graphic/graphic.h"
@@ -44,13 +44,13 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
   Graphic graphic;
 
   Graphic::GraphicInitProps graphic_props{
-      .enable_vsync = config.vsync,
-      .bloom = config.bloom,
-      .ssao = config.ssao,
-      .smaa = config.smaa,
-      .fog = config.fog,
-      .outline = config.outline,
-      .vignette = config.vignette,
+    .enable_vsync = config.vsync,
+    .bloom = config.bloom,
+    .ssao = config.ssao,
+    .smaa = config.smaa,
+    .fog = config.fog,
+    .outline = config.outline,
+    .vignette = config.vignette,
   };
   if (!graphic.Initialize(app.GetHwnd(), config.window_width, config.window_height, graphic_props)) {
     throw std::runtime_error("Failed to initialize graphics system");
@@ -62,10 +62,9 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
   EditorLayer editor;
   editor.Initialize(app.GetHwnd(), graphic);
   app.SetWndProcHook([&editor](HWND h, UINT m, WPARAM w, LPARAM l) { return editor.WndProcHandler(h, m, w, l); });
-  app.SetFullscreenCallback([](bool is_fullscreen) {
-    ImGui::GetIO().IniFilename = is_fullscreen ? "imgui_fullscreen.ini" : "imgui.ini";
-  });
+  app.SetFullscreenCallback([](bool is_fullscreen) { ImGui::GetIO().IniFilename = is_fullscreen ? "imgui_fullscreen.ini" : "imgui.ini"; });
   graphic.SetOverlayRenderer([&editor](ID3D12GraphicsCommandList* cmd) { editor.Render(cmd); });
+  editor.SetEditorBackgroundColor(config.editor_bg_color);
 #endif
 
   InputSystem inputSystem;
@@ -92,6 +91,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
   });
 
 #ifdef ENABLE_EDITOR
+  editor.SetInputSystem(&inputSystem);
   editor.SubscribeEvents(*event_bus);
   editor.SetGame(&game);
   editor.SetScene(game.GetCurrentScene());

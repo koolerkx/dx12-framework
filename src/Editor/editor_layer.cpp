@@ -12,6 +12,7 @@
 #include "Framework/Core/utils.h"
 #include "Framework/Event/event_bus.hpp"
 #include "Framework/Event/input_events.h"
+#include "Framework/Input/input.h"
 #include "Framework/Input/keyboard.h"
 #include "Game/Asset/asset_manager.h"
 #include "Game/Component/Renderer/mesh_renderer.h"
@@ -37,6 +38,7 @@
 #include "Graphic/Frame/frame_packet.h"
 #include "Graphic/Pipeline/shader_descriptors.h"
 #include "Graphic/Pipeline/shader_registry.h"
+#include "Graphic/Presentation/swapchain_manager.h"
 #include "Graphic/Render/render_graph.h"
 #include "Graphic/Resource/Mesh/mesh_buffer_pool.h"
 #include "Graphic/graphic.h"
@@ -133,8 +135,10 @@ void EditorLayer::Render(ID3D12GraphicsCommandList* cmd) {
     bool prev_pipeline = show_render_pipeline_;
     bool prev_shadow = show_shadow_map_;
 
+    ClearBackbuffer(cmd);
     DrawDockSpace();
     DrawMainMenu();
+    if (show_viewport_) DrawViewport(cmd);
     if (show_performance_) DrawFpsCounter();
     if (show_hierarchy_) DrawHierarchy();
     if (show_inspector_) DrawInspector();
@@ -148,6 +152,8 @@ void EditorLayer::Render(ID3D12GraphicsCommandList* cmd) {
 
     if (show_render_pipeline_ != prev_pipeline) graphic_->SetPreviewPipelineActive(show_render_pipeline_);
     if (show_shadow_map_ != prev_shadow) graphic_->SetPreviewShadowActive(show_shadow_map_);
+  } else if (input_system_) {
+    input_system_->SetViewportTransform(0, 0, 1.0f, 1.0f);
   }
 
   ImGui::Render();
@@ -208,7 +214,7 @@ bool EditorLayer::WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 }
 
 void EditorLayer::DrawDockSpace() {
-  ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
+  ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
 }
 
 void EditorLayer::DrawMainMenu() {
@@ -223,6 +229,7 @@ void EditorLayer::DrawMainMenu() {
       ImGui::MenuItem("Editor Settings", nullptr, &show_editor_settings_);
       ImGui::MenuItem("Post FX", nullptr, &show_postfx_);
       ImGui::MenuItem("Render Pipeline", nullptr, &show_render_pipeline_);
+      ImGui::MenuItem("Viewport", nullptr, &show_viewport_);
       ImGui::EndMenu();
     }
     ImGui::EndMainMenuBar();
@@ -505,6 +512,54 @@ void EditorLayer::DrawLoadSceneModal() {
     }
     ImGui::EndPopup();
   }
+}
+
+void EditorLayer::ClearBackbuffer(ID3D12GraphicsCommandList* cmd) {
+  auto& swapchain = graphic_->GetPresentationContext()->GetSwapChainManager();
+  auto rtv = swapchain.GetCurrentRTV();
+  cmd->ClearRenderTargetView(rtv, editor_bg_color_, 0, nullptr);
+}
+
+void EditorLayer::DrawViewport(ID3D12GraphicsCommandList* cmd) {
+  ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+  ImGui::Begin("Viewport", &show_viewport_);
+  ImGui::PopStyleVar();
+
+  auto* graph = graphic_->GetRenderGraph();
+  auto handle = graphic_->GetPreviewHandles().viewport_rt;
+
+  if (handle != RenderGraphHandle::Invalid) {
+    graph->TransitionForRead(cmd, handle);
+    auto gpu = graph->GetSrvGpuHandle(handle);
+    ImVec2 avail = ImGui::GetContentRegionAvail();
+
+    auto [rt_w, rt_h] = graph->GetTextureSize(handle);
+    float rt_aspect = static_cast<float>(rt_w) / static_cast<float>(rt_h);
+    float panel_aspect = avail.x / avail.y;
+    float img_w, img_h;
+    if (panel_aspect > rt_aspect) {
+      img_h = avail.y;
+      img_w = avail.y * rt_aspect;
+    } else {
+      img_w = avail.x;
+      img_h = avail.x / rt_aspect;
+    }
+
+    float pad_x = (avail.x - img_w) * 0.5f;
+    float pad_y = (avail.y - img_h) * 0.5f;
+    ImVec2 cursor = ImGui::GetCursorPos();
+    ImGui::SetCursorPos(ImVec2(cursor.x + pad_x, cursor.y + pad_y));
+    ImGui::Image(static_cast<ImTextureID>(gpu.ptr), ImVec2(img_w, img_h));
+
+    ImVec2 img_min = ImGui::GetItemRectMin();
+    ImVec2 img_size = ImGui::GetItemRectSize();
+    if (input_system_ && img_size.x > 0 && img_size.y > 0) {
+      input_system_->SetViewportTransform(
+        img_min.x, img_min.y, static_cast<float>(rt_w) / img_size.x, static_cast<float>(rt_h) / img_size.y);
+    }
+  }
+
+  ImGui::End();
 }
 
 void EditorLayer::DrawFpsCounter() {

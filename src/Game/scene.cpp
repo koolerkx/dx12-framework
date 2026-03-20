@@ -159,8 +159,7 @@ void IScene::Render(FramePacket& packet) {
     packet.ui_camera = ui_camera->GetCameraData();
   } else if (context_ && context_->GetGraphic()) {
     auto* gfx = context_->GetGraphic();
-    packet.ui_camera =
-      MakeScreenSpaceCamera(static_cast<float>(gfx->GetFrameBufferWidth()), static_cast<float>(gfx->GetFrameBufferHeight()));
+    packet.ui_camera = MakeScreenSpaceCamera(static_cast<float>(gfx->GetSceneWidth()), static_cast<float>(gfx->GetSceneHeight()));
   }
 
   packet.background = background_setting_.ToConfig();

@@ -272,21 +272,15 @@ void HudManagerComponent::SubscribeEvents() {
     ShowCountdownMessage(buf);
   });
 
-  event_scope_.Subscribe<InsufficientGoldEvent>(bus, [this](const InsufficientGoldEvent&) {
-    ShowAlert(L"ゴールドが足りません！", 3.0f);
-  });
+  event_scope_.Subscribe<InsufficientGoldEvent>(bus, [this](const InsufficientGoldEvent&) { ShowAlert(L"ゴールドが足りません！", 3.0f); });
 
-  event_scope_.Subscribe<EnemyReachedBaseEvent>(bus, [this](const EnemyReachedBaseEvent&) {
-    ShowAlert(L"拠点が攻撃されています！", 3.0f);
-  });
+  event_scope_.Subscribe<EnemyReachedBaseEvent>(
+    bus, [this](const EnemyReachedBaseEvent&) { ShowAlert(L"拠点が攻撃されています！", 3.0f); });
 
-  event_scope_.Subscribe<OverlapEnemyEvent>(bus, [this](const OverlapEnemyEvent&) {
-    ShowAlert(L"敵と重なっています！", 3.0f);
-  });
+  event_scope_.Subscribe<OverlapEnemyEvent>(bus, [this](const OverlapEnemyEvent&) { ShowAlert(L"敵と重なっています！", 3.0f); });
 
-  event_scope_.Subscribe<OverlapEnemySpawnEvent>(bus, [this](const OverlapEnemySpawnEvent&) {
-    ShowAlert(L"敵の出現地点と重なっています！", 3.0f);
-  });
+  event_scope_.Subscribe<OverlapEnemySpawnEvent>(
+    bus, [this](const OverlapEnemySpawnEvent&) { ShowAlert(L"敵の出現地点と重なっています！", 3.0f); });
 
   event_scope_.Subscribe<TowerPlacementExitedEvent>(bus, [this](const TowerPlacementExitedEvent&) {
     icon_state_ = IconState::Normal;
@@ -330,8 +324,8 @@ void HudManagerComponent::OnUpdate(float dt) {
   UpdateLayout();
 
   auto* graphic = GetOwner()->GetContext()->GetGraphic();
-  float screen_w = static_cast<float>(graphic->GetFrameBufferWidth());
-  float screen_h = static_cast<float>(graphic->GetFrameBufferHeight());
+  float screen_w = static_cast<float>(graphic->GetSceneWidth());
+  float screen_h = static_cast<float>(graphic->GetSceneHeight());
   gameover_overlay_.UpdateLayout(screen_w, screen_h);
 
   if (gameover_active_) {
@@ -369,8 +363,8 @@ void HudManagerComponent::UpdateFadePanel(FadePanel& fade, float dt) {
 
 void HudManagerComponent::UpdateLayout() {
   auto* graphic = GetOwner()->GetContext()->GetGraphic();
-  float screen_w = static_cast<float>(graphic->GetFrameBufferWidth());
-  float screen_h = static_cast<float>(graphic->GetFrameBufferHeight());
+  float screen_w = static_cast<float>(graphic->GetSceneWidth());
+  float screen_h = static_cast<float>(graphic->GetSceneHeight());
   float s = (screen_h / DESIGN_HEIGHT) * UI_SCALE;
 
   auto set_pos = [](GameObject* go, float x, float y) { go->GetTransform()->SetPosition({x, y, 0.0f}); };
@@ -410,7 +404,8 @@ void HudManagerComponent::UpdateLayout() {
 
   std::vector<HintRow*> visible_hints;
   visible_hints.reserve(common_hint_rows_.size() + 1);
-  for (auto& row : common_hint_rows_) visible_hints.push_back(&row);
+  for (auto& row : common_hint_rows_)
+    visible_hints.push_back(&row);
   HintRow* active_state_row = &normal_hint_row_;
   if (hint_mode_ == HintMode::PlacingTower) active_state_row = &placing_tower_hint_row_;
   if (hint_mode_ == HintMode::ConfirmingTower) active_state_row = &confirming_tower_hint_row_;
@@ -424,9 +419,7 @@ void HudManagerComponent::UpdateLayout() {
     float row_text_px = row->icons.empty() ? hint_tip_px : hint_text_px;
     row->text->SetPixelSize(row_text_px);
     auto tsz = row->text->GetSize();
-    hint_row_h[i] = row->icons.empty()
-      ? (std::max)(TEXT_LINE_HEIGHT * s, tsz.y)
-      : TEXT_LINE_HEIGHT * s;
+    hint_row_h[i] = row->icons.empty() ? (std::max)(TEXT_LINE_HEIGHT * s, tsz.y) : TEXT_LINE_HEIGHT * s;
   }
 
   float hint_panel_w = HINT_PANEL_WIDTH * s;
@@ -434,8 +427,7 @@ void HudManagerComponent::UpdateLayout() {
   for (size_t i = 0; i < visible_hints.size(); ++i) {
     hint_panel_h += hint_row_h[i];
     if (i < visible_hints.size() - 1) {
-      hint_panel_h += (i == common_hint_rows_.size() - 1)
-        ? HINT_SECTION_GAP * s : HINT_ROW_GAP * s;
+      hint_panel_h += (i == common_hint_rows_.size() - 1) ? HINT_SECTION_GAP * s : HINT_ROW_GAP * s;
     }
   }
 
@@ -449,8 +441,7 @@ void HudManagerComponent::UpdateLayout() {
     set_pos(row->root, 0.0f, hint_cy);
 
     float row_text_px = row->icons.empty() ? hint_tip_px : hint_text_px;
-    float ty = row->icons.empty() ? 0.0f
-      : (hint_row_h[i] - row_text_px) * 0.5f;
+    float ty = row->icons.empty() ? 0.0f : (hint_row_h[i] - row_text_px) * 0.5f;
     set_pos(row->text->GetOwner(), hint_pad, ty);
 
     if (!row->icons.empty()) {
@@ -466,8 +457,7 @@ void HudManagerComponent::UpdateLayout() {
 
     hint_cy += hint_row_h[i];
     if (i < visible_hints.size() - 1) {
-      hint_cy += (i == common_hint_rows_.size() - 1)
-        ? HINT_SECTION_GAP * s : HINT_ROW_GAP * s;
+      hint_cy += (i == common_hint_rows_.size() - 1) ? HINT_SECTION_GAP * s : HINT_ROW_GAP * s;
     }
   }
 
@@ -624,41 +614,40 @@ void HudManagerComponent::ShowCountdownMessage(const std::wstring& text) {
 }
 
 void HudManagerComponent::BuildHintPanel() {
-  common_hint_rows_.push_back(CreateHintRow("HUD_Hint_Move", L"視点移動", {
-    "Content/input/keyboard/keyboard_w_outline.png",
-    "Content/input/keyboard/keyboard_a_outline.png",
-    "Content/input/keyboard/keyboard_s_outline.png",
-    "Content/input/keyboard/keyboard_d_outline.png",
-  }));
-  common_hint_rows_.push_back(CreateHintRow("HUD_Hint_Elevation", L"視点昇降", {
-    "Content/input/keyboard/keyboard_q_outline.png",
-    "Content/input/keyboard/keyboard_e_outline.png",
-  }));
-  common_hint_rows_.push_back(CreateHintRow("HUD_Hint_Rotate", L"視点回転", {
-    "Content/input/keyboard/keyboard_arrow_left_outline.png",
-    "Content/input/keyboard/keyboard_arrow_up_outline.png",
-    "Content/input/keyboard/keyboard_arrow_down_outline.png",
-    "Content/input/keyboard/keyboard_arrow_right_outline.png",
-  }));
+  common_hint_rows_.push_back(CreateHintRow("HUD_Hint_Move",
+    L"視点移動",
+    {
+      "Content/input/keyboard/keyboard_w_outline.png",
+      "Content/input/keyboard/keyboard_a_outline.png",
+      "Content/input/keyboard/keyboard_s_outline.png",
+      "Content/input/keyboard/keyboard_d_outline.png",
+    }));
+  common_hint_rows_.push_back(CreateHintRow("HUD_Hint_Elevation",
+    L"視点昇降",
+    {
+      "Content/input/keyboard/keyboard_q_outline.png",
+      "Content/input/keyboard/keyboard_e_outline.png",
+    }));
+  common_hint_rows_.push_back(CreateHintRow("HUD_Hint_Rotate",
+    L"視点回転",
+    {
+      "Content/input/keyboard/keyboard_arrow_left_outline.png",
+      "Content/input/keyboard/keyboard_arrow_up_outline.png",
+      "Content/input/keyboard/keyboard_arrow_down_outline.png",
+      "Content/input/keyboard/keyboard_arrow_right_outline.png",
+    }));
 
-  normal_hint_row_ = CreateHintRow(
-    "HUD_Hint_Normal",
-    L"左下のタワーを選択して、\n配置しましょう", {});
+  normal_hint_row_ = CreateHintRow("HUD_Hint_Normal", L"左下のタワーを選択して、\n配置しましょう", {});
 
-  placing_tower_hint_row_ = CreateHintRow(
-    "HUD_Hint_Placing",
-    L"マップをクリックし、配置しましょう", {});
+  placing_tower_hint_row_ = CreateHintRow("HUD_Hint_Placing", L"マップをクリックし、配置しましょう", {});
   placing_tower_hint_row_.root->SetActive(false);
 
-  confirming_tower_hint_row_ = CreateHintRow(
-    "HUD_Hint_Confirming",
-    L"右下のボタンで\n確認しましょう", {});
+  confirming_tower_hint_row_ = CreateHintRow("HUD_Hint_Confirming", L"右下のボタンで\n確認しましょう", {});
   confirming_tower_hint_row_.root->SetActive(false);
 }
 
 HudManagerComponent::HintRow HudManagerComponent::CreateHintRow(
-    const char* name, const wchar_t* label,
-    const std::vector<std::string>& icon_paths) {
+  const char* name, const wchar_t* label, const std::vector<std::string>& icon_paths) {
   auto* scene = static_cast<IScene*>(GetOwner()->GetScene());
 
   HintRow row;
@@ -674,8 +663,7 @@ HudManagerComponent::HintRow HudManagerComponent::CreateHintRow(
   });
 
   for (size_t i = 0; i < icon_paths.size(); ++i) {
-    auto* icon_go = scene->CreateGameObject(
-      std::string(name) + "_Icon_" + std::to_string(i));
+    auto* icon_go = scene->CreateGameObject(std::string(name) + "_Icon_" + std::to_string(i));
     icon_go->SetParent(row.root);
     auto* sprite = icon_go->AddComponent<UISpriteRenderer>(UISpriteRenderer::Props{
       .texture_path = icon_paths[i],
@@ -707,7 +695,7 @@ bool HudManagerComponent::IsMouseOverUI(float mx, float my) const {
 
 int HudManagerComponent::HitTestIconSlot(float mx, float my) const {
   auto* graphic = GetOwner()->GetContext()->GetGraphic();
-  float screen_h = static_cast<float>(graphic->GetFrameBufferHeight());
+  float screen_h = static_cast<float>(graphic->GetSceneHeight());
   float s = (screen_h / DESIGN_HEIGHT) * UI_SCALE;
 
   for (size_t i = 0; i < icon_slots_.size(); ++i) {
@@ -732,8 +720,7 @@ void HudManagerComponent::UpdateIconInteraction() {
     } else {
       icon_state_ = IconState::Active;
     }
-    SetHintMode(icon_state_ == IconState::Active
-      ? HintMode::PlacingTower : HintMode::Normal);
+    SetHintMode(icon_state_ == IconState::Active ? HintMode::PlacingTower : HintMode::Normal);
     GetContext()->GetEventBus()->Emit(ToggleTowerPlacementEvent{});
   } else if (icon_state_ != IconState::Active) {
     icon_state_ = (hovered_slot == 0) ? IconState::Hovered : IconState::Normal;

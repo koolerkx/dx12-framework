@@ -44,6 +44,9 @@ Outline:
   Thickness: 1.0
   Color: [0.0, 0.0, 0.0]
 
+Editor:
+  BackgroundColor: [0.15, 0.15, 0.15, 1.0]
+
 SceneDefaults:
   Light:
     Azimuth: 45.0

@@ -33,6 +33,7 @@ class ParticleEmitter;
 class PointLightComponent;
 
 class DebugDrawer;
+class InputSystem;
 
 class EditorLayer {
  public:
@@ -43,6 +44,12 @@ class EditorLayer {
   void SetScene(IScene* scene);
   void SetGame(Game* game) {
     game_ = game;
+  }
+  void SetInputSystem(InputSystem* input) {
+    input_system_ = input;
+  }
+  void SetEditorBackgroundColor(const float color[4]) {
+    std::copy(color, color + 4, editor_bg_color_);
   }
   void SetDebugDrawer(DebugDrawer* drawer);
   void SubscribeEvents(EventBus& bus);
@@ -76,6 +83,8 @@ class EditorLayer {
   void DrawDebugPanel();
   void DrawEditorSettings();
   void DrawPostFxPanel();
+  void ClearBackbuffer(ID3D12GraphicsCommandList* cmd);
+  void DrawViewport(ID3D12GraphicsCommandList* cmd);
   void DrawRenderPipelinePanel(ID3D12GraphicsCommandList* cmd);
   void DrawShadowMapPanel(ID3D12GraphicsCommandList* cmd);
   void RebuildFontAtlas(float scale);
@@ -93,6 +102,7 @@ class EditorLayer {
   Game* game_ = nullptr;
   Graphic* graphic_ = nullptr;
   IScene* scene_ = nullptr;
+  InputSystem* input_system_ = nullptr;
   DebugDrawer* debug_drawer_ = nullptr;
   GameObject* selected_object_ = nullptr;
   DescriptorHeapAllocator::Allocation imgui_font_srv_;
@@ -105,6 +115,8 @@ class EditorLayer {
   bool show_postfx_ = true;
   bool show_render_pipeline_ = true;
   bool show_shadow_map_ = false;
+  float editor_bg_color_[4] = {0.15f, 0.15f, 0.15f, 1.0f};
+  bool show_viewport_ = true;
   bool show_editor_settings_ = false;
   bool imgui_visible_ = true;
 

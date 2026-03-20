@@ -25,18 +25,17 @@ void PlayerControlComponent::OnInit() {
   pulse_go->SetParent(GetOwner());
   pulse_path_ = pulse_go->AddComponent<PulsePathComponent>(PulsePathComponent::Props{});
 
-  event_scope_.Subscribe<ToggleTowerPlacementEvent>(
-    *GetContext()->GetEventBus(), [this](const ToggleTowerPlacementEvent&) {
-      if (mode_ == PlayerMode::Normal) {
-        ClearEnemyHover();
-        EnterPlacingMode();
-      } else if (mode_ == PlayerMode::PlacingTower) {
-        auto* placement = GetOwner()->GetComponent<TowerPlacementComponent>();
-        if (placement && placement->IsActive()) {
-          placement->Deactivate();
-        }
+  event_scope_.Subscribe<ToggleTowerPlacementEvent>(*GetContext()->GetEventBus(), [this](const ToggleTowerPlacementEvent&) {
+    if (mode_ == PlayerMode::Normal) {
+      ClearEnemyHover();
+      EnterPlacingMode();
+    } else if (mode_ == PlayerMode::PlacingTower) {
+      auto* placement = GetOwner()->GetComponent<TowerPlacementComponent>();
+      if (placement && placement->IsActive()) {
+        placement->Deactivate();
       }
-    });
+    }
+  });
 }
 
 void PlayerControlComponent::OnUpdate(float /*dt*/) {
@@ -66,8 +65,8 @@ void PlayerControlComponent::UpdateEnemyHover() {
   auto* enemy_manager = GetOwner()->GetScene()->FindGameObject("EnemyManager");
   if (!enemy_manager || !camera) return;
 
-  float screen_w = static_cast<float>(GetContext()->GetGraphic()->GetFrameBufferWidth());
-  float screen_h = static_cast<float>(GetContext()->GetGraphic()->GetFrameBufferHeight());
+  float screen_w = static_cast<float>(GetContext()->GetGraphic()->GetSceneWidth());
+  float screen_h = static_cast<float>(GetContext()->GetGraphic()->GetSceneHeight());
 
   auto [mx, my] = input_->GetMousePosition();
   Math::Ray ray = GroundRayCaster::ScreenToWorldRay(mx, my, screen_w, screen_h, camera->GetCameraData());

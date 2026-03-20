@@ -30,8 +30,8 @@
 #include "Scenes/city_scene/game_match_component.h"
 #include "Scenes/city_scene/hud_manager_component.h"
 #include "Scenes/city_scene/player_control_component.h"
-#include "Scenes/city_scene/wave_controller_component.h"
 #include "Scenes/city_scene/turret_system.h"
+#include "Scenes/city_scene/wave_controller_component.h"
 #include "Scenes/city_scene/wave_system.h"
 #include "Scripts/camera_shake_controller.h"
 #include "Scripts/free_camera_controller.h"
@@ -40,7 +40,6 @@
 #include "play_state.h"
 #include "scene_id.h"
 #include "scene_manager.h"
-
 
 CityScene::CityScene() = default;
 CityScene::~CityScene() = default;
@@ -173,8 +172,8 @@ void CityScene::OnEnter(AssetManager& asset_manager) {
   transition_overlay_.Create(this, "SceneTransitionOverlay");
   if (GetContext()->GetPlayState() == PlayState::Playing) {
     auto* graphic = GetContext()->GetGraphic();
-    float screen_w = static_cast<float>(graphic->GetFrameBufferWidth());
-    float screen_h = static_cast<float>(graphic->GetFrameBufferHeight());
+    float screen_w = static_cast<float>(graphic->GetSceneWidth());
+    float screen_h = static_cast<float>(graphic->GetSceneHeight());
     transition_overlay_.SetOpaque();
     transition_overlay_.UpdateLayout(screen_w, screen_h);
     transition_overlay_.FadeOut();
@@ -205,8 +204,8 @@ void CityScene::OnPreUpdate(float dt) {
 
 void CityScene::OnRender(FramePacket& /*packet*/) {
   auto* graphic = GetContext()->GetGraphic();
-  float screen_w = static_cast<float>(graphic->GetFrameBufferWidth());
-  float screen_h = static_cast<float>(graphic->GetFrameBufferHeight());
+  float screen_w = static_cast<float>(graphic->GetSceneWidth());
+  float screen_h = static_cast<float>(graphic->GetSceneHeight());
   transition_overlay_.UpdateLayout(screen_w, screen_h);
 }
 
