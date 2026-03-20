@@ -323,9 +323,9 @@ void HudManagerComponent::OnUpdate(float dt) {
 
   UpdateLayout();
 
-  auto* graphic = GetOwner()->GetContext()->GetGraphic();
-  float screen_w = static_cast<float>(graphic->GetSceneWidth());
-  float screen_h = static_cast<float>(graphic->GetSceneHeight());
+  auto* rs = GetOwner()->GetContext()->GetRenderService();
+  float screen_w = static_cast<float>(rs->GetSceneWidth());
+  float screen_h = static_cast<float>(rs->GetSceneHeight());
   gameover_overlay_.UpdateLayout(screen_w, screen_h);
 
   if (gameover_active_) {
@@ -362,9 +362,9 @@ void HudManagerComponent::UpdateFadePanel(FadePanel& fade, float dt) {
 }
 
 void HudManagerComponent::UpdateLayout() {
-  auto* graphic = GetOwner()->GetContext()->GetGraphic();
-  float screen_w = static_cast<float>(graphic->GetSceneWidth());
-  float screen_h = static_cast<float>(graphic->GetSceneHeight());
+  auto* rs = GetOwner()->GetContext()->GetRenderService();
+  float screen_w = static_cast<float>(rs->GetSceneWidth());
+  float screen_h = static_cast<float>(rs->GetSceneHeight());
   float s = (screen_h / DESIGN_HEIGHT) * UI_SCALE;
 
   auto set_pos = [](GameObject* go, float x, float y) { go->GetTransform()->SetPosition({x, y, 0.0f}); };
@@ -694,8 +694,8 @@ bool HudManagerComponent::IsMouseOverUI(float mx, float my) const {
 }
 
 int HudManagerComponent::HitTestIconSlot(float mx, float my) const {
-  auto* graphic = GetOwner()->GetContext()->GetGraphic();
-  float screen_h = static_cast<float>(graphic->GetSceneHeight());
+  auto* rs = GetOwner()->GetContext()->GetRenderService();
+  float screen_h = static_cast<float>(rs->GetSceneHeight());
   float s = (screen_h / DESIGN_HEIGHT) * UI_SCALE;
 
   for (size_t i = 0; i < icon_slots_.size(); ++i) {

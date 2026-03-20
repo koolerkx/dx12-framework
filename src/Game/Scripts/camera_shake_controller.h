@@ -7,7 +7,7 @@
 
 #if defined(DEBUG) || defined(_DEBUG)
 #include "Framework/Input/keyboard.h"
-#include "Graphic/graphic.h"
+#include "Framework/Render/render_service.h"
 #include "Scenes/city_scene/city_scene_config.h"
 #endif
 
@@ -29,7 +29,7 @@ class CameraShakeController : public BehaviorComponent<CameraShakeController> {
     if (input && input->GetKeyDown(Keyboard::KeyCode::O)) {
       const CitySceneConfig::ArrivalScreenEffectConfig fx_cfg;
       Trigger(fx_cfg.shake_intensity, fx_cfg.shake_duration);
-      GetContext()->GetGraphic()->GetChromaticAberrationConfig().intensity = fx_cfg.chromatic_aberration_intensity;
+      GetContext()->GetRenderService()->SetChromaticAberrationIntensity(fx_cfg.chromatic_aberration_intensity);
     }
 #endif
 

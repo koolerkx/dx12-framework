@@ -1,7 +1,7 @@
 #include "scene_manager.h"
 
 #include "Framework/Event/event_bus.hpp"
-#include "Graphic/graphic.h"
+#include "Framework/Render/render_service.h"
 #include "game_context.h"
 #include "scene_events.h"
 
@@ -9,7 +9,7 @@ void SceneManager::RequestLoad(SceneId id) {
   pending_scene_ = id;
 }
 
-void SceneManager::ProcessPending(AssetManager& asset_manager, GameContext* context, Graphic* graphic) {
+void SceneManager::ProcessPending(AssetManager& asset_manager, GameContext* context, IRenderService* render_service) {
   if (!pending_scene_.has_value()) return;
 
   SceneId id = pending_scene_.value();
@@ -21,7 +21,7 @@ void SceneManager::ProcessPending(AssetManager& asset_manager, GameContext* cont
   auto new_scene = it->second();
 
   if (current_scene_) {
-    if (graphic) graphic->WaitForGpuIdle();
+    if (render_service) render_service->WaitForGpuIdle();
     current_scene_->Exit();
     current_scene_.reset();
   }
@@ -36,9 +36,9 @@ void SceneManager::ProcessPending(AssetManager& asset_manager, GameContext* cont
   }
 }
 
-void SceneManager::Shutdown(Graphic* graphic) {
+void SceneManager::Shutdown(IRenderService* render_service) {
   if (current_scene_) {
-    if (graphic) graphic->WaitForGpuIdle();
+    if (render_service) render_service->WaitForGpuIdle();
     current_scene_->Exit();
     current_scene_.reset();
   }

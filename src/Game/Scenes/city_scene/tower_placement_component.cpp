@@ -177,9 +177,9 @@ void TowerPlacementComponent::UpdateHovering() {
   auto* hud = hud_go ? hud_go->GetComponent<HudManagerComponent>() : nullptr;
   bool over_ui = hud && hud->IsMouseOverUI(mx, my);
 
-  auto* gfx = GetContext()->GetGraphic();
-  float screen_w = static_cast<float>(gfx->GetSceneWidth());
-  float screen_h = static_cast<float>(gfx->GetSceneHeight());
+  auto* rs = GetContext()->GetRenderService();
+  float screen_w = static_cast<float>(rs->GetSceneWidth());
+  float screen_h = static_cast<float>(rs->GetSceneHeight());
   auto hit = GroundRayCaster::ScreenToGroundXZ(mx, my, screen_w, screen_h, camera_->GetCameraData());
   if (hit) {
     snapped_xz_ = SnapToGrid(*hit);
@@ -468,9 +468,9 @@ void TowerPlacementComponent::UpdateTowerHoverRadar() {
   auto* hud_go = GetOwner()->GetScene()->FindGameObject("HUD");
   auto* hud = hud_go ? hud_go->GetComponent<HudManagerComponent>() : nullptr;
   if (hud && hud->IsMouseOverUI(mx, my)) return;
-  auto* gfx = GetContext()->GetGraphic();
-  float screen_w = static_cast<float>(gfx->GetSceneWidth());
-  float screen_h = static_cast<float>(gfx->GetSceneHeight());
+  auto* rs = GetContext()->GetRenderService();
+  float screen_w = static_cast<float>(rs->GetSceneWidth());
+  float screen_h = static_cast<float>(rs->GetSceneHeight());
   auto hit = GroundRayCaster::ScreenToGroundXZ(mx, my, screen_w, screen_h, cam->GetCameraData());
   auto unhover_tower = [this]() {
     if (hovered_tower_go_) {

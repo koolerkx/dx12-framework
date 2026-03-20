@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "Framework/Font/bmfont_parser.h"
+#include "Framework/Font/font_types.h"
 #include "Framework/Font/text_layout.h"
 #include "Resource/Texture/texture.h"
 
@@ -13,12 +14,6 @@ class TextureManager;
 struct ID3D12Device;
 
 namespace Font {
-
-// Font family enumeration
-enum class FontFamily : uint16_t {
-  ZenOldMincho,
-  // Add more font families here as needed
-};
 
 // Font variant for a specific size
 struct SpriteFontVariant {

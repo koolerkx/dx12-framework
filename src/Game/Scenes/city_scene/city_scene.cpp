@@ -18,7 +18,7 @@
 #include "Framework/Event/input_events.h"
 #include "Framework/Logging/logger.h"
 #include "Framework/Math/Math.h"
-#include "Graphic/graphic.h"
+#include "Framework/Render/render_service.h"
 #include "Map/map_loader.h"
 #include "Scenes/city_scene/base_health_component.h"
 #include "Scenes/city_scene/city_scene_config.h"
@@ -171,9 +171,9 @@ void CityScene::OnEnter(AssetManager& asset_manager) {
 
   transition_overlay_.Create(this, "SceneTransitionOverlay");
   if (GetContext()->GetPlayState() == PlayState::Playing) {
-    auto* graphic = GetContext()->GetGraphic();
-    float screen_w = static_cast<float>(graphic->GetSceneWidth());
-    float screen_h = static_cast<float>(graphic->GetSceneHeight());
+    auto* rs = GetContext()->GetRenderService();
+    float screen_w = static_cast<float>(rs->GetSceneWidth());
+    float screen_h = static_cast<float>(rs->GetSceneHeight());
     transition_overlay_.SetOpaque();
     transition_overlay_.UpdateLayout(screen_w, screen_h);
     transition_overlay_.FadeOut();
@@ -203,9 +203,9 @@ void CityScene::OnPreUpdate(float dt) {
 }
 
 void CityScene::OnRender(FramePacket& /*packet*/) {
-  auto* graphic = GetContext()->GetGraphic();
-  float screen_w = static_cast<float>(graphic->GetSceneWidth());
-  float screen_h = static_cast<float>(graphic->GetSceneHeight());
+  auto* rs = GetContext()->GetRenderService();
+  float screen_w = static_cast<float>(rs->GetSceneWidth());
+  float screen_h = static_cast<float>(rs->GetSceneHeight());
   transition_overlay_.UpdateLayout(screen_w, screen_h);
 }
 

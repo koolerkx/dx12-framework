@@ -9,7 +9,7 @@
 
 class AssetManager;
 class GameContext;
-class Graphic;
+class IRenderService;
 
 class SceneManager {
  public:
@@ -19,13 +19,13 @@ class SceneManager {
   }
 
   void RequestLoad(SceneId id);
-  void ProcessPending(AssetManager& asset_manager, GameContext* context, Graphic* graphic);
+  void ProcessPending(AssetManager& asset_manager, GameContext* context, IRenderService* render_service);
 
   IScene* GetCurrentScene() const {
     return current_scene_.get();
   }
 
-  void Shutdown(Graphic* graphic);
+  void Shutdown(IRenderService* render_service);
 
  private:
   std::unordered_map<SceneId, std::function<std::unique_ptr<IScene>()>> factories_;

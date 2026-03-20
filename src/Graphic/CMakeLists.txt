@@ -3,6 +3,8 @@ include(shader)
 add_library(graphic STATIC
   graphic.cpp
   graphic.h
+  render_service.h
+  render_service.cpp
   d3dx12.h
 
   Device/gpu_resource.h

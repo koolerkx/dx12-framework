@@ -9,7 +9,7 @@
 #include "Component/camera_component.h"
 #include "Component/transform_component.h"
 #include "Framework/Input/input.h"
-#include "Graphic/graphic.h"
+#include "Framework/Render/render_service.h"
 #include "Math/Math.h"
 #include "ProceduralTexture/procedural_texture_factory.h"
 #include "game_context.h"
@@ -196,9 +196,9 @@ void TitleScene::OnEnter(AssetManager& asset_manager) {
 
   transition_overlay_.Create(this, "SceneTransitionOverlay");
   if (GetContext()->GetPlayState() == PlayState::Playing) {
-    auto* graphic = GetContext()->GetGraphic();
-    float screen_w = static_cast<float>(graphic->GetSceneWidth());
-    float screen_h = static_cast<float>(graphic->GetSceneHeight());
+    auto* rs = GetContext()->GetRenderService();
+    float screen_w = static_cast<float>(rs->GetSceneWidth());
+    float screen_h = static_cast<float>(rs->GetSceneHeight());
     transition_overlay_.SetOpaque();
     transition_overlay_.UpdateLayout(screen_w, screen_h);
     transition_overlay_.FadeOut();
@@ -215,9 +215,9 @@ void TitleScene::OnPreUpdate(float dt) {
 
   auto [mx, my] = input_->GetMousePosition();
 
-  auto* graphic = GetContext()->GetGraphic();
-  float screen_w = static_cast<float>(graphic->GetSceneWidth());
-  float screen_h = static_cast<float>(graphic->GetSceneHeight());
+  auto* rs = GetContext()->GetRenderService();
+  float screen_w = static_cast<float>(rs->GetSceneWidth());
+  float screen_h = static_cast<float>(rs->GetSceneHeight());
   float norm_x = (mx / screen_w) - 0.5f;
   float norm_y = (my / screen_h) - 0.5f;
 
@@ -251,16 +251,16 @@ void TitleScene::OnPreUpdate(float dt) {
 void TitleScene::OnRender(FramePacket& /*packet*/) {
   UpdateLayout();
 
-  auto* graphic = GetContext()->GetGraphic();
-  float screen_w = static_cast<float>(graphic->GetSceneWidth());
-  float screen_h = static_cast<float>(graphic->GetSceneHeight());
+  auto* rs = GetContext()->GetRenderService();
+  float screen_w = static_cast<float>(rs->GetSceneWidth());
+  float screen_h = static_cast<float>(rs->GetSceneHeight());
   transition_overlay_.UpdateLayout(screen_w, screen_h);
 }
 
 void TitleScene::UpdateLayout() {
-  auto* graphic = GetContext()->GetGraphic();
-  float screen_w = static_cast<float>(graphic->GetSceneWidth());
-  float screen_h = static_cast<float>(graphic->GetSceneHeight());
+  auto* rs = GetContext()->GetRenderService();
+  float screen_w = static_cast<float>(rs->GetSceneWidth());
+  float screen_h = static_cast<float>(rs->GetSceneHeight());
   float s = (screen_h / DESIGN_HEIGHT) * UI_SCALE;
 
   float logo_w = LOGO_W * s;

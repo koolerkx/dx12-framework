@@ -48,7 +48,7 @@ void Game::Initialize(const Props& props) {
   scene_manager_.Register<CityScene>(SceneId::CITY_SCENE);
   scene_manager_.Register<TitleScene>(SceneId::TITLE_SCENE);
   scene_manager_.RequestLoad(SceneId::TITLE_SCENE);
-  scene_manager_.ProcessPending(asset_manager_, context_, context_->GetGraphic());
+  scene_manager_.ProcessPending(asset_manager_, context_, context_->GetRenderService());
 }
 
 void Game::Shutdown() {
@@ -57,7 +57,7 @@ void Game::Shutdown() {
     return;
   }
 
-  scene_manager_.Shutdown(context_ ? context_->GetGraphic() : nullptr);
+  scene_manager_.Shutdown(context_ ? context_->GetRenderService() : nullptr);
 }
 
 void Game::Play() {
@@ -79,7 +79,7 @@ void Game::Stop() {
 
 void Game::OnUpdate(float dt) {
   if (play_state_ == PlayState::Playing) elapsed_time_ += dt;
-  scene_manager_.ProcessPending(asset_manager_, context_, context_ ? context_->GetGraphic() : nullptr);
+  scene_manager_.ProcessPending(asset_manager_, context_, context_ ? context_->GetRenderService() : nullptr);
   IScene* scene = scene_manager_.GetCurrentScene();
   if (!scene) return;
 

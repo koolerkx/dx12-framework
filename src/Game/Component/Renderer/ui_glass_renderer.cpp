@@ -1,5 +1,7 @@
 #include "ui_glass_renderer.h"
+
 #include "Framework/Render/shader_ids.h"
+#include "Graphic/Pipeline/pixel_shader_descriptors.h"
 
 #include <cstdio>
 #include <cstring>
@@ -14,10 +16,9 @@ using Math::Vector3;
 
 void UIGlassRenderer::OnRender(FramePacket& packet) {
   auto* context = GetOwner()->GetContext();
-  auto* graphic = context->GetGraphic();
   auto* transform = GetOwner()->GetTransform();
 
-  uint32_t blur_srv_index = graphic->GetUIBlurSrvIndex();
+  uint32_t blur_srv_index = context->GetRenderService()->GetUIBlurSrvIndex();
 
   struct GlassParams {
     uint32_t blur_srv_index;    // SRV index into bindless texture array for blurred background

@@ -31,6 +31,7 @@ add_library(framework STATIC
   Event/input_event_generator.h
 
   # Font
+  Font/font_types.h
   Font/bmfont_parser.h
   Font/bmfont_parser.cpp
   Font/text_layout.h
@@ -82,6 +83,7 @@ add_library(framework STATIC
   Render/frame_packet.h
   Render/shader_ids.h
   Render/shader_name_service.h
+  Render/render_service.h
 
   # Serialization
   Serialize/serialize_node.h

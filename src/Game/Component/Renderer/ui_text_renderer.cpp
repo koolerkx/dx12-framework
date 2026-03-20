@@ -5,7 +5,6 @@
 #include "Framework/Render/shader_ids.h"
 #include "Framework/Render/texture_handle.h"
 #include "Game/Asset/asset_manager.h"
-#include "Graphic/Resource/Material/material_descriptor_pool.h"
 #include "game_context.h"
 
 using Math::Matrix4;
@@ -69,7 +68,7 @@ void UITextRenderer::OnRender(FramePacket& packet) {
     return;
   }
 
-  auto& pool = context->GetGraphic()->GetMaterialDescriptorPool();
+  auto* rs = context->GetRenderService();
   auto* transform = GetOwner()->GetTransform();
   TextureHandle texture = text_mesh_handle_.GetTexture();
   if (!texture.IsValid()) return;
@@ -80,9 +79,9 @@ void UITextRenderer::OnRender(FramePacket& packet) {
     desc.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
     desc.flags = flags::Combine(MaterialFlags::AlphaTest);
     if (!material_handle_.IsValid()) {
-      material_handle_ = pool.Allocate(desc);
+      material_handle_ = rs->AllocateMaterial(desc);
     } else {
-      pool.Update(material_handle_, desc);
+      rs->UpdateMaterial(material_handle_, desc);
     }
     material_dirty_ = false;
   }
@@ -132,8 +131,8 @@ void UITextRenderer::OnRender(FramePacket& packet) {
 void UITextRenderer::OnDestroy() {
   if (material_handle_.IsValid()) {
     auto* context = GetOwner()->GetContext();
-    if (context && context->GetGraphic()) {
-      context->GetGraphic()->GetMaterialDescriptorPool().Free(material_handle_);
+    if (context && context->GetRenderService()) {
+      context->GetRenderService()->FreeMaterial(material_handle_);
     }
     material_handle_ = MaterialHandle::Invalid();
   }

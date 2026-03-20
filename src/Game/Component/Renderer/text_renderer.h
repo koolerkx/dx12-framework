@@ -12,7 +12,7 @@
 #include "Framework/Serialize/serialize_node.h"
 #include "Game/Asset/asset_manager.h"
 #include "Framework/Render/frame_packet.h"
-#include "Graphic/Resource/Font/sprite_font_manager.h"
+#include "Framework/Font/font_types.h"
 #include "game_object.h"
 
 using Math::Matrix4;

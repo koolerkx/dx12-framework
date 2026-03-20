@@ -65,8 +65,8 @@ void PlayerControlComponent::UpdateEnemyHover() {
   auto* enemy_manager = GetOwner()->GetScene()->FindGameObject("EnemyManager");
   if (!enemy_manager || !camera) return;
 
-  float screen_w = static_cast<float>(GetContext()->GetGraphic()->GetSceneWidth());
-  float screen_h = static_cast<float>(GetContext()->GetGraphic()->GetSceneHeight());
+  float screen_w = static_cast<float>(GetContext()->GetRenderService()->GetSceneWidth());
+  float screen_h = static_cast<float>(GetContext()->GetRenderService()->GetSceneHeight());
 
   auto [mx, my] = input_->GetMousePosition();
   Math::Ray ray = GroundRayCaster::ScreenToWorldRay(mx, my, screen_w, screen_h, camera->GetCameraData());

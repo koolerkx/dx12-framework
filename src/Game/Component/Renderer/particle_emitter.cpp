@@ -4,8 +4,6 @@
 
 #include "Framework/Render/shader_ids.h"
 #include "Game/Asset/asset_manager.h"
-#include "Graphic/Resource/Material/material_descriptor_pool.h"
-#include "Graphic/graphic.h"
 #include "game_context.h"
 
 thread_local std::mt19937 ParticleEmitter::rng_{std::random_device{}()};
@@ -109,17 +107,16 @@ void ParticleEmitter::OnRender(FramePacket& packet) {
   if (!texture_.IsValid() || particles_.empty()) return;
 
   auto* context = GetOwner()->GetContext();
-  auto* graphic = context->GetGraphic();
-  auto& pool = graphic->GetMaterialDescriptorPool();
+  auto* rs = context->GetRenderService();
 
   if (!material_handle_.IsValid() || material_dirty_) {
     MaterialDescriptor desc{};
     desc.albedo_texture_index = texture_.GetBindlessIndex();
     desc.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
     if (!material_handle_.IsValid()) {
-      material_handle_ = pool.Allocate(desc);
+      material_handle_ = rs->AllocateMaterial(desc);
     } else {
-      pool.Update(material_handle_, desc);
+      rs->UpdateMaterial(material_handle_, desc);
     }
     material_dirty_ = false;
   }
@@ -153,7 +150,7 @@ void ParticleEmitter::OnRender(FramePacket& packet) {
   request.tags = 0;
 
   Shaders::SoftParticle::Params params{
-    .depth_srv_index = graphic->GetNormalDepthSrvIndex(),
+    .depth_srv_index = rs->GetNormalDepthSrvIndex(),
     .emissive_intensity = emissive_intensity_,
     .soft_distance = soft_distance_,
   };
@@ -167,8 +164,8 @@ void ParticleEmitter::OnRender(FramePacket& packet) {
 void ParticleEmitter::OnDestroy() {
   if (material_handle_.IsValid()) {
     auto* context = GetOwner()->GetContext();
-    if (context && context->GetGraphic()) {
-      context->GetGraphic()->GetMaterialDescriptorPool().Free(material_handle_);
+    if (context && context->GetRenderService()) {
+      context->GetRenderService()->FreeMaterial(material_handle_);
     }
     material_handle_ = MaterialHandle::Invalid();
   }

@@ -9,11 +9,10 @@
 #include "Framework/Render/frame_packet.h"
 #include "Framework/Render/render_handles.h"
 #include "Framework/Render/render_settings.h"
+#include "Framework/Render/render_service.h"
 #include "Framework/Render/shader_ids.h"
 #include "Framework/Render/texture_handle.h"
 #include "Framework/Serialize/serialize_node.h"
-#include "Graphic/Pipeline/shader_registry.h"
-#include "Graphic/Resource/Material/material_descriptor_pool.h"
 #include "game_context.h"
 #include "game_object.h"
 #include "scene.h"
@@ -389,7 +388,8 @@ class MeshRenderer : public RendererComponent<MeshRenderer> {
     albedo_.Serialize(node, "Texture");
     node.WriteVec4("Color", color_.x, color_.y, color_.z, color_.w);
 
-    auto shader_name = ShaderRegistry::GetName(shader_id_);
+    auto& shader_service = GetOwner()->GetContext()->GetRenderService()->GetShaderNameService();
+    auto shader_name = shader_service.GetName(shader_id_);
     node.Write("Shader", std::string(shader_name));
     node.Write("RenderLayer", render_layer_ == RenderLayer::Opaque ? "Opaque" : "Transparent");
     node.Write("BlendMode", static_cast<int>(render_settings_.blend_mode));
@@ -430,7 +430,8 @@ class MeshRenderer : public RendererComponent<MeshRenderer> {
 
     auto shader_name = node.ReadString("Shader");
     if (!shader_name.empty()) {
-      auto id = ShaderRegistry::FindIdByName(shader_name);
+      auto& shader_service = GetOwner()->GetContext()->GetRenderService()->GetShaderNameService();
+      auto id = shader_service.FindIdByName(shader_name);
       if (id) shader_id_ = *id;
     }
     auto layer_str = node.ReadString("RenderLayer", "Opaque");
@@ -528,14 +529,14 @@ class MeshRenderer : public RendererComponent<MeshRenderer> {
     if (!transform) return;
 
     auto* context = GetOwner()->GetContext();
-    auto& pool = context->GetGraphic()->GetMaterialDescriptorPool();
+    auto* rs = context->GetRenderService();
 
     if (!material_handle_.IsValid() || material_dirty_) {
       MaterialDescriptor desc = BuildMaterialDescriptor(context);
       if (!material_handle_.IsValid()) {
-        material_handle_ = pool.Allocate(desc);
+        material_handle_ = rs->AllocateMaterial(desc);
       } else {
-        pool.Update(material_handle_, desc);
+        rs->UpdateMaterial(material_handle_, desc);
       }
       material_dirty_ = false;
     }
@@ -564,8 +565,8 @@ class MeshRenderer : public RendererComponent<MeshRenderer> {
   void OnDestroy() override {
     if (material_handle_.IsValid()) {
       auto* context = GetOwner()->GetContext();
-      if (context && context->GetGraphic()) {
-        context->GetGraphic()->GetMaterialDescriptorPool().Free(material_handle_);
+      if (context && context->GetRenderService()) {
+        context->GetRenderService()->FreeMaterial(material_handle_);
       }
       material_handle_ = MaterialHandle::Invalid();
     }

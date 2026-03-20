@@ -4,7 +4,6 @@
 #include "Component/transform_component.h"
 #include "Framework/Render/shader_ids.h"
 #include "Game/Asset/asset_manager.h"
-#include "Graphic/Resource/Material/material_descriptor_pool.h"
 #include "game_context.h"
 
 using Math::Matrix4;
@@ -53,7 +52,7 @@ void UISpriteRenderer::OnRender(FramePacket& packet) {
   if (!texture_.IsValid()) return;
 
   auto* context = GetOwner()->GetContext();
-  auto& pool = context->GetGraphic()->GetMaterialDescriptorPool();
+  auto* rs = context->GetRenderService();
   auto* transform = GetOwner()->GetTransform();
 
   if (!material_handle_.IsValid() || material_dirty_) {
@@ -61,9 +60,9 @@ void UISpriteRenderer::OnRender(FramePacket& packet) {
     desc.albedo_texture_index = texture_.GetBindlessIndex();
     desc.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
     if (!material_handle_.IsValid()) {
-      material_handle_ = pool.Allocate(desc);
+      material_handle_ = rs->AllocateMaterial(desc);
     } else {
-      pool.Update(material_handle_, desc);
+      rs->UpdateMaterial(material_handle_, desc);
     }
     material_dirty_ = false;
   }
@@ -90,8 +89,8 @@ void UISpriteRenderer::OnRender(FramePacket& packet) {
 void UISpriteRenderer::OnDestroy() {
   if (material_handle_.IsValid()) {
     auto* context = GetOwner()->GetContext();
-    if (context && context->GetGraphic()) {
-      context->GetGraphic()->GetMaterialDescriptorPool().Free(material_handle_);
+    if (context && context->GetRenderService()) {
+      context->GetRenderService()->FreeMaterial(material_handle_);
     }
     material_handle_ = MaterialHandle::Invalid();
   }

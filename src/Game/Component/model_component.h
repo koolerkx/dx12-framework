@@ -11,7 +11,6 @@
 #include "Framework/Model/node_hierarchy.h"
 #include "Framework/Render/render_types.h"
 #include "Framework/Render/shader_ids.h"
-#include "Graphic/Pipeline/shader_registry.h"
 #include "game_context.h"
 #include "game_object.h"
 #include "scene.h"
@@ -77,7 +76,8 @@ class ModelComponent : public Component<ModelComponent> {
   void OnSerialize(framework::SerializeNode& node) const override {
     node.Write("ModelPath", model_path_);
 
-    auto shader_name = ShaderRegistry::GetName(shader_id_);
+    auto& shader_service = GetOwner()->GetContext()->GetRenderService()->GetShaderNameService();
+    auto shader_name = shader_service.GetName(shader_id_);
     node.Write("Shader", std::string(shader_name));
     node.Write("RenderLayer", render_layer_ == RenderLayer::Opaque ? "Opaque" : "Transparent");
 
@@ -98,7 +98,8 @@ class ModelComponent : public Component<ModelComponent> {
 
     auto shader_name = node.ReadString("Shader", "PBR");
     if (!shader_name.empty()) {
-      auto id = ShaderRegistry::FindIdByName(shader_name);
+      auto& shader_service = GetOwner()->GetContext()->GetRenderService()->GetShaderNameService();
+      auto id = shader_service.FindIdByName(shader_name);
       if (id) shader_id_ = *id;
     }
 

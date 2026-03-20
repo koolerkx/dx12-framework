@@ -21,6 +21,7 @@
 #include "Game/game.h"
 #include "Game/game_context.h"
 #include "Graphic/graphic.h"
+#include "Graphic/render_service.h"
 
 template <typename T>
 using ComPtr = Microsoft::WRL::ComPtr<T>;
@@ -75,8 +76,11 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
   ThreadPool thread_pool;
   auto event_bus = std::make_shared<EventBus>(thread_pool);
 
+  RenderService render_service(graphic);
+
   GameContext context;
   context.SetGraphic(&graphic);
+  context.SetRenderService(&render_service);
   context.SetInputSystem(&inputSystem);
   context.SetEventBus(event_bus);
 

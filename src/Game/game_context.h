@@ -3,10 +3,11 @@
 #include "Debug/debug_drawer.h"
 #include "Framework/Event/event_bus.hpp"
 #include "Framework/Input/input.h"
-#include "Graphic/graphic.h"
+#include "Framework/Render/render_service.h"
 #include "play_state.h"
 #include "scene_defaults.h"
 
+class Graphic;
 class SceneManager;
 
 class GameContext {
@@ -48,6 +49,13 @@ class GameContext {
     debug_drawer_ = debug_drawer;
   }
 
+  IRenderService* GetRenderService() const {
+    return render_service_;
+  }
+  void SetRenderService(IRenderService* render_service) {
+    render_service_ = render_service;
+  }
+
   SceneManager* GetSceneManager() const {
     return scene_manager_;
   }
@@ -79,6 +87,7 @@ class GameContext {
  private:
   InputSystem* input_ = nullptr;
   Graphic* graphic_ = nullptr;
+  IRenderService* render_service_ = nullptr;
   std::shared_ptr<EventBus> event_bus_;
   AssetManager* asset_manager_ = nullptr;
   DebugDrawer* debug_drawer_ = nullptr;

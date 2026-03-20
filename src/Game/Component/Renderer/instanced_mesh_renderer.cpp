@@ -3,7 +3,6 @@
 #include "Framework/Render/render_settings.h"
 #include "Framework/Render/shader_ids.h"
 #include "Framework/Render/texture_handle.h"
-#include "Graphic/Resource/Material/material_descriptor_pool.h"
 #include "game_context.h"
 #include "game_object.h"
 
@@ -20,8 +19,7 @@ void InstancedMeshRenderer::OnRender(FramePacket& packet) {
   if (instance_count_ == 0) return;
 
   auto* context = GetOwner()->GetContext();
-  auto* graphic = context->GetGraphic();
-  auto& pool = graphic->GetMaterialDescriptorPool();
+  auto* rs = context->GetRenderService();
 
   MeshHandle mesh_handle = context->GetAssetManager().GetDefaultMeshHandle(mesh_type_);
   if (!mesh_handle.IsValid()) return;
@@ -31,7 +29,7 @@ void InstancedMeshRenderer::OnRender(FramePacket& packet) {
     MaterialDescriptor desc{};
     desc.albedo_texture_index = albedo.IsValid() ? albedo.GetBindlessIndex() : 0;
     desc.sampler_index = static_cast<uint32_t>(Rendering::SamplerType::AnisotropicWrap);
-    material_handle_ = pool.Allocate(desc);
+    material_handle_ = rs->AllocateMaterial(desc);
   }
 
   instance_cache_.resize(instance_count_);
@@ -57,9 +55,9 @@ void InstancedMeshRenderer::OnRender(FramePacket& packet) {
 
 void InstancedMeshRenderer::OnDestroy() {
   if (material_handle_.IsValid()) {
-    auto* graphic = GetOwner()->GetContext()->GetGraphic();
-    if (graphic) {
-      graphic->GetMaterialDescriptorPool().Free(material_handle_);
+    auto* rs = GetOwner()->GetContext()->GetRenderService();
+    if (rs) {
+      rs->FreeMaterial(material_handle_);
     }
     material_handle_ = MaterialHandle::Invalid();
   }

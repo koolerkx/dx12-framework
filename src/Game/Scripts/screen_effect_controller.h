@@ -3,20 +3,21 @@
 #include <algorithm>
 
 #include "Component/behavior_component.h"
-#include "Graphic/graphic.h"
+#include "Framework/Render/render_service.h"
 
 class ScreenEffectController : public BehaviorComponent<ScreenEffectController> {
  public:
   using BehaviorComponent::BehaviorComponent;
 
   void TriggerChromaticAberration(float intensity) {
-    GetContext()->GetGraphic()->GetChromaticAberrationConfig().intensity = intensity;
+    GetContext()->GetRenderService()->SetChromaticAberrationIntensity(intensity);
   }
 
   void OnUpdate(float dt) override {
-    auto& config = GetContext()->GetGraphic()->GetChromaticAberrationConfig();
-    if (config.intensity > 0.0f) {
-      config.intensity = (std::max)(0.0f, config.intensity - DECAY_RATE * dt);
+    auto* rs = GetContext()->GetRenderService();
+    float current = rs->GetChromaticAberrationIntensity();
+    if (current > 0.0f) {
+      rs->SetChromaticAberrationIntensity((std::max)(0.0f, current - DECAY_RATE * dt));
     }
   }
 

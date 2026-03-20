@@ -3,7 +3,7 @@
 
 #include "Component/camera_component.h"
 #include "Framework/Logging/logger.h"
-#include "Graphic/graphic.h"
+#include "Framework/Render/render_service.h"
 #include "game_object.h"
 
 IScene::IScene() = default;
@@ -157,9 +157,9 @@ void IScene::Render(FramePacket& packet) {
   auto* ui_camera = ui_camera_setting_.GetActive();
   if (ui_camera) {
     packet.ui_camera = ui_camera->GetCameraData();
-  } else if (context_ && context_->GetGraphic()) {
-    auto* gfx = context_->GetGraphic();
-    packet.ui_camera = MakeScreenSpaceCamera(static_cast<float>(gfx->GetSceneWidth()), static_cast<float>(gfx->GetSceneHeight()));
+  } else if (context_ && context_->GetRenderService()) {
+    auto* rs = context_->GetRenderService();
+    packet.ui_camera = MakeScreenSpaceCamera(static_cast<float>(rs->GetSceneWidth()), static_cast<float>(rs->GetSceneHeight()));
   }
 
   packet.background = background_setting_.ToConfig();

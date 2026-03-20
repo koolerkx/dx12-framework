@@ -3,7 +3,6 @@
 #include "Framework/Render/render_settings.h"
 #include "Framework/Render/shader_ids.h"
 #include "Framework/Render/texture_handle.h"
-#include "Graphic/Resource/Material/material_descriptor_pool.h"
 #include "game_context.h"
 #include "game_object.h"
 
@@ -19,9 +18,8 @@ void InstancedModelRenderer::OnInit() {
   RendererComponent::OnInit();
 
   if (model_) {
-    auto* graphic = GetOwner()->GetContext()->GetGraphic();
     auto* context = GetOwner()->GetContext();
-    auto& pool = graphic->GetMaterialDescriptorPool();
+    auto* rs = context->GetRenderService();
     submesh_material_handles_.reserve(model_->sub_meshes.size());
 
     for (const auto& entry : model_->sub_meshes) {
@@ -50,7 +48,7 @@ void InstancedModelRenderer::OnInit() {
         desc.emissive_factor = Math::Vector3(mat.emissive_factor.x, mat.emissive_factor.y, mat.emissive_factor.z);
       }
 
-      submesh_material_handles_.push_back(pool.Allocate(desc));
+      submesh_material_handles_.push_back(rs->AllocateMaterial(desc));
     }
   }
 }
@@ -92,11 +90,11 @@ void InstancedModelRenderer::OnRender(FramePacket& packet) {
 }
 
 void InstancedModelRenderer::OnDestroy() {
-  auto* graphic = GetOwner()->GetContext()->GetGraphic();
-  if (graphic) {
+  auto* rs = GetOwner()->GetContext()->GetRenderService();
+  if (rs) {
     for (auto& handle : submesh_material_handles_) {
       if (handle.IsValid()) {
-        graphic->GetMaterialDescriptorPool().Free(handle);
+        rs->FreeMaterial(handle);
       }
     }
     submesh_material_handles_.clear();
