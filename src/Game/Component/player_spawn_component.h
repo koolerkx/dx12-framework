@@ -7,7 +7,7 @@
 #include "Component/Renderer/particle_emitter.h"
 #include "Component/behavior_component.h"
 #include "Framework/Core/color.h"
-#include "Graphic/Pipeline/pixel_shader_descriptors.h"
+#include "Framework/Render/shader_ids.h"
 #include "ProceduralTexture/procedural_texture_factory.h"
 #include "game_context.h"
 #include "game_object.h"
@@ -24,7 +24,7 @@ class PlayerSpawnComponent : public BehaviorComponent<PlayerSpawnComponent> {
       .mesh_handle = mesh,
     });
 
-    renderer->SetShaderWithParams<Graphics::NeonGridShader>(Graphics::NeonGridShader::Params{
+    renderer->SetShaderWithParams<Shaders::NeonGrid>(Shaders::NeonGrid::Params{
       .grid_r = 0.0f,
       .grid_g = 1.0f,
       .grid_b = 0.8f,

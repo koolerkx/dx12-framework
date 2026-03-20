@@ -1,4 +1,5 @@
 #include "ui_glass_renderer.h"
+#include "Framework/Render/shader_ids.h"
 
 #include <cstdio>
 #include <cstring>
@@ -75,7 +76,7 @@ void UIGlassRenderer::OnRender(FramePacket& packet) {
 
   RenderRequest request;
   request.mesh = mesh_handle;
-  request.shader_id = Graphics::UIGlassShader::ID;
+  request.shader_id = Shaders::Id::UI_GLASS;
   request.render_settings = Graphics::UIGlassShader::DefaultRenderSettings();
   request.color = {1, 1, 1, 1};
   request.world_matrix = pivot_mat * size_scale * transform->GetWorldMatrix();

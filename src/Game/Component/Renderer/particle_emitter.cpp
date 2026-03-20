@@ -3,8 +3,8 @@
 #include <cmath>
 
 #include "Game/Asset/asset_manager.h"
-#include "Graphic/Pipeline/pixel_shader_descriptors.h"
-#include "Graphic/Pipeline/shader_descriptors.h"
+#include "Framework/Render/shader_ids.h"
+#include "Framework/Render/shader_ids.h"
 #include "Graphic/Resource/Material/material_descriptor_pool.h"
 #include "Graphic/graphic.h"
 #include "game_context.h"
@@ -146,14 +146,14 @@ void ParticleEmitter::OnRender(FramePacket& packet) {
 
   InstancedRenderRequest request;
   request.mesh = rect_handle;
-  request.shader_id = Graphics::SoftParticleShader::ID;
+  request.shader_id = Shaders::Id::SOFT_PARTICLE;
   request.render_settings = render_settings_;
   request.material = material_handle_;
   request.depth = Vector3::DistanceSquared(GetOwner()->GetTransform()->GetWorldPosition(), packet.main_camera.position);
   request.layer = RenderLayer::Transparent;
   request.tags = 0;
 
-  Graphics::SoftParticleShader::Params params{
+  Shaders::SoftParticle::Params params{
     .depth_srv_index = graphic->GetNormalDepthSrvIndex(),
     .emissive_intensity = emissive_intensity_,
     .soft_distance = soft_distance_,

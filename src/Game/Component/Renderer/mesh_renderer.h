@@ -11,7 +11,7 @@
 #include "Framework/Render/render_settings.h"
 #include "Framework/Serialize/serialize_node.h"
 #include "Framework/Render/frame_packet.h"
-#include "Graphic/Pipeline/shader_descriptors.h"
+#include "Framework/Render/shader_ids.h"
 #include "Graphic/Pipeline/shader_registry.h"
 #include "Graphic/Resource/Material/material_descriptor_pool.h"
 #include "Graphic/Resource/Texture/texture.h"
@@ -99,7 +99,7 @@ class MeshRenderer : public RendererComponent<MeshRenderer> {
     std::string texture_path = "";
     Texture* texture = nullptr;
     Vector4 color = {1, 1, 1, 1};
-    Graphics::ShaderId shader_id = Graphics::Basic3DShader::ID;
+    Graphics::ShaderId shader_id = Shaders::Id::BASIC_3D;
     RenderLayer render_layer = RenderLayer::Opaque;
     float specular_intensity = 0.5f;
     float specular_power = 32.0f;
@@ -583,7 +583,7 @@ class MeshRenderer : public RendererComponent<MeshRenderer> {
   bool material_dirty_ = true;
   TextureBinding albedo_;
   std::string mesh_type_name_;
-  Graphics::ShaderId shader_id_ = Graphics::Basic3DShader::ID;
+  Graphics::ShaderId shader_id_ = Shaders::Id::BASIC_3D;
   Rendering::RenderSettings render_settings_ = Rendering::RenderSettings::Opaque();
   Vector4 color_ = {1.0f, 1.0f, 1.0f, 1.0f};
 

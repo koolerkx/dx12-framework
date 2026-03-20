@@ -1,4 +1,5 @@
 #include "instanced_model_renderer.h"
+#include "Framework/Render/shader_ids.h"
 
 #include "Framework/Render/render_settings.h"
 #include "Graphic/Resource/Material/material_descriptor_pool.h"
@@ -74,7 +75,7 @@ void InstancedModelRenderer::OnRender(FramePacket& packet) {
 
     InstancedRenderRequest request;
     request.mesh = entry.mesh_handle;
-    request.shader_id = Graphics::PBRShader::ID;
+    request.shader_id = Shaders::Id::PBR;
     request.render_settings = Rendering::RenderSettings::Opaque();
     request.material = (i < submesh_material_handles_.size()) ? submesh_material_handles_[i] : MaterialHandle::Invalid();
     if (entry.surface_material_index < model_->surface_materials.size()) {

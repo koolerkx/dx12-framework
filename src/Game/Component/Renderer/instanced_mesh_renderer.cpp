@@ -1,4 +1,5 @@
 #include "instanced_mesh_renderer.h"
+#include "Framework/Render/shader_ids.h"
 
 #include "Framework/Render/render_settings.h"
 #include "Graphic/Resource/Material/material_descriptor_pool.h"
@@ -43,7 +44,7 @@ void InstancedMeshRenderer::OnRender(FramePacket& packet) {
 
   InstancedRenderRequest request;
   request.mesh = mesh_handle;
-  request.shader_id = Graphics::PBRShader::ID;
+  request.shader_id = Shaders::Id::PBR;
   request.render_settings = Rendering::RenderSettings::Opaque();
   request.material = material_handle_;
   request.layer = RenderLayer::Opaque;

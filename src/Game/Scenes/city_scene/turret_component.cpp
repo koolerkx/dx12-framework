@@ -60,7 +60,7 @@ void TurretComponent::UpdateLaser() {
     auto* renderer = laser_go_->AddComponent<MeshRenderer>(MeshRenderer::Props{
       .mesh_type = DefaultMesh::Cylinder,
     });
-    renderer->SetShaderWithParams<Graphics::LaserBeamShader>(Graphics::LaserBeamShader::Params{
+    renderer->SetShaderWithParams<Shaders::LaserBeam>(Shaders::LaserBeam::Params{
       .laser_r = 1.0f,
       .laser_g = 0.2f,
       .laser_b = 0.2f,

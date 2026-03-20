@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "Component/behavior_component.h"
-#include "Graphic/Pipeline/pixel_shader_descriptors.h"
+#include "Framework/Render/shader_ids.h"
 
 class GameObject;
 
@@ -19,7 +19,7 @@ class PulsePathComponent : public BehaviorComponent<PulsePathComponent> {
   void OnUpdate(float dt) override;
   void OnDestroy() override;
 
-  void Show(GameObject* target, const Graphics::PathPulseShader::Params& params);
+  void Show(GameObject* target, const Shaders::PathPulse::Params& params);
   void Hide();
 
  private:
@@ -27,7 +27,7 @@ class PulsePathComponent : public BehaviorComponent<PulsePathComponent> {
   void DestroySegments();
 
   Props props_;
-  Graphics::PathPulseShader::Params shader_params_ = {};
+  Shaders::PathPulse::Params shader_params_ = {};
   GameObject* target_ = nullptr;
   std::vector<GameObject*> segment_gos_;
   size_t last_waypoint_index_ = SIZE_MAX;

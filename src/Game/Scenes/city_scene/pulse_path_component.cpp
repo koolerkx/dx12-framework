@@ -38,7 +38,7 @@ void PulsePathComponent::OnDestroy() {
   DestroySegments();
 }
 
-void PulsePathComponent::Show(GameObject* target, const Graphics::PathPulseShader::Params& params) {
+void PulsePathComponent::Show(GameObject* target, const Shaders::PathPulse::Params& params) {
   DestroySegments();
   target_ = target;
   shader_params_ = params;
@@ -95,7 +95,7 @@ void PulsePathComponent::RebuildSegments() {
     auto params = shader_params_;
     params.distance_offset = accumulated_dist;
     params.segment_length = distance;
-    renderer->SetShaderWithParams<Graphics::PathPulseShader>(params);
+    renderer->SetShaderWithParams<Shaders::PathPulse>(params);
 
     segment_gos_.push_back(go);
     accumulated_dist += distance;

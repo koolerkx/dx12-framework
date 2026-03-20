@@ -3,7 +3,7 @@
 #include "Component/pivot_type.h"
 #include "Component/transform_component.h"
 #include "Game/Asset/asset_manager.h"
-#include "Graphic/Pipeline/shader_descriptors.h"
+#include "Framework/Render/shader_ids.h"
 #include "Graphic/Resource/Material/material_descriptor_pool.h"
 #include "game_context.h"
 
@@ -75,7 +75,7 @@ void UISpriteRenderer::OnRender(FramePacket& packet) {
 
   RenderRequest request;
   request.mesh = context->GetAssetManager().GetDefaultMeshHandle(DefaultMesh::Rect);
-  request.shader_id = Graphics::SpriteShader::ID;
+  request.shader_id = Shaders::Id::SPRITE;
   request.render_settings = render_settings_;
   request.material = material_handle_;
   request.color = color_;

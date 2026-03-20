@@ -10,7 +10,7 @@
 #include "Component/transform_component.h"
 #include "Framework/Model/node_hierarchy.h"
 #include "Framework/Render/render_types.h"
-#include "Graphic/Pipeline/shader_descriptors.h"
+#include "Framework/Render/shader_ids.h"
 #include "Graphic/Pipeline/shader_registry.h"
 #include "game_context.h"
 #include "game_object.h"
@@ -20,7 +20,7 @@ class ModelComponent : public Component<ModelComponent> {
  public:
   struct Props {
     std::shared_ptr<ModelData> model;
-    Graphics::ShaderId shader_id = Graphics::PBRShader::ID;
+    Graphics::ShaderId shader_id = Shaders::Id::PBR;
     RenderLayer render_layer = RenderLayer::Opaque;
     bool split_mesh_to_children = false;
     float model_scale = 1.0f;
@@ -202,7 +202,7 @@ class ModelComponent : public Component<ModelComponent> {
 
   std::shared_ptr<ModelData> model_;
   std::string model_path_;
-  Graphics::ShaderId shader_id_ = Graphics::PBRShader::ID;
+  Graphics::ShaderId shader_id_ = Shaders::Id::PBR;
   RenderLayer render_layer_ = RenderLayer::Opaque;
   bool split_mesh_to_children_ = false;
   float model_scale_ = 1.0f;

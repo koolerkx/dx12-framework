@@ -12,7 +12,7 @@
 #include "Component/transform_component.h"
 #include "Framework/Event/event_bus.hpp"
 #include "Framework/Input/input.h"
-#include "Graphic/Pipeline/pixel_shader_descriptors.h"
+#include "Framework/Render/shader_ids.h"
 #include "Map/ground_ray_caster.h"
 #include "Map/nav_grid.h"
 #include "Map/nav_grid_events.h"
@@ -52,7 +52,7 @@ GameObject* CreateRadarDisc(IScene* scene, const Math::Vector3& world_pos, float
     .mesh_type = DefaultMesh::Plane,
   });
 
-  Graphics::RadarRangeShader::Params params{
+  Shaders::RadarRange::Params params{
     .radar_r = color.r,
     .radar_g = color.g,
     .radar_b = color.b,
@@ -62,7 +62,7 @@ GameObject* CreateRadarDisc(IScene* scene, const Math::Vector3& world_pos, float
     .emissive_intensity = 3.0f,
     .ring_width = 2.0f,
   };
-  renderer->SetShaderWithParams<Graphics::RadarRangeShader>(params);
+  renderer->SetShaderWithParams<Shaders::RadarRange>(params);
 
   return radar;
 }
