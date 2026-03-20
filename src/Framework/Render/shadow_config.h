@@ -1,3 +1,7 @@
+/**
+ * @file shadow_config.h
+ * @brief Shadow cascade constants and bias defaults shared across layers.
+ */
 #pragma once
 
 #include <cstdint>

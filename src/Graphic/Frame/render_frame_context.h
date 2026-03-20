@@ -9,7 +9,7 @@
 #include "Frame/constant_buffers.h"
 #include "Frame/dynamic_upload_buffer.h"
 #include "Framework/Math/Math.h"
-#include "Render/shadow_config.h"
+#include "Framework/Render/shadow_config.h"
 
 class MaterialDescriptorPool;
 class MaterialManager;

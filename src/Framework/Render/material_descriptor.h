@@ -1,3 +1,7 @@
+/**
+ * @file material_descriptor.h
+ * @brief MaterialDescriptor GPU struct and MaterialFlags enum for bindless material system.
+ */
 #pragma once
 
 #include <cstdint>

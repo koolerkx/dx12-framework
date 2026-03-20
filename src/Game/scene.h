@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "Framework/Event/event_scope.hpp"
-#include "Graphic/Frame/frame_packet.h"
+#include "Framework/Render/frame_packet.h"
 #include "System/render_system.h"
 #include "SceneSetting/active_camera_setting.h"
 #include "SceneSetting/active_ui_camera_setting.h"

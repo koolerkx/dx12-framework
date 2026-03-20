@@ -79,6 +79,8 @@ add_library(framework STATIC
   Render/shader_types.h
   Render/material_descriptor.h
   Render/frame_packet.h
+  Render/shader_ids.h
+  Render/shader_name_service.h
 
   # Serialization
   Serialize/serialize_node.h

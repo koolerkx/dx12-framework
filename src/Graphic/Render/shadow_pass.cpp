@@ -14,7 +14,7 @@
 #include "Render/draw_command_resolver.h"
 #include "Render/prepass_record_utils.h"
 #include "Render/resolved_command_grouper.h"
-#include "shadow_config.h"
+#include "Framework/Render/shadow_config.h"
 
 using Math::Matrix4;
 using Math::Vector3;

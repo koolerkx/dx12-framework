@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 
-#include "Graphic/Frame/frame_packet.h"
+#include "Framework/Render/frame_packet.h"
 
 struct SceneDefaults {
   float light_azimuth = 45.0f;

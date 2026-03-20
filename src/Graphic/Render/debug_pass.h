@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Frame/frame_packet.h"
+#include "Framework/Render/frame_packet.h"
 #include "Frame/render_frame_context.h"
 #include "render_pass.h"
 

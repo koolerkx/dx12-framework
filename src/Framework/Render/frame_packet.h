@@ -1,3 +1,7 @@
+/**
+ * @file frame_packet.h
+ * @brief Per-frame rendering data packet: cameras, lighting, shadows, and draw requests.
+ */
 #pragma once
 #include <cstdint>
 #include <cstring>

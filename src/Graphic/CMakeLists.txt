@@ -66,12 +66,10 @@ add_library(graphic STATIC
   Resource/Font/sprite_font_manager.h
   Resource/Font/sprite_font_manager.cpp
 
-  Frame/frame_packet.h
   Frame/per_frame_constant_buffer.h
   Frame/dynamic_upload_buffer.h
   Frame/render_frame_context.h
   Frame/constant_buffers.h
-  Frame/camera_data.h
   Frame/mesh_geometry.h
   Frame/resolved_draw_command.h
 

@@ -3,8 +3,8 @@
 #include <functional>
 #include <vector>
 
-#include "Frame/camera_data.h"
-#include "Frame/frame_packet.h"
+#include "Framework/Render/camera_data.h"
+#include "Framework/Render/frame_packet.h"
 #include "Frame/render_frame_context.h"
 #include "Frame/resolved_draw_command.h"
 #include "Framework/Render/render_types.h"

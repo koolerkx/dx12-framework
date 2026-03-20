@@ -15,7 +15,7 @@
 #include "Device/frame_synchronizer.h"
 #include "Frame/constant_buffers.h"
 #include "Frame/dynamic_upload_buffer.h"
-#include "Frame/frame_packet.h"
+#include "Framework/Render/frame_packet.h"
 #include "Frame/per_frame_constant_buffer.h"
 #include "Frame/render_frame_context.h"
 #include "Pipeline/material_manager.h"

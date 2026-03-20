@@ -10,7 +10,7 @@
 #include <vector>
 
 #include "Core/types.h"
-#include "Frame/frame_packet.h"
+#include "Framework/Render/frame_packet.h"
 #include "Framework/Logging/logger.h"
 #include "Framework/Math/Math.h"
 #include "Presentation/swapchain_manager.h"

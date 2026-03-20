@@ -3,8 +3,8 @@
 #include <algorithm>
 #include <cstdint>
 
-#include "Graphic/Frame/frame_packet.h"
-#include "Graphic/Render/shadow_config.h"
+#include "Framework/Render/frame_packet.h"
+#include "Framework/Render/shadow_config.h"
 
 class ShadowSetting {
  public:

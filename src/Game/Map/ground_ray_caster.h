@@ -3,7 +3,7 @@
 #include <optional>
 
 #include "Framework/Math/Math.h"
-#include "Graphic/Frame/camera_data.h"
+#include "Framework/Render/camera_data.h"
 
 namespace GroundRayCaster {
 

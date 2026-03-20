@@ -2,7 +2,7 @@
 
 #include "Asset/asset_handle.h"
 #include "Framework/Core/color.h"
-#include "Graphic/Frame/frame_packet.h"
+#include "Framework/Render/frame_packet.h"
 
 class AssetManager;
 struct Texture;

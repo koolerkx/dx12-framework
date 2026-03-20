@@ -3,7 +3,7 @@
 #include <memory>
 
 #include "Asset/asset_manager.h"
-#include "Graphic/Frame/frame_packet.h"
+#include "Framework/Render/frame_packet.h"
 #include "play_state.h"
 #include "scene_defaults.h"
 #include "scene_manager.h"

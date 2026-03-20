@@ -3,7 +3,7 @@
 #include <span>
 #include <vector>
 
-#include "Frame/frame_packet.h"
+#include "Framework/Render/frame_packet.h"
 #include "Frame/resolved_draw_command.h"
 
 class DynamicUploadBuffer;

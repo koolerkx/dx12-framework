@@ -1,3 +1,7 @@
+/**
+ * @file camera_data.h
+ * @brief Camera data structure and helper functions for view/projection setup.
+ */
 #pragma once
 #include "Framework/Math/Math.h"
 

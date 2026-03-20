@@ -1,7 +1,7 @@
 #include "render_system.h"
 
 #include "Component/renderer_component.h"
-#include "Graphic/Frame/frame_packet.h"
+#include "Framework/Render/frame_packet.h"
 
 void RenderSystem::Render(FramePacket& packet) {
   for (auto* renderable : renderables_) {

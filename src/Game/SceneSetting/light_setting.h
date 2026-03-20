@@ -3,7 +3,7 @@
 #include <cmath>
 
 #include "Framework/Math/Math.h"
-#include "Graphic/Frame/frame_packet.h"
+#include "Framework/Render/frame_packet.h"
 
 class LightSetting {
  public:
