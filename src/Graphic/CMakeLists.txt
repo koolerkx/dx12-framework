@@ -98,6 +98,8 @@ add_library(graphic STATIC
   Render/draw_command_aggregator.cpp
   Render/bindless_instance_grouper.h
   Render/bindless_instance_grouper.cpp
+  Render/resolved_command_grouper.h
+  Render/resolved_command_grouper.cpp
 
   Render/render_texture.h
   Render/render_texture.cpp

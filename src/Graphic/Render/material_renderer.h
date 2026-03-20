@@ -13,6 +13,7 @@
 #include "bindless_instance_grouper.h"
 #include "draw_command_aggregator.h"
 #include "draw_command_resolver.h"
+#include "resolved_command_grouper.h"
 
 class DynamicUploadBuffer;
 class RenderCommandList;
@@ -139,6 +140,7 @@ class OpaqueRenderer : public MaterialRenderer {
     const DrawCommandResolver::ResolveContext& ctx,
     std::vector<ResolvedDrawCommand>& out) override {
     MaterialRenderer::BuildResolved(packet, target_layer, ctx, out);
+    ResolvedCommandGrouper::Group(out, ctx.instance_allocator);
     std::sort(out.begin(), out.end(), [](const ResolvedDrawCommand& a, const ResolvedDrawCommand& b) {
       return SortKey::MaterialFirst(a, true) < SortKey::MaterialFirst(b, true);
     });
@@ -188,6 +190,7 @@ class UiRenderer : public MaterialRenderer {
     const DrawCommandResolver::ResolveContext& ctx,
     std::vector<ResolvedDrawCommand>& out) override {
     MaterialRenderer::BuildResolved(packet, target_layer, ctx, out);
+    ResolvedCommandGrouper::Group(out, ctx.instance_allocator);
     std::sort(out.begin(), out.end(), [](const ResolvedDrawCommand& a, const ResolvedDrawCommand& b) {
       return SortKey::DepthFirst(a, false) < SortKey::DepthFirst(b, false);
     });

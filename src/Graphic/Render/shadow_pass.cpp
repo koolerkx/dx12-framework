@@ -14,6 +14,7 @@
 #include "Render/bindless_instance_grouper.h"
 #include "Render/draw_command_resolver.h"
 #include "Render/prepass_record_utils.h"
+#include "Render/resolved_command_grouper.h"
 #include "Resource/Mesh/mesh_buffer_pool.h"
 #include "Resource/Mesh/mesh_descriptor.h"
 #include "shadow_config.h"
@@ -284,6 +285,8 @@ void ShadowPass::Execute(const RenderFrameContext& frame, const FramePacket& pac
     if (HasTag(req.request.tags, RenderTag::CastShadow)) filtered_instanced.push_back(req);
   }
   DrawCommandResolver::ResolveInstancedRequests(resolve_ctx, filtered_instanced, packet.instance_data_pool, resolved_commands_);
+
+  ResolvedCommandGrouper::GroupForPrepass(resolved_commands_, resolve_ctx.instance_allocator);
 
   RecordPrepassCommands(cmd, resolved_commands_, [](const ResolvedDrawCommand& dc) {
     ObjectCB obj{};

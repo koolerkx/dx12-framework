@@ -9,6 +9,7 @@
 #include "Render/bindless_instance_grouper.h"
 #include "Render/draw_command_resolver.h"
 #include "Render/prepass_record_utils.h"
+#include "Render/resolved_command_grouper.h"
 #include "Resource/Mesh/mesh_buffer_pool.h"
 #include "Resource/Mesh/mesh_descriptor.h"
 
@@ -76,7 +77,6 @@ void DepthNormalPass::Execute(const RenderFrameContext& frame, const FramePacket
   bool unified_buffers_bound = false;
 
   for (const auto& draw_cmd : grouped_commands_) {
-
     if (draw_cmd.UsesBindlessMesh()) {
       if (!unified_buffers_bound) {
         auto vbv = mesh_pool->GetVertexBufferView();
@@ -93,15 +93,13 @@ void DepthNormalPass::Execute(const RenderFrameContext& frame, const FramePacket
         obj_data.flags = static_cast<uint32_t>(ObjectFlags::Instanced);
         cmd.SetObjectConstants(obj_data);
         cmd.SetInstanceBufferSRV(draw_cmd.instance_buffer_address);
-        frame.command_list->DrawIndexedInstanced(
-          desc->index_count, draw_cmd.instance_count, desc->index_offset, desc->vertex_offset, 0);
+        frame.command_list->DrawIndexedInstanced(desc->index_count, draw_cmd.instance_count, desc->index_offset, desc->vertex_offset, 0);
       } else {
         ObjectCB obj_data = {};
         obj_data.world = draw_cmd.world_matrix;
         obj_data.normalMatrix = draw_cmd.world_matrix.Inverted().Transposed();
         cmd.SetObjectConstants(obj_data);
-        frame.command_list->DrawIndexedInstanced(
-          desc->index_count, 1, desc->index_offset, desc->vertex_offset, 0);
+        frame.command_list->DrawIndexedInstanced(desc->index_count, 1, desc->index_offset, desc->vertex_offset, 0);
       }
       continue;
     }
@@ -155,6 +153,8 @@ void DepthNormalPass::Execute(const RenderFrameContext& frame, const FramePacket
     if (req.request.render_settings.depth_write) filtered_instanced.push_back(req);
   }
   DrawCommandResolver::ResolveInstancedRequests(resolve_ctx, filtered_instanced, packet.instance_data_pool, resolved_commands_);
+
+  ResolvedCommandGrouper::GroupForPrepass(resolved_commands_, resolve_ctx.instance_allocator);
 
   RecordPrepassCommands(cmd, resolved_commands_, [](const ResolvedDrawCommand& dc) {
     ObjectCB obj{};
