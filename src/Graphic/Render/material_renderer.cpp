@@ -11,32 +11,26 @@
 
 namespace SortKey {
 
-uint64_t MaterialFirst(const DrawCommand& cmd, bool front_to_back) {
-  if (!cmd.material) {
-    return UINT64_MAX;
-  }
+template<typename T>
+uint64_t MaterialFirst(const T& cmd, bool front_to_back) {
+  if (!cmd.material) return UINT64_MAX;
 
   uint32_t rs_key = cmd.material->GetRootSignatureKey() & 0xFFFF;
   uint32_t pso_key = cmd.material->GetPSOKey() & 0xFFFF;
   uint64_t compressed_material = (static_cast<uint64_t>(rs_key) << 48) | (static_cast<uint64_t>(pso_key) << 32);
 
   uint32_t depth_key = std::bit_cast<uint32_t>(cmd.depth);
-  if (!front_to_back) {
-    depth_key = ~depth_key;
-  }
+  if (!front_to_back) depth_key = ~depth_key;
 
   return compressed_material | depth_key;
 }
 
-uint64_t DepthFirst(const DrawCommand& cmd, bool front_to_back) {
-  if (!cmd.material) {
-    return UINT64_MAX;
-  }
+template<typename T>
+uint64_t DepthFirst(const T& cmd, bool front_to_back) {
+  if (!cmd.material) return UINT64_MAX;
 
   uint32_t depth_key = std::bit_cast<uint32_t>(cmd.depth);
-  if (!front_to_back) {
-    depth_key = ~depth_key;
-  }
+  if (!front_to_back) depth_key = ~depth_key;
 
   uint32_t rs_key = cmd.material->GetRootSignatureKey() & 0xFFFF;
   uint32_t pso_key = cmd.material->GetPSOKey() & 0xFFFF;
@@ -45,31 +39,40 @@ uint64_t DepthFirst(const DrawCommand& cmd, bool front_to_back) {
   return (static_cast<uint64_t>(depth_key) << 32) | material_key;
 }
 
+template uint64_t MaterialFirst(const DrawCommand&, bool);
+template uint64_t MaterialFirst(const ResolvedDrawCommand&, bool);
+template uint64_t DepthFirst(const DrawCommand&, bool);
+template uint64_t DepthFirst(const ResolvedDrawCommand&, bool);
+
 }  // namespace SortKey
 
-void MaterialRenderer::Record(const RenderFrameContext& frame,
-  const std::vector<DrawCommand>& commands,
+void MaterialRenderer::BuildResolved(const FramePacket& packet, RenderLayer target_layer,
+  const DrawCommandResolver::ResolveContext& ctx,
+  std::vector<ResolvedDrawCommand>& out_commands) {
+  out_commands.clear();
+
+  std::vector<RenderRequest> filtered;
+  for (const auto& req : packet.single_requests) {
+    if (req.layer == target_layer) filtered.push_back(req);
+  }
+  DrawCommandResolver::ResolveSingleRequests(ctx, filtered, out_commands);
+
+  std::vector<InternalInstancedRequest> filtered_instanced;
+  for (const auto& req : packet.instanced_requests) {
+    if (req.request.layer == target_layer) filtered_instanced.push_back(req);
+  }
+  DrawCommandResolver::ResolveInstancedRequests(ctx, filtered_instanced, packet.instance_data_pool, out_commands);
+}
+
+MaterialRenderer::FrameSetup MaterialRenderer::SetupFrameState(
+  const RenderFrameContext& frame,
   const CameraData& camera,
   const LightingConfig& lighting,
   const ShadowConfig& shadow,
   uint32_t screen_width,
   uint32_t screen_height,
-  float time) {
-  if (commands.empty()) {
-    return;
-  }
-
-  const Material* first_material = nullptr;
-  for (const auto& draw_cmd : commands) {
-    if (draw_cmd.material && draw_cmd.material->IsValid()) {
-      first_material = draw_cmd.material;
-      break;
-    }
-  }
-
-  if (!first_material) {
-    return;
-  }
+  float time,
+  const Material* first_material) {
 
   RenderCommandList cmd(frame.command_list, frame.dynamic_allocator, frame.frame_cb, frame.object_cb_allocator);
 
@@ -124,8 +127,30 @@ void MaterialRenderer::Record(const RenderFrameContext& frame,
     cmd.SetMaterialDescriptorSRV(frame.material_descriptor_pool->GetBufferAddress());
   }
 
-  Matrix4 view_proj = camera.view_proj;
-  const Material* current_material = first_material;
+  return {std::move(cmd), camera.view_proj, first_material};
+}
+
+void MaterialRenderer::Record(const RenderFrameContext& frame,
+  const std::vector<DrawCommand>& commands,
+  const CameraData& camera,
+  const LightingConfig& lighting,
+  const ShadowConfig& shadow,
+  uint32_t screen_width,
+  uint32_t screen_height,
+  float time) {
+  if (commands.empty()) return;
+
+  const Material* first_material = nullptr;
+  for (const auto& draw_cmd : commands) {
+    if (draw_cmd.material && draw_cmd.material->IsValid()) {
+      first_material = draw_cmd.material;
+      break;
+    }
+  }
+  if (!first_material) return;
+
+  auto [cmd, view_proj, current_material] = SetupFrameState(
+    frame, camera, lighting, shadow, screen_width, screen_height, time, first_material);
 
   bool unified_buffers_bound = false;
   MeshBufferPool* mesh_pool = frame.mesh_buffer_pool;
@@ -188,7 +213,7 @@ void MaterialRenderer::RecordSingle(RenderCommandList& cmd, const DrawCommand& d
   obj_data.flags = flags::If(HasTag(draw_cmd.tags, RenderTag::Lit), ObjectFlags::Lit) |
                    flags::If(draw_cmd.layer == RenderLayer::Opaque, ObjectFlags::Opaque) |
                    flags::If(shadow_enabled && HasTag(draw_cmd.tags, RenderTag::ReceiveShadow), ObjectFlags::ReceiveShadow);
-  obj_data.materialDescriptorIndex = draw_cmd.material_handle.index;
+  obj_data.materialDescriptorIndex = draw_cmd.material_handle.IsValid() ? draw_cmd.material_handle.index : 0;
   cmd.SetObjectConstants(obj_data);
 
   if (draw_cmd.has_custom_data) {
@@ -210,7 +235,7 @@ void MaterialRenderer::RecordStructuredInstanced(
   if (draw_cmd.layer == RenderLayer::Opaque) obj_flags |= static_cast<uint32_t>(ObjectFlags::Opaque);
   if (shadow_enabled && HasTag(draw_cmd.tags, RenderTag::ReceiveShadow)) obj_flags |= static_cast<uint32_t>(ObjectFlags::ReceiveShadow);
   obj_data.flags = obj_flags;
-  obj_data.materialDescriptorIndex = draw_cmd.material_handle.index;
+  obj_data.materialDescriptorIndex = draw_cmd.material_handle.IsValid() ? draw_cmd.material_handle.index : 0;
   cmd.SetObjectConstants(obj_data);
 
   cmd.SetInstanceBufferSRV(draw_cmd.instance_buffer_address);
@@ -229,7 +254,7 @@ void MaterialRenderer::RecordStructuredInstanced(
 
 void MaterialRenderer::RecordInstanced(RenderCommandList& cmd, const DrawCommand& draw_cmd) {
   ObjectCB obj_data = {};
-  obj_data.materialDescriptorIndex = draw_cmd.material_handle.index;
+  obj_data.materialDescriptorIndex = draw_cmd.material_handle.IsValid() ? draw_cmd.material_handle.index : 0;
   cmd.SetObjectConstants(obj_data);
 
   if (draw_cmd.has_custom_data) {
@@ -255,7 +280,7 @@ void MaterialRenderer::RecordBindlessSingle(
   obj_data.flags = flags::If(HasTag(draw_cmd.tags, RenderTag::Lit), ObjectFlags::Lit) |
                    flags::If(draw_cmd.layer == RenderLayer::Opaque, ObjectFlags::Opaque) |
                    flags::If(shadow_enabled && HasTag(draw_cmd.tags, RenderTag::ReceiveShadow), ObjectFlags::ReceiveShadow);
-  obj_data.materialDescriptorIndex = draw_cmd.material_handle.index;
+  obj_data.materialDescriptorIndex = draw_cmd.material_handle.IsValid() ? draw_cmd.material_handle.index : 0;
   cmd.SetObjectConstants(obj_data);
 
   if (draw_cmd.has_custom_data) {
@@ -280,7 +305,7 @@ void MaterialRenderer::RecordBindlessStructuredInstanced(
   if (draw_cmd.layer == RenderLayer::Opaque) obj_flags |= static_cast<uint32_t>(ObjectFlags::Opaque);
   if (shadow_enabled && HasTag(draw_cmd.tags, RenderTag::ReceiveShadow)) obj_flags |= static_cast<uint32_t>(ObjectFlags::ReceiveShadow);
   obj_data.flags = obj_flags;
-  obj_data.materialDescriptorIndex = draw_cmd.material_handle.index;
+  obj_data.materialDescriptorIndex = draw_cmd.material_handle.IsValid() ? draw_cmd.material_handle.index : 0;
   cmd.SetObjectConstants(obj_data);
 
   cmd.SetInstanceBufferSRV(draw_cmd.instance_buffer_address);
@@ -289,4 +314,164 @@ void MaterialRenderer::RecordBindlessStructuredInstanced(
   if (desc) {
     cmd.DrawBindlessMesh(*desc, draw_cmd.instance_count);
   }
+}
+
+void MaterialRenderer::RecordResolvedCommands(const RenderFrameContext& frame,
+  const std::vector<ResolvedDrawCommand>& commands,
+  const CameraData& camera,
+  const LightingConfig& lighting,
+  const ShadowConfig& shadow,
+  uint32_t screen_width,
+  uint32_t screen_height,
+  float time) {
+  if (commands.empty()) return;
+
+  const Material* first_material = nullptr;
+  for (const auto& c : commands) {
+    if (c.material && c.material->IsValid()) {
+      first_material = c.material;
+      break;
+    }
+  }
+  if (!first_material) return;
+
+  auto [cmd, view_proj, current_material] = SetupFrameState(
+    frame, camera, lighting, shadow, screen_width, screen_height, time, first_material);
+
+  for (const auto& draw_cmd : commands) {
+    if (!draw_cmd.material || !draw_cmd.material->IsValid()) continue;
+
+    if (current_material != draw_cmd.material) {
+      cmd.SetMaterial(draw_cmd.material);
+      current_material = draw_cmd.material;
+    }
+
+    RecordResolved(cmd, draw_cmd, view_proj);
+  }
+}
+
+void MaterialRenderer::RecordMerged(const RenderFrameContext& frame,
+  const std::vector<DrawCommand>& old_commands,
+  const std::vector<ResolvedDrawCommand>& new_commands,
+  const CameraData& camera,
+  const LightingConfig& lighting,
+  const ShadowConfig& shadow,
+  uint32_t screen_width,
+  uint32_t screen_height,
+  float time) {
+
+  struct MergedEntry {
+    uint64_t sort_key;
+    bool is_new;
+    uint32_t index;
+  };
+
+  std::vector<MergedEntry> merged;
+  merged.reserve(old_commands.size() + new_commands.size());
+  for (uint32_t i = 0; i < old_commands.size(); ++i) {
+    if (!old_commands[i].material || !old_commands[i].material->IsValid()) continue;
+    if (!old_commands[i].mesh && !old_commands[i].UsesBindlessMesh()) continue;
+    merged.push_back({ComputeSortKey(old_commands[i]), false, i});
+  }
+  for (uint32_t i = 0; i < new_commands.size(); ++i) {
+    if (!new_commands[i].material || !new_commands[i].material->IsValid()) continue;
+    if (new_commands[i].geometry.index_count == 0) continue;
+    merged.push_back({ComputeSortKey(new_commands[i]), true, i});
+  }
+
+  if (merged.empty()) return;
+
+  std::sort(merged.begin(), merged.end(), [](const MergedEntry& a, const MergedEntry& b) {
+    return a.sort_key < b.sort_key;
+  });
+
+  // Find first valid material from either list
+  const Material* first_material = nullptr;
+  for (const auto& entry : merged) {
+    first_material = entry.is_new ? new_commands[entry.index].material : old_commands[entry.index].material;
+    if (first_material && first_material->IsValid()) break;
+  }
+  if (!first_material) return;
+
+  auto [cmd, view_proj, current_material] = SetupFrameState(
+    frame, camera, lighting, shadow, screen_width, screen_height, time, first_material);
+
+  bool unified_buffers_bound = false;
+  MeshBufferPool* mesh_pool = frame.mesh_buffer_pool;
+
+  for (const auto& entry : merged) {
+    if (entry.is_new) {
+      const auto& draw_cmd = new_commands[entry.index];
+      if (current_material != draw_cmd.material) {
+        cmd.SetMaterial(draw_cmd.material);
+        current_material = draw_cmd.material;
+      }
+      RecordResolved(cmd, draw_cmd, view_proj);
+      unified_buffers_bound = false;
+    } else {
+      const auto& draw_cmd = old_commands[entry.index];
+      if (current_material != draw_cmd.material) {
+        cmd.SetMaterial(draw_cmd.material);
+        current_material = draw_cmd.material;
+      }
+      // Dispatch to appropriate old record method
+      if (draw_cmd.UsesBindlessMesh()) {
+        if (!unified_buffers_bound) {
+          cmd.BindUnifiedMeshBuffers(mesh_pool);
+          cmd.SetMeshDescriptorSRV(mesh_pool->GetDescriptorBufferAddress());
+          unified_buffers_bound = true;
+        }
+        if (draw_cmd.IsStructuredInstanced()) {
+          RecordBindlessStructuredInstanced(cmd, draw_cmd, view_proj, shadow.enabled, mesh_pool);
+        } else {
+          RecordBindlessSingle(cmd, draw_cmd, view_proj, shadow.enabled, mesh_pool);
+        }
+      } else if (draw_cmd.IsStructuredInstanced()) {
+        unified_buffers_bound = false;
+        RecordStructuredInstanced(cmd, draw_cmd, view_proj, shadow.enabled);
+      } else if (draw_cmd.IsInstanced()) {
+        unified_buffers_bound = false;
+        RecordInstanced(cmd, draw_cmd);
+      } else {
+        unified_buffers_bound = false;
+        RecordSingle(cmd, draw_cmd, view_proj, shadow.enabled);
+      }
+    }
+  }
+}
+
+void MaterialRenderer::RecordResolved(RenderCommandList& cmd, const ResolvedDrawCommand& draw_cmd, const Matrix4& view_proj) {
+  ObjectCB obj_data = {};
+  obj_data.world = draw_cmd.world_matrix;
+  obj_data.worldViewProj = draw_cmd.world_matrix * view_proj;
+  if (draw_cmd.instance_count <= 1) {
+    obj_data.normalMatrix = draw_cmd.world_matrix.Inverted().Transposed();
+  }
+  obj_data.color = draw_cmd.color;
+  obj_data.uvOffset = draw_cmd.uv_offset;
+  obj_data.uvScale = draw_cmd.uv_scale;
+  obj_data.flags = draw_cmd.object_flags;
+  obj_data.materialDescriptorIndex = draw_cmd.material_handle.IsValid() ? draw_cmd.material_handle.index : 0;
+
+  if (draw_cmd.instance_count > 1) {
+    obj_data.flags |= static_cast<uint32_t>(ObjectFlags::Instanced);
+    cmd.SetObjectConstants(obj_data);
+    cmd.SetInstanceBufferSRV(draw_cmd.instance_buffer_address);
+  } else {
+    cmd.SetObjectConstants(obj_data);
+  }
+
+  if (draw_cmd.custom_data.active) {
+    CustomCB custom_cb = {};
+    memcpy(custom_cb.data, draw_cmd.custom_data.data.data(), sizeof(float) * 20);
+    cmd.SetCustomConstants(custom_cb);
+  }
+
+  auto vbv = draw_cmd.geometry.vbv;
+  auto ibv = draw_cmd.geometry.ibv;
+  cmd.GetNative()->IASetVertexBuffers(0, 1, &vbv);
+  cmd.GetNative()->IASetIndexBuffer(&ibv);
+  cmd.GetNative()->DrawIndexedInstanced(
+    draw_cmd.geometry.index_count, draw_cmd.instance_count,
+    draw_cmd.geometry.index_offset, draw_cmd.geometry.vertex_offset, 0);
 }

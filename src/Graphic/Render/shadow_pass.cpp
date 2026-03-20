@@ -12,6 +12,8 @@
 #include "Pipeline/shader_descriptors.h"
 #include "Pipeline/shader_manager.h"
 #include "Render/bindless_instance_grouper.h"
+#include "Render/draw_command_resolver.h"
+#include "Render/prepass_record_utils.h"
 #include "Resource/Mesh/mesh_buffer_pool.h"
 #include "Resource/Mesh/mesh_descriptor.h"
 #include "shadow_config.h"
@@ -262,4 +264,31 @@ void ShadowPass::Execute(const RenderFrameContext& frame, const FramePacket& pac
 
     draw_cmd.mesh->Draw(frame.command_list);
   }
+
+  resolved_commands_.clear();
+  DrawCommandResolver::ResolveContext resolve_ctx{
+    .material_manager = frame.material_manager,
+    .mesh_buffer_pool = frame.mesh_buffer_pool,
+    .instance_allocator = frame.object_cb_allocator,
+    .shadow_enabled = packet.shadow.enabled,
+  };
+
+  std::vector<RenderRequest> filtered_single;
+  for (const auto& req : packet.single_requests) {
+    if (HasTag(req.tags, RenderTag::CastShadow)) filtered_single.push_back(req);
+  }
+  DrawCommandResolver::ResolveSingleRequests(resolve_ctx, filtered_single, resolved_commands_);
+
+  std::vector<InternalInstancedRequest> filtered_instanced;
+  for (const auto& req : packet.instanced_requests) {
+    if (HasTag(req.request.tags, RenderTag::CastShadow)) filtered_instanced.push_back(req);
+  }
+  DrawCommandResolver::ResolveInstancedRequests(resolve_ctx, filtered_instanced, packet.instance_data_pool, resolved_commands_);
+
+  RecordPrepassCommands(cmd, resolved_commands_, [](const ResolvedDrawCommand& dc) {
+    ObjectCB obj{};
+    obj.world = dc.world_matrix;
+    obj.flags = dc.object_flags;
+    return obj;
+  });
 }

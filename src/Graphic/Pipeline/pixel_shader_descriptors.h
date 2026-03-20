@@ -50,11 +50,11 @@ struct NeonGridShader {
 
 struct SoftParticleShader {
   static constexpr ShaderId ID = 29;
-  using VertexType = Vertex::SpriteInstanced;
+  using VertexType = Vertex::SpriteVertex;
 
   static constexpr RSPreset RS_PRESET = RSPreset::Standard;
   static constexpr std::string_view NAME = "SoftParticle";
-  static constexpr std::wstring_view VS_PATH = L"Content/shaders/sprite_instanced.vs.cso";
+  static constexpr std::wstring_view VS_PATH = L"Content/shaders/sprite.vs.cso";
   static constexpr std::wstring_view PS_PATH = L"Content/shaders/soft_particle.ps.cso";
   static constexpr ShaderRenderHints HINTS = {};
 

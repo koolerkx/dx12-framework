@@ -12,6 +12,7 @@
 #include "Render/shadow_config.h"
 
 class MaterialDescriptorPool;
+class MaterialManager;
 class MeshBufferPool;
 class RenderGraph;
 
@@ -47,4 +48,5 @@ struct RenderFrameContext {
 
   MeshBufferPool* mesh_buffer_pool = nullptr;
   MaterialDescriptorPool* material_descriptor_pool = nullptr;
+  MaterialManager* material_manager = nullptr;
 };

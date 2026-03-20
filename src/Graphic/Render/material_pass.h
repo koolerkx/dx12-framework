@@ -7,6 +7,7 @@
 #include "Frame/draw_command.h"
 #include "Frame/frame_packet.h"
 #include "Frame/render_frame_context.h"
+#include "Frame/resolved_draw_command.h"
 #include "Framework/Render/render_types.h"
 #include "material_renderer.h"
 #include "render_pass.h"
@@ -37,4 +38,5 @@ class MaterialPass : public IRenderPass {
   RenderLayer layer_;
   CameraProvider camera_provider_;
   std::vector<DrawCommand> command_cache_;
+  std::vector<ResolvedDrawCommand> resolved_cache_;
 };

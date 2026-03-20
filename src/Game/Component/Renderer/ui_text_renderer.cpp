@@ -68,12 +68,7 @@ void UITextRenderer::OnRender(FramePacket& packet) {
     return;
   }
 
-  auto& material_mgr = context->GetGraphic()->GetMaterialManager();
   auto& pool = context->GetGraphic()->GetMaterialDescriptorPool();
-
-  const Material* material = material_mgr.GetOrCreateMaterial(Graphics::SpriteInstancedShader::ID, render_settings_);
-  if (!material) return;
-
   auto* transform = GetOwner()->GetTransform();
   Texture* texture = text_mesh_handle_.GetTexture();
   if (!texture) return;
@@ -91,53 +86,45 @@ void UITextRenderer::OnRender(FramePacket& packet) {
     material_dirty_ = false;
   }
 
-  const Mesh* quad_mesh = context->GetAssetManager().GetDefaultMesh(DefaultMesh::Rect);
-  if (!quad_mesh) return;
+  MeshHandle rect_handle = context->GetAssetManager().GetDefaultMeshHandle(DefaultMesh::Rect);
+  if (!rect_handle.IsValid()) return;
 
-  DrawCommand cmd;
-  cmd.mesh = quad_mesh;
-  cmd.material = material;
-  cmd.material_handle = material_handle_;
-  cmd.depth = static_cast<float>(layer_id_);
-
-  cmd.instances.reserve(text_mesh_handle_.GetGlyphCount());
+  std::vector<InstanceData> glyph_instances;
+  glyph_instances.reserve(text_mesh_handle_.GetGlyphCount());
 
   Vector2 text_size = {text_mesh_handle_.GetWidth(), text_mesh_handle_.GetHeight()};
   Vector2 pivot_offset(text_pivot_.x * text_size.x, text_pivot_.y * text_size.y);
 
   for (size_t i = 0; i < text_mesh_handle_.GetGlyphCount(); ++i) {
     const GlyphLayoutData* glyph = text_mesh_handle_.GetGlyph(i);
-    if (!glyph || glyph->width <= 0.0f || glyph->height <= 0.0f) {
-      continue;
-    }
-
-    SpriteInstanceData instance{};
+    if (!glyph || glyph->width <= 0.0f || glyph->height <= 0.0f) continue;
 
     float glyph_x_relative = glyph->x - pivot_offset.x;
     float glyph_y_relative = glyph->y - pivot_offset.y;
 
     Vector3 glyph_center(glyph_x_relative + glyph->width * 0.5f, glyph_y_relative + glyph->height * 0.5f, 0.0f);
-
     Matrix4 glyph_translation = Matrix4::CreateTranslation(glyph_center);
     Matrix4 size_scale = Matrix4::CreateScale(Vector3(glyph->width, glyph->height, 1.0f));
 
-    Matrix4 world = size_scale * glyph_translation * transform->GetWorldMatrix();
-    instance.world_matrix = world;
-
-    instance.color = color_;
-
-    instance.uv_offset = Vector2(glyph->uv_offset.x, glyph->uv_offset.y + glyph->uv_scale.y);
-    instance.uv_scale = Vector2(glyph->uv_scale.x, -glyph->uv_scale.y);
-
-    cmd.instances.push_back(instance);
+    glyph_instances.push_back({
+      .world = size_scale * glyph_translation * transform->GetWorldMatrix(),
+      .color = color_,
+      .uv_offset = Math::Vector2(glyph->uv_offset.x, glyph->uv_offset.y + glyph->uv_scale.y),
+      .uv_scale = Math::Vector2(glyph->uv_scale.x, -glyph->uv_scale.y),
+      .overlay_color = {0, 0, 0, 0},
+    });
   }
 
-  if (!cmd.instances.empty()) {
-    cmd.layer = RenderLayer::UI;
-    cmd.tags = render_tags_;
-    cmd.depth_test = render_settings_.depth_test;
-    cmd.depth_write = render_settings_.depth_write;
-    packet.AddCommand(std::move(cmd));
+  if (!glyph_instances.empty()) {
+    InstancedRenderRequest request;
+    request.mesh = rect_handle;
+    request.shader_id = Graphics::SpriteShader::ID;
+    request.render_settings = render_settings_;
+    request.material = material_handle_;
+    request.depth = static_cast<float>(layer_id_);
+    request.layer = RenderLayer::UI;
+    request.tags = render_tags_;
+    packet.DrawInstanced(std::move(request), glyph_instances);
   }
 }
 

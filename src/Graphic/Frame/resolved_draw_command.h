@@ -26,6 +26,7 @@ struct ResolvedDrawCommand {
   RenderLayer layer = RenderLayer::Opaque;
   RenderTagMask tags = 0;
   float depth = 0.0f;
+  bool depth_write = true;
 
   CustomShaderData custom_data;
 };

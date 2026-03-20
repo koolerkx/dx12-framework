@@ -555,29 +555,44 @@ class MeshRenderer : public RendererComponent<MeshRenderer> {
       material_dirty_ = false;
     }
 
-    DrawCommand cmd;
-    cmd.world_matrix = transform->GetWorldMatrix();
-    cmd.color = color_;
-    cmd.mesh = mesh_;
-    cmd.mesh_handle = mesh_handle_;
-    cmd.material_handle = material_handle_;
-
-    cmd.material = material_mgr.GetOrCreateMaterial(shader_id_, render_settings_);
-
     Vector3 worldPos = transform->GetWorldPosition();
     Vector3 camPos = packet.main_camera.position;
-    cmd.depth = Vector3::DistanceSquared(worldPos, camPos);
+    float depth = Vector3::DistanceSquared(worldPos, camPos);
 
-    if (has_custom_data_) {
-      cmd.custom_data = custom_data_;
-      cmd.has_custom_data = true;
+    if (mesh_handle_.IsValid()) {
+      RenderRequest request;
+      request.mesh = mesh_handle_;
+      request.shader_id = shader_id_;
+      request.render_settings = render_settings_;
+      request.material = material_handle_;
+      request.color = color_;
+      request.world_matrix = transform->GetWorldMatrix();
+      request.depth = depth;
+      request.layer = render_layer_;
+      request.tags = render_tags_;
+      if (has_custom_data_) {
+        request.custom_data.data = custom_data_;
+        request.custom_data.active = true;
+      }
+      packet.Draw(std::move(request));
+    } else {
+      DrawCommand cmd;
+      cmd.world_matrix = transform->GetWorldMatrix();
+      cmd.color = color_;
+      cmd.mesh = mesh_;
+      cmd.material_handle = material_handle_;
+      cmd.material = material_mgr.GetOrCreateMaterial(shader_id_, render_settings_);
+      cmd.depth = depth;
+      if (has_custom_data_) {
+        cmd.custom_data = custom_data_;
+        cmd.has_custom_data = true;
+      }
+      cmd.layer = render_layer_;
+      cmd.tags = render_tags_;
+      cmd.depth_test = render_settings_.depth_test;
+      cmd.depth_write = render_settings_.depth_write;
+      packet.AddCommand(std::move(cmd));
     }
-
-    cmd.layer = render_layer_;
-    cmd.tags = render_tags_;
-    cmd.depth_test = render_settings_.depth_test;
-    cmd.depth_write = render_settings_.depth_write;
-    packet.AddCommand(std::move(cmd));
   }
 
   void OnDestroy() override {

@@ -531,7 +531,8 @@ RenderFrameContext Graphic::BeginFrame() {
     .point_light_srv = point_light_buffers_[frame_index].GetGPUAddress(),
     .ssao_srv_index = (ssao_handle_ != RenderGraphHandle::Invalid) ? render_graph_->GetSrvIndex(ssao_handle_) : UINT32_MAX,
     .mesh_buffer_pool = &render_services_->GetMeshBufferPool(),
-    .material_descriptor_pool = &render_services_->GetMaterialDescriptorPool()};
+    .material_descriptor_pool = &render_services_->GetMaterialDescriptorPool(),
+    .material_manager = &render_services_->GetMaterialManager()};
 }
 
 void Graphic::EndFrame(const RenderFrameContext& frame) {

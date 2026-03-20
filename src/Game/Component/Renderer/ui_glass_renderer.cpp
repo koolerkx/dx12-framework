@@ -5,6 +5,7 @@
 
 #include "Component/transform_component.h"
 #include "Game/Asset/asset_manager.h"
+#include "Graphic/Resource/mesh_factory.h"
 #include "game_context.h"
 
 using Math::Matrix4;
@@ -13,7 +14,6 @@ using Math::Vector3;
 void UIGlassRenderer::OnRender(FramePacket& packet) {
   auto* context = GetOwner()->GetContext();
   auto* graphic = context->GetGraphic();
-  auto& material_mgr = graphic->GetMaterialManager();
   auto* transform = GetOwner()->GetTransform();
 
   uint32_t blur_srv_index = graphic->GetUIBlurSrvIndex();
@@ -57,31 +57,35 @@ void UIGlassRenderer::OnRender(FramePacket& packet) {
     .darken = darken_,
   };
 
-  DrawCommand cmd;
   float aspect = size_.x / size_.y;
   float min_dim = (std::min)(size_.x, size_.y);
   float mesh_radius = (min_dim > 0.0f) ? corner_radius_px_ / min_dim : 0.1f;
   char mesh_key[64];
   std::snprintf(mesh_key, sizeof(mesh_key), "glass_rounded_rect:%.3f:%.4f", aspect, mesh_radius);
-  cmd.mesh = context->GetAssetManager().CreateRoundedRect(mesh_key, aspect, mesh_radius);
-  if (!cmd.mesh) cmd.mesh = context->GetAssetManager().GetDefaultMesh(DefaultMesh::RoundedRect);
-  cmd.material = material_mgr.GetOrCreateMaterial(Graphics::UIGlassShader::ID, Graphics::UIGlassShader::DefaultRenderSettings());
-  cmd.color = {1, 1, 1, 1};
 
-  static_assert(sizeof(params) <= sizeof(cmd.custom_data));
-  memcpy(cmd.custom_data.data(), &params, sizeof(params));
-  cmd.has_custom_data = true;
-
-  cmd.depth = static_cast<float>(layer_id_);
+  auto mesh_data = MeshFactory::CreateRoundedRectData(mesh_radius, 8, aspect);
+  MeshHandle mesh_handle = context->GetAssetManager().GetOrCreateMeshHandle(mesh_key, mesh_data);
+  if (!mesh_handle.IsValid()) {
+    mesh_handle = context->GetAssetManager().GetDefaultMeshHandle(DefaultMesh::RoundedRect);
+  }
 
   Vector2 pivot_offset(0.5f - ui_pivot_.x, 0.5f - ui_pivot_.y);
   Matrix4 pivot_mat = Matrix4::CreateTranslation(Vector3(pivot_offset.x, pivot_offset.y, 0.0f));
   Matrix4 size_scale = Matrix4::CreateScale(Vector3(size_.x, size_.y, 1.0f));
-  cmd.world_matrix = pivot_mat * size_scale * transform->GetWorldMatrix();
 
-  cmd.layer = RenderLayer::UI;
-  cmd.tags = 0;
-  cmd.depth_test = false;
-  cmd.depth_write = false;
-  packet.AddCommand(std::move(cmd));
+  RenderRequest request;
+  request.mesh = mesh_handle;
+  request.shader_id = Graphics::UIGlassShader::ID;
+  request.render_settings = Graphics::UIGlassShader::DefaultRenderSettings();
+  request.color = {1, 1, 1, 1};
+  request.world_matrix = pivot_mat * size_scale * transform->GetWorldMatrix();
+  request.depth = static_cast<float>(layer_id_);
+  request.layer = RenderLayer::UI;
+  request.tags = 0;
+
+  static_assert(sizeof(params) <= sizeof(request.custom_data.data));
+  memcpy(request.custom_data.data.data(), &params, sizeof(params));
+  request.custom_data.active = true;
+
+  packet.Draw(std::move(request));
 }

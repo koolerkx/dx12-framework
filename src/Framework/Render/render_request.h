@@ -36,6 +36,8 @@ struct InstancedRenderRequest {
   uint32_t shader_id = 0;
   Rendering::RenderSettings render_settings;
 
+  Math::Vector4 color{1, 1, 1, 1};
+
   RenderLayer layer = RenderLayer::Opaque;
   RenderTagMask tags = 0;
   float depth = 0.0f;

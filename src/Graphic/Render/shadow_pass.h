@@ -7,6 +7,7 @@
 #include "Core/types.h"
 #include "Frame/draw_command.h"
 #include "Frame/render_frame_context.h"
+#include "Frame/resolved_draw_command.h"
 #include "Render/render_pass.h"
 
 class ShaderManager;
@@ -41,4 +42,5 @@ class ShadowPass : public IRenderPass {
   char name_buffer_[32];
   ComPtr<ID3D12PipelineState> pipeline_state_;
   std::vector<DrawCommand> grouped_commands_;
+  std::vector<ResolvedDrawCommand> resolved_commands_;
 };

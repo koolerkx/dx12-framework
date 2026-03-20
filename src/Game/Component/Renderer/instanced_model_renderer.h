@@ -12,7 +12,6 @@
 #include "Framework/Math/Math.h"
 #include "Framework/Render/render_handles.h"
 #include "Graphic/Frame/frame_packet.h"
-#include "Graphic/Resource/Buffer/instance_buffer_handle.h"
 
 using Math::Matrix4;
 using Math::Vector4;
@@ -50,8 +49,7 @@ class InstancedModelRenderer : public RendererComponent<InstancedModelRenderer> 
   std::vector<InstanceEntry> entries_;
   std::unordered_map<std::string, uint32_t> id_to_index_;
 
-  InstanceBufferHandle buffer_handle_ = InstanceBufferHandle::Invalid;
   std::vector<MaterialHandle> submesh_material_handles_;
+  std::vector<InstanceData> instance_cache_;
   uint32_t instance_count_ = 0;
-  bool dirty_ = true;
 };

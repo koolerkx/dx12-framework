@@ -4,6 +4,7 @@
 #include <string>
 
 #include "Framework/Logging/logger.h"
+#include "Framework/Render/render_settings.h"
 
 bool MaterialDescriptorPool::Initialize(
   ID3D12Device* device, GetFenceValueFn get_fence_value, uint32_t frame_buffer_count, const MaterialDescriptorPoolConfig& config) {
@@ -22,6 +23,15 @@ bool MaterialDescriptorPool::Initialize(
   }
 
   slots_.reserve(256);
+
+  // fallback
+  MaterialDescriptor sentinel{};
+  sentinel.albedo_texture_index = 0;
+  sentinel.sampler_index = static_cast<uint32_t>(Rendering::SamplerType::AnisotropicWrap);
+  sentinel.metallic_factor = 0.0f;
+  sentinel.roughness_factor = 1.0f;
+  Allocate(sentinel);
+
   Logger::LogFormat(LogLevel::Info,
     LogCategory::Graphic,
     Logger::Here(),

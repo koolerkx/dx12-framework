@@ -1,8 +1,6 @@
 #include "instanced_model_renderer.h"
 
-#include "Framework/Logging/logger.h"
 #include "Framework/Render/render_settings.h"
-#include "Graphic/Resource/Buffer/instance_buffer_manager.h"
 #include "Graphic/Resource/Material/material_descriptor_pool.h"
 #include "game_context.h"
 #include "game_object.h"
@@ -17,21 +15,9 @@ InstancedModelRenderer::InstancedModelRenderer(GameObject* owner, const Props& p
 
 void InstancedModelRenderer::OnInit() {
   RendererComponent::OnInit();
-  if (instance_count_ == 0) return;
-
-  auto* graphic = GetOwner()->GetContext()->GetGraphic();
-  auto& manager = graphic->GetInstanceBufferManager();
-  buffer_handle_ = manager.Create(instance_count_);
-
-  if (buffer_handle_ == InstanceBufferHandle::Invalid) {
-    Logger::LogFormat(LogLevel::Error,
-      LogCategory::Game,
-      Logger::Here(),
-      "[InstancedModelRenderer] Failed to create instance buffer for {} instances",
-      instance_count_);
-  }
 
   if (model_) {
+    auto* graphic = GetOwner()->GetContext()->GetGraphic();
     auto* context = GetOwner()->GetContext();
     auto& pool = graphic->GetMaterialDescriptorPool();
     submesh_material_handles_.reserve(model_->sub_meshes.size());
@@ -68,55 +54,38 @@ void InstancedModelRenderer::OnInit() {
 }
 
 void InstancedModelRenderer::OnRender(FramePacket& packet) {
-  if (!model_ || instance_count_ == 0 || buffer_handle_ == InstanceBufferHandle::Invalid) return;
+  if (!model_ || instance_count_ == 0) return;
 
-  auto* graphic = GetOwner()->GetContext()->GetGraphic();
-  auto& manager = graphic->GetInstanceBufferManager();
-
-  if (dirty_) {
-    std::vector<GPUInstanceData> gpu_data(instance_count_);
-    for (uint32_t i = 0; i < instance_count_; ++i) {
-      if (!entries_[i].props.visible) {
-        gpu_data[i].world = Math::Matrix4::CreateScale(0.0f);
-        continue;
-      }
-      gpu_data[i].world = entries_[i].props.world;
-      gpu_data[i].color = entries_[i].props.color;
-      gpu_data[i].uv_offset = {0.0f, 0.0f};
-      gpu_data[i].uv_scale = {1.0f, 1.0f};
-      gpu_data[i].overlay_color = entries_[i].props.overlay_color;
+  instance_cache_.resize(instance_count_);
+  for (uint32_t i = 0; i < instance_count_; ++i) {
+    if (!entries_[i].props.visible) {
+      instance_cache_[i].world = Math::Matrix4::CreateScale(0.0f);
+    } else {
+      instance_cache_[i].world = entries_[i].props.world;
     }
-    manager.Update(buffer_handle_, gpu_data.data(), instance_count_);
-    dirty_ = false;
+    instance_cache_[i].color = entries_[i].props.color;
+    instance_cache_[i].uv_offset = {0.0f, 0.0f};
+    instance_cache_[i].uv_scale = {1.0f, 1.0f};
+    instance_cache_[i].overlay_color = entries_[i].props.overlay_color;
   }
-
-  auto& material_mgr = graphic->GetMaterialManager();
-  D3D12_GPU_VIRTUAL_ADDRESS buffer_address = manager.GetAddress(buffer_handle_);
 
   for (size_t i = 0; i < model_->sub_meshes.size(); ++i) {
     const auto& entry = model_->sub_meshes[i];
-    DrawCommand cmd;
-    cmd.mesh_handle = entry.mesh_handle;
-    cmd.instance_buffer_address = buffer_address;
-    cmd.instance_count = instance_count_;
 
-    auto settings = Rendering::RenderSettings::Opaque();
-    cmd.material = material_mgr.GetOrCreateMaterial(Graphics::PBRShader::ID, settings);
-
-    if (i < submesh_material_handles_.size()) {
-      cmd.material_handle = submesh_material_handles_[i];
-    }
-
+    InstancedRenderRequest request;
+    request.mesh = entry.mesh_handle;
+    request.shader_id = Graphics::PBRShader::ID;
+    request.render_settings = Rendering::RenderSettings::Opaque();
+    request.material = (i < submesh_material_handles_.size()) ? submesh_material_handles_[i] : MaterialHandle::Invalid();
     if (entry.surface_material_index < model_->surface_materials.size()) {
       const auto& mat = model_->surface_materials[entry.surface_material_index];
-      cmd.color = {mat.base_color_factor.x, mat.base_color_factor.y, mat.base_color_factor.z, mat.base_color_factor.w};
+      request.color = {mat.base_color_factor.x, mat.base_color_factor.y, mat.base_color_factor.z, mat.base_color_factor.w};
     }
+    request.layer = RenderLayer::Opaque;
+    request.tags = static_cast<uint32_t>(RenderTag::CastShadow | RenderTag::ReceiveShadow | RenderTag::Lit);
+    request.depth = 0.0f;
 
-    cmd.layer = RenderLayer::Opaque;
-    cmd.tags = static_cast<uint32_t>(RenderTag::CastShadow | RenderTag::ReceiveShadow | RenderTag::Lit);
-    cmd.depth = 0.0f;
-
-    packet.AddCommand(std::move(cmd));
+    packet.DrawInstanced(std::move(request), instance_cache_);
   }
 }
 
@@ -129,12 +98,6 @@ void InstancedModelRenderer::OnDestroy() {
       }
     }
     submesh_material_handles_.clear();
-
-    if (buffer_handle_ != InstanceBufferHandle::Invalid) {
-      uint64_t fence_value = graphic->GetCurrentFenceValue();
-      graphic->GetInstanceBufferManager().Destroy(buffer_handle_, fence_value);
-      buffer_handle_ = InstanceBufferHandle::Invalid;
-    }
   }
   RendererComponent::OnDestroy();
 }
@@ -145,5 +108,4 @@ void InstancedModelRenderer::UpdateById(const std::string& id, std::function<Ins
 
   auto& entry = entries_[it->second];
   entry.props = modifier(entry.props);
-  dirty_ = true;
 }

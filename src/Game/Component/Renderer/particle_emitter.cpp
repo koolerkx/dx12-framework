@@ -111,7 +111,6 @@ void ParticleEmitter::OnRender(FramePacket& packet) {
 
   auto* context = GetOwner()->GetContext();
   auto* graphic = context->GetGraphic();
-  auto& material_mgr = graphic->GetMaterialManager();
   auto& pool = graphic->GetMaterialDescriptorPool();
 
   if (!material_handle_.IsValid() || material_dirty_) {
@@ -126,39 +125,44 @@ void ParticleEmitter::OnRender(FramePacket& packet) {
     material_dirty_ = false;
   }
 
-  DrawCommand cmd;
-  cmd.mesh = context->GetAssetManager().GetDefaultMesh(DefaultMesh::Rect);
-  cmd.material = material_mgr.GetOrCreateMaterial(Graphics::SoftParticleShader::ID, render_settings_);
-  cmd.material_handle = material_handle_;
+  MeshHandle rect_handle = context->GetAssetManager().GetDefaultMeshHandle(DefaultMesh::Rect);
+  if (!rect_handle.IsValid()) return;
+
+  std::vector<InstanceData> particle_instances;
+  particle_instances.reserve(particles_.size());
+  for (const auto& p : particles_) {
+    Matrix4 billboard_rot = Matrix4::FaceTo(p.position, packet.main_camera.position, Vector3::Up);
+    Matrix4 scale_mat = Matrix4::CreateScale({particle_size_.x * p.size, particle_size_.y * p.size, 1.0f});
+    Matrix4 world = scale_mat * billboard_rot * Matrix4::CreateTranslation(p.position);
+
+    particle_instances.push_back({
+      .world = world,
+      .color = p.color,
+      .uv_offset = {0, 0},
+      .uv_scale = {1, 1},
+      .overlay_color = {0, 0, 0, 0},
+    });
+  }
+
+  InstancedRenderRequest request;
+  request.mesh = rect_handle;
+  request.shader_id = Graphics::SoftParticleShader::ID;
+  request.render_settings = render_settings_;
+  request.material = material_handle_;
+  request.depth = Vector3::DistanceSquared(GetOwner()->GetTransform()->GetWorldPosition(), packet.main_camera.position);
+  request.layer = RenderLayer::Transparent;
+  request.tags = 0;
 
   Graphics::SoftParticleShader::Params params{
     .depth_srv_index = graphic->GetNormalDepthSrvIndex(),
     .emissive_intensity = emissive_intensity_,
     .soft_distance = soft_distance_,
   };
-  static_assert(sizeof(params) <= sizeof(cmd.custom_data));
-  memcpy(cmd.custom_data.data(), &params, sizeof(params));
-  cmd.has_custom_data = true;
+  static_assert(sizeof(params) <= sizeof(request.custom_data.data));
+  memcpy(request.custom_data.data.data(), &params, sizeof(params));
+  request.custom_data.active = true;
 
-  cmd.instances.reserve(particles_.size());
-  for (const auto& p : particles_) {
-    Matrix4 billboard_rot = Matrix4::FaceTo(p.position, packet.main_camera.position, Vector3::Up);
-    Matrix4 scale_mat = Matrix4::CreateScale({particle_size_.x * p.size, particle_size_.y * p.size, 1.0f});
-    Matrix4 world = scale_mat * billboard_rot * Matrix4::CreateTranslation(p.position);
-
-    cmd.instances.push_back({
-      .world_matrix = world,
-      .color = p.color,
-      .uv_offset = {0, 0},
-      .uv_scale = {1, 1},
-    });
-  }
-
-  cmd.depth = Vector3::DistanceSquared(GetOwner()->GetTransform()->GetWorldPosition(), packet.main_camera.position);
-  cmd.layer = RenderLayer::Transparent;
-  cmd.depth_test = render_settings_.depth_test;
-  cmd.depth_write = render_settings_.depth_write;
-  packet.AddCommand(std::move(cmd));
+  packet.DrawInstanced(std::move(request), particle_instances);
 }
 
 void ParticleEmitter::OnDestroy() {

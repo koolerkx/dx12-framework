@@ -54,7 +54,6 @@ void UISpriteRenderer::OnRender(FramePacket& packet) {
   if (!texture_) return;
 
   auto* context = GetOwner()->GetContext();
-  auto& material_mgr = context->GetGraphic()->GetMaterialManager();
   auto& pool = context->GetGraphic()->GetMaterialDescriptorPool();
   auto* transform = GetOwner()->GetTransform();
 
@@ -70,26 +69,23 @@ void UISpriteRenderer::OnRender(FramePacket& packet) {
     material_dirty_ = false;
   }
 
-  DrawCommand cmd;
-  cmd.mesh = context->GetAssetManager().GetDefaultMesh(DefaultMesh::Rect);
-  cmd.material = material_mgr.GetOrCreateMaterial(Graphics::SpriteShader::ID, render_settings_);
-  cmd.material_handle = material_handle_;
-  cmd.color = color_;
-  cmd.uv_offset = uv_offset_;
-  cmd.uv_scale = uv_scale_;
-
-  cmd.depth = static_cast<float>(layer_id_);
-
   Vector2 pivot_offset(0.5f - ui_pivot_.x, 0.5f - ui_pivot_.y);
   Matrix4 pivot_mat = Matrix4::CreateTranslation(Vector3(pivot_offset.x, pivot_offset.y, 0.0f));
   Matrix4 size_scale = Matrix4::CreateScale(Vector3(size_.x, size_.y, 1.0f));
-  cmd.world_matrix = pivot_mat * size_scale * transform->GetWorldMatrix();
 
-  cmd.layer = RenderLayer::UI;
-  cmd.tags = render_tags_;
-  cmd.depth_test = render_settings_.depth_test;
-  cmd.depth_write = render_settings_.depth_write;
-  packet.AddCommand(std::move(cmd));
+  RenderRequest request;
+  request.mesh = context->GetAssetManager().GetDefaultMeshHandle(DefaultMesh::Rect);
+  request.shader_id = Graphics::SpriteShader::ID;
+  request.render_settings = render_settings_;
+  request.material = material_handle_;
+  request.color = color_;
+  request.uv_offset = uv_offset_;
+  request.uv_scale = uv_scale_;
+  request.world_matrix = pivot_mat * size_scale * transform->GetWorldMatrix();
+  request.depth = static_cast<float>(layer_id_);
+  request.layer = RenderLayer::UI;
+  request.tags = render_tags_;
+  packet.Draw(std::move(request));
 }
 
 void UISpriteRenderer::OnDestroy() {

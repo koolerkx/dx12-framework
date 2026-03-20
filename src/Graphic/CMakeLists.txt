@@ -92,6 +92,8 @@ add_library(graphic STATIC
   Render/render_graph_handle.h
   Render/material_renderer.h
   Render/material_renderer.cpp
+  Render/draw_command_resolver.h
+  Render/draw_command_resolver.cpp
   Render/draw_command_aggregator.h
   Render/draw_command_aggregator.cpp
   Render/bindless_instance_grouper.h

@@ -30,8 +30,7 @@ void SpriteRenderer::SetPivot(const Vector2& normalized_pivot) {
 }
 
 SpriteRenderer::EditorData SpriteRenderer::GetEditorData() const {
-  return {color_, size_, sprite_pivot_, uv_offset_, uv_scale_,
-          billboard_mode_, render_settings_, render_layer_, render_tags_};
+  return {color_, size_, sprite_pivot_, uv_offset_, uv_scale_, billboard_mode_, render_settings_, render_layer_, render_tags_};
 }
 
 void SpriteRenderer::ApplyEditorData(const EditorData& data) {
@@ -91,7 +90,6 @@ void SpriteRenderer::OnRender(FramePacket& packet) {
   if (!texture_) return;
 
   auto* context = GetOwner()->GetContext();
-  auto& material_mgr = context->GetGraphic()->GetMaterialManager();
   auto& pool = context->GetGraphic()->GetMaterialDescriptorPool();
   auto* transform = GetOwner()->GetTransform();
 
@@ -107,29 +105,27 @@ void SpriteRenderer::OnRender(FramePacket& packet) {
     material_dirty_ = false;
   }
 
-  DrawCommand cmd;
-  cmd.mesh = context->GetAssetManager().GetDefaultMesh(DefaultMesh::Quad);
-  cmd.material = material_mgr.GetOrCreateMaterial(Graphics::Basic3DShader::ID, render_settings_);
-  cmd.material_handle = material_handle_;
-  cmd.color = color_;
-  cmd.uv_offset = uv_offset_;
-  cmd.uv_scale = uv_scale_;
-
   Vector2 pivot_offset(0.5f - sprite_pivot_.x, sprite_pivot_.y - 0.5f);
   Matrix4 pivot_mat = Matrix4::CreateTranslation(Vector3(pivot_offset.x, pivot_offset.y, 0.0f));
   Matrix4 size_scale = Matrix4::CreateScale(Vector3(size_.x, size_.y, 1.0f));
   Matrix4 base_world = CalculateWorldMatrix(transform, packet.main_camera);
-  cmd.world_matrix = pivot_mat * size_scale * base_world;
 
   Vector3 worldPos = transform->GetWorldPosition();
   Vector3 camPos = packet.main_camera.position;
-  cmd.depth = Vector3::DistanceSquared(worldPos, camPos);
 
-  cmd.layer = render_layer_;
-  cmd.tags = render_tags_;
-  cmd.depth_test = render_settings_.depth_test;
-  cmd.depth_write = render_settings_.depth_write;
-  packet.AddCommand(std::move(cmd));
+  RenderRequest request;
+  request.mesh = context->GetAssetManager().GetDefaultMeshHandle(DefaultMesh::Quad);
+  request.shader_id = Graphics::Basic3DShader::ID;
+  request.render_settings = render_settings_;
+  request.material = material_handle_;
+  request.color = color_;
+  request.uv_offset = uv_offset_;
+  request.uv_scale = uv_scale_;
+  request.world_matrix = pivot_mat * size_scale * base_world;
+  request.depth = Vector3::DistanceSquared(worldPos, camPos);
+  request.layer = render_layer_;
+  request.tags = render_tags_;
+  packet.Draw(std::move(request));
 }
 
 void SpriteRenderer::OnDestroy() {

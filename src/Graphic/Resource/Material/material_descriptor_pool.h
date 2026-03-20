@@ -17,6 +17,8 @@ struct MaterialDescriptorPoolConfig {
 
 class MaterialDescriptorPool {
  public:
+  static constexpr uint32_t SENTINEL_INDEX = 0;
+
   using GetFenceValueFn = std::function<uint64_t()>;
 
   bool Initialize(
