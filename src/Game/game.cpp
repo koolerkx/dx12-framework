@@ -47,7 +47,7 @@ void Game::Initialize(const Props& props) {
   scene_manager_.Register<ModelScene>(SceneId::MODEL_SCENE);
   scene_manager_.Register<CityScene>(SceneId::CITY_SCENE);
   scene_manager_.Register<TitleScene>(SceneId::TITLE_SCENE);
-  scene_manager_.RequestLoad(SceneId::TITLE_SCENE);
+  scene_manager_.RequestLoad(props.initial_scene);
   scene_manager_.ProcessPending(asset_manager_, context_, context_->GetRenderService());
 }
 

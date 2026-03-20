@@ -87,10 +87,14 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
   Game game;
   game.Initialize({
     .context = &context,
-#ifndef ENABLE_EDITOR
+#ifdef ENABLE_EDITOR
+    .initial_scene = SceneId::EMPTY_SCENE,
+    .debug_draw_enabled = true,
+#else
+    .initial_scene = SceneId::TITLE_SCENE,
     .auto_play = true,
+    .debug_draw_enabled = false,
 #endif
-    .debug_draw_enabled = config.debug_draw_enabled,
     .scene_defaults = config.scene_defaults,
   });
 

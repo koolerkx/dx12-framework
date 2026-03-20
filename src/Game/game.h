@@ -6,6 +6,7 @@
 #include "Framework/Render/frame_packet.h"
 #include "play_state.h"
 #include "scene_defaults.h"
+#include "scene_id.h"
 #include "scene_manager.h"
 
 class GameContext;
@@ -17,6 +18,7 @@ class Game {
 
   struct Props {
     GameContext* context = nullptr;
+    SceneId initial_scene = SceneId::TITLE_SCENE;
     bool auto_play = false;
     bool debug_draw_enabled = true;
     SceneDefaults scene_defaults;
@@ -29,7 +31,9 @@ class Game {
     return scene_manager_.GetCurrentScene();
   }
 
-  PlayState GetPlayState() const { return play_state_; }
+  PlayState GetPlayState() const {
+    return play_state_;
+  }
   void Play();
   void Pause();
   void Stop();

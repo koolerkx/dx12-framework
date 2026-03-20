@@ -4,7 +4,9 @@
  */
 #pragma once
 
+#include "Component/Renderer/mesh_renderer.h"
 #include "Component/camera_component.h"
+#include "Framework/Core/color.h"
 #include "Scripts/free_camera_controller.h"
 #include "scene.h"
 
@@ -25,6 +27,12 @@ class EmptyScene : public IScene {
       .smoothness = 8.0f,
     });
     GetCameraSetting().Register(camera);
+
+    auto* cube = CreateGameObject("Cube");
+    cube->AddComponent<MeshRenderer>(MeshRenderer::Props{
+      .mesh_type = DefaultMesh::Cube,
+      .color = colors::White,
+    });
   }
 
   void OnDebugDraw(DebugDrawer& drawer) override {
