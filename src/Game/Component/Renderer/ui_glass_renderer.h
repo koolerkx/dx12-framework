@@ -3,7 +3,7 @@
 #include "Component/renderer_component.h"
 #include "Component/pivot_type.h"
 #include "Framework/Math/Math.h"
-#include "Graphic/Frame/frame_packet.h"
+#include "Framework/Render/frame_packet.h"
 #include "game_object.h"
 
 using Math::Vector2;

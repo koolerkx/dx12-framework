@@ -2,7 +2,7 @@
 #include "Component/component.h"
 #include "Framework/Math/Math.h"
 #include "Framework/Serialize/serialize_node.h"
-#include "Graphic/Frame/camera_data.h"
+#include "Framework/Render/camera_data.h"
 
 enum class ProjectionType { Perspective, Orthographic };
 

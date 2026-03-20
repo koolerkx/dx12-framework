@@ -11,7 +11,7 @@
 #include "Component/renderer_component.h"
 #include "Framework/Math/Math.h"
 #include "Framework/Render/render_handles.h"
-#include "Graphic/Frame/frame_packet.h"
+#include "Framework/Render/frame_packet.h"
 
 using Math::Matrix4;
 using Math::Vector4;

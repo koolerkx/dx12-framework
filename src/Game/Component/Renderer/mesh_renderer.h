@@ -10,7 +10,7 @@
 #include "Framework/Render/render_handles.h"
 #include "Framework/Render/render_settings.h"
 #include "Framework/Serialize/serialize_node.h"
-#include "Graphic/Frame/frame_packet.h"
+#include "Framework/Render/frame_packet.h"
 #include "Graphic/Pipeline/shader_descriptors.h"
 #include "Graphic/Pipeline/shader_registry.h"
 #include "Graphic/Resource/Material/material_descriptor_pool.h"

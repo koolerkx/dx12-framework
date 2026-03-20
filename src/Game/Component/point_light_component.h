@@ -5,7 +5,7 @@
 #include "Debug/debug_drawer.h"
 #include "Framework/Math/Math.h"
 #include "Framework/Serialize/serialize_node.h"
-#include "Graphic/Frame/frame_packet.h"
+#include "Framework/Render/frame_packet.h"
 #include "game_object.h"
 
 class PointLightComponent : public RendererComponent<PointLightComponent> {

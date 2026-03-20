@@ -74,6 +74,11 @@ add_library(framework STATIC
   Render/render_settings.h
   Render/render_request.h
   Render/instance_data.h
+  Render/camera_data.h
+  Render/shadow_config.h
+  Render/shader_types.h
+  Render/material_descriptor.h
+  Render/frame_packet.h
 
   # Serialization
   Serialize/serialize_node.h
