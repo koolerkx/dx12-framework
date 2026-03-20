@@ -101,11 +101,6 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
     return false;
   }
 
-  if (!instance_buffer_manager_.Initialize(device_.Get(), FRAME_BUFFER_COUNT)) {
-    Logger::LogFormat(LogLevel::Fatal, LogCategory::Graphic, Logger::Here(), "Failed to initialize instance buffer manager");
-    return false;
-  }
-
   if (!frame_cb_storage_.Initialize(device_.Get(), FRAME_BUFFER_COUNT)) return false;
 
   constexpr size_t OBJECT_BUFFER_PAGE_SIZE = 1024 * 1024;
@@ -474,7 +469,6 @@ void Graphic::Shutdown() {
     render_graph_->Shutdown();
   }
 
-  instance_buffer_manager_.Shutdown();
   mesh_registry_.Clear();
   render_services_.reset();
   presentation_context_.reset();
@@ -501,7 +495,6 @@ RenderFrameContext Graphic::BeginFrame() {
   frame_synchronizer_->WaitForFrame(frame_index);
   uint64_t completed_fence = frame_synchronizer_->GetCompletedValue();
   render_services_->OnFrameBegin(frame_index, completed_fence);
-  instance_buffer_manager_.OnFrameBegin(frame_index, completed_fence);
 
   object_cb_allocators_[frame_index]->Reset();
 

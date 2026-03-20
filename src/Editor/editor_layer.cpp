@@ -41,7 +41,6 @@
 #include "Graphic/Resource/Mesh/mesh_buffer_pool.h"
 #include "Graphic/graphic.h"
 
-
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 void EditorLayer::Initialize(HWND hwnd, Graphic& graphic) {
@@ -1279,8 +1278,7 @@ void EditorLayer::DrawModelComponentInspector(ModelComponent* model) {
 }
 
 void EditorLayer::DrawMeshRendererInspector(MeshRenderer* renderer) {
-  const Mesh* mesh = renderer->GetMesh();
-  ImGui::Text("Mesh: %s", mesh ? "Loaded" : "None");
+  ImGui::Text("Mesh: %s", renderer->HasMesh() ? "Loaded" : "None");
 
   auto DrawTexturePicker = [&](const char* label,
                              const std::string& current_path,

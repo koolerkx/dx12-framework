@@ -50,21 +50,6 @@ struct SpriteShader {
   }
 };
 
-struct SpriteInstancedShader {
-  static constexpr ShaderId ID = 1;
-  using VertexType = Vertex::SpriteVertex;
-
-  static constexpr RSPreset RS_PRESET = RSPreset::Standard;
-  static constexpr std::string_view NAME = "SpriteInstanced";
-  static constexpr std::wstring_view VS_PATH = L"Content/shaders/sprite.vs.cso";
-  static constexpr std::wstring_view PS_PATH = L"Content/shaders/sprite_instanced.ps.cso";
-  static constexpr ShaderRenderHints HINTS = {};
-
-  static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
-    return VertexType::GetInputLayout();
-  }
-};
-
 // Mesh Shaders
 struct Basic3DShader {
   static constexpr ShaderId ID = 4;
@@ -383,7 +368,6 @@ struct PostProcessFogShader {
   }
 };
 
-
 struct PostProcessChromaticAberrationShader {
   static constexpr ShaderId ID = 33;
   using VertexType = Vertex::Empty;
@@ -401,7 +385,6 @@ struct PostProcessChromaticAberrationShader {
 
 // Shader Registration
 using AllShaders = std::tuple<SpriteShader,
-  SpriteInstancedShader,
   Basic3DShader,
   DebugLineShader,
   PostProcessToneMapShader,

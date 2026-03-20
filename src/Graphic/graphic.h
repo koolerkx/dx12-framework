@@ -31,7 +31,6 @@
 #include "Rendering/smaa_config.h"
 #include "Rendering/ssao_config.h"
 #include "Rendering/vignette_config.h"
-#include "Resource/Buffer/instance_buffer_manager.h"
 #include "Resource/Buffer/structured_buffer.h"
 #include "Resource/Font/sprite_font_manager.h"
 #include "Resource/Material/material_descriptor_pool.h"
@@ -166,10 +165,6 @@ class Graphic {
     return descriptor_heap_manager_;
   }
 
-  InstanceBufferManager& GetInstanceBufferManager() {
-    return instance_buffer_manager_;
-  }
-
   uint64_t GetCurrentFenceValue() const {
     return frame_synchronizer_ ? frame_synchronizer_->GetCurrentFenceValue() : 0;
   }
@@ -249,7 +244,6 @@ class Graphic {
   ComPtr<ID3D12CommandQueue> command_queue_ = nullptr;
 
   DescriptorHeapManager descriptor_heap_manager_;
-  InstanceBufferManager instance_buffer_manager_;
   MeshRegistry mesh_registry_;
 
   RenderConfig render_config_;

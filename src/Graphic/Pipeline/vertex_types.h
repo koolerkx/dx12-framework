@@ -83,50 +83,6 @@ struct PositionNormalTexCoordColor {
 };
 static_assert(sizeof(PositionNormalTexCoordColor) == 48);
 
-struct SpriteInstance {
-  Matrix4 world_matrix;
-  Vector4 color;
-  Vector2 uv_offset;
-  Vector2 uv_scale;
-
-  static constexpr std::array kInstanceLayout = {
-    D3D12_INPUT_ELEMENT_DESC{"INSTANCE_WORLD", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1},
-    D3D12_INPUT_ELEMENT_DESC{"INSTANCE_WORLD", 1, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 16, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1},
-    D3D12_INPUT_ELEMENT_DESC{"INSTANCE_WORLD", 2, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 32, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1},
-    D3D12_INPUT_ELEMENT_DESC{"INSTANCE_WORLD", 3, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 48, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1},
-    D3D12_INPUT_ELEMENT_DESC{"INSTANCE_COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 64, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1},
-    D3D12_INPUT_ELEMENT_DESC{"INSTANCE_UV_OFFSET", 0, DXGI_FORMAT_R32G32_FLOAT, 1, 80, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1},
-    D3D12_INPUT_ELEMENT_DESC{"INSTANCE_UV_SCALE", 0, DXGI_FORMAT_R32G32_FLOAT, 1, 88, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1},
-  };
-
-  static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInstanceLayout() {
-    return {kInstanceLayout.data(), kInstanceLayout.size()};
-  }
-};
-static_assert(sizeof(SpriteInstance) == 96);
-
-namespace detail {
-inline constexpr auto MakeSpriteInstancedLayout() {
-  std::array<D3D12_INPUT_ELEMENT_DESC, PositionTexCoordColor::INPUT_LAYOUT.size() + SpriteInstance::kInstanceLayout.size()> result{};
-  size_t idx = 0;
-  for (const auto& elem : PositionTexCoordColor::INPUT_LAYOUT) {
-    result[idx++] = elem;
-  }
-  for (const auto& elem : SpriteInstance::kInstanceLayout) {
-    result[idx++] = elem;
-  }
-  return result;
-}
-}  // namespace detail
-
-struct SpriteInstanced {
-  static constexpr auto INPUT_LAYOUT = detail::MakeSpriteInstancedLayout();
-
-  static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
-    return {INPUT_LAYOUT.data(), INPUT_LAYOUT.size()};
-  }
-};
-
 struct Empty {
   static std::span<const D3D12_INPUT_ELEMENT_DESC> GetInputLayout() {
     return {};

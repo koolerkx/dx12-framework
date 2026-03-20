@@ -15,7 +15,6 @@
 #include "Graphic/Pipeline/shader_registry.h"
 #include "Graphic/Resource/Material/material_descriptor_pool.h"
 #include "Graphic/Resource/Texture/texture.h"
-#include "Graphic/Resource/mesh.h"
 #include "game_context.h"
 #include "game_object.h"
 #include "scene.h"
@@ -96,7 +95,6 @@ class MeshRenderer : public RendererComponent<MeshRenderer> {
  public:
   struct Props {
     DefaultMesh mesh_type = DefaultMesh::Cube;
-    const Mesh* mesh = nullptr;
     MeshHandle mesh_handle;
     std::string texture_path = "";
     Texture* texture = nullptr;
@@ -122,9 +120,7 @@ class MeshRenderer : public RendererComponent<MeshRenderer> {
 
   MeshRenderer(GameObject* owner, const Props& props) : RendererComponent(owner) {
     mesh_handle_ = props.mesh_handle;
-    if (props.mesh) {
-      SetMesh(props.mesh);
-    } else if (!props.mesh_handle.IsValid()) {
+    if (!mesh_handle_.IsValid()) {
       SetDefaultMesh(props.mesh_type);
     }
     if (props.texture) {
@@ -153,15 +149,10 @@ class MeshRenderer : public RendererComponent<MeshRenderer> {
     SetEmissiveIntensity(props.emissive_intensity);
   }
 
-  void SetMesh(const Mesh* mesh) {
-    mesh_ = mesh;
-    mesh_type_name_.clear();
-  }
-
   void SetDefaultMesh(DefaultMesh type) {
     auto* context = GetOwner()->GetContext();
     if (!context) return;
-    mesh_ = context->GetAssetManager().GetDefaultMesh(type);
+    mesh_handle_ = context->GetAssetManager().GetDefaultMeshHandle(type);
     mesh_type_name_ = DefaultMeshToString(type);
   }
 
@@ -387,8 +378,8 @@ class MeshRenderer : public RendererComponent<MeshRenderer> {
     memcpy(custom_data_.data(), &data, sizeof(T));
     has_custom_data_ = true;
   }
-  const Mesh* GetMesh() const {
-    return mesh_;
+  bool HasMesh() const {
+    return mesh_handle_.IsValid();
   }
   Graphics::ShaderId GetShaderId() const {
     return shader_id_;
@@ -433,7 +424,7 @@ class MeshRenderer : public RendererComponent<MeshRenderer> {
     auto mesh_type_str = node.ReadString("MeshType", "Cube");
     auto* context = GetOwner()->GetContext();
     if (context) {
-      mesh_ = context->GetAssetManager().GetDefaultMesh(ParseDefaultMesh(mesh_type_str));
+      mesh_handle_ = context->GetAssetManager().GetDefaultMeshHandle(ParseDefaultMesh(mesh_type_str));
       mesh_type_name_ = mesh_type_str;
     }
     auto tex_path = node.ReadString("Texture");
@@ -536,13 +527,12 @@ class MeshRenderer : public RendererComponent<MeshRenderer> {
   // --- Render ---
 
   void OnRender(FramePacket& packet) override {
-    if (!mesh_ && !mesh_handle_.IsValid()) return;
+    if (!mesh_handle_.IsValid()) return;
 
     auto* transform = GetOwner()->GetTransform();
     if (!transform) return;
 
     auto* context = GetOwner()->GetContext();
-    auto& material_mgr = context->GetGraphic()->GetMaterialManager();
     auto& pool = context->GetGraphic()->GetMaterialDescriptorPool();
 
     if (!material_handle_.IsValid() || material_dirty_) {
@@ -559,40 +549,21 @@ class MeshRenderer : public RendererComponent<MeshRenderer> {
     Vector3 camPos = packet.main_camera.position;
     float depth = Vector3::DistanceSquared(worldPos, camPos);
 
-    if (mesh_handle_.IsValid()) {
-      RenderRequest request;
-      request.mesh = mesh_handle_;
-      request.shader_id = shader_id_;
-      request.render_settings = render_settings_;
-      request.material = material_handle_;
-      request.color = color_;
-      request.world_matrix = transform->GetWorldMatrix();
-      request.depth = depth;
-      request.layer = render_layer_;
-      request.tags = render_tags_;
-      if (has_custom_data_) {
-        request.custom_data.data = custom_data_;
-        request.custom_data.active = true;
-      }
-      packet.Draw(std::move(request));
-    } else {
-      DrawCommand cmd;
-      cmd.world_matrix = transform->GetWorldMatrix();
-      cmd.color = color_;
-      cmd.mesh = mesh_;
-      cmd.material_handle = material_handle_;
-      cmd.material = material_mgr.GetOrCreateMaterial(shader_id_, render_settings_);
-      cmd.depth = depth;
-      if (has_custom_data_) {
-        cmd.custom_data = custom_data_;
-        cmd.has_custom_data = true;
-      }
-      cmd.layer = render_layer_;
-      cmd.tags = render_tags_;
-      cmd.depth_test = render_settings_.depth_test;
-      cmd.depth_write = render_settings_.depth_write;
-      packet.AddCommand(std::move(cmd));
+    RenderRequest request;
+    request.mesh = mesh_handle_;
+    request.shader_id = shader_id_;
+    request.render_settings = render_settings_;
+    request.material = material_handle_;
+    request.color = color_;
+    request.world_matrix = transform->GetWorldMatrix();
+    request.depth = depth;
+    request.layer = render_layer_;
+    request.tags = render_tags_;
+    if (has_custom_data_) {
+      request.custom_data.data = custom_data_;
+      request.custom_data.active = true;
     }
+    packet.Draw(std::move(request));
   }
 
   void OnDestroy() override {
@@ -607,7 +578,6 @@ class MeshRenderer : public RendererComponent<MeshRenderer> {
   }
 
  private:
-  const Mesh* mesh_ = nullptr;
   MeshHandle mesh_handle_;
   MaterialHandle material_handle_;
   bool material_dirty_ = true;

@@ -10,7 +10,6 @@
 #include "Framework/Render/render_request.h"
 #include "Graphic/Render/shadow_config.h"
 #include "camera_data.h"
-#include "draw_command.h"
 
 static constexpr uint32_t MAX_POINT_LIGHTS = 8;
 
@@ -70,7 +69,9 @@ struct InstanceDataRef {
   uint32_t offset = 0;
   uint32_t size = 0;
   uint32_t count = 0;
-  bool IsValid() const { return size > 0; }
+  bool IsValid() const {
+    return size > 0;
+  }
 };
 
 struct InternalInstancedRequest {
@@ -85,7 +86,6 @@ struct FramePacket {
   BackgroundConfig background;
   LightingConfig lighting;
   ShadowConfig shadow;
-  std::vector<DrawCommand> commands;
   std::vector<PointLightEntry> point_lights;
 
   std::vector<RenderRequest> single_requests;
@@ -93,15 +93,10 @@ struct FramePacket {
   std::vector<std::byte> instance_data_pool;
 
   void Clear() {
-    commands.clear();
     point_lights.clear();
     single_requests.clear();
     instanced_requests.clear();
     instance_data_pool.clear();
-  }
-
-  void AddCommand(DrawCommand cmd) {
-    commands.emplace_back(std::move(cmd));
   }
 
   void Draw(RenderRequest request) {

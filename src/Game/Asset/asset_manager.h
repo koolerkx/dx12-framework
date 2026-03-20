@@ -63,14 +63,9 @@ class AssetManager {
   void CreateTextureFromPixels(const std::string& cache_key, const uint8_t* pixels, uint32_t width, uint32_t height);
 
   using CubeCornerColors = std::array<Math::Vector4, 8>;
-  const Mesh* CreateCube(const std::string& key, const CubeCornerColors& corner_colors);
-
-  const Mesh* CreateRoundedRect(const std::string& key, float aspect_ratio, float corner_radius = 0.1f);
-
-  const Mesh* GetDefaultMesh(DefaultMesh type) const;
+  MeshHandle CreateCubeMesh(const std::string& key, const CubeCornerColors& corner_colors);
   MeshHandle GetDefaultMeshHandle(DefaultMesh type) const;
   MeshHandle GetOrCreateMeshHandle(const std::string& key, const struct MeshData& data);
-  std::optional<DefaultMesh> FindDefaultMeshType(const Mesh* mesh) const;
 
   bool LoadFont(Font::FontFamily family, const std::string& fnt_path, const std::string& texture_path);
 

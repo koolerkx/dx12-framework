@@ -6,12 +6,9 @@
 #include "Pipeline/pipeline_state_builder.h"
 #include "Pipeline/shader_descriptors.h"
 #include "Pipeline/shader_manager.h"
-#include "Render/bindless_instance_grouper.h"
 #include "Render/draw_command_resolver.h"
 #include "Render/prepass_record_utils.h"
 #include "Render/resolved_command_grouper.h"
-#include "Resource/Mesh/mesh_buffer_pool.h"
-#include "Resource/Mesh/mesh_descriptor.h"
 
 DepthNormalPass::DepthNormalPass(const Props& props) : device_(props.device), shader_manager_(props.shader_manager) {
   setup_ = props.pass_setup;
@@ -63,76 +60,6 @@ void DepthNormalPass::Execute(const RenderFrameContext& frame, const FramePacket
   frame_cb_data.proj = packet.main_camera.proj;
   frame_cb_data.viewProj = packet.main_camera.view * packet.main_camera.proj;
   cmd.SetFrameConstants(frame_cb_data);
-
-  grouped_commands_.clear();
-  for (const auto& draw_cmd : packet.commands) {
-    if (!draw_cmd.depth_write) continue;
-    if (!draw_cmd.mesh && !draw_cmd.UsesBindlessMesh()) continue;
-    if (draw_cmd.IsInstanced()) continue;
-    grouped_commands_.push_back(draw_cmd);
-  }
-  BindlessInstanceGrouper::GroupForPrepass(grouped_commands_, frame.object_cb_allocator);
-
-  MeshBufferPool* mesh_pool = frame.mesh_buffer_pool;
-  bool unified_buffers_bound = false;
-
-  for (const auto& draw_cmd : grouped_commands_) {
-    if (draw_cmd.UsesBindlessMesh()) {
-      if (!unified_buffers_bound) {
-        auto vbv = mesh_pool->GetVertexBufferView();
-        auto ibv = mesh_pool->GetIndexBufferView();
-        frame.command_list->IASetVertexBuffers(0, 1, &vbv);
-        frame.command_list->IASetIndexBuffer(&ibv);
-        unified_buffers_bound = true;
-      }
-      const MeshDescriptor* desc = mesh_pool->GetDescriptor(draw_cmd.mesh_handle);
-      if (!desc) continue;
-
-      if (draw_cmd.IsStructuredInstanced()) {
-        ObjectCB obj_data = {};
-        obj_data.flags = static_cast<uint32_t>(ObjectFlags::Instanced);
-        cmd.SetObjectConstants(obj_data);
-        cmd.SetInstanceBufferSRV(draw_cmd.instance_buffer_address);
-        frame.command_list->DrawIndexedInstanced(desc->index_count, draw_cmd.instance_count, desc->index_offset, desc->vertex_offset, 0);
-      } else {
-        ObjectCB obj_data = {};
-        obj_data.world = draw_cmd.world_matrix;
-        obj_data.normalMatrix = draw_cmd.world_matrix.Inverted().Transposed();
-        cmd.SetObjectConstants(obj_data);
-        frame.command_list->DrawIndexedInstanced(desc->index_count, 1, desc->index_offset, desc->vertex_offset, 0);
-      }
-      continue;
-    }
-
-    unified_buffers_bound = false;
-
-    if (draw_cmd.IsStructuredInstanced()) {
-      ObjectCB obj_data = {};
-      obj_data.flags = static_cast<uint32_t>(ObjectFlags::Instanced);
-      cmd.SetObjectConstants(obj_data);
-      cmd.SetInstanceBufferSRV(draw_cmd.instance_buffer_address);
-
-      const Mesh* mesh = draw_cmd.mesh;
-      auto vbv = mesh->GetVertexBuffer().GetView();
-      auto ibv = mesh->GetIndexBuffer().GetView();
-      frame.command_list->IASetVertexBuffers(0, 1, &vbv);
-      frame.command_list->IASetIndexBuffer(&ibv);
-
-      for (size_t i = 0; i < mesh->GetSubMeshCount(); ++i) {
-        const auto& sub = mesh->GetSubMesh(i);
-        frame.command_list->DrawIndexedInstanced(
-          sub.indexCount, draw_cmd.instance_count, sub.startIndexLocation, sub.baseVertexLocation, 0);
-      }
-      continue;
-    }
-
-    ObjectCB obj_data = {};
-    obj_data.world = draw_cmd.world_matrix;
-    obj_data.normalMatrix = draw_cmd.world_matrix.Inverted().Transposed();
-    cmd.SetObjectConstants(obj_data);
-
-    cmd.DrawMesh(draw_cmd.mesh);
-  }
 
   resolved_commands_.clear();
   DrawCommandResolver::ResolveContext resolve_ctx{

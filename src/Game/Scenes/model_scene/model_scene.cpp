@@ -28,7 +28,7 @@ void ModelScene::OnEnter(AssetManager& asset_manager) {
 
   auto* ground = CreateGameObject("Ground", {.position = {0, -1, 0}, .scale = {30, 1, 30}});
   ground->AddComponent<MeshRenderer>(MeshRenderer::Props{
-    .mesh = asset_manager.GetDefaultMesh(DefaultMesh::Plane),
+    .mesh_handle = asset_manager.GetDefaultMeshHandle(DefaultMesh::Plane),
     .color = {0.3f, 0.3f, 0.3f, 1.0f},
   });
 

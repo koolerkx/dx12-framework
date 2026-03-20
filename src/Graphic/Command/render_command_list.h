@@ -1,15 +1,12 @@
 #pragma once
 #include <d3d12.h>
 
-#include <vector>
-
 #include "Command/buffer.h"
 #include "Descriptor/descriptor_heap_manager.h"
 #include "Frame/constant_buffers.h"
 #include "Frame/dynamic_upload_buffer.h"
 #include "Pipeline/material.h"
 #include "Pipeline/root_parameter_slots.h"
-#include "Pipeline/vertex_types.h"
 #include "Resource/Mesh/mesh_buffer_pool.h"
 #include "Resource/Mesh/mesh_descriptor.h"
 #include "Resource/mesh.h"
@@ -165,9 +162,6 @@ class RenderCommandList {
       mesh->Draw(cmd_);
     }
   }
-
-  // Draw mesh with hardware instancing (for batched rendering)
-  void DrawMeshInstanced(const Mesh* mesh, const std::vector<Graphics::Vertex::SpriteInstance>& instances);
 
  private:
   ID3D12GraphicsCommandList* cmd_;

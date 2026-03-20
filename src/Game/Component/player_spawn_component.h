@@ -12,17 +12,16 @@
 #include "game_context.h"
 #include "game_object.h"
 
-
 class PlayerSpawnComponent : public BehaviorComponent<PlayerSpawnComponent> {
  public:
   using BehaviorComponent::BehaviorComponent;
 
   void OnInit() override {
     auto& assets = GetContext()->GetAssetManager();
-    const Mesh* mesh = CreateSpawnCubeMesh(assets);
+    MeshHandle mesh = CreateSpawnCubeMesh(assets);
 
     auto* renderer = GetOwner()->AddComponent<MeshRenderer>(MeshRenderer::Props{
-      .mesh = mesh,
+      .mesh_handle = mesh,
     });
 
     renderer->SetShaderWithParams<Graphics::NeonGridShader>(Graphics::NeonGridShader::Params{
@@ -84,9 +83,9 @@ class PlayerSpawnComponent : public BehaviorComponent<PlayerSpawnComponent> {
     emitter->Play();
   }
 
-  static const Mesh* CreateSpawnCubeMesh(AssetManager& assets) {
+  static MeshHandle CreateSpawnCubeMesh(AssetManager& assets) {
     using colors::ColorFromHex;
-    return assets.CreateCube("player_spawn_cube",
+    return assets.CreateCubeMesh("player_spawn_cube",
       {{
         // Green
         // ColorFromHex("#00ffcc"),

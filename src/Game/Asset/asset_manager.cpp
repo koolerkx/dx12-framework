@@ -156,50 +156,8 @@ void AssetManager::CreateTextureFromPixels(const std::string& cache_key, const u
   impl_->texture_manager->LoadTextureFromRawPixels(cache_key, pixels, width, height, false);
 }
 
-const Mesh* AssetManager::CreateCube(const std::string& key, const CubeCornerColors& corner_colors) {
-  auto& registry = impl_->graphic->GetMeshRegistry();
-  if (auto* existing = registry.Find(key)) {
-    return existing;
-  }
-
-  auto mesh = std::make_unique<Mesh>();
-  if (!MeshFactory::CreateCube(impl_->graphic->GetDevice(), *mesh, corner_colors)) {
-    Logger::LogFormat(LogLevel::Error, LogCategory::Game, Logger::Here(), "[AssetManager] Failed to create cube: {}", key);
-    return nullptr;
-  }
-  return registry.Register(key, std::move(mesh));
-}
-
-const Mesh* AssetManager::CreateRoundedRect(const std::string& key, float aspect_ratio, float corner_radius) {
-  auto& registry = impl_->graphic->GetMeshRegistry();
-  if (auto* existing = registry.Find(key)) {
-    return existing;
-  }
-
-  auto mesh = std::make_unique<Mesh>();
-  bool ok = MeshFactory::CreateRoundedRect(impl_->graphic->GetDevice(), *mesh, corner_radius, 8, aspect_ratio);
-  if (!ok) {
-    return nullptr;
-  }
-  return registry.Register(key, std::move(mesh));
-}
-
-const Mesh* AssetManager::GetDefaultMesh(DefaultMesh type) const {
-  auto it = default_meshes_.find(type);
-  if (it != default_meshes_.end()) {
-    return it->second;
-  }
-
-  Logger::LogFormat(
-    LogLevel::Error, LogCategory::Game, Logger::Here(), "[AssetManager] Default mesh not found: {}", static_cast<int>(type));
-  return nullptr;
-}
-
-std::optional<DefaultMesh> AssetManager::FindDefaultMeshType(const Mesh* mesh) const {
-  for (const auto& [type, ptr] : default_meshes_) {
-    if (ptr == mesh) return type;
-  }
-  return std::nullopt;
+MeshHandle AssetManager::CreateCubeMesh(const std::string& key, const CubeCornerColors& corner_colors) {
+  return GetOrCreateMeshHandle(key, MeshFactory::CreateCubeData(corner_colors));
 }
 
 std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path, float global_scale) {

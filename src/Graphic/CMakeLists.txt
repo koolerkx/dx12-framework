@@ -44,9 +44,6 @@ add_library(graphic STATIC
   Pipeline/material_manager.h
   Pipeline/material_manager.cpp
 
-  Resource/Buffer/instance_buffer_manager.h
-  Resource/Buffer/instance_buffer_manager.cpp
-
   Resource/Material/material_descriptor_pool.h
   Resource/Material/material_descriptor_pool.cpp
 
@@ -75,7 +72,6 @@ add_library(graphic STATIC
   Frame/render_frame_context.h
   Frame/constant_buffers.h
   Frame/camera_data.h
-  Frame/draw_command.h
   Frame/mesh_geometry.h
   Frame/resolved_draw_command.h
 
@@ -83,7 +79,6 @@ add_library(graphic STATIC
   Command/command_context.h
   Command/command_context.cpp
   Command/render_command_list.h
-  Command/render_command_list.cpp
 
   Render/render_graph.h
   Render/render_graph.cpp
@@ -94,10 +89,6 @@ add_library(graphic STATIC
   Render/material_renderer.cpp
   Render/draw_command_resolver.h
   Render/draw_command_resolver.cpp
-  Render/draw_command_aggregator.h
-  Render/draw_command_aggregator.cpp
-  Render/bindless_instance_grouper.h
-  Render/bindless_instance_grouper.cpp
   Render/resolved_command_grouper.h
   Render/resolved_command_grouper.cpp
 
@@ -189,8 +180,6 @@ target_add_hlsl_auto(graphic "6.6"
   "${CMAKE_SOURCE_DIR}/shaders/basic.ps.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/sprite.vs.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/sprite.ps.hlsl"
-  "${CMAKE_SOURCE_DIR}/shaders/sprite_instanced.vs.hlsl"
-  "${CMAKE_SOURCE_DIR}/shaders/sprite_instanced.ps.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/soft_particle.ps.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/debug_line.vs.hlsl"
   "${CMAKE_SOURCE_DIR}/shaders/debug_line.ps.hlsl"
