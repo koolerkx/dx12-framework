@@ -85,6 +85,7 @@ class EditorLayer {
   void DrawPostFxPanel();
   void ClearBackbuffer(ID3D12GraphicsCommandList* cmd);
   void DrawViewport(ID3D12GraphicsCommandList* cmd);
+  void DrawViewGizmo();
   void DrawRenderPipelinePanel(ID3D12GraphicsCommandList* cmd);
   void DrawShadowMapPanel(ID3D12GraphicsCommandList* cmd);
   void RebuildFontAtlas(float scale);
@@ -129,6 +130,8 @@ class EditorLayer {
   bool debug_draw_enabled_ = true;
   float debug_draw_opacity_ = 1.0f;
   bool wireframe_mode_ = false;
+
+  float view_gizmo_distance_ = 8.0f;
 
   float transform_position_snap_ = 0.1f;
   float transform_rotation_snap_ = 0.5f;

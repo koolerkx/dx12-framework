@@ -3,12 +3,18 @@ include(FetchContent)
 FetchContent_Declare(
   imgui
   GIT_REPOSITORY https://github.com/ocornut/imgui.git
-  GIT_TAG        v1.92.5-docking
+  GIT_TAG v1.92.5-docking
 )
 
-FetchContent_MakeAvailable(imgui)
+FetchContent_Declare(
+  imguizmo
+  GIT_REPOSITORY https://github.com/CedricGuillemet/ImGuizmo.git
+  GIT_TAG a15acd87a3f3241a29ea1363ceafc680dca3a96b
+)
 
-# ImGui static library (core + Win32/DX12 backends)
+FetchContent_MakeAvailable(imgui imguizmo)
+
+# ImGui static library (core + Win32/DX12 backends + ImGuizmo)
 add_library(imgui STATIC
   ${imgui_SOURCE_DIR}/imgui.cpp
   ${imgui_SOURCE_DIR}/imgui_demo.cpp
@@ -17,11 +23,13 @@ add_library(imgui STATIC
   ${imgui_SOURCE_DIR}/imgui_widgets.cpp
   ${imgui_SOURCE_DIR}/backends/imgui_impl_win32.cpp
   ${imgui_SOURCE_DIR}/backends/imgui_impl_dx12.cpp
+  ${imguizmo_SOURCE_DIR}/ImGuizmo.cpp
 )
 
 target_include_directories(imgui PUBLIC
   ${imgui_SOURCE_DIR}
   ${imgui_SOURCE_DIR}/backends
+  ${imguizmo_SOURCE_DIR}
 )
 
 target_link_libraries(imgui PRIVATE d3d12.lib dxgi.lib)

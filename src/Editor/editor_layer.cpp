@@ -1,5 +1,6 @@
 #include "editor_layer.h"
 
+#include <ImGuizmo.h>
 #include <imgui.h>
 #include <imgui_impl_dx12.h>
 #include <imgui_impl_win32.h>
@@ -123,6 +124,7 @@ void EditorLayer::BeginFrame() {
   ImGui_ImplWin32_NewFrame();
   UpdateScaling();
   ImGui::NewFrame();
+  ImGuizmo::BeginFrame();
 
   if (scene_ && scene_->GetContext() && scene_->GetContext()->GetInput()) {
     const auto& io = ImGui::GetIO();
@@ -557,9 +559,58 @@ void EditorLayer::DrawViewport(ID3D12GraphicsCommandList* cmd) {
       input_system_->SetViewportTransform(
         img_min.x, img_min.y, static_cast<float>(rt_w) / img_size.x, static_cast<float>(rt_h) / img_size.y);
     }
+
+    DrawViewGizmo();
   }
 
   ImGui::End();
+}
+
+void EditorLayer::DrawViewGizmo() {
+  if (!scene_) return;
+  auto* camera = scene_->GetCameraSetting().GetActive();
+  if (!camera) return;
+
+  CameraData cam_data = camera->GetCameraData();
+
+  // ImGuizmo uses RH convention (Z = eye-at, X = -X_lh).
+  // Convert LH→RH by negating columns 0 and 2 of the view matrix.
+  auto FlipHandedness = [](Math::Matrix4& m) {
+    m._11 = -m._11;
+    m._21 = -m._21;
+    m._31 = -m._31;
+    m._41 = -m._41;
+    m._13 = -m._13;
+    m._23 = -m._23;
+    m._33 = -m._33;
+    m._43 = -m._43;
+  };
+
+  FlipHandedness(cam_data.view);
+  float* view = &cam_data.view._11;
+
+  ImVec2 img_min = ImGui::GetItemRectMin();
+  ImVec2 img_size = ImGui::GetItemRectSize();
+  float gizmo_size = 128.0f;
+  ImVec2 gizmo_pos(img_min.x + img_size.x - gizmo_size, img_min.y);
+
+  ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
+  ImGuizmo::SetOrthographic(camera->GetProjectionType() == ProjectionType::Orthographic);
+  ImGuizmo::SetRect(img_min.x, img_min.y, img_size.x, img_size.y);
+  ImGuizmo::ViewManipulate(view, view_gizmo_distance_, gizmo_pos, ImVec2(gizmo_size, gizmo_size), 0x10101010);
+
+  if (ImGuizmo::IsUsingViewManipulate()) {
+    FlipHandedness(cam_data.view);
+    Math::Matrix4 world = cam_data.view.Inverted();
+    Math::Vector3 position = world.GetTranslation();
+    Math::Quaternion rotation = world.GetRotation();
+
+    auto* transform = camera->GetOwner()->GetComponent<TransformComponent>();
+    if (transform) {
+      transform->SetPosition(position);
+      transform->SetRotation(rotation);
+    }
+  }
 }
 
 void EditorLayer::DrawFpsCounter() {
