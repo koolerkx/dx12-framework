@@ -154,12 +154,12 @@ class ModelComponent : public Component<ModelComponent> {
 
           MeshRenderer::Props renderer_props;
           renderer_props.mesh_handle = entry.mesh_handle;
-          renderer_props.texture = entry.albedo_texture.get();
+          renderer_props.texture = entry.albedo_texture;
           renderer_props.shader_id = shader_id_;
           renderer_props.render_layer = render_layer_;
-          renderer_props.normal_texture = entry.normal_texture.get();
-          renderer_props.metallic_roughness_texture = entry.metallic_roughness_texture.get();
-          renderer_props.emissive_texture = entry.emissive_texture.get();
+          renderer_props.normal_texture = entry.normal_texture;
+          renderer_props.metallic_roughness_texture = entry.metallic_roughness_texture;
+          renderer_props.emissive_texture = entry.emissive_texture;
 
           if (entry.surface_material_index < model_->surface_materials.size()) {
             const auto& mat = model_->surface_materials[entry.surface_material_index];

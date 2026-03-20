@@ -1,20 +1,18 @@
 #pragma once
 #include <optional>
 
-#include "Asset/asset_handle.h"
 #include "Component/pivot_type.h"
 #include "Component/renderer_component.h"
 #include "Component/sprite_sheet_animator.h"
 #include "Framework/Math/Math.h"
+#include "Framework/Render/frame_packet.h"
 #include "Framework/Render/render_handles.h"
 #include "Framework/Render/render_settings.h"
+#include "Framework/Render/texture_handle.h"
 #include "Framework/Serialize/serialize_node.h"
 #include "Game/Asset/asset_manager.h"
-#include "Framework/Render/frame_packet.h"
-#include "Graphic/Resource/Texture/texture.h"
 #include "game_context.h"
 #include "game_object.h"
-
 
 using Math::Vector2;
 using Math::Vector4;
@@ -42,25 +40,22 @@ class UISpriteRenderer : public RendererComponent<UISpriteRenderer> {
     SetPivot(props.pivot);
   }
 
-  void SetTexture(Texture* tex) {
+  void SetTexture(TextureHandle tex) {
     texture_ = tex;
     texture_path_.clear();
-    texture_handle_ = {};
     material_dirty_ = true;
   }
 
   void SetTexturePath(const std::string& path) {
     texture_path_ = path;
     if (path.empty()) {
-      texture_ = nullptr;
-      texture_handle_ = {};
+      texture_ = TextureHandle::Invalid();
       material_dirty_ = true;
       return;
     }
     auto* context = GetOwner()->GetContext();
     if (!context) return;
-    texture_handle_ = context->GetAssetManager().LoadTexture(path);
-    texture_ = texture_handle_.Get();
+    texture_ = context->GetAssetManager().LoadTexture(path);
     material_dirty_ = true;
   }
   void SetColor(const Vector4& color) {
@@ -178,9 +173,8 @@ class UISpriteRenderer : public RendererComponent<UISpriteRenderer> {
   void OnDestroy() override;
 
  private:
-  Texture* texture_ = nullptr;
+  TextureHandle texture_;
   std::string texture_path_;
-  AssetHandle<Texture> texture_handle_;
   Vector4 color_ = {1, 1, 1, 1};
   Vector2 size_ = {100, 100};
   Vector2 uv_offset_ = {0.0f, 0.0f};

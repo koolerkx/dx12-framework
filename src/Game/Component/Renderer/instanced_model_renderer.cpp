@@ -1,7 +1,8 @@
 #include "instanced_model_renderer.h"
-#include "Framework/Render/shader_ids.h"
 
 #include "Framework/Render/render_settings.h"
+#include "Framework/Render/shader_ids.h"
+#include "Framework/Render/texture_handle.h"
 #include "Graphic/Resource/Material/material_descriptor_pool.h"
 #include "game_context.h"
 #include "game_object.h"
@@ -24,21 +25,21 @@ void InstancedModelRenderer::OnInit() {
     submesh_material_handles_.reserve(model_->sub_meshes.size());
 
     for (const auto& entry : model_->sub_meshes) {
-      Texture* albedo = entry.albedo_texture ? entry.albedo_texture.get() : context->GetAssetManager().GetDefaultWhiteTexture();
+      TextureHandle albedo = entry.albedo_texture.IsValid() ? entry.albedo_texture : context->GetAssetManager().GetDefaultWhiteTexture();
       MaterialDescriptor desc{};
-      desc.albedo_texture_index = albedo ? albedo->GetBindlessIndex() : 0;
+      desc.albedo_texture_index = albedo.IsValid() ? albedo.GetBindlessIndex() : 0;
       desc.sampler_index = static_cast<uint32_t>(Rendering::SamplerType::AnisotropicWrap);
 
-      if (entry.normal_texture) {
-        desc.normal_texture_index = entry.normal_texture->GetBindlessIndex();
+      if (entry.normal_texture.IsValid()) {
+        desc.normal_texture_index = entry.normal_texture.GetBindlessIndex();
         desc.flags |= static_cast<uint32_t>(MaterialFlags::HasNormalMap);
       }
-      if (entry.metallic_roughness_texture) {
-        desc.metallic_roughness_index = entry.metallic_roughness_texture->GetBindlessIndex();
+      if (entry.metallic_roughness_texture.IsValid()) {
+        desc.metallic_roughness_index = entry.metallic_roughness_texture.GetBindlessIndex();
         desc.flags |= static_cast<uint32_t>(MaterialFlags::HasMetallicRoughnessMap);
       }
-      if (entry.emissive_texture) {
-        desc.emissive_texture_index = entry.emissive_texture->GetBindlessIndex();
+      if (entry.emissive_texture.IsValid()) {
+        desc.emissive_texture_index = entry.emissive_texture.GetBindlessIndex();
         desc.flags |= static_cast<uint32_t>(MaterialFlags::HasEmissiveMap);
       }
 

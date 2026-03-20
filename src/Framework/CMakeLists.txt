@@ -70,6 +70,7 @@ add_library(framework STATIC
 
   # Render
   Render/render_handles.h
+  Render/texture_handle.h
   Render/render_types.h
   Render/render_settings.h
   Render/render_request.h

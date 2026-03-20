@@ -1,7 +1,8 @@
 #include "instanced_mesh_renderer.h"
-#include "Framework/Render/shader_ids.h"
 
 #include "Framework/Render/render_settings.h"
+#include "Framework/Render/shader_ids.h"
+#include "Framework/Render/texture_handle.h"
 #include "Graphic/Resource/Material/material_descriptor_pool.h"
 #include "game_context.h"
 #include "game_object.h"
@@ -26,9 +27,9 @@ void InstancedMeshRenderer::OnRender(FramePacket& packet) {
   if (!mesh_handle.IsValid()) return;
 
   if (!material_handle_.IsValid()) {
-    Texture* albedo = context->GetAssetManager().GetDefaultWhiteTexture();
+    TextureHandle albedo = context->GetAssetManager().GetDefaultWhiteTexture();
     MaterialDescriptor desc{};
-    desc.albedo_texture_index = albedo ? albedo->GetBindlessIndex() : 0;
+    desc.albedo_texture_index = albedo.IsValid() ? albedo.GetBindlessIndex() : 0;
     desc.sampler_index = static_cast<uint32_t>(Rendering::SamplerType::AnisotropicWrap);
     material_handle_ = pool.Allocate(desc);
   }

@@ -7,12 +7,13 @@
 
 #include "Framework/Logging/logger.h"
 #include "Framework/Model/model_loader.h"
+#include "Framework/Render/texture_handle.h"
 #include "Graphic/Pipeline/vertex_types.h"
 #include "Graphic/Resource/Font/sprite_font_manager.h"
 #include "Graphic/Resource/Mesh/mesh_buffer_pool.h"
+#include "Graphic/Resource/Texture/texture.h"
 #include "Graphic/Resource/Texture/texture_manager.h"
 #include "Graphic/Resource/mesh_factory.h"
-#include "Graphic/Resource/mesh_registry.h"
 #include "Graphic/graphic.h"
 #include "text_mesh_handle.h"
 
@@ -38,7 +39,8 @@ bool AssetManager::Initialize(Graphic* graphic) {
   impl_->mesh_buffer_pool = &graphic->GetMeshBufferPool();
   CreateDefaultMeshes();
   UploadDefaultMeshesToPool();
-  default_white_texture_ = impl_->texture_manager->LoadTextureSRGB("Content/textures/white.png");
+  auto white_tex = impl_->texture_manager->LoadTextureSRGB("Content/textures/white.png");
+  default_white_texture_ = white_tex ? TextureHandle{white_tex->GetBindlessIndex()} : TextureHandle::Invalid();
   return true;
 }
 
@@ -51,28 +53,28 @@ void AssetManager::Shutdown() {
   impl_.reset();
 }
 
-AssetHandle<Texture> AssetManager::LoadTexture(const std::string& path) {
+TextureHandle AssetManager::LoadTexture(const std::string& path) {
   auto texture = impl_->texture_manager->LoadTexture(path);
-  return AssetHandle<Texture>(texture, path);
+  return texture ? TextureHandle{texture->GetBindlessIndex()} : TextureHandle::Invalid();
 }
 
-AssetHandle<Texture> AssetManager::LoadTextureLinear(const std::string& path) {
+TextureHandle AssetManager::LoadTextureLinear(const std::string& path) {
   auto texture = impl_->texture_manager->LoadTextureLinear(path);
-  return AssetHandle<Texture>(texture, path);
+  return texture ? TextureHandle{texture->GetBindlessIndex()} : TextureHandle::Invalid();
 }
 
-AssetHandle<Texture> AssetManager::LoadCubemap(const std::string& path) {
+TextureHandle AssetManager::LoadCubemap(const std::string& path) {
   auto texture = impl_->texture_manager->LoadCubemapFromCrossHDR(path);
-  return AssetHandle<Texture>(texture, path);
+  return texture ? TextureHandle{texture->GetBindlessIndex()} : TextureHandle::Invalid();
 }
 
-std::vector<AssetHandle<Texture>> AssetManager::LoadTextures(const std::vector<std::string>& paths) {
+std::vector<TextureHandle> AssetManager::LoadTextures(const std::vector<std::string>& paths) {
   auto textures = impl_->texture_manager->LoadTextures(paths);
 
-  std::vector<AssetHandle<Texture>> handles;
+  std::vector<TextureHandle> handles;
   handles.reserve(textures.size());
   for (size_t i = 0; i < textures.size(); ++i) {
-    handles.emplace_back(textures[i], paths[i]);
+    handles.emplace_back(textures[i] ? TextureHandle{textures[i]->GetBindlessIndex()} : TextureHandle::Invalid());
   }
   return handles;
 }
@@ -98,7 +100,7 @@ void AssetManager::CreateDefaultMeshes() {
   auto register_default = [&](DefaultMesh type, const std::string& key, auto create_fn) {
     auto mesh = std::make_unique<Mesh>();
     if (create_fn(device, *mesh)) {
-      default_meshes_[type] = registry.Register(key, std::move(mesh));
+      registry.Register(key, std::move(mesh));
     }
   };
 
@@ -205,8 +207,9 @@ std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path, floa
           "[AssetManager] Failed to load embedded texture '{}' from model '{}'",
           tex_ref.path,
           path);
+        return impl_->texture_manager->LoadTextureSRGB("Content/textures/white.png");
       }
-      return texture ? texture : default_white_texture_;
+      return texture;
     }
 
     std::filesystem::path tex_path(tex_ref.path);
@@ -233,7 +236,7 @@ std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path, floa
         "[AssetManager] Failed to load texture '{}' for model '{}'",
         tex_ref.path,
         path);
-      return default_white_texture_;
+      return impl_->texture_manager->LoadTextureSRGB("Content/textures/white.png");
     }
     return texture;
   };
@@ -300,7 +303,6 @@ std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path, floa
 
   auto model_data = std::make_shared<ModelData>();
   model_data->path = path;
-  model_data->textures = std::move(result.texture_handles);
   model_data->surface_materials = std::move(result.surface_material_handles);
   model_data->root_node = std::move(result.root_node);
   model_data->min_y = (global_min_y < (std::numeric_limits<float>::max)()) ? global_min_y : 0.0f;
@@ -308,14 +310,21 @@ std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path, floa
     model_data->bounds = Math::AABB(bounds_min, bounds_max);
   }
 
-  auto resolve_texture = [&](const std::vector<std::optional<uint32_t>>& indices, uint32_t mat_idx) -> std::shared_ptr<Texture> {
+  // Keep textures alive via type-erased shared_ptr
+  model_data->resource_refs_.reserve(result.texture_handles.size());
+  for (auto& tex : result.texture_handles) {
+    model_data->resource_refs_.push_back(std::shared_ptr<void>(std::move(tex)));
+  }
+
+  auto resolve_texture = [&](const std::vector<std::optional<uint32_t>>& indices, uint32_t mat_idx) -> TextureHandle {
     if (mat_idx < indices.size()) {
       auto tex_idx = indices[mat_idx];
-      if (tex_idx.has_value() && *tex_idx < model_data->textures.size()) {
-        return model_data->textures[*tex_idx];
+      if (tex_idx.has_value() && *tex_idx < model_data->resource_refs_.size()) {
+        auto* tex = static_cast<Texture*>(model_data->resource_refs_[*tex_idx].get());
+        return TextureHandle{tex->GetBindlessIndex()};
       }
     }
-    return nullptr;
+    return TextureHandle::Invalid();
   };
 
   model_data->sub_meshes.reserve(result.mesh_handles.size());
@@ -386,10 +395,10 @@ TextMeshHandle AssetManager::CreateTextMesh(
     glyphs.push_back(glyph_data);
   }
 
-  // Get texture from layout (non-owning pointer)
-  Texture* texture = layout_data.variant ? layout_data.variant->texture.get() : nullptr;
+  TextureHandle texture_handle = TextureHandle::Invalid();
+  if (layout_data.variant && layout_data.variant->texture) {
+    texture_handle = TextureHandle{layout_data.variant->texture->GetBindlessIndex()};
+  }
 
-  // Return handle with pure CPU data - no mesh ownership
-  // TextRenderer will use shared Quad mesh from AssetManager
-  return TextMeshHandle(std::move(glyphs), layout_data.width, layout_data.height, texture);
+  return TextMeshHandle(std::move(glyphs), layout_data.width, layout_data.height, texture_handle);
 }

@@ -16,14 +16,11 @@
 
 #include "Framework/Math/Math.h"
 #include "Framework/Render/render_handles.h"
-#include "Resource/mesh.h"
-#include "asset_handle.h"
+#include "Framework/Render/texture_handle.h"
 #include "model_data.h"
 #include "text_mesh_handle.h"
 
 class Graphic;
-struct Texture;
-struct AudioClip;
 
 namespace Font {
 enum class FontFamily : uint16_t;
@@ -50,15 +47,12 @@ class AssetManager {
   void Shutdown();
 
   // Texture management
-  AssetHandle<Texture> LoadTexture(const std::string& path);
-  AssetHandle<Texture> LoadTextureLinear(const std::string& path);
-  AssetHandle<Texture> LoadCubemap(const std::string& path);
-  std::vector<AssetHandle<Texture>> LoadTextures(const std::vector<std::string>& paths);
+  TextureHandle LoadTexture(const std::string& path);
+  TextureHandle LoadTextureLinear(const std::string& path);
+  TextureHandle LoadCubemap(const std::string& path);
+  std::vector<TextureHandle> LoadTextures(const std::vector<std::string>& paths);
 
   std::shared_ptr<ModelData> LoadModel(const std::string& path, float global_scale = 1.0f);
-
-  // Todo: Audio management
-  // AssetHandle<AudioClip> LoadAudio(const std::string& path);
 
   void CreateTextureFromPixels(const std::string& cache_key, const uint8_t* pixels, uint32_t width, uint32_t height);
 
@@ -72,8 +66,8 @@ class AssetManager {
   TextMeshHandle CreateTextMesh(
     const std::wstring& text, Font::FontFamily family, float pixel_size, const Text::TextLayoutProps& layout_props);
 
-  Texture* GetDefaultWhiteTexture() const {
-    return default_white_texture_.get();
+  TextureHandle GetDefaultWhiteTexture() const {
+    return default_white_texture_;
   }
 
   Graphic* GetGraphicForDebugUseOnly() const;
@@ -87,11 +81,10 @@ class AssetManager {
   void UploadDefaultMeshesToPool();
   void FreeMeshHandlesForModel(const ModelData& model_data);
 
-  std::unordered_map<DefaultMesh, const Mesh*> default_meshes_;
   std::unordered_map<DefaultMesh, MeshHandle> default_mesh_handles_;
-  std::unordered_map<std::string, std::shared_ptr<ModelData>> model_cache_;  // router table to graphic layers
+  std::unordered_map<std::string, std::shared_ptr<ModelData>> model_cache_;
   std::unordered_map<std::string, MeshHandle> mesh_handle_cache_;
-  std::shared_ptr<Texture> default_white_texture_;
+  TextureHandle default_white_texture_;
 
   class Impl;
   std::unique_ptr<Impl> impl_;

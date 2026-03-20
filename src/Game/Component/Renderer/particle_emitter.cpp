@@ -2,9 +2,8 @@
 
 #include <cmath>
 
+#include "Framework/Render/shader_ids.h"
 #include "Game/Asset/asset_manager.h"
-#include "Framework/Render/shader_ids.h"
-#include "Framework/Render/shader_ids.h"
 #include "Graphic/Resource/Material/material_descriptor_pool.h"
 #include "Graphic/graphic.h"
 #include "game_context.h"
@@ -107,7 +106,7 @@ void ParticleEmitter::OnUpdate(float dt) {
 }
 
 void ParticleEmitter::OnRender(FramePacket& packet) {
-  if (!texture_ || particles_.empty()) return;
+  if (!texture_.IsValid() || particles_.empty()) return;
 
   auto* context = GetOwner()->GetContext();
   auto* graphic = context->GetGraphic();
@@ -115,7 +114,7 @@ void ParticleEmitter::OnRender(FramePacket& packet) {
 
   if (!material_handle_.IsValid() || material_dirty_) {
     MaterialDescriptor desc{};
-    desc.albedo_texture_index = texture_->GetBindlessIndex();
+    desc.albedo_texture_index = texture_.GetBindlessIndex();
     desc.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
     if (!material_handle_.IsValid()) {
       material_handle_ = pool.Allocate(desc);

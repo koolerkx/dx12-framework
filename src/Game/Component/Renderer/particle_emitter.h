@@ -4,19 +4,17 @@
 #include <random>
 #include <vector>
 
-#include "Asset/asset_handle.h"
 #include "Component/renderer_component.h"
 #include "Component/transform_component.h"
 #include "Framework/Math/Math.h"
+#include "Framework/Render/frame_packet.h"
 #include "Framework/Render/render_handles.h"
 #include "Framework/Render/render_settings.h"
+#include "Framework/Render/texture_handle.h"
 #include "Framework/Serialize/serialize_node.h"
 #include "Game/Asset/asset_manager.h"
-#include "Framework/Render/frame_packet.h"
-#include "Graphic/Resource/Texture/texture.h"
 #include "game_context.h"
 #include "game_object.h"
-
 
 using Math::Matrix4;
 using Math::Vector2;
@@ -103,15 +101,13 @@ class ParticleEmitter : public RendererComponent<ParticleEmitter> {
   void SetTexturePath(const std::string& path) {
     texture_path_ = path;
     if (path.empty()) {
-      texture_ = nullptr;
-      texture_handle_ = {};
+      texture_ = TextureHandle::Invalid();
       material_dirty_ = true;
       return;
     }
     auto* context = GetOwner()->GetContext();
     if (!context) return;
-    texture_handle_ = context->GetAssetManager().LoadTexture(path);
-    texture_ = texture_handle_.Get();
+    texture_ = context->GetAssetManager().LoadTexture(path);
     material_dirty_ = true;
   }
 
@@ -253,9 +249,8 @@ class ParticleEmitter : public RendererComponent<ParticleEmitter> {
 
   std::vector<Particle> particles_;
 
-  Texture* texture_ = nullptr;
+  TextureHandle texture_;
   std::string texture_path_;
-  AssetHandle<Texture> texture_handle_;
   size_t max_particles_ = 100;
   float emit_rate_ = 10.0f;
   float particle_lifetime_ = 2.0f;

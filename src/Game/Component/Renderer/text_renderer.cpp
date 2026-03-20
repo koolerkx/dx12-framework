@@ -2,8 +2,9 @@
 
 #include "Component/pivot_type.h"
 #include "Component/transform_component.h"
-#include "Game/Asset/asset_manager.h"
 #include "Framework/Render/shader_ids.h"
+#include "Framework/Render/texture_handle.h"
+#include "Game/Asset/asset_manager.h"
 #include "Graphic/Resource/Material/material_descriptor_pool.h"
 #include "game_context.h"
 
@@ -91,16 +92,14 @@ void TextRenderer::OnRender(FramePacket& packet) {
 
   auto& pool = context->GetGraphic()->GetMaterialDescriptorPool();
   auto* transform = GetOwner()->GetTransform();
-  Texture* texture = text_mesh_handle_.GetTexture();
-  if (!texture) return;
+  TextureHandle texture = text_mesh_handle_.GetTexture();
+  if (!texture.IsValid()) return;
 
   if (!material_handle_.IsValid() || material_dirty_) {
     MaterialDescriptor desc{};
-    desc.albedo_texture_index = texture->GetBindlessIndex();
+    desc.albedo_texture_index = texture.GetBindlessIndex();
     desc.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
-    desc.flags = (render_layer_ != RenderLayer::Transparent)
-                     ? flags::Combine(MaterialFlags::AlphaTest)
-                     : 0u;
+    desc.flags = (render_layer_ != RenderLayer::Transparent) ? flags::Combine(MaterialFlags::AlphaTest) : 0u;
     if (!material_handle_.IsValid()) {
       material_handle_ = pool.Allocate(desc);
     } else {

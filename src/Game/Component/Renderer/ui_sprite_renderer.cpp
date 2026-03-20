@@ -2,8 +2,8 @@
 
 #include "Component/pivot_type.h"
 #include "Component/transform_component.h"
-#include "Game/Asset/asset_manager.h"
 #include "Framework/Render/shader_ids.h"
+#include "Game/Asset/asset_manager.h"
 #include "Graphic/Resource/Material/material_descriptor_pool.h"
 #include "game_context.h"
 
@@ -19,8 +19,7 @@ void UISpriteRenderer::SetPivot(const Vector2& normalized_pivot) {
 }
 
 UISpriteRenderer::EditorData UISpriteRenderer::GetEditorData() const {
-  return {color_, size_, ui_pivot_, uv_offset_, uv_scale_,
-          layer_id_, render_settings_, render_tags_};
+  return {color_, size_, ui_pivot_, uv_offset_, uv_scale_, layer_id_, render_settings_, render_tags_};
 }
 
 void UISpriteRenderer::ApplyEditorData(const EditorData& data) {
@@ -51,7 +50,7 @@ void UISpriteRenderer::OnUpdate(float dt) {
 }
 
 void UISpriteRenderer::OnRender(FramePacket& packet) {
-  if (!texture_) return;
+  if (!texture_.IsValid()) return;
 
   auto* context = GetOwner()->GetContext();
   auto& pool = context->GetGraphic()->GetMaterialDescriptorPool();
@@ -59,7 +58,7 @@ void UISpriteRenderer::OnRender(FramePacket& packet) {
 
   if (!material_handle_.IsValid() || material_dirty_) {
     MaterialDescriptor desc{};
-    desc.albedo_texture_index = texture_->GetBindlessIndex();
+    desc.albedo_texture_index = texture_.GetBindlessIndex();
     desc.sampler_index = static_cast<uint32_t>(render_settings_.sampler_type);
     if (!material_handle_.IsValid()) {
       material_handle_ = pool.Allocate(desc);

@@ -1,11 +1,12 @@
 #pragma once
 
-#include "Asset/asset_handle.h"
+#include <string>
+
 #include "Framework/Core/color.h"
 #include "Framework/Render/frame_packet.h"
+#include "Framework/Render/texture_handle.h"
 
 class AssetManager;
-struct Texture;
 
 class BackgroundSetting {
  public:
@@ -33,7 +34,7 @@ class BackgroundSetting {
     return clear_color_;
   }
   bool HasSkybox() const {
-    return cubemap_.Get() != nullptr;
+    return cubemap_.IsValid();
   }
   const std::string& GetSkyboxPath() const {
     return skybox_path_;
@@ -43,5 +44,5 @@ class BackgroundSetting {
   BackgroundMode mode_ = BackgroundMode::ClearColor;
   Color clear_color_ = colors::DarkSlateGray;
   std::string skybox_path_;
-  AssetHandle<Texture> cubemap_;
+  TextureHandle cubemap_;
 };

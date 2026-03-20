@@ -2,10 +2,9 @@
 #include <vector>
 
 #include "Framework/Math/Math.h"
+#include "Framework/Render/texture_handle.h"
 
 using Math::Vector2;
-
-struct Texture;
 
 namespace Font {
 enum class FontFamily : uint16_t;
@@ -25,8 +24,7 @@ class TextMeshHandle {
  public:
   TextMeshHandle() = default;
 
-  // Construct from layout data
-  TextMeshHandle(std::vector<GlyphLayoutData> glyphs, float width, float height, Texture* texture)
+  TextMeshHandle(std::vector<GlyphLayoutData> glyphs, float width, float height, TextureHandle texture)
       : glyphs_(std::move(glyphs)), texture_(texture), width_(width), height_(height) {};
 
   // Default move/copy - it's just CPU data
@@ -48,8 +46,7 @@ class TextMeshHandle {
     return &glyphs_[index];
   }
 
-  // Get texture (font atlas)
-  Texture* GetTexture() const {
+  TextureHandle GetTexture() const {
     return texture_;
   }
 
@@ -61,14 +58,13 @@ class TextMeshHandle {
     return height_;
   }
 
-  // Check if valid
   bool IsValid() const {
-    return !glyphs_.empty() && texture_ != nullptr;
+    return !glyphs_.empty() && texture_.IsValid();
   }
 
  private:
   std::vector<GlyphLayoutData> glyphs_;
-  Texture* texture_ = nullptr;
+  TextureHandle texture_;
   float width_ = 0.0f;
   float height_ = 0.0f;
 };

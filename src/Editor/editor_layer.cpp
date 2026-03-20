@@ -1372,7 +1372,7 @@ void EditorLayer::DrawModelComponentInspector(ModelComponent* model) {
   if (data) {
     ImGui::Text("Sub-meshes: %d", static_cast<int>(data->sub_meshes.size()));
     ImGui::Text("Materials: %d", static_cast<int>(data->surface_materials.size()));
-    ImGui::Text("Textures: %d", static_cast<int>(data->textures.size()));
+    ImGui::Text("Textures: %d", static_cast<int>(data->resource_refs_.size()));
   }
 
   auto shader_name = ShaderRegistry::GetName(model->GetShaderId());
@@ -1388,11 +1388,11 @@ void EditorLayer::DrawMeshRendererInspector(MeshRenderer* renderer) {
 
   auto DrawTexturePicker = [&](const char* label,
                              const std::string& current_path,
-                             Texture* current_tex,
+                             TextureHandle current_tex,
                              TextureSlot slot,
                              const char* clear_id,
                              const char* none_label = "(None)") {
-    bool is_embedded = current_path.empty() && current_tex != nullptr;
+    bool is_embedded = current_path.empty() && current_tex.IsValid();
     if (is_embedded) {
       ImGui::Text("%s: (Embedded)", label);
       return;
@@ -1481,7 +1481,7 @@ void EditorLayer::DrawMeshRendererInspector(MeshRenderer* renderer) {
   if (is_pbr) {
     ImGui::SeparatorText("PBR");
 
-    bool has_mr_map = (renderer->GetMetallicRoughnessTexture() != nullptr);
+    bool has_mr_map = renderer->GetMetallicRoughnessTexture().IsValid();
     ImGui::SliderFloat("Metallic", &data.metallic, 0.0f, 1.0f);
     if (has_mr_map && ImGui::IsItemHovered()) {
       ImGui::SetTooltip("Multiplied with metallic-roughness map");
@@ -1491,7 +1491,7 @@ void EditorLayer::DrawMeshRendererInspector(MeshRenderer* renderer) {
       ImGui::SetTooltip("Multiplied with metallic-roughness map");
     }
 
-    bool has_emissive_map = (renderer->GetEmissiveTexture() != nullptr);
+    bool has_emissive_map = renderer->GetEmissiveTexture().IsValid();
     ImGui::ColorEdit3("Emissive", &data.emissive_color.x);
     if (has_emissive_map && ImGui::IsItemHovered()) {
       ImGui::SetTooltip("Multiplied with emissive map");

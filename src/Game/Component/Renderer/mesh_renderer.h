@@ -2,19 +2,18 @@
 #include <array>
 #include <cstring>
 
-#include "Asset/asset_handle.h"
 #include "Asset/asset_manager.h"
 #include "Component/renderer_component.h"
 #include "Component/transform_component.h"
 #include "Framework/Math/Math.h"
+#include "Framework/Render/frame_packet.h"
 #include "Framework/Render/render_handles.h"
 #include "Framework/Render/render_settings.h"
-#include "Framework/Serialize/serialize_node.h"
-#include "Framework/Render/frame_packet.h"
 #include "Framework/Render/shader_ids.h"
+#include "Framework/Render/texture_handle.h"
+#include "Framework/Serialize/serialize_node.h"
 #include "Graphic/Pipeline/shader_registry.h"
 #include "Graphic/Resource/Material/material_descriptor_pool.h"
-#include "Graphic/Resource/Texture/texture.h"
 #include "game_context.h"
 #include "game_object.h"
 #include "scene.h"
@@ -50,20 +49,17 @@ inline DefaultMesh ParseDefaultMesh(const std::string& name) {
 }
 
 struct TextureBinding {
-  Texture* texture = nullptr;
+  TextureHandle texture;
   std::string path;
-  AssetHandle<Texture> handle;
 
-  void SetDirect(Texture* tex) {
+  void SetDirect(TextureHandle tex) {
     texture = tex;
     path.clear();
-    handle = {};
   }
 
   void Clear() {
-    texture = nullptr;
+    texture = TextureHandle::Invalid();
     path.clear();
-    handle = {};
   }
 
   template <typename LoadFn>
@@ -73,8 +69,7 @@ struct TextureBinding {
       return;
     }
     path = p;
-    handle = load_fn(p);
-    texture = handle.Get();
+    texture = load_fn(p);
   }
 
   void Serialize(framework::SerializeNode& node, const char* key) const {
@@ -97,7 +92,7 @@ class MeshRenderer : public RendererComponent<MeshRenderer> {
     DefaultMesh mesh_type = DefaultMesh::Cube;
     MeshHandle mesh_handle;
     std::string texture_path = "";
-    Texture* texture = nullptr;
+    TextureHandle texture;
     Vector4 color = {1, 1, 1, 1};
     Graphics::ShaderId shader_id = Shaders::Id::BASIC_3D;
     RenderLayer render_layer = RenderLayer::Opaque;
@@ -107,9 +102,9 @@ class MeshRenderer : public RendererComponent<MeshRenderer> {
     float rim_power = 4.0f;
     Vector3 rim_color = {1, 1, 1};
     bool rim_shadow_affected = false;
-    Texture* normal_texture = nullptr;
-    Texture* metallic_roughness_texture = nullptr;
-    Texture* emissive_texture = nullptr;
+    TextureHandle normal_texture;
+    TextureHandle metallic_roughness_texture;
+    TextureHandle emissive_texture;
     float metallic = 0.0f;
     float roughness = 0.5f;
     Vector3 emissive_color = {0, 0, 0};
@@ -123,7 +118,7 @@ class MeshRenderer : public RendererComponent<MeshRenderer> {
     if (!mesh_handle_.IsValid()) {
       SetDefaultMesh(props.mesh_type);
     }
-    if (props.texture) {
+    if (props.texture.IsValid()) {
       SetTexture(props.texture);
     } else if (!props.texture_path.empty()) {
       SetTexturePath(props.texture_path);
@@ -140,9 +135,9 @@ class MeshRenderer : public RendererComponent<MeshRenderer> {
     SetRimColor(props.rim_color);
     SetRimShadowAffected(props.rim_shadow_affected);
 
-    if (props.normal_texture) SetNormalTexture(props.normal_texture);
-    if (props.metallic_roughness_texture) SetMetallicRoughnessTexture(props.metallic_roughness_texture);
-    if (props.emissive_texture) SetEmissiveTexture(props.emissive_texture);
+    if (props.normal_texture.IsValid()) SetNormalTexture(props.normal_texture);
+    if (props.metallic_roughness_texture.IsValid()) SetMetallicRoughnessTexture(props.metallic_roughness_texture);
+    if (props.emissive_texture.IsValid()) SetEmissiveTexture(props.emissive_texture);
     SetMetallic(props.metallic);
     SetRoughness(props.roughness);
     SetEmissiveColor(props.emissive_color);
@@ -158,19 +153,19 @@ class MeshRenderer : public RendererComponent<MeshRenderer> {
 
   // --- Texture: immediate setters (game code) ---
 
-  void SetTexture(Texture* texture) {
+  void SetTexture(TextureHandle texture) {
     albedo_.SetDirect(texture);
     material_dirty_ = true;
   }
-  void SetNormalTexture(Texture* texture) {
+  void SetNormalTexture(TextureHandle texture) {
     normal_.SetDirect(texture);
     material_dirty_ = true;
   }
-  void SetMetallicRoughnessTexture(Texture* texture) {
+  void SetMetallicRoughnessTexture(TextureHandle texture) {
     metallic_roughness_.SetDirect(texture);
     material_dirty_ = true;
   }
-  void SetEmissiveTexture(Texture* texture) {
+  void SetEmissiveTexture(TextureHandle texture) {
     emissive_.SetDirect(texture);
     material_dirty_ = true;
   }
@@ -265,16 +260,16 @@ class MeshRenderer : public RendererComponent<MeshRenderer> {
 
   // --- Texture: getters ---
 
-  Texture* GetTexture() const {
+  TextureHandle GetTexture() const {
     return albedo_.texture;
   }
-  Texture* GetNormalTexture() const {
+  TextureHandle GetNormalTexture() const {
     return normal_.texture;
   }
-  Texture* GetMetallicRoughnessTexture() const {
+  TextureHandle GetMetallicRoughnessTexture() const {
     return metallic_roughness_.texture;
   }
-  Texture* GetEmissiveTexture() const {
+  TextureHandle GetEmissiveTexture() const {
     return emissive_.texture;
   }
 
@@ -615,17 +610,17 @@ class MeshRenderer : public RendererComponent<MeshRenderer> {
   std::vector<PendingTextureRequest> pending_texture_requests_;
 
   MaterialDescriptor BuildMaterialDescriptor(GameContext* context) const {
-    Texture* effective_texture = albedo_.texture ? albedo_.texture : context->GetAssetManager().GetDefaultWhiteTexture();
+    TextureHandle effective_texture = albedo_.texture.IsValid() ? albedo_.texture : context->GetAssetManager().GetDefaultWhiteTexture();
     MaterialDescriptor desc{};
-    desc.albedo_texture_index = effective_texture ? effective_texture->GetBindlessIndex() : 0;
-    desc.normal_texture_index = normal_.texture ? normal_.texture->GetBindlessIndex() : 0;
-    desc.metallic_roughness_index = metallic_roughness_.texture ? metallic_roughness_.texture->GetBindlessIndex() : 0;
-    desc.emissive_texture_index = emissive_.texture ? emissive_.texture->GetBindlessIndex() : 0;
+    desc.albedo_texture_index = effective_texture.IsValid() ? effective_texture.GetBindlessIndex() : 0;
+    desc.normal_texture_index = normal_.texture.IsValid() ? normal_.texture.GetBindlessIndex() : 0;
+    desc.metallic_roughness_index = metallic_roughness_.texture.IsValid() ? metallic_roughness_.texture.GetBindlessIndex() : 0;
+    desc.emissive_texture_index = emissive_.texture.IsValid() ? emissive_.texture.GetBindlessIndex() : 0;
     desc.flags = flags::If(false, MaterialFlags::AlphaTest) | flags::If(render_settings_.double_sided, MaterialFlags::DoubleSided) |
                  flags::If(rim_shadow_affected_, MaterialFlags::RimShadowAffected) |
-                 flags::If(normal_.texture != nullptr, MaterialFlags::HasNormalMap) |
-                 flags::If(metallic_roughness_.texture != nullptr, MaterialFlags::HasMetallicRoughnessMap) |
-                 flags::If(emissive_.texture != nullptr, MaterialFlags::HasEmissiveMap);
+                 flags::If(normal_.texture.IsValid(), MaterialFlags::HasNormalMap) |
+                 flags::If(metallic_roughness_.texture.IsValid(), MaterialFlags::HasMetallicRoughnessMap) |
+                 flags::If(emissive_.texture.IsValid(), MaterialFlags::HasEmissiveMap);
     desc.specular_intensity = specular_intensity_;
     desc.specular_power = specular_power_;
     desc.rim_intensity = rim_intensity_;
