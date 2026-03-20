@@ -4,11 +4,11 @@
 #include "Graphic/graphic.h"
 #include "Scenes/blank_scene.h"
 #include "Scenes/city_scene/city_scene.h"
-#include "Scenes/title_scene/title_scene.h"
 #include "Scenes/cube_scene/cube_scene.h"
 #include "Scenes/empty_scene.h"
 #include "Scenes/model_scene/model_scene.h"
 #include "Scenes/test_scene/test_scene.h"
+#include "Scenes/title_scene/title_scene.h"
 #include "game_context.h"
 
 Game::Game() {

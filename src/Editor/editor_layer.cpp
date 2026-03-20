@@ -298,6 +298,23 @@ void EditorLayer::DrawSceneMenu() {
 
     ImGui::EndMenu();
   }
+
+  if (ImGui::BeginMenu("Hardcoded Scene")) {
+    constexpr SceneId scenes[] = {
+      SceneId::TITLE_SCENE,
+      SceneId::TEST_SCENE,
+      SceneId::CUBE_SCENE,
+      SceneId::EMPTY_SCENE,
+      SceneId::MODEL_SCENE,
+      SceneId::CITY_SCENE,
+    };
+    for (auto id : scenes) {
+      if (ImGui::MenuItem(SceneIdLabel(id))) {
+        scene_->GetContext()->GetSceneManager()->RequestLoad(id);
+      }
+    }
+    ImGui::EndMenu();
+  }
 }
 
 void EditorLayer::DrawSaveSceneModal() {
