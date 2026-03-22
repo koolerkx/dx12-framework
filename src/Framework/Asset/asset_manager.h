@@ -1,10 +1,9 @@
 /**
  * @file asset_manager.h
- * @brief Game-layer asset loading facade with model-level caching.
+ * @brief Asset loading facade with model-level caching.
  *
  * Caches complete ModelData (mesh pointers, textures, materials) keyed by
  * path + scale, so repeated LoadModel calls skip Assimp parsing entirely.
- * Individual GPU mesh buffers are owned by MeshRegistry in the Graphic layer.
  */
 #pragma once
 #include <array>
@@ -14,13 +13,15 @@
 #include <unordered_map>
 #include <vector>
 
+#include "Framework/Asset/font_service.h"
+#include "Framework/Asset/mesh_service.h"
+#include "Framework/Asset/model_data.h"
+#include "Framework/Asset/text_mesh_handle.h"
+#include "Framework/Asset/texture_service.h"
 #include "Framework/Math/Math.h"
+#include "Framework/Render/mesh_data.h"
 #include "Framework/Render/render_handles.h"
 #include "Framework/Render/texture_handle.h"
-#include "model_data.h"
-#include "text_mesh_handle.h"
-
-class Graphic;
 
 namespace Font {
 enum class FontFamily : uint16_t;
@@ -34,6 +35,12 @@ struct TextLayoutProps;
 // Quad for 3D, Rect for 2D
 enum class DefaultMesh { Quad, Cube, Plane, Rect, Sphere, Cylinder, RoundedRect };
 
+struct AssetServices {
+  ITextureService& texture;
+  IMeshService& mesh;
+  IFontService& font;
+};
+
 class AssetManager {
  public:
   AssetManager();
@@ -43,7 +50,7 @@ class AssetManager {
   AssetManager(AssetManager&&) noexcept;
   AssetManager& operator=(AssetManager&&) noexcept;
 
-  bool Initialize(Graphic* graphic);
+  bool Initialize(const AssetServices& services);
   void Shutdown();
 
   // Texture management
@@ -59,7 +66,7 @@ class AssetManager {
   using CubeCornerColors = std::array<Math::Vector4, 8>;
   MeshHandle CreateCubeMesh(const std::string& key, const CubeCornerColors& corner_colors);
   MeshHandle GetDefaultMeshHandle(DefaultMesh type) const;
-  MeshHandle GetOrCreateMeshHandle(const std::string& key, const struct MeshData& data);
+  MeshHandle GetOrCreateMeshHandle(const std::string& key, const MeshData& data);
 
   bool LoadFont(Font::FontFamily family, const std::string& fnt_path, const std::string& texture_path);
 
@@ -70,14 +77,11 @@ class AssetManager {
     return default_white_texture_;
   }
 
-  Graphic* GetGraphicForDebugUseOnly() const;
-
   // Cleanup per frame (called by engine, not by user)
   void ProcessDeferredCleanup(uint64_t completed_fence_value);
   void ClearUploadBuffers();
 
  private:
-  void CreateDefaultMeshes();
   void UploadDefaultMeshesToPool();
   void FreeMeshHandlesForModel(const ModelData& model_data);
 

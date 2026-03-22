@@ -2,7 +2,7 @@
 #pragma once
 #include <memory>
 
-#include "Asset/asset_manager.h"
+#include "Framework/Asset/asset_manager.h"
 #include "Framework/Render/frame_packet.h"
 #include "play_state.h"
 #include "scene_defaults.h"

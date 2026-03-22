@@ -33,12 +33,10 @@ class TextMeshHandle {
   TextMeshHandle(const TextMeshHandle&) = default;
   TextMeshHandle& operator=(const TextMeshHandle&) = default;
 
-  // Get number of glyphs
   size_t GetGlyphCount() const {
     return glyphs_.size();
   }
 
-  // Get glyph layout data by index
   const GlyphLayoutData* GetGlyph(size_t index) const {
     if (index >= glyphs_.size()) {
       return nullptr;
@@ -50,7 +48,6 @@ class TextMeshHandle {
     return texture_;
   }
 
-  // Get total text bounding box size
   float GetWidth() const {
     return width_;
   }

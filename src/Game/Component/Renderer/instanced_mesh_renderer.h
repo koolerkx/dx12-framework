@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "Asset/asset_manager.h"
+#include "Framework/Asset/asset_manager.h"
 #include "Component/renderer_component.h"
 #include "Framework/Math/Math.h"
 #include "Framework/Render/render_handles.h"

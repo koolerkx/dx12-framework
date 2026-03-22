@@ -134,6 +134,19 @@ struct PathPulse {
   static_assert(sizeof(Params) == 48);
 };
 
+struct UIGlass {
+  static constexpr Graphics::ShaderId ID = 34;
+
+  static Rendering::RenderSettings DefaultRenderSettings() {
+    return {
+      .blend_mode = Rendering::BlendMode::AlphaBlend,
+      .depth_test = false,
+      .depth_write = false,
+      .render_target_format = Rendering::RenderTargetFormat::SDR,
+    };
+  }
+};
+
 // Plain ID constants for shaders used without SetShaderWithParams<T>().
 
 namespace Id {
@@ -143,7 +156,7 @@ constexpr Graphics::ShaderId BASIC_3D = 4;
 constexpr Graphics::ShaderId DEBUG_LINE = 5;
 constexpr Graphics::ShaderId PBR = 11;
 constexpr Graphics::ShaderId SOFT_PARTICLE = SoftParticle::ID;
-constexpr Graphics::ShaderId UI_GLASS = 34;
+constexpr Graphics::ShaderId UI_GLASS = UIGlass::ID;
 
 }  // namespace Id
 

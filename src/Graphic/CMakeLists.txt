@@ -58,7 +58,6 @@ add_library(graphic STATIC
 
   Resource/mesh.h
   Resource/mesh.cpp
-  Resource/mesh_factory.cpp
   Resource/mesh_registry.h
   Resource/render_services.h
   Resource/render_services.cpp
@@ -67,6 +66,16 @@ add_library(graphic STATIC
   Resource/Texture/texture_manager.cpp
   Resource/Font/sprite_font_manager.h
   Resource/Font/sprite_font_manager.cpp
+
+  Resource/texture_service.h
+  Resource/texture_service.cpp
+  Resource/mesh_service.h
+  Resource/mesh_service.cpp
+  Resource/font_service.h
+  Resource/font_service.cpp
+
+  debug_draw_service.h
+  debug_draw_service.cpp
 
   Frame/per_frame_constant_buffer.h
   Frame/dynamic_upload_buffer.h

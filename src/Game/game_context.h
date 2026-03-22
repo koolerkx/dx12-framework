@@ -1,6 +1,6 @@
 #pragma once
-#include "Asset/asset_manager.h"
 #include "Debug/debug_drawer.h"
+#include "Framework/Asset/asset_manager.h"
 #include "Framework/Event/event_bus.hpp"
 #include "Framework/Input/input.h"
 #include "Framework/Render/render_service.h"
@@ -9,6 +9,10 @@
 
 class Graphic;
 class SceneManager;
+class ITextureService;
+class IMeshService;
+class IFontService;
+class IDebugDrawService;
 
 class GameContext {
  public:
@@ -84,6 +88,35 @@ class GameContext {
     return quit_requested_;
   }
 
+  // Service accessors
+  ITextureService* GetTextureService() const {
+    return texture_service_;
+  }
+  void SetTextureService(ITextureService* service) {
+    texture_service_ = service;
+  }
+
+  IMeshService* GetMeshService() const {
+    return mesh_service_;
+  }
+  void SetMeshService(IMeshService* service) {
+    mesh_service_ = service;
+  }
+
+  IFontService* GetFontService() const {
+    return font_service_;
+  }
+  void SetFontService(IFontService* service) {
+    font_service_ = service;
+  }
+
+  IDebugDrawService* GetDebugDrawService() const {
+    return debug_draw_service_;
+  }
+  void SetDebugDrawService(IDebugDrawService* service) {
+    debug_draw_service_ = service;
+  }
+
  private:
   InputSystem* input_ = nullptr;
   Graphic* graphic_ = nullptr;
@@ -95,4 +128,9 @@ class GameContext {
   PlayState* play_state_ = nullptr;
   SceneDefaults scene_defaults_;
   bool quit_requested_ = false;
+
+  ITextureService* texture_service_ = nullptr;
+  IMeshService* mesh_service_ = nullptr;
+  IFontService* font_service_ = nullptr;
+  IDebugDrawService* debug_draw_service_ = nullptr;
 };

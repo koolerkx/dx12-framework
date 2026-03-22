@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "Asset/model_data.h"
+#include "Framework/Asset/model_data.h"
 #include "Component/Renderer/mesh_renderer.h"
 #include "Component/component.h"
 #include "Component/transform_component.h"

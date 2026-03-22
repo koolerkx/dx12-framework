@@ -4,7 +4,7 @@
 #include "Component/transform_component.h"
 #include "Framework/Render/shader_ids.h"
 #include "Framework/Render/texture_handle.h"
-#include "Game/Asset/asset_manager.h"
+#include "Framework/Asset/asset_manager.h"
 #include "game_context.h"
 
 using Math::Matrix4;

@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "Asset/asset_manager.h"
+#include "Framework/Asset/asset_manager.h"
 #include "Component/Collider/sphere_collider_component.h"
 #include "Component/enemy_spawn_component.h"
 #include "Component/model_component.h"

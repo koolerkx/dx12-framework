@@ -21,12 +21,22 @@ Game::~Game() {
 void Game::Initialize(const Props& props) {
   context_ = props.context;
 
-  if (context_ && context_->GetGraphic()) {
-    asset_manager_.Initialize(context_->GetGraphic());
+  bool has_services = context_
+    && context_->GetTextureService()
+    && context_->GetMeshService()
+    && context_->GetFontService()
+    && context_->GetDebugDrawService();
+
+  if (has_services) {
+    asset_manager_.Initialize({
+      *context_->GetTextureService(),
+      *context_->GetMeshService(),
+      *context_->GetFontService(),
+    });
     context_->SetAssetManager(&asset_manager_);
 
     if (debug_drawer_.get() == nullptr) {
-      debug_drawer_ = std::make_unique<DebugDrawer>(context_->GetGraphic());
+      debug_drawer_ = std::make_unique<DebugDrawer>(context_->GetDebugDrawService());
     }
     debug_drawer_->SetEnabled(props.debug_draw_enabled);
     context_->SetDebugDrawer(debug_drawer_.get());

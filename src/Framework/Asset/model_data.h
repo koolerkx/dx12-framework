@@ -3,7 +3,6 @@
 #include <DirectXMath.h>
 
 #include <cstdint>
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -31,7 +30,7 @@ struct ModelSubMeshEntry {
 
 struct ModelData {
   std::string path;
-  std::vector<std::shared_ptr<void>> resource_refs_;  // keeps loaded textures alive
+  std::vector<TextureHandle> texture_handles_;
   std::vector<ModelSurfaceMaterial> surface_materials;
   std::vector<ModelSubMeshEntry> sub_meshes;
   Model::Node root_node;

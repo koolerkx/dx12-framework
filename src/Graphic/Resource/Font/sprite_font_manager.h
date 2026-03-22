@@ -8,6 +8,7 @@
 #include "Framework/Font/bmfont_parser.h"
 #include "Framework/Font/font_types.h"
 #include "Framework/Font/text_layout.h"
+#include "Framework/Font/text_layout_data.h"
 #include "Resource/Texture/texture.h"
 
 class TextureManager;
@@ -27,27 +28,6 @@ struct SpriteFontFamily {
   FontFamily id;
   // Key: native lineHeight, Value: variant
   std::map<int, SpriteFontVariant> variants_by_line_height;
-};
-
-// Result from text layout computation - pure CPU data
-// Contains position, size, and UV information for each glyph
-// No GPU resource ownership - uses shared Quad mesh from AssetManager
-struct TextLayoutData {
-  struct GlyphData {
-    float x = 0.0f;       // Position X in layout space (pixels)
-    float y = 0.0f;       // Position Y in layout space (pixels)
-    float width = 0.0f;   // Scaled width (pixels)
-    float height = 0.0f;  // Scaled height (pixels)
-    float u0 = 0.0f;      // UV left
-    float v0 = 0.0f;      // UV top
-    float u1 = 1.0f;      // UV right
-    float v1 = 1.0f;      // UV bottom
-  };
-
-  std::vector<GlyphData> glyphs;
-  float width = 0.0f;
-  float height = 0.0f;
-  const SpriteFontVariant* variant = nullptr;
 };
 
 // Font manager (internal to Graphic layer)

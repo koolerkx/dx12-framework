@@ -16,7 +16,7 @@
 #include "Framework/Input/input.h"
 #include "Framework/Input/keyboard.h"
 #include "Framework/Render/frame_packet.h"
-#include "Game/Asset/asset_manager.h"
+#include "Framework/Asset/asset_manager.h"
 #include "Game/Component/Renderer/mesh_renderer.h"
 #include "Game/Component/Renderer/particle_emitter.h"
 #include "Game/Component/Renderer/sprite_renderer.h"
@@ -1389,7 +1389,7 @@ void EditorLayer::DrawModelComponentInspector(ModelComponent* model) {
   if (data) {
     ImGui::Text("Sub-meshes: %d", static_cast<int>(data->sub_meshes.size()));
     ImGui::Text("Materials: %d", static_cast<int>(data->surface_materials.size()));
-    ImGui::Text("Textures: %d", static_cast<int>(data->resource_refs_.size()));
+    ImGui::Text("Textures: %d", static_cast<int>(data->texture_handles_.size()));
   }
 
   auto shader_name = ShaderRegistry::GetName(model->GetShaderId());

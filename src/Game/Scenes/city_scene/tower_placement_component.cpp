@@ -1,6 +1,6 @@
 #include "tower_placement_component.h"
 
-#include "Asset/asset_manager.h"
+#include "Framework/Asset/asset_manager.h"
 #include "Component/Collider/box_collider_component.h"
 #include "Component/Collider/sphere_collider_component.h"
 #include "Component/Renderer/instanced_model_renderer.h"

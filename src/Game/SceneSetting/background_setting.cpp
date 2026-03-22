@@ -1,6 +1,6 @@
 #include "background_setting.h"
 
-#include "Asset/asset_manager.h"
+#include "Framework/Asset/asset_manager.h"
 
 void BackgroundSetting::SetSkybox(const std::string& path, AssetManager& asset_manager) {
   mode_ = BackgroundMode::Skybox;

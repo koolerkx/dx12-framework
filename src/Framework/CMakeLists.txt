@@ -30,12 +30,22 @@ add_library(framework STATIC
   Event/input_events.h
   Event/input_event_generator.h
 
+  # Asset
+  Asset/asset_manager.h
+  Asset/asset_manager.cpp
+  Asset/model_data.h
+  Asset/text_mesh_handle.h
+  Asset/texture_service.h
+  Asset/mesh_service.h
+  Asset/font_service.h
+
   # Font
   Font/font_types.h
   Font/bmfont_parser.h
   Font/bmfont_parser.cpp
   Font/text_layout.h
   Font/text_layout.cpp
+  Font/text_layout_data.h
 
   # Model
   Model/model_types.h
@@ -84,6 +94,11 @@ add_library(framework STATIC
   Render/shader_ids.h
   Render/shader_name_service.h
   Render/render_service.h
+  Render/vertex_data.h
+  Render/mesh_data.h
+  Render/mesh_data_factory.h
+  Render/mesh_data_factory.cpp
+  Render/debug_draw_service.h
 
   # Serialization
   Serialize/serialize_node.h

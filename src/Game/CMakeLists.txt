@@ -13,10 +13,7 @@ add_library(game STATIC
     scene.cpp
     scene_defaults.h
 
-    Asset/asset_manager.h
-    Asset/asset_manager.cpp
-    Asset/model_data.h
-    Asset/text_mesh_handle.h
+    # Asset files moved to Framework/Asset/
 
     game_object.h
     game_object.cpp

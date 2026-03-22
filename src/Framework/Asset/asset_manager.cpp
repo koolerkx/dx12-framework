@@ -5,24 +5,22 @@
 #include <limits>
 #include <optional>
 
+#include "Framework/Asset/font_service.h"
+#include "Framework/Asset/mesh_service.h"
+#include "Framework/Asset/texture_service.h"
+#include "Framework/Font/text_layout_data.h"
 #include "Framework/Logging/logger.h"
 #include "Framework/Model/model_loader.h"
+#include "Framework/Render/mesh_data.h"
+#include "Framework/Render/mesh_data_factory.h"
 #include "Framework/Render/texture_handle.h"
-#include "Graphic/Pipeline/vertex_types.h"
-#include "Graphic/Resource/Font/sprite_font_manager.h"
-#include "Graphic/Resource/Mesh/mesh_buffer_pool.h"
-#include "Graphic/Resource/Texture/texture.h"
-#include "Graphic/Resource/Texture/texture_manager.h"
-#include "Graphic/Resource/mesh_factory.h"
-#include "Graphic/graphic.h"
-#include "text_mesh_handle.h"
+#include "Framework/Render/vertex_data.h"
 
 class AssetManager::Impl {
  public:
-  Graphic* graphic = nullptr;
-  TextureManager* texture_manager = nullptr;
-  Font::SpriteFontManager* font_manager = nullptr;
-  MeshBufferPool* mesh_buffer_pool = nullptr;
+  ITextureService* texture_service = nullptr;
+  IMeshService* mesh_service = nullptr;
+  IFontService* font_service = nullptr;
 };
 
 // must defined in cpp
@@ -31,16 +29,14 @@ AssetManager::~AssetManager() = default;
 AssetManager::AssetManager(AssetManager&&) noexcept = default;
 AssetManager& AssetManager::operator=(AssetManager&&) noexcept = default;
 
-bool AssetManager::Initialize(Graphic* graphic) {
+bool AssetManager::Initialize(const AssetServices& services) {
   impl_ = std::make_unique<Impl>();
-  impl_->graphic = graphic;
-  impl_->texture_manager = &graphic->GetTextureManager();
-  impl_->font_manager = &graphic->GetSpriteFontManager();
-  impl_->mesh_buffer_pool = &graphic->GetMeshBufferPool();
-  CreateDefaultMeshes();
+  impl_->texture_service = &services.texture;
+  impl_->mesh_service = &services.mesh;
+  impl_->font_service = &services.font;
   UploadDefaultMeshesToPool();
-  auto white_tex = impl_->texture_manager->LoadTextureSRGB("Content/textures/white.png");
-  default_white_texture_ = white_tex ? TextureHandle{white_tex->GetBindlessIndex()} : TextureHandle::Invalid();
+  auto white_tex = impl_->texture_service->LoadTextureSRGB("Content/textures/white.png");
+  default_white_texture_ = white_tex;
   return true;
 }
 
@@ -54,86 +50,45 @@ void AssetManager::Shutdown() {
 }
 
 TextureHandle AssetManager::LoadTexture(const std::string& path) {
-  auto texture = impl_->texture_manager->LoadTexture(path);
-  return texture ? TextureHandle{texture->GetBindlessIndex()} : TextureHandle::Invalid();
+  return impl_->texture_service->LoadTextureSRGB(path);
 }
 
 TextureHandle AssetManager::LoadTextureLinear(const std::string& path) {
-  auto texture = impl_->texture_manager->LoadTextureLinear(path);
-  return texture ? TextureHandle{texture->GetBindlessIndex()} : TextureHandle::Invalid();
+  return impl_->texture_service->LoadTextureLinear(path);
 }
 
 TextureHandle AssetManager::LoadCubemap(const std::string& path) {
-  auto texture = impl_->texture_manager->LoadCubemapFromCrossHDR(path);
-  return texture ? TextureHandle{texture->GetBindlessIndex()} : TextureHandle::Invalid();
+  return impl_->texture_service->LoadCubemap(path);
 }
 
 std::vector<TextureHandle> AssetManager::LoadTextures(const std::vector<std::string>& paths) {
-  auto textures = impl_->texture_manager->LoadTextures(paths);
-
-  std::vector<TextureHandle> handles;
-  handles.reserve(textures.size());
-  for (size_t i = 0; i < textures.size(); ++i) {
-    handles.emplace_back(textures[i] ? TextureHandle{textures[i]->GetBindlessIndex()} : TextureHandle::Invalid());
-  }
-  return handles;
+  return impl_->texture_service->LoadTextures(paths);
 }
 
 void AssetManager::ProcessDeferredCleanup(uint64_t completed_fence_value) {
-  impl_->texture_manager->ProcessDeferredFrees(completed_fence_value);
+  impl_->texture_service->ProcessDeferredFrees(completed_fence_value);
 }
 
 void AssetManager::ClearUploadBuffers() {
-  impl_->texture_manager->CleanUploadBuffers();
-}
-
-Graphic* AssetManager::GetGraphicForDebugUseOnly() const {
-  return impl_.get()->graphic;
-}
-
-void AssetManager::CreateDefaultMeshes() {
-  if (!impl_->graphic) return;
-
-  ID3D12Device* device = impl_->graphic->GetDevice();
-  auto& registry = impl_->graphic->GetMeshRegistry();
-
-  auto register_default = [&](DefaultMesh type, const std::string& key, auto create_fn) {
-    auto mesh = std::make_unique<Mesh>();
-    if (create_fn(device, *mesh)) {
-      registry.Register(key, std::move(mesh));
-    }
-  };
-
-  register_default(DefaultMesh::Quad, "default:quad", [](auto* d, auto& m) { return MeshFactory::CreateQuad(d, m); });
-  register_default(DefaultMesh::Cube, "default:cube", [](auto* d, auto& m) { return MeshFactory::CreateCube(d, m); });
-  register_default(DefaultMesh::Rect, "default:rect", [](auto* d, auto& m) { return MeshFactory::CreateRect(d, m); });
-  register_default(DefaultMesh::Plane, "default:plane", [](auto* d, auto& m) { return MeshFactory::CreatePlane(d, m, 10, 10); });
-  register_default(DefaultMesh::Sphere, "default:sphere", [](auto* d, auto& m) { return MeshFactory::CreateSphere(d, m, 32, 16); });
-  register_default(DefaultMesh::Cylinder, "default:cylinder", [](auto* d, auto& m) { return MeshFactory::CreateCylinder(d, m); });
-  register_default(DefaultMesh::RoundedRect, "default:rounded_rect", [](auto* d, auto& m) { return MeshFactory::CreateRoundedRect(d, m); });
+  impl_->texture_service->CleanUploadBuffers();
 }
 
 void AssetManager::UploadDefaultMeshesToPool() {
-  if (!impl_->mesh_buffer_pool) return;
-  auto* pool = impl_->mesh_buffer_pool;
+  if (!impl_->mesh_service) return;
+  auto* service = impl_->mesh_service;
 
-  auto upload_model = [&](DefaultMesh type, const MeshData& data) {
-    auto alloc = pool->Allocate(data.AsModelVertices(), std::span<const uint32_t>(data.indices));
+  auto upload = [&](DefaultMesh type, const MeshData& data) {
+    auto alloc = service->Allocate(data);
     if (alloc.success) default_mesh_handles_[type] = alloc.handle;
   };
 
-  auto upload_sprite = [&](DefaultMesh type, const MeshData& data) {
-    auto alloc = pool->Allocate(data.AsSpriteVertices(), std::span<const uint32_t>(data.indices));
-    if (alloc.success) default_mesh_handles_[type] = alloc.handle;
-  };
-
-  upload_model(DefaultMesh::Quad, MeshFactory::CreateQuadData());
-  upload_model(DefaultMesh::Cube, MeshFactory::CreateCubeData());
-  upload_model(DefaultMesh::Plane, MeshFactory::CreatePlaneData(10, 10));
-  upload_model(DefaultMesh::Sphere, MeshFactory::CreateSphereData(32, 16));
-  upload_model(DefaultMesh::Cylinder, MeshFactory::CreateCylinderData());
-  upload_sprite(DefaultMesh::Rect, MeshFactory::CreateRectData());
-  upload_sprite(DefaultMesh::RoundedRect, MeshFactory::CreateRoundedRectData());
+  upload(DefaultMesh::Quad, MeshDataFactory::CreateQuadData());
+  upload(DefaultMesh::Cube, MeshDataFactory::CreateCubeData());
+  upload(DefaultMesh::Plane, MeshDataFactory::CreatePlaneData(10, 10));
+  upload(DefaultMesh::Sphere, MeshDataFactory::CreateSphereData(32, 16));
+  upload(DefaultMesh::Cylinder, MeshDataFactory::CreateCylinderData());
+  upload(DefaultMesh::Rect, MeshDataFactory::CreateRectData());
+  upload(DefaultMesh::RoundedRect, MeshDataFactory::CreateRoundedRectData());
 }
 
 MeshHandle AssetManager::GetDefaultMeshHandle(DefaultMesh type) const {
@@ -145,21 +100,19 @@ MeshHandle AssetManager::GetDefaultMeshHandle(DefaultMesh type) const {
 MeshHandle AssetManager::GetOrCreateMeshHandle(const std::string& key, const MeshData& data) {
   auto [it, inserted] = mesh_handle_cache_.try_emplace(key, MeshHandle::Invalid());
   if (!inserted) return it->second;
-  if (!impl_->mesh_buffer_pool) return MeshHandle::Invalid();
-  MeshAllocation alloc = (data.layout == VertexDataLayout::Sprite)
-                           ? impl_->mesh_buffer_pool->Allocate(data.AsSpriteVertices(), std::span<const uint32_t>(data.indices))
-                           : impl_->mesh_buffer_pool->Allocate(data.AsModelVertices(), std::span<const uint32_t>(data.indices));
+  if (!impl_->mesh_service) return MeshHandle::Invalid();
+  MeshAllocation alloc = impl_->mesh_service->Allocate(data);
   if (!alloc.success) return MeshHandle::Invalid();
   it->second = alloc.handle;
   return alloc.handle;
 }
 
 void AssetManager::CreateTextureFromPixels(const std::string& cache_key, const uint8_t* pixels, uint32_t width, uint32_t height) {
-  impl_->texture_manager->LoadTextureFromRawPixels(cache_key, pixels, width, height, false);
+  impl_->texture_service->LoadTextureFromRawPixels(cache_key, pixels, width, height, false);
 }
 
 MeshHandle AssetManager::CreateCubeMesh(const std::string& key, const CubeCornerColors& corner_colors) {
-  return GetOrCreateMeshHandle(key, MeshFactory::CreateCubeData(corner_colors));
+  return GetOrCreateMeshHandle(key, MeshDataFactory::CreateCubeData(corner_colors));
 }
 
 std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path, float global_scale) {
@@ -176,69 +129,66 @@ std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path, floa
     return cache_it->second;
   }
 
-  auto* texture_manager = impl_->texture_manager;
+  auto* texture_service = impl_->texture_service;
 
-  using Loader = Model::ModelLoader<MeshHandle, std::shared_ptr<Texture>, ModelSurfaceMaterial>;
+  using Loader = Model::ModelLoader<MeshHandle, TextureHandle, ModelSurfaceMaterial>;
 
   std::filesystem::path model_dir = std::filesystem::path(path).parent_path();
 
-  auto load_texture_by_usage = [&](const std::string& tex_path, bool is_color) -> std::shared_ptr<Texture> {
-    return is_color ? texture_manager->LoadTextureSRGB(tex_path) : texture_manager->LoadTextureLinear(tex_path);
+  auto load_texture_by_usage = [&](const std::string& tex_path, bool is_color) -> TextureHandle {
+    return is_color ? texture_service->LoadTextureSRGB(tex_path) : texture_service->LoadTextureLinear(tex_path);
   };
 
-  auto texture_cb = [&](const Model::TextureRef& tex_ref) -> std::shared_ptr<Texture> {
+  auto texture_cb = [&](const Model::TextureRef& tex_ref) -> TextureHandle {
     bool is_color = tex_ref.type == Model::TextureType::Color;
 
     if (tex_ref.embedded.has_value()) {
       auto& emb = *tex_ref.embedded;
-      std::string cache_key = path + "#emb_" + tex_ref.path;
+      std::string emb_cache_key = path + "#emb_" + tex_ref.path;
 
-      std::shared_ptr<Texture> texture;
+      TextureHandle handle;
       if (emb.is_compressed) {
-        texture = texture_manager->LoadTextureFromMemory(cache_key, emb.data.data(), emb.data.size(), is_color);
+        handle = texture_service->LoadTextureFromMemory(emb_cache_key, emb.data.data(), emb.data.size(), is_color);
       } else {
-        texture = texture_manager->LoadTextureFromRawPixels(cache_key, emb.data.data(), emb.width, emb.height, is_color);
+        handle = texture_service->LoadTextureFromRawPixels(emb_cache_key, emb.data.data(), emb.width, emb.height, is_color);
       }
 
-      if (!texture) {
+      if (!handle.IsValid()) {
         Logger::LogFormat(LogLevel::Error,
           LogCategory::Game,
           Logger::Here(),
           "[AssetManager] Failed to load embedded texture '{}' from model '{}'",
           tex_ref.path,
           path);
-        return impl_->texture_manager->LoadTextureSRGB("Content/textures/white.png");
+        return texture_service->LoadTextureSRGB("Content/textures/white.png");
       }
-      return texture;
+      return handle;
     }
 
     std::filesystem::path tex_path(tex_ref.path);
 
-    // attempt using the path exactly as specified by the model (may be absolute or relative)
-    auto texture = load_texture_by_usage(tex_ref.path, is_color);
+    auto handle = load_texture_by_usage(tex_ref.path, is_color);
 
-    if (!texture) {
-      // attempt by resolving the model-relative path (model directory + path)
+    if (!handle.IsValid()) {
       std::string relative_str = (model_dir / tex_path).string();
-      texture = load_texture_by_usage(relative_str, is_color);
+      handle = load_texture_by_usage(relative_str, is_color);
     }
 
-    if (!texture && tex_path.has_filename()) {
-      // attempt using only the filename inside the model's directory
+    if (!handle.IsValid() && tex_path.has_filename()) {
       std::string filename_str = (model_dir / tex_path.filename()).string();
-      texture = load_texture_by_usage(filename_str, is_color);
+      handle = load_texture_by_usage(filename_str, is_color);
     }
 
-    if (!texture) {
+    if (!handle.IsValid()) {
       Logger::LogFormat(LogLevel::Error,
         LogCategory::Game,
         Logger::Here(),
         "[AssetManager] Failed to load texture '{}' for model '{}'",
         tex_ref.path,
         path);
-      return impl_->texture_manager->LoadTextureSRGB("Content/textures/white.png");
+      return texture_service->LoadTextureSRGB("Content/textures/white.png");
     }
-    return texture;
+    return handle;
   };
 
   std::vector<std::optional<uint32_t>> material_albedo_texture_indices;
@@ -267,7 +217,7 @@ std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path, floa
   Math::Vector3 bounds_max(
     -(std::numeric_limits<float>::max)(), -(std::numeric_limits<float>::max)(), -(std::numeric_limits<float>::max)());
 
-  auto mesh_cb = [&](const Model::MeshData<Graphics::Vertex::ModelVertex>& mesh_data) -> MeshHandle {
+  auto mesh_cb = [&](const Model::MeshData<VertexData::ModelVertex>& mesh_data) -> MeshHandle {
     std::string key = path + scale_suffix + "#" + mesh_data.name + "_" + std::to_string(mesh_counter++);
     mesh_material_indices.push_back(mesh_data.material_index);
 
@@ -278,12 +228,15 @@ std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path, floa
       bounds_max = Math::Vector3::Max(bounds_max, pos);
     }
 
-    if (auto cache_it = mesh_handle_cache_.find(key); cache_it != mesh_handle_cache_.end()) {
-      return cache_it->second;
+    if (auto found = mesh_handle_cache_.find(key); found != mesh_handle_cache_.end()) {
+      return found->second;
     }
 
-    auto alloc = impl_->mesh_buffer_pool->Allocate(
-      std::span{mesh_data.vertices.data(), mesh_data.vertices.size()}, std::span{mesh_data.indices.data(), mesh_data.indices.size()});
+    MeshData md;
+    md.vertices = mesh_data.vertices;
+    md.indices = mesh_data.indices;
+
+    auto alloc = impl_->mesh_service->Allocate(md);
     if (alloc.success) {
       mesh_handle_cache_[key] = alloc.handle;
     }
@@ -292,7 +245,7 @@ std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path, floa
 
   Model::LoadOptions load_options;
   load_options.global_scale = global_scale;
-  auto result = Loader::Load<Graphics::Vertex::ModelVertex, MeshHandle, ModelSurfaceMaterial, std::shared_ptr<Texture>>(
+  auto result = Loader::Load<VertexData::ModelVertex, MeshHandle, ModelSurfaceMaterial, TextureHandle>(
     path, texture_cb, material_cb, mesh_cb, load_options);
 
   if (!result.success) {
@@ -310,18 +263,13 @@ std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path, floa
     model_data->bounds = Math::AABB(bounds_min, bounds_max);
   }
 
-  // Keep textures alive via type-erased shared_ptr
-  model_data->resource_refs_.reserve(result.texture_handles.size());
-  for (auto& tex : result.texture_handles) {
-    model_data->resource_refs_.push_back(std::shared_ptr<void>(std::move(tex)));
-  }
+  model_data->texture_handles_ = std::move(result.texture_handles);
 
   auto resolve_texture = [&](const std::vector<std::optional<uint32_t>>& indices, uint32_t mat_idx) -> TextureHandle {
     if (mat_idx < indices.size()) {
       auto tex_idx = indices[mat_idx];
-      if (tex_idx.has_value() && *tex_idx < model_data->resource_refs_.size()) {
-        auto* tex = static_cast<Texture*>(model_data->resource_refs_[*tex_idx].get());
-        return TextureHandle{tex->GetBindlessIndex()};
+      if (tex_idx.has_value() && *tex_idx < model_data->texture_handles_.size()) {
+        return model_data->texture_handles_[*tex_idx];
       }
     }
     return TextureHandle::Invalid();
@@ -351,35 +299,33 @@ std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path, floa
 void AssetManager::FreeMeshHandlesForModel(const ModelData& model_data) {
   for (const auto& entry : model_data.sub_meshes) {
     if (entry.mesh_handle.IsValid()) {
-      impl_->mesh_buffer_pool->Free(entry.mesh_handle);
+      impl_->mesh_service->Free(entry.mesh_handle);
     }
   }
 }
 
 bool AssetManager::LoadFont(Font::FontFamily family, const std::string& fnt_path, const std::string& texture_path) {
-  if (!impl_->font_manager) {
-    Logger::LogFormat(LogLevel::Error, LogCategory::Game, Logger::Here(), "[AssetManager] Font manager not initialized");
+  if (!impl_->font_service) {
+    Logger::LogFormat(LogLevel::Error, LogCategory::Game, Logger::Here(), "[AssetManager] Font service not initialized");
     return false;
   }
 
-  return impl_->font_manager->LoadFontVariant(family, fnt_path, texture_path);
+  return impl_->font_service->LoadFontVariant(family, fnt_path, texture_path);
 }
 
 TextMeshHandle AssetManager::CreateTextMesh(
   const std::wstring& text, Font::FontFamily family, float pixel_size, const Text::TextLayoutProps& layout_props) {
-  if (!impl_->font_manager) {
-    Logger::LogFormat(LogLevel::Error, LogCategory::Game, Logger::Here(), "[AssetManager] Font manager not initialized");
+  if (!impl_->font_service) {
+    Logger::LogFormat(LogLevel::Error, LogCategory::Game, Logger::Here(), "[AssetManager] Font service not initialized");
     return TextMeshHandle();
   }
 
-  // Create text layout - pure CPU data
   Font::TextLayoutData layout_data;
-  if (!impl_->font_manager->CreateTextLayout(text, family, pixel_size, layout_props, layout_data)) {
+  if (!impl_->font_service->CreateTextLayout(text, family, pixel_size, layout_props, layout_data)) {
     Logger::LogFormat(LogLevel::Error, LogCategory::Game, Logger::Here(), "[AssetManager] Failed to create text layout");
     return TextMeshHandle();
   }
 
-  // Convert to GlyphLayoutData with UV transform data
   std::vector<GlyphLayoutData> glyphs;
   glyphs.reserve(layout_data.glyphs.size());
 
@@ -395,10 +341,7 @@ TextMeshHandle AssetManager::CreateTextMesh(
     glyphs.push_back(glyph_data);
   }
 
-  TextureHandle texture_handle = TextureHandle::Invalid();
-  if (layout_data.variant && layout_data.variant->texture) {
-    texture_handle = TextureHandle{layout_data.variant->texture->GetBindlessIndex()};
-  }
+  TextureHandle texture_handle = impl_->font_service->GetFontTextureHandle(layout_data);
 
   return TextMeshHandle(std::move(glyphs), layout_data.width, layout_data.height, texture_handle);
 }

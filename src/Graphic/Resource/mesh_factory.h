@@ -3,47 +3,22 @@
 
 #include <cmath>
 #include <cstddef>
-#include <span>
 #include <vector>
 
+#include "Framework/Render/vertex_data.h"
 #include "Math/Math.h"
 #include "Pipeline/vertex_types.h"
 #include "mesh.h"
 
-enum class VertexDataLayout { Model, Sprite };
-
-struct MeshData {
-  using SpriteVertex = Graphics::Vertex::SpriteVertex;
-  using ModelVertex = Graphics::Vertex::ModelVertex;
-
-  std::vector<std::byte> vertices;
-  std::vector<uint32_t> indices;
-  uint32_t vertex_count = 0;
-  VertexDataLayout layout = VertexDataLayout::Model;
-
-  std::span<const SpriteVertex> AsSpriteVertices() const {
-    return {reinterpret_cast<const SpriteVertex*>(vertices.data()), vertex_count};
-  }
-  std::span<const ModelVertex> AsModelVertices() const {
-    return {reinterpret_cast<const ModelVertex*>(vertices.data()), vertex_count};
-  }
-};
+// Cross-assert: Framework POD vertex structs match Graphic GPU vertex structs
+static_assert(sizeof(VertexData::ModelVertex) == sizeof(Graphics::Vertex::ModelVertex));
+static_assert(sizeof(VertexData::SpriteVertex) == sizeof(Graphics::Vertex::SpriteVertex));
 
 class MeshFactory {
  public:
   using SpriteVertex = Graphics::Vertex::SpriteVertex;
   using ModelVertex = Graphics::Vertex::ModelVertex;
   using CubeCornerColors = std::array<Math::Vector4, 8>;
-
-  // Raw data methods for MeshBufferPool upload (no GPU resource creation)
-  static MeshData CreateRectData();
-  static MeshData CreateRoundedRectData(float corner_radius = 0.1f, uint32_t corner_segments = 8, float aspect_ratio = 1.0f);
-  static MeshData CreateQuadData();
-  static MeshData CreateCubeData();
-  static MeshData CreateCubeData(const CubeCornerColors& corner_colors);
-  static MeshData CreatePlaneData(uint32_t subdivisions_x = 1, uint32_t subdivisions_z = 1);
-  static MeshData CreateSphereData(uint32_t segments = 32, uint32_t rings = 16);
-  static MeshData CreateCylinderData(uint32_t segments = 8);
 
   static bool CreateCube(ID3D12Device* device, Mesh& out_mesh) {
     struct Vertex {

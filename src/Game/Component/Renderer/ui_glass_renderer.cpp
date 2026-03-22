@@ -1,14 +1,13 @@
 #include "ui_glass_renderer.h"
 
+#include "Framework/Render/mesh_data_factory.h"
 #include "Framework/Render/shader_ids.h"
-#include "Graphic/Pipeline/pixel_shader_descriptors.h"
 
 #include <cstdio>
 #include <cstring>
 
 #include "Component/transform_component.h"
-#include "Game/Asset/asset_manager.h"
-#include "Graphic/Resource/mesh_factory.h"
+#include "Framework/Asset/asset_manager.h"
 #include "game_context.h"
 
 using Math::Matrix4;
@@ -65,7 +64,7 @@ void UIGlassRenderer::OnRender(FramePacket& packet) {
   char mesh_key[64];
   std::snprintf(mesh_key, sizeof(mesh_key), "glass_rounded_rect:%.3f:%.4f", aspect, mesh_radius);
 
-  auto mesh_data = MeshFactory::CreateRoundedRectData(mesh_radius, 8, aspect);
+  auto mesh_data = MeshDataFactory::CreateRoundedRectData(mesh_radius, 8, aspect);
   MeshHandle mesh_handle = context->GetAssetManager().GetOrCreateMeshHandle(mesh_key, mesh_data);
   if (!mesh_handle.IsValid()) {
     mesh_handle = context->GetAssetManager().GetDefaultMeshHandle(DefaultMesh::RoundedRect);
@@ -78,7 +77,7 @@ void UIGlassRenderer::OnRender(FramePacket& packet) {
   RenderRequest request;
   request.mesh = mesh_handle;
   request.shader_id = Shaders::Id::UI_GLASS;
-  request.render_settings = Graphics::UIGlassShader::DefaultRenderSettings();
+  request.render_settings = Shaders::UIGlass::DefaultRenderSettings();
   request.color = {1, 1, 1, 1};
   request.world_matrix = pivot_mat * size_scale * transform->GetWorldMatrix();
   request.depth = static_cast<float>(layer_id_);

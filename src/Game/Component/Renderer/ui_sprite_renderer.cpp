@@ -3,7 +3,7 @@
 #include "Component/pivot_type.h"
 #include "Component/transform_component.h"
 #include "Framework/Render/shader_ids.h"
-#include "Game/Asset/asset_manager.h"
+#include "Framework/Asset/asset_manager.h"
 #include "game_context.h"
 
 using Math::Matrix4;

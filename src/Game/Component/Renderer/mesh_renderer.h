@@ -2,7 +2,7 @@
 #include <array>
 #include <cstring>
 
-#include "Asset/asset_manager.h"
+#include "Framework/Asset/asset_manager.h"
 #include "Component/renderer_component.h"
 #include "Component/transform_component.h"
 #include "Framework/Math/Math.h"

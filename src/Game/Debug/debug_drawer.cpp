@@ -3,9 +3,7 @@
 #include <cassert>
 #include <cmath>
 
-#include "Graphic/graphic.h"
-
-DebugDrawer::DebugDrawer(Graphic* graphic) : graphic_(graphic) {
+DebugDrawer::DebugDrawer(IDebugDrawService* service) : debug_draw_service_(service) {
 }
 
 Vector4 DebugDrawer::ApplyOpacity(const Vector4& color) const {
@@ -13,7 +11,7 @@ Vector4 DebugDrawer::ApplyOpacity(const Vector4& color) const {
 }
 
 void DebugDrawer::DrawLine(const Vector3& start, const Vector3& end, const Vector4& color) {
-  graphic_->AddDebugLine(start, end, ApplyOpacity(color));
+  debug_draw_service_->AddDebugLine(start, end, ApplyOpacity(color));
 }
 
 void DebugDrawer::DrawCircle(const Vector3& center, float radius, const Vector4& color, const CircleProps& props) {
@@ -33,7 +31,7 @@ void DebugDrawer::DrawCircle(const Vector3& center, float radius, const Vector4&
     float a2 = (i + 1) * angle_step;
     Vector3 p1 = center + (u * Math::Cos(a1) + v * Math::Sin(a1)) * radius;
     Vector3 p2 = center + (u * Math::Cos(a2) + v * Math::Sin(a2)) * radius;
-    graphic_->AddDebugLine(p1, p2, final_color);
+    debug_draw_service_->AddDebugLine(p1, p2, final_color);
   }
 }
 
@@ -48,10 +46,10 @@ void DebugDrawer::DrawRect(const Vector3& min, const Vector3& max, const Vector4
     {min.x, y, max.z},
   };
 
-  graphic_->AddDebugLine(corners[0], corners[1], final_color);
-  graphic_->AddDebugLine(corners[1], corners[2], final_color);
-  graphic_->AddDebugLine(corners[2], corners[3], final_color);
-  graphic_->AddDebugLine(corners[3], corners[0], final_color);
+  debug_draw_service_->AddDebugLine(corners[0], corners[1], final_color);
+  debug_draw_service_->AddDebugLine(corners[1], corners[2], final_color);
+  debug_draw_service_->AddDebugLine(corners[2], corners[3], final_color);
+  debug_draw_service_->AddDebugLine(corners[3], corners[0], final_color);
 }
 
 void DebugDrawer::DrawWireCube(const Vector3& min, const Vector3& max, const Vector4& color) {
@@ -69,22 +67,22 @@ void DebugDrawer::DrawWireCube(const Vector3& min, const Vector3& max, const Vec
   };
 
   // Bottom face
-  graphic_->AddDebugLine(corners[0], corners[1], final_color);
-  graphic_->AddDebugLine(corners[1], corners[2], final_color);
-  graphic_->AddDebugLine(corners[2], corners[3], final_color);
-  graphic_->AddDebugLine(corners[3], corners[0], final_color);
+  debug_draw_service_->AddDebugLine(corners[0], corners[1], final_color);
+  debug_draw_service_->AddDebugLine(corners[1], corners[2], final_color);
+  debug_draw_service_->AddDebugLine(corners[2], corners[3], final_color);
+  debug_draw_service_->AddDebugLine(corners[3], corners[0], final_color);
 
   // Top face
-  graphic_->AddDebugLine(corners[4], corners[5], final_color);
-  graphic_->AddDebugLine(corners[5], corners[6], final_color);
-  graphic_->AddDebugLine(corners[6], corners[7], final_color);
-  graphic_->AddDebugLine(corners[7], corners[4], final_color);
+  debug_draw_service_->AddDebugLine(corners[4], corners[5], final_color);
+  debug_draw_service_->AddDebugLine(corners[5], corners[6], final_color);
+  debug_draw_service_->AddDebugLine(corners[6], corners[7], final_color);
+  debug_draw_service_->AddDebugLine(corners[7], corners[4], final_color);
 
   // Vertical edges
-  graphic_->AddDebugLine(corners[0], corners[4], final_color);
-  graphic_->AddDebugLine(corners[1], corners[5], final_color);
-  graphic_->AddDebugLine(corners[2], corners[6], final_color);
-  graphic_->AddDebugLine(corners[3], corners[7], final_color);
+  debug_draw_service_->AddDebugLine(corners[0], corners[4], final_color);
+  debug_draw_service_->AddDebugLine(corners[1], corners[5], final_color);
+  debug_draw_service_->AddDebugLine(corners[2], corners[6], final_color);
+  debug_draw_service_->AddDebugLine(corners[3], corners[7], final_color);
 }
 
 void DebugDrawer::DrawWireSphere(const Vector3& center, float radius, const Vector4& color, int segments) {
@@ -102,21 +100,21 @@ void DebugDrawer::DrawWireSphere(const Vector3& center, float radius, const Vect
     {
       Vector3 p1(center.x + radius * Math::Cos(angle1), center.y + radius * Math::Sin(angle1), center.z);
       Vector3 p2(center.x + radius * Math::Cos(angle2), center.y + radius * Math::Sin(angle2), center.z);
-      graphic_->AddDebugLine(p1, p2, final_color);
+      debug_draw_service_->AddDebugLine(p1, p2, final_color);
     }
 
     // XZ plane circle
     {
       Vector3 p1(center.x + radius * Math::Cos(angle1), center.y, center.z + radius * Math::Sin(angle1));
       Vector3 p2(center.x + radius * Math::Cos(angle2), center.y, center.z + radius * Math::Sin(angle2));
-      graphic_->AddDebugLine(p1, p2, final_color);
+      debug_draw_service_->AddDebugLine(p1, p2, final_color);
     }
 
     // YZ plane circle
     {
       Vector3 p1(center.x, center.y + radius * Math::Cos(angle1), center.z + radius * Math::Sin(angle1));
       Vector3 p2(center.x, center.y + radius * Math::Cos(angle2), center.z + radius * Math::Sin(angle2));
-      graphic_->AddDebugLine(p1, p2, final_color);
+      debug_draw_service_->AddDebugLine(p1, p2, final_color);
     }
   }
 }
@@ -133,7 +131,7 @@ void DebugDrawer::DrawGrid(const GridConfig& config) {
     Vector3 end(x, config.y_level, half_size);
 
     Vector4 line_color = (std::abs(x) < 0.001f) ? config.axis_color : config.color;
-    graphic_->AddDebugLine(start, end, ApplyOpacity(line_color));
+    debug_draw_service_->AddDebugLine(start, end, ApplyOpacity(line_color));
   }
 
   for (int i = 0; i < num_lines; ++i) {
@@ -142,7 +140,7 @@ void DebugDrawer::DrawGrid(const GridConfig& config) {
     Vector3 end(half_size, config.y_level, z);
 
     Vector4 line_color = (std::abs(z) < 0.001f) ? config.axis_color : config.color;
-    graphic_->AddDebugLine(start, end, ApplyOpacity(line_color));
+    debug_draw_service_->AddDebugLine(start, end, ApplyOpacity(line_color));
   }
 }
 
@@ -150,11 +148,11 @@ void DebugDrawer::DrawAxisGizmo(const AxisGizmoConfig& config) {
   Vector3 origin = config.position;
 
   Vector3 x_end(origin.x + config.length, origin.y, origin.z);
-  graphic_->AddDebugLine(origin, x_end, ApplyOpacity(colors::Blue));
+  debug_draw_service_->AddDebugLine(origin, x_end, ApplyOpacity(colors::Blue));
 
   Vector3 y_end(origin.x, origin.y + config.length, origin.z);
-  graphic_->AddDebugLine(origin, y_end, ApplyOpacity(colors::Red));
+  debug_draw_service_->AddDebugLine(origin, y_end, ApplyOpacity(colors::Red));
 
   Vector3 z_end(origin.x, origin.y, origin.z + config.length);
-  graphic_->AddDebugLine(origin, z_end, ApplyOpacity(colors::Lime));
+  debug_draw_service_->AddDebugLine(origin, z_end, ApplyOpacity(colors::Lime));
 }

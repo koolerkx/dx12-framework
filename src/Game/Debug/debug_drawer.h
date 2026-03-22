@@ -3,15 +3,14 @@
 
 #include "Framework/Core/color.h"
 #include "Framework/Math/Math.h"
+#include "Framework/Render/debug_draw_service.h"
 
 using Math::Vector3;
 using Math::Vector4;
 
-class Graphic;
-
 class DebugDrawer {
  public:
-  explicit DebugDrawer(Graphic* graphic);
+  explicit DebugDrawer(IDebugDrawService* service);
 
   void SetEnabled(bool enabled) {
     enabled_ = enabled;
@@ -71,7 +70,7 @@ class DebugDrawer {
  private:
   Vector4 ApplyOpacity(const Vector4& color) const;
 
-  Graphic* graphic_;
+  IDebugDrawService* debug_draw_service_;
   bool enabled_ = true;
   float global_opacity_ = 1.0f;
 };

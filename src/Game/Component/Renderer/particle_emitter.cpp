@@ -3,7 +3,7 @@
 #include <cmath>
 
 #include "Framework/Render/shader_ids.h"
-#include "Game/Asset/asset_manager.h"
+#include "Framework/Asset/asset_manager.h"
 #include "game_context.h"
 
 thread_local std::mt19937 ParticleEmitter::rng_{std::random_device{}()};

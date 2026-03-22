@@ -10,7 +10,7 @@
 #include "Framework/Render/render_handles.h"
 #include "Framework/Render/render_settings.h"
 #include "Framework/Serialize/serialize_node.h"
-#include "Game/Asset/asset_manager.h"
+#include "Framework/Asset/asset_manager.h"
 #include "Framework/Render/frame_packet.h"
 #include "Framework/Font/font_types.h"
 #include "game_object.h"

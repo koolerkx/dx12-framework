@@ -7,7 +7,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "Asset/model_data.h"
+#include "Framework/Asset/model_data.h"
 #include "Component/renderer_component.h"
 #include "Framework/Math/Math.h"
 #include "Framework/Render/render_handles.h"

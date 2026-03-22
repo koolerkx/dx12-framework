@@ -1,43 +1,49 @@
-#include "mesh_factory.h"
+#include "mesh_data_factory.h"
+
+#include <cmath>
+#include <cstdint>
+#include <vector>
 
 namespace {
 
-template <typename VertexType, typename IndexType>
+template <typename IndexType>
+std::vector<uint32_t> ConvertIndices(const IndexType* inds, uint32_t ind_count) {
+  std::vector<uint32_t> result(ind_count);
+  for (uint32_t i = 0; i < ind_count; ++i) {
+    result[i] = static_cast<uint32_t>(inds[i]);
+  }
+  return result;
+}
+
+template <MeshVertex VertexType, typename IndexType>
 MeshData BuildMeshData(const VertexType* verts, uint32_t vert_count, const IndexType* inds, uint32_t ind_count) {
   MeshData data;
-  data.vertex_count = vert_count;
-  data.vertices.resize(vert_count * sizeof(VertexType));
-  memcpy(data.vertices.data(), verts, vert_count * sizeof(VertexType));
-  data.indices.resize(ind_count);
-  for (uint32_t i = 0; i < ind_count; ++i) {
-    data.indices[i] = static_cast<uint32_t>(inds[i]);
-  }
+  data.vertices = std::vector<VertexType>(verts, verts + vert_count);
+  data.indices = ConvertIndices(inds, ind_count);
   return data;
 }
 
 }  // namespace
 
-MeshData MeshFactory::CreateRectData() {
-  SpriteVertex vertices[] = {
+MeshData MeshDataFactory::CreateRectData() {
+  VertexData::SpriteVertex vertices[] = {
     {{-0.5f, -0.5f, 0.0f}, {0.0f, 1.0f}, {1, 1, 1, 1}},
     {{0.5f, -0.5f, 0.0f}, {1.0f, 1.0f}, {1, 1, 1, 1}},
     {{0.5f, 0.5f, 0.0f}, {1.0f, 0.0f}, {1, 1, 1, 1}},
     {{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f}, {1, 1, 1, 1}},
   };
   uint16_t indices[] = {0, 1, 2, 2, 3, 0};
-  auto data = BuildMeshData(vertices, 4, indices, 6);
-  data.layout = VertexDataLayout::Sprite;
-  return data;
+  return BuildMeshData(vertices, 4, indices, 6);
 }
 
-MeshData MeshFactory::CreateRoundedRectData(float corner_radius, uint32_t corner_segments, float aspect_ratio) {
+MeshData MeshDataFactory::CreateRoundedRectData(float corner_radius, uint32_t corner_segments, float aspect_ratio) {
   constexpr float PI = Math::Pi;
   constexpr float HALF = 0.5f;
 
   float r_x = (aspect_ratio >= 1.0f) ? corner_radius / aspect_ratio : corner_radius;
   float r_y = (aspect_ratio >= 1.0f) ? corner_radius : corner_radius * aspect_ratio;
 
-  std::vector<SpriteVertex> vertices;
+  std::vector<VertexData::SpriteVertex> vertices;
   std::vector<uint16_t> indices;
 
   auto add_vertex = [&](float x, float y) -> uint16_t {
@@ -81,13 +87,11 @@ MeshData MeshFactory::CreateRoundedRectData(float corner_radius, uint32_t corner
     indices.push_back(perimeter[next]);
   }
 
-  auto data = BuildMeshData(vertices.data(), static_cast<uint32_t>(vertices.size()), indices.data(), static_cast<uint32_t>(indices.size()));
-  data.layout = VertexDataLayout::Sprite;
-  return data;
+  return BuildMeshData(vertices.data(), static_cast<uint32_t>(vertices.size()), indices.data(), static_cast<uint32_t>(indices.size()));
 }
 
-MeshData MeshFactory::CreateQuadData() {
-  ModelVertex vertices[] = {
+MeshData MeshDataFactory::CreateQuadData() {
+  VertexData::ModelVertex vertices[] = {
     {{-0.5f, -0.5f, 0.0f}, {0, 0, -1}, {0.0f, 1.0f}, {1, 1, 1, 1}, {1, 0, 0, -1}},
     {{0.5f, -0.5f, 0.0f}, {0, 0, -1}, {1.0f, 1.0f}, {1, 1, 1, 1}, {1, 0, 0, -1}},
     {{0.5f, 0.5f, 0.0f}, {0, 0, -1}, {1.0f, 0.0f}, {1, 1, 1, 1}, {1, 0, 0, -1}},
@@ -106,10 +110,10 @@ MeshData MeshFactory::CreateQuadData() {
  *  |/       |/     Z+
  *  0--------1
  */
-MeshData MeshFactory::CreateCubeData() {
+MeshData MeshDataFactory::CreateCubeData() {
   // Tangent = U direction in world space, w = bitangent sign
   // bitangent = cross(normal, tangent.xyz) * tangent.w
-  ModelVertex vertices[] = {
+  VertexData::ModelVertex vertices[] = {
     // Front face (Z+): U=(1,0,0), cross(N,T)=(0,1,0), actual_B=(0,-1,0) → w=-1
     {{-0.5f, -0.5f, 0.5f}, {0, 0, 1}, {0.0f, 1.0f}, {1, 1, 1, 1}, {1, 0, 0, -1}},
     {{0.5f, -0.5f, 0.5f}, {0, 0, 1}, {1.0f, 1.0f}, {1, 1, 1, 1}, {1, 0, 0, -1}},
@@ -191,8 +195,8 @@ MeshData MeshFactory::CreateCubeData() {
  *  |/       |/     Z+
  *  0--------1
  */
-MeshData MeshFactory::CreateCubeData(const CubeCornerColors& corner_colors) {
-  // Corner-to-vertex mapping per face (matches CreateCube(device, mesh, colors) in mesh_factory.h)
+MeshData MeshDataFactory::CreateCubeData(const CubeCornerColors& corner_colors) {
+  // Corner-to-vertex mapping per face
   // Front(0,1,5,4) Back(3,2,6,7) Top(4,5,7,6) Bottom(2,3,1,0) Right(1,3,7,5) Left(2,0,4,6)
   constexpr int CORNER_MAP[24] = {
     0,
@@ -221,18 +225,18 @@ MeshData MeshFactory::CreateCubeData(const CubeCornerColors& corner_colors) {
     6,  // Left face
   };
   MeshData data = CreateCubeData();
-  auto* verts = reinterpret_cast<ModelVertex*>(data.vertices.data());
+  auto& verts = data.GetVertices<VertexData::ModelVertex>();
   for (int i = 0; i < 24; ++i) {
     verts[i].color = corner_colors[CORNER_MAP[i]];
   }
   return data;
 }
 
-MeshData MeshFactory::CreatePlaneData(uint32_t subdivisions_x, uint32_t subdivisions_z) {
+MeshData MeshDataFactory::CreatePlaneData(uint32_t subdivisions_x, uint32_t subdivisions_z) {
   uint32_t vertex_count_x = subdivisions_x + 1;
   uint32_t vertex_count_z = subdivisions_z + 1;
 
-  std::vector<ModelVertex> vertices;
+  std::vector<VertexData::ModelVertex> vertices;
   vertices.reserve(vertex_count_x * vertex_count_z);
 
   for (uint32_t z = 0; z < vertex_count_z; ++z) {
@@ -263,11 +267,11 @@ MeshData MeshFactory::CreatePlaneData(uint32_t subdivisions_x, uint32_t subdivis
   return BuildMeshData(vertices.data(), static_cast<uint32_t>(vertices.size()), indices.data(), static_cast<uint32_t>(indices.size()));
 }
 
-MeshData MeshFactory::CreateSphereData(uint32_t segments, uint32_t rings) {
+MeshData MeshDataFactory::CreateSphereData(uint32_t segments, uint32_t rings) {
   constexpr float PI = Math::Pi;
   constexpr float RADIUS = 0.5f;
 
-  std::vector<ModelVertex> vertices;
+  std::vector<VertexData::ModelVertex> vertices;
   vertices.reserve((rings + 1) * (segments + 1));
 
   for (uint32_t ring = 0; ring <= rings; ++ring) {
@@ -324,12 +328,12 @@ MeshData MeshFactory::CreateSphereData(uint32_t segments, uint32_t rings) {
   return BuildMeshData(vertices.data(), static_cast<uint32_t>(vertices.size()), indices.data(), static_cast<uint32_t>(indices.size()));
 }
 
-MeshData MeshFactory::CreateCylinderData(uint32_t segments) {
+MeshData MeshDataFactory::CreateCylinderData(uint32_t segments) {
   constexpr float PI = Math::Pi;
   constexpr float RADIUS = 0.5f;
   constexpr float HALF_HEIGHT = 0.5f;
 
-  std::vector<ModelVertex> vertices;
+  std::vector<VertexData::ModelVertex> vertices;
   vertices.reserve((segments + 1) * 2);
 
   for (uint32_t i = 0; i <= segments; ++i) {

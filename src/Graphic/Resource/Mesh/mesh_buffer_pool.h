@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "Core/types.h"
+#include "Framework/Render/mesh_data.h"
 #include "Framework/Render/render_handles.h"
 #include "Resource/Allocator/free_block_allocator.h"
 #include "Pipeline/vertex_types.h"
@@ -17,11 +18,6 @@ using Graphics::Vertex::ModelVertex;
 using Graphics::Vertex::SpriteVertex;
 
 enum class VertexLayout : uint8_t { Model = 0, Sprite = 1 };
-
-struct MeshAllocation {
-  MeshHandle handle;
-  bool success = false;
-};
 
 struct MeshBufferPoolConfig {
   uint32_t initial_vertex_capacity = 1'000'000;
