@@ -6,7 +6,6 @@
 #include "game_context.h"
 #include "game_object.h"
 
-
 InstancedModelRenderer::InstancedModelRenderer(GameObject* owner, const Props& props)
     : RendererComponent(owner), model_(props.model), entries_(props.instances) {
   instance_count_ = static_cast<uint32_t>(entries_.size());
@@ -75,6 +74,7 @@ void InstancedModelRenderer::OnRender(FramePacket& packet) {
 
     InstancedRenderRequest request;
     request.SetShader<Shaders::PBR>();
+    request.render_settings = Rendering::RenderSettings::Opaque();
     request.mesh = entry.mesh_handle;
     request.material = (i < submesh_material_handles_.size()) ? submesh_material_handles_[i] : MaterialHandle::Invalid();
     if (entry.surface_material_index < model_->surface_materials.size()) {

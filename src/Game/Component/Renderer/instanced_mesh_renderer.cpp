@@ -43,6 +43,7 @@ void InstancedMeshRenderer::OnRender(FramePacket& packet) {
 
   InstancedRenderRequest request;
   request.SetShader<Shaders::PBR>();
+  request.render_settings = Rendering::RenderSettings::Opaque();
   request.mesh = mesh_handle;
   request.material = material_handle_;
   request.layer = RenderLayer::Opaque;

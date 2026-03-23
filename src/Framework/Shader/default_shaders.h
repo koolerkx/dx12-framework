@@ -53,6 +53,10 @@ struct Basic3D {
   static constexpr ShaderId ID = HashShaderName(NAME);
   using VertexShader = VS::Basic3D;
   using PixelShader = PS::Basic3D;
+
+  static Rendering::RenderSettings DefaultRenderSettings() {
+    return Rendering::RenderSettings::Opaque();
+  }
 };
 
 struct PBR {
@@ -60,6 +64,10 @@ struct PBR {
   static constexpr ShaderId ID = HashShaderName(NAME);
   using VertexShader = VS::Model;
   using PixelShader = PS::PBR;
+
+  static Rendering::RenderSettings DefaultRenderSettings() {
+    return Rendering::RenderSettings::Opaque();
+  }
 };
 
 struct DebugLine {
