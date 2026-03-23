@@ -118,7 +118,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
 #ifdef ENABLE_EDITOR
   game.LoadInitialScene(DefaultScenes::EMPTY);
 #else
-  game.LoadInitialScene(UserScenes::TITLE);
+  game.LoadInitialScene(MakeSceneKey(config.startup_scene));
 #endif
 
 #ifdef ENABLE_EDITOR

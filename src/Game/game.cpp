@@ -49,7 +49,7 @@ void Game::SetSceneRegistrar(SceneRegistrar registrar) {
   scene_registrar_ = std::move(registrar);
 }
 
-void Game::LoadInitialScene(const SceneKey& key) {
+void Game::LoadInitialScene(SceneKey key) {
   if (scene_registrar_) {
     scene_registrar_(scene_manager_);
   }

@@ -14,11 +14,11 @@ class IRenderService;
 class SceneManager {
  public:
   template <typename T>
-  void Register(const SceneKey& key) {
+  void Register(SceneKey key) {
     factories_[key] = []() { return std::make_unique<T>(); };
   }
 
-  void RequestLoad(const SceneKey& key);
+  void RequestLoad(SceneKey key);
   void ProcessPending(AssetManager& asset_manager, GameContext* context, IRenderService* render_service);
 
   IScene* GetCurrentScene() const {

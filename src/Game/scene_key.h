@@ -1,22 +1,28 @@
 /**
  * @file scene_key.h
- * @brief String-based scene identification replacing the former SceneId enum.
+ * @brief Hash-based scene identification using compile-time string hashing.
  */
 #pragma once
-#include <string>
 
-using SceneKey = std::string;
+#include <cstdint>
+
+#include "Framework/Core/utils.h"
+
+using SceneKey = uint32_t;
+
+constexpr SceneKey MakeSceneKey(std::string_view name) {
+  return utils::HashString(name);
+}
 
 namespace DefaultScenes {
-inline const SceneKey EMPTY = "empty";
-inline const SceneKey BLANK = "blank";
+inline constexpr SceneKey EMPTY = MakeSceneKey("empty");
+inline constexpr SceneKey BLANK = MakeSceneKey("blank");
 }  // namespace DefaultScenes
 
-// FIXME: Move to SceneContent in Phase 2
 namespace UserScenes {
-inline const SceneKey TITLE = "title";
-inline const SceneKey TEST = "test";
-inline const SceneKey CUBE = "cube";
-inline const SceneKey MODEL = "model";
-inline const SceneKey CITY = "city";
+inline constexpr SceneKey TITLE = MakeSceneKey("title");
+inline constexpr SceneKey TEST = MakeSceneKey("test");
+inline constexpr SceneKey CUBE = MakeSceneKey("cube");
+inline constexpr SceneKey MODEL = MakeSceneKey("model");
+inline constexpr SceneKey CITY = MakeSceneKey("city");
 }  // namespace UserScenes

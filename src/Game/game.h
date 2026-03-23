@@ -31,7 +31,7 @@ class Game {
 
   void Initialize(const Props& props);
   void SetSceneRegistrar(SceneRegistrar registrar);
-  void LoadInitialScene(const SceneKey& key);
+  void LoadInitialScene(SceneKey key);
   void Shutdown();
 
   IScene* GetCurrentScene() const {

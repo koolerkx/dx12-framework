@@ -5,7 +5,7 @@
 #include "game_context.h"
 #include "scene_events.h"
 
-void SceneManager::RequestLoad(const SceneKey& key) {
+void SceneManager::RequestLoad(SceneKey key) {
   pending_scene_ = key;
 }
 
