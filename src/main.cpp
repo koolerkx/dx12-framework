@@ -20,6 +20,7 @@
 #include "Framework/Logging/sinks.h"
 #include "Game/game.h"
 #include "Game/game_context.h"
+#include "Game/scene_key.h"
 #include "Graphic/Pipeline/shader_registration.h"
 #include "Graphic/Resource/font_service.h"
 #include "Graphic/Resource/mesh_service.h"
@@ -27,6 +28,7 @@
 #include "Graphic/debug_draw_service.h"
 #include "Graphic/graphic.h"
 #include "Graphic/render_service.h"
+#include "SceneContent/scene_registration.h"
 
 template <typename T>
 using ComPtr = Microsoft::WRL::ComPtr<T>;
@@ -100,18 +102,19 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
   context.SetShaderRegistration(&shader_registration);
 
   Game game;
+  RegisterUserComponents();
+  game.SetSceneRegistrar(RegisterUserScenes);
   game.Initialize({
     .context = &context,
 #ifdef ENABLE_EDITOR
-    .initial_scene = SceneId::EMPTY_SCENE,
     .debug_draw_enabled = true,
 #else
-    .initial_scene = SceneId::TITLE_SCENE,
     .auto_play = true,
     .debug_draw_enabled = false,
 #endif
     .scene_defaults = config.scene_defaults,
   });
+  game.LoadInitialScene(UserScenes::TITLE);
 
 #ifdef ENABLE_EDITOR
   editor.SetInputSystem(&inputSystem);

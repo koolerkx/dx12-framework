@@ -12,6 +12,7 @@ set(APP_SOURCES
 add_subdirectory(Framework)
 add_subdirectory(Graphic)
 add_subdirectory(Game)
+add_subdirectory(SceneContent)
 
 function(setup_app_target target_name)
     set_msvc_runtime(${target_name})
@@ -26,6 +27,7 @@ function(setup_app_target target_name)
         framework
         graphic
         game
+        scene_content
     )
     target_include_directories(${target_name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
     target_include_directories(${target_name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Framework)

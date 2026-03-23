@@ -50,8 +50,7 @@ struct WaveStageConfig {
       config.spawner_assignments[0].enemy_count = config.total_enemy_count;
     }
 
-    Logger::LogFormat(LogLevel::Info, LogCategory::Game, Logger::Here(),
-      "[Wave] Generated config for wave {}", wave_index);
+    Logger::LogFormat(LogLevel::Info, LogCategory::Game, Logger::Here(), "[Wave] Generated config for wave {}", wave_index);
 
     return config;
   }

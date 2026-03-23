@@ -27,8 +27,8 @@ class TowerPlacementComponent : public BehaviorComponent<TowerPlacementComponent
   };
 
   using BehaviorComponent::BehaviorComponent;
-  TowerPlacementComponent(GameObject* owner, const Props& props)
-      : BehaviorComponent(owner), nav_(props.nav) {}
+  TowerPlacementComponent(GameObject* owner, const Props& props) : BehaviorComponent(owner), nav_(props.nav) {
+  }
 
   void OnStart() override;
   void OnUpdate(float dt) override;
