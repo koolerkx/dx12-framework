@@ -7,11 +7,11 @@
 #include <optional>
 #include <string_view>
 
-#include "Framework/Render/shader_types.h"
+#include "Framework/Shader/shader_id.h"
 
 class IShaderNameService {
  public:
   virtual ~IShaderNameService() = default;
-  virtual std::string_view GetName(Graphics::ShaderId shader_id) const = 0;
-  virtual std::optional<Graphics::ShaderId> FindIdByName(std::string_view name) const = 0;
+  virtual std::string_view GetName(ShaderId shader_id) const = 0;
+  virtual std::optional<ShaderId> FindIdByName(std::string_view name) const = 0;
 };

@@ -16,13 +16,13 @@ class ShaderManager {
 
   bool Initialize(ID3D12Device* device);
 
-  const ShaderRegistry::ShaderMetadata& GetShaderMetadata(Graphics::ShaderId id) const;
+  const ShaderRegistry::ShaderMetadata& GetShaderMetadata(ShaderId id) const;
 
-  std::string_view GetShaderName(Graphics::ShaderId id) const;
+  std::string_view GetShaderName(ShaderId id) const;
 
   // Root Signature
   ID3D12RootSignature* GetRootSignature(Graphics::RSPreset preset) const;
-  ID3D12RootSignature* GetRootSignature(Graphics::ShaderId shader_id) const;
+  ID3D12RootSignature* GetRootSignature(ShaderId shader_id) const;
 
   template <typename ShaderType>
   ID3D12RootSignature* GetRootSignature() const {
@@ -30,8 +30,8 @@ class ShaderManager {
   }
 
   // Shader bytecode
-  ID3DBlob* GetVertexShader(Graphics::ShaderId id);
-  ID3DBlob* GetPixelShader(Graphics::ShaderId id);
+  ID3DBlob* GetVertexShader(ShaderId id);
+  ID3DBlob* GetPixelShader(ShaderId id);
 
   template <typename ShaderType>
   ID3DBlob* GetVertexShader() {
@@ -44,7 +44,7 @@ class ShaderManager {
   }
 
   // Preload shaders to avoid runtime loading
-  void PreloadShaders(const std::vector<Graphics::ShaderId>& shader_ids);
+  void PreloadShaders(const std::vector<ShaderId>& shader_ids);
 
  private:
   ID3D12Device* device_ = nullptr;
@@ -53,8 +53,8 @@ class ShaderManager {
   std::array<ComPtr<ID3D12RootSignature>, static_cast<size_t>(Graphics::RSPreset::Count)> rs_presets_;
 
   // Shader bytecode cache
-  std::unordered_map<Graphics::ShaderId, ComPtr<ID3DBlob>> vertex_shaders_;
-  std::unordered_map<Graphics::ShaderId, ComPtr<ID3DBlob>> pixel_shaders_;
+  std::unordered_map<ShaderId, ComPtr<ID3DBlob>> vertex_shaders_;
+  std::unordered_map<ShaderId, ComPtr<ID3DBlob>> pixel_shaders_;
 
   bool CreateRSPresets();
   bool CreateStandardRS();

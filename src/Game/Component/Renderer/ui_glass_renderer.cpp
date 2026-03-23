@@ -74,9 +74,8 @@ void UIGlassRenderer::OnRender(FramePacket& packet) {
   Matrix4 size_scale = Matrix4::CreateScale(Vector3(size_.x, size_.y, 1.0f));
 
   RenderRequest request;
+  request.SetShader<Shaders::UIGlass>();
   request.mesh = mesh_handle;
-  request.shader_id = Shaders::UIGlass::ID;
-  request.render_settings = Shaders::UIGlass::DefaultRenderSettings();
   request.color = {1, 1, 1, 1};
   request.world_matrix = pivot_mat * size_scale * transform->GetWorldMatrix();
   request.depth = static_cast<float>(layer_id_);

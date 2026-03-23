@@ -6,7 +6,6 @@
 #include "game_context.h"
 #include "game_object.h"
 
-
 InstancedMeshRenderer::InstancedMeshRenderer(GameObject* owner, const Props& props)
     : RendererComponent(owner), mesh_type_(props.mesh_type), entries_(props.instances) {
   instance_count_ = static_cast<uint32_t>(entries_.size());
@@ -43,9 +42,8 @@ void InstancedMeshRenderer::OnRender(FramePacket& packet) {
   }
 
   InstancedRenderRequest request;
+  request.SetShader<Shaders::PBR>();
   request.mesh = mesh_handle;
-  request.shader_id = Shaders::PBR::ID;
-  request.render_settings = Rendering::RenderSettings::Opaque();
   request.material = material_handle_;
   request.layer = RenderLayer::Opaque;
   request.tags = static_cast<uint32_t>(RenderTag::CastShadow | RenderTag::ReceiveShadow | RenderTag::Lit);

@@ -5,15 +5,13 @@
 #include "Frame/constant_buffers.h"
 #include "Frame/dynamic_upload_buffer.h"
 #include "Pipeline/material_manager.h"
-#include "Pipeline/shader_types.h"
 #include "Resource/Mesh/mesh_buffer_pool.h"
 #include "Resource/Mesh/mesh_descriptor.h"
 
 void DrawCommandResolver::ResolveSingleRequests(
   const ResolveContext& ctx, std::span<const RenderRequest> requests, std::vector<ResolvedDrawCommand>& out) {
   for (const auto& req : requests) {
-    const Material* material =
-      ctx.material_manager->GetOrCreateMaterial(static_cast<Graphics::ShaderId>(req.shader_id), req.render_settings);
+    const Material* material = ctx.material_manager->GetOrCreateMaterial(static_cast<ShaderId>(req.shader_id), req.render_settings);
     if (!material) continue;
 
     MeshGeometry geo = ResolveMeshGeometry(ctx.mesh_buffer_pool, req.mesh);
@@ -48,8 +46,7 @@ void DrawCommandResolver::ResolveInstancedRequests(const ResolveContext& ctx,
     if (!data_ref.IsValid()) continue;
     assert(data_ref.offset + data_ref.size <= instance_data_pool.size());
 
-    const Material* material =
-      ctx.material_manager->GetOrCreateMaterial(static_cast<Graphics::ShaderId>(req.shader_id), req.render_settings);
+    const Material* material = ctx.material_manager->GetOrCreateMaterial(static_cast<ShaderId>(req.shader_id), req.render_settings);
     if (!material) continue;
 
     MeshGeometry geo = ResolveMeshGeometry(ctx.mesh_buffer_pool, req.mesh);

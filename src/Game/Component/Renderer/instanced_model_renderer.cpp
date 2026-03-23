@@ -1,10 +1,11 @@
 #include "instanced_model_renderer.h"
 
 #include "Framework/Render/render_settings.h"
-#include "Framework/Shader/default_shaders.h"
 #include "Framework/Render/texture_handle.h"
+#include "Framework/Shader/default_shaders.h"
 #include "game_context.h"
 #include "game_object.h"
+
 
 InstancedModelRenderer::InstancedModelRenderer(GameObject* owner, const Props& props)
     : RendererComponent(owner), model_(props.model), entries_(props.instances) {
@@ -73,9 +74,8 @@ void InstancedModelRenderer::OnRender(FramePacket& packet) {
     const auto& entry = model_->sub_meshes[i];
 
     InstancedRenderRequest request;
+    request.SetShader<Shaders::PBR>();
     request.mesh = entry.mesh_handle;
-    request.shader_id = Shaders::PBR::ID;
-    request.render_settings = Rendering::RenderSettings::Opaque();
     request.material = (i < submesh_material_handles_.size()) ? submesh_material_handles_[i] : MaterialHandle::Invalid();
     if (entry.surface_material_index < model_->surface_materials.size()) {
       const auto& mat = model_->surface_materials[entry.surface_material_index];

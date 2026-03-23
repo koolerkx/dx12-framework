@@ -22,11 +22,11 @@ bool MaterialManager::Initialize(ID3D12Device* device, ShaderManager* shader_man
   return true;
 }
 
-Rendering::RenderSettings MaterialManager::GetDefaultSettings(Graphics::ShaderId shader_id) {
+Rendering::RenderSettings MaterialManager::GetDefaultSettings(ShaderId shader_id) {
   return ShaderRegistry::GetMetadata(shader_id).default_settings;
 }
 
-Material* MaterialManager::GetOrCreateMaterial(Graphics::ShaderId shader_id, const Rendering::RenderSettings& settings) {
+Material* MaterialManager::GetOrCreateMaterial(ShaderId shader_id, const Rendering::RenderSettings& settings) {
   Rendering::RenderSettings setting_override = settings;
   if (wireframe_override_) setting_override.wireframe = true;
   setting_override.Validate();
@@ -67,7 +67,7 @@ Material* MaterialManager::GetOrCreateMaterial(Graphics::ShaderId shader_id, con
   return ptr;
 }
 
-Material MaterialManager::CreateMaterialInternal(Graphics::ShaderId shader_id, const Rendering::RenderSettings& settings) {
+Material MaterialManager::CreateMaterialInternal(ShaderId shader_id, const Rendering::RenderSettings& settings) {
   // Get shader metadata and bytecode from ShaderManager
   const ShaderRegistry::ShaderMetadata& metadata = shader_manager_->GetShaderMetadata(shader_id);
   ID3DBlob* vs_blob = shader_manager_->GetVertexShader(shader_id);

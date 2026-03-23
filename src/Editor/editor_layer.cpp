@@ -1672,7 +1672,7 @@ void EditorLayer::UpdateScaling() {
   ui_scale_ = scale;
 }
 
-void EditorLayer::CreateMeshGameObject(const char* name, DefaultMesh mesh, Graphics::ShaderId shader) {
+void EditorLayer::CreateMeshGameObject(const char* name, DefaultMesh mesh, ShaderId shader) {
   if (!scene_) return;
   auto* go = scene_->CreateGameObject(name);
   go->AddComponent<MeshRenderer>(MeshRenderer::Props{

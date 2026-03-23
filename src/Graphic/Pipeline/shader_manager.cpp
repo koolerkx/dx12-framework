@@ -28,11 +28,11 @@ bool ShaderManager::Initialize(ID3D12Device* device) {
   return true;
 }
 
-const ShaderRegistry::ShaderMetadata& ShaderManager::GetShaderMetadata(Graphics::ShaderId id) const {
+const ShaderRegistry::ShaderMetadata& ShaderManager::GetShaderMetadata(ShaderId id) const {
   return ShaderRegistry::GetMetadata(id);
 }
 
-std::string_view ShaderManager::GetShaderName(Graphics::ShaderId id) const {
+std::string_view ShaderManager::GetShaderName(ShaderId id) const {
   return ShaderRegistry::GetName(id);
 }
 
@@ -44,12 +44,12 @@ ID3D12RootSignature* ShaderManager::GetRootSignature(Graphics::RSPreset preset) 
   return rs_presets_[index].Get();
 }
 
-ID3D12RootSignature* ShaderManager::GetRootSignature(Graphics::ShaderId shader_id) const {
+ID3D12RootSignature* ShaderManager::GetRootSignature(ShaderId shader_id) const {
   Graphics::RSPreset preset = ShaderRegistry::GetRSPreset(shader_id);
   return GetRootSignature(preset);
 }
 
-ID3DBlob* ShaderManager::GetVertexShader(Graphics::ShaderId id) {
+ID3DBlob* ShaderManager::GetVertexShader(ShaderId id) {
   // Check cache first
   auto it = vertex_shaders_.find(id);
   if (it != vertex_shaders_.end()) {
@@ -67,7 +67,7 @@ ID3DBlob* ShaderManager::GetVertexShader(Graphics::ShaderId id) {
   return blob;
 }
 
-ID3DBlob* ShaderManager::GetPixelShader(Graphics::ShaderId id) {
+ID3DBlob* ShaderManager::GetPixelShader(ShaderId id) {
   const ShaderRegistry::ShaderMetadata& metadata = GetShaderMetadata(id);
   if (metadata.ps_path.empty()) {
     return nullptr;
@@ -89,10 +89,10 @@ ID3DBlob* ShaderManager::GetPixelShader(Graphics::ShaderId id) {
   return blob;
 }
 
-void ShaderManager::PreloadShaders(const std::vector<Graphics::ShaderId>& shader_ids) {
+void ShaderManager::PreloadShaders(const std::vector<ShaderId>& shader_ids) {
   Logger::LogFormat(LogLevel::Info, LogCategory::Resource, Logger::Here(), "[ShaderManager] Preloading {} shaders...", shader_ids.size());
 
-  for (Graphics::ShaderId id : shader_ids) {
+  for (ShaderId id : shader_ids) {
     GetVertexShader(id);
     GetPixelShader(id);
   }

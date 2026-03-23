@@ -23,7 +23,7 @@ class MaterialManager {
   bool Initialize(ID3D12Device* device, ShaderManager* shader_manager);
 
   // Get or create material based on shader ID and render settings
-  Material* GetOrCreateMaterial(Graphics::ShaderId shader_id, const Rendering::RenderSettings& settings);
+  Material* GetOrCreateMaterial(ShaderId shader_id, const Rendering::RenderSettings& settings);
 
   // Template overload for type-safe shader access
   template <typename ShaderType>
@@ -32,7 +32,7 @@ class MaterialManager {
   }
 
   // Get default render settings for a shader
-  static Rendering::RenderSettings GetDefaultSettings(Graphics::ShaderId shader_id);
+  static Rendering::RenderSettings GetDefaultSettings(ShaderId shader_id);
 
   void SetWireframeOverride(bool enabled) {
     wireframe_override_ = enabled;
@@ -72,7 +72,7 @@ class MaterialManager {
 
   // === Helper Methods ===
 
-  Material CreateMaterialInternal(Graphics::ShaderId shader_id, const Rendering::RenderSettings& settings);
+  Material CreateMaterialInternal(ShaderId shader_id, const Rendering::RenderSettings& settings);
 
   void EvictLRU();
 
@@ -82,7 +82,7 @@ class MaterialManager {
     return (static_cast<uint64_t>(rs_hash) << 32) | pso_hash;
   }
 
-  uint64_t GenerateCacheKey(Graphics::ShaderId shader_id, const Rendering::RenderSettings& settings) const {
+  uint64_t GenerateCacheKey(ShaderId shader_id, const Rendering::RenderSettings& settings) const {
     return (static_cast<uint64_t>(shader_id) << 32) | settings.GetCacheKey();
   }
 

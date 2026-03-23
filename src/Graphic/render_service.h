@@ -12,11 +12,11 @@ class Graphic;
 
 class ShaderNameService final : public IShaderNameService {
  public:
-  std::string_view GetName(Graphics::ShaderId shader_id) const override {
+  std::string_view GetName(ShaderId shader_id) const override {
     return ShaderRegistry::GetName(shader_id);
   }
 
-  std::optional<Graphics::ShaderId> FindIdByName(std::string_view name) const override {
+  std::optional<ShaderId> FindIdByName(std::string_view name) const override {
     return ShaderRegistry::FindIdByName(name);
   }
 };

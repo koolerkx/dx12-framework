@@ -1,6 +1,5 @@
 #pragma once
 #include <array>
-#include <cstdint>
 #include <cstring>
 
 #include "Framework/Math/Math.h"

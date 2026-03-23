@@ -2,14 +2,13 @@
  * @file shader_types.h
  * @brief Core shader type definitions for the graphics pipeline.
  *
- * @note ShaderId is defined in Framework/Render/shader_types.h (shared across layers).
+ * @note ShaderId is defined in Framework/Shader/shader_id.h (global type).
  *       This file adds Graphic-specific types: RSPreset, ShaderRenderHints.
- *       For shader definitions, see shader_descriptors.h.
  */
 #pragma once
 #include <d3d12.h>
 
-#include "Framework/Render/shader_types.h"
+#include <cstdint>
 
 namespace Graphics {
 

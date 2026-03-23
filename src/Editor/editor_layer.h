@@ -95,7 +95,7 @@ class EditorLayer {
   void ScanModelFiles();
   void ScanTextureFiles();
   int CountPointLightsInScene() const;
-  void CreateMeshGameObject(const char* name, DefaultMesh mesh, Graphics::ShaderId shader);
+  void CreateMeshGameObject(const char* name, DefaultMesh mesh, ShaderId shader);
   void ApplyPendingModelCreation();
   void ResolveDirtyRenderers();
   void ApplyLoadedShadowSettings();

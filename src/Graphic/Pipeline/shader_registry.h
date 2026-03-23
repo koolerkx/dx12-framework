@@ -38,7 +38,6 @@
 namespace ShaderRegistry {
 
 using Graphics::RSPreset;
-using Graphics::ShaderId;
 using Graphics::ShaderRenderHints;
 
 // ShaderMetadata - Runtime representation of shader properties
