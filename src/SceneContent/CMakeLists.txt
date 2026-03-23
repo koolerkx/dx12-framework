@@ -1,4 +1,4 @@
-add_library(scene_content STATIC
+set(SCENE_CONTENT_SOURCES
     scene_registration.h
     scene_registration.cpp
 
@@ -57,9 +57,16 @@ add_library(scene_content STATIC
     Scenes/city_scene/hud_manager_component.cpp
 )
 
-set_msvc_runtime(scene_content)
+function(setup_scene_target target_name game_target)
+    add_library(${target_name} STATIC ${SCENE_CONTENT_SOURCES})
+    set_msvc_runtime(${target_name})
+    target_include_directories(${target_name} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+    target_include_directories(${target_name} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../)
+    target_link_libraries(${target_name} PUBLIC ${game_target})
+endfunction()
 
-target_include_directories(scene_content PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(scene_content PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../)
+setup_scene_target(scene_content game)
 
-target_link_libraries(scene_content PUBLIC game)
+if(ENABLE_EDITOR)
+    setup_scene_target(scene_content_editor game_editor)
+endif()

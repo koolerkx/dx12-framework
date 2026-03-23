@@ -45,6 +45,7 @@ endif()
 add_library(editor STATIC
   editor_layer.h
   editor_layer.cpp
+  editor_ui_imgui.cpp
 )
 
 target_include_directories(editor PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
@@ -52,6 +53,7 @@ target_include_directories(editor PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
 target_include_directories(editor PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../Framework)
 
 target_link_libraries(editor PUBLIC imgui)
-target_link_libraries(editor PRIVATE game graphic)
+target_compile_definitions(editor PRIVATE ENABLE_EDITOR=1)
+target_link_libraries(editor PRIVATE game_editor graphic)
 
 set_msvc_runtime(editor)

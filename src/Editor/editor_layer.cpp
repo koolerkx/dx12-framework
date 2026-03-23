@@ -10,8 +10,6 @@
 #include <cstdio>
 #include <filesystem>
 
-#include "Framework/Asset/asset_manager.h"
-#include "Framework/Core/utils.h"
 #include "Framework/Event/event_bus.hpp"
 #include "Framework/Event/input_events.h"
 #include "Framework/Input/input.h"
@@ -19,11 +17,6 @@
 #include "Framework/Render/frame_packet.h"
 #include "Framework/Shader/default_shaders.h"
 #include "Game/Component/Renderer/mesh_renderer.h"
-#include "Game/Component/Renderer/particle_emitter.h"
-#include "Game/Component/Renderer/sprite_renderer.h"
-#include "Game/Component/Renderer/text_renderer.h"
-#include "Game/Component/Renderer/ui_sprite_renderer.h"
-#include "Game/Component/Renderer/ui_text_renderer.h"
 #include "Game/Component/camera_component.h"
 #include "Game/Component/model_component.h"
 #include "Game/Component/point_light_component.h"
@@ -300,17 +293,17 @@ void EditorLayer::DrawSceneMenu() {
   }
 
   if (ImGui::BeginMenu("Hardcoded Scene")) {
-    constexpr SceneId scenes[] = {
-      SceneId::TITLE_SCENE,
-      SceneId::TEST_SCENE,
-      SceneId::CUBE_SCENE,
-      SceneId::EMPTY_SCENE,
-      SceneId::MODEL_SCENE,
-      SceneId::CITY_SCENE,
+    static const std::pair<const char*, SceneKey> scenes[] = {
+      {"Title", UserScenes::TITLE},
+      {"Test", UserScenes::TEST},
+      {"Cube", UserScenes::CUBE},
+      {"Empty", DefaultScenes::EMPTY},
+      {"Model", UserScenes::MODEL},
+      {"City", UserScenes::CITY},
     };
-    for (auto id : scenes) {
-      if (ImGui::MenuItem(SceneIdLabel(id))) {
-        scene_->GetContext()->GetSceneManager()->RequestLoad(id);
+    for (const auto& [label, key] : scenes) {
+      if (ImGui::MenuItem(label)) {
+        scene_->GetContext()->GetSceneManager()->RequestLoad(key);
       }
     }
     ImGui::EndMenu();
@@ -614,7 +607,8 @@ void EditorLayer::DrawViewGizmo() {
   ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
   ImGuizmo::SetOrthographic(camera->GetProjectionType() == ProjectionType::Orthographic);
   ImGuizmo::SetRect(img_min.x, img_min.y, img_size.x, img_size.y);
-  ImGuizmo::ViewManipulate(view, view_gizmo_distance_, gizmo_pos, ImVec2(gizmo_size, gizmo_size), 0x10101010);
+  constexpr float VIEW_GIZMO_DISTANCE = 8.0f;
+  ImGuizmo::ViewManipulate(view, VIEW_GIZMO_DISTANCE, gizmo_pos, ImVec2(gizmo_size, gizmo_size), 0x10101010);
 
   if (ImGuizmo::IsUsingViewManipulate()) {
     FlipHandedness(cam_data.view);
@@ -745,14 +739,6 @@ void DrawRenderSettingsEditor(Rendering::RenderSettings& settings, bool show_dep
   }
 }
 
-void DrawBillboardEditor(Billboard::Mode& mode) {
-  static const char* kBillboardNames[] = {"None", "Cylindrical", "Spherical"};
-  int current = static_cast<int>(mode);
-  if (ImGui::Combo("Billboard", &current, kBillboardNames, IM_ARRAYSIZE(kBillboardNames))) {
-    mode = static_cast<Billboard::Mode>(current);
-  }
-}
-
 void DrawRenderLayerEditor(RenderLayer& layer) {
   static const char* kLayerNames[] = {"Opaque", "Transparent"};
   int current = static_cast<int>(layer);
@@ -760,37 +746,6 @@ void DrawRenderLayerEditor(RenderLayer& layer) {
   if (ImGui::Combo("Render Layer", &current, kLayerNames, IM_ARRAYSIZE(kLayerNames))) {
     layer = static_cast<RenderLayer>(current);
   }
-}
-
-void DrawTextProperties(std::wstring& text,
-  Font::FontFamily& font_family,
-  float& pixel_size,
-  Text::HorizontalAlign& h_align,
-  float& line_spacing,
-  float& letter_spacing) {
-  std::string utf8_text = utils::wstring_to_utf8(text);
-  char buf[512];
-  strncpy_s(buf, utf8_text.c_str(), sizeof(buf) - 1);
-  if (ImGui::InputText("Text", buf, sizeof(buf))) {
-    text = utils::utf8_to_wstring(std::string(buf));
-  }
-
-  static const char* kFontNames[] = {"ZenOldMincho"};
-  int font = static_cast<int>(font_family);
-  if (ImGui::Combo("Font", &font, kFontNames, IM_ARRAYSIZE(kFontNames))) {
-    font_family = static_cast<Font::FontFamily>(font);
-  }
-
-  ImGui::DragFloat("Pixel Size", &pixel_size, 0.5f, 1.0f, 256.0f);
-
-  static const char* kHAlignNames[] = {"Left", "Center", "Right"};
-  int h = static_cast<int>(h_align);
-  if (ImGui::Combo("H Align", &h, kHAlignNames, IM_ARRAYSIZE(kHAlignNames))) {
-    h_align = static_cast<Text::HorizontalAlign>(h);
-  }
-
-  ImGui::DragFloat("Line Spacing", &line_spacing, 0.1f);
-  ImGui::DragFloat("Letter Spacing", &letter_spacing, 0.1f);
 }
 
 }  // namespace
@@ -826,38 +781,22 @@ void EditorLayer::DrawInspector() {
           ImGui::BeginDisabled(!debug_draw_enabled_);
           if (ImGui::Checkbox("Debug Draw##comp", &dbg)) comp->SetDebugDrawEnabled(dbg);
           ImGui::EndDisabled();
-          DrawTransformInspector(transform);
+          transform->OnInspectorGUI();
         }
-      } else if (auto* sprite = dynamic_cast<SpriteRenderer*>(comp.get())) {
-        if (ImGui::CollapsingHeader("SpriteRenderer")) DrawSpriteRendererInspector(sprite);
-      } else if (auto* ui_sprite = dynamic_cast<UISpriteRenderer*>(comp.get())) {
-        if (ImGui::CollapsingHeader("UISpriteRenderer")) DrawUISpriteRendererInspector(ui_sprite);
-      } else if (auto* text_r = dynamic_cast<TextRenderer*>(comp.get())) {
-        if (ImGui::CollapsingHeader("TextRenderer")) DrawTextRendererInspector(text_r);
-      } else if (auto* ui_text = dynamic_cast<UITextRenderer*>(comp.get())) {
-        if (ImGui::CollapsingHeader("UITextRenderer")) DrawUITextRendererInspector(ui_text);
       } else if (auto* model = dynamic_cast<ModelComponent*>(comp.get())) {
         if (ImGui::CollapsingHeader("ModelComponent")) DrawModelComponentInspector(model);
       } else if (auto* mesh = dynamic_cast<MeshRenderer*>(comp.get())) {
         if (ImGui::CollapsingHeader("MeshRenderer")) DrawMeshRendererInspector(mesh);
-      } else if (auto* camera = dynamic_cast<CameraComponent*>(comp.get())) {
-        if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen)) {
-          DrawCameraInspector(camera);
-        }
-      } else if (auto* emitter = dynamic_cast<ParticleEmitter*>(comp.get())) {
-        if (ImGui::CollapsingHeader("ParticleEmitter", ImGuiTreeNodeFlags_DefaultOpen)) {
-          DrawParticleEmitterInspector(emitter);
-        }
       } else if (auto* point_light = dynamic_cast<PointLightComponent*>(comp.get())) {
         if (ImGui::CollapsingHeader("PointLightComponent", ImGuiTreeNodeFlags_DefaultOpen)) {
           bool dbg = comp->IsDebugDrawEnabled();
           ImGui::BeginDisabled(!debug_draw_enabled_);
           if (ImGui::Checkbox("Debug Draw##comp", &dbg)) comp->SetDebugDrawEnabled(dbg);
           ImGui::EndDisabled();
-          DrawPointLightInspector(point_light);
+          point_light->OnInspectorGUI();
         }
-      } else {
-        ImGui::CollapsingHeader(comp->GetTypeName());
+      } else if (ImGui::CollapsingHeader(comp->GetTypeName())) {
+        comp->OnInspectorGUI();
       }
 
       ImGui::PopID();
@@ -867,88 +806,6 @@ void EditorLayer::DrawInspector() {
   }
 
   ImGui::End();
-}
-
-void EditorLayer::DrawTransformInspector(TransformComponent* transform) {
-  Math::Vector3 position = transform->GetPosition();
-  if (ImGui::DragFloat3("Position", &position.x, transform_position_snap_)) transform->SetPosition(position);
-
-  Math::Vector3 euler_deg = transform->GetRotationDegrees();
-  auto wrap = [](float deg) { return std::fmod(std::fmod(deg, 360.0f) + 540.0f, 360.0f) - 180.0f; };
-  Math::Vector3 display_deg = {wrap(euler_deg.x), wrap(euler_deg.y), wrap(euler_deg.z)};
-  if (ImGui::DragFloat3("Rotation", &display_deg.x, transform_rotation_snap_)) {
-    Math::Vector3 delta = display_deg - Math::Vector3{wrap(euler_deg.x), wrap(euler_deg.y), wrap(euler_deg.z)};
-    transform->SetRotationEulerDegree(euler_deg + delta);
-  }
-
-  Math::Vector3 scale = transform->GetScale();
-  if (ImGui::DragFloat3("Scale", &scale.x, transform_scale_snap_)) transform->SetScale(scale);
-
-  Math::Vector3 pivot = transform->GetPivot();
-  if (ImGui::DragFloat3("Pivot", &pivot.x, transform_position_snap_)) transform->SetPivot(pivot);
-
-  Math::Vector3 anchor = transform->GetAnchor();
-  if (ImGui::DragFloat3("Anchor", &anchor.x, transform_position_snap_)) transform->SetAnchor(anchor);
-}
-
-void EditorLayer::DrawSpriteRendererInspector(SpriteRenderer* renderer) {
-  auto data = renderer->GetEditorData();
-
-  DrawColorEditor("Color", data.color);
-  ImGui::DragFloat2("Size", &data.size.x, 1.0f);
-  ImGui::DragFloat2("Pivot", &data.pivot.x, 0.01f, 0.0f, 1.0f);
-  ImGui::DragFloat2("UV Offset", &data.uv_offset.x, 0.01f);
-  ImGui::DragFloat2("UV Scale", &data.uv_scale.x, 0.01f);
-  DrawBillboardEditor(data.billboard_mode);
-  DrawRenderLayerEditor(data.render_layer);
-  DrawRenderSettingsEditor(data.render_settings, true);
-
-  renderer->ApplyEditorData(data);
-}
-
-void EditorLayer::DrawUISpriteRendererInspector(UISpriteRenderer* renderer) {
-  auto data = renderer->GetEditorData();
-
-  DrawColorEditor("Color", data.color);
-  ImGui::DragFloat2("Size", &data.size.x, 1.0f);
-  ImGui::DragFloat2("Pivot", &data.pivot.x, 0.01f, 0.0f, 1.0f);
-  ImGui::DragFloat2("UV Offset", &data.uv_offset.x, 0.01f);
-  ImGui::DragFloat2("UV Scale", &data.uv_scale.x, 0.01f);
-  ImGui::DragInt("Layer ID", &data.layer_id);
-  DrawRenderSettingsEditor(data.render_settings, false);
-
-  renderer->ApplyEditorData(data);
-}
-
-void EditorLayer::DrawTextRendererInspector(TextRenderer* renderer) {
-  auto data = renderer->GetEditorData();
-
-  DrawTextProperties(data.text, data.font_family, data.pixel_size, data.h_align, data.line_spacing, data.letter_spacing);
-  DrawColorEditor("Color", data.color);
-  DrawBillboardEditor(data.billboard_mode);
-  ImGui::DragFloat2("Pivot", &data.pivot.x, 0.01f, 0.0f, 1.0f);
-  DrawRenderLayerEditor(data.render_layer);
-  DrawRenderSettingsEditor(data.render_settings, false);
-
-  Math::Vector2 size = renderer->GetSize();
-  ImGui::Text("Size: %.1f x %.1f", size.x, size.y);
-
-  renderer->ApplyEditorData(data);
-}
-
-void EditorLayer::DrawUITextRendererInspector(UITextRenderer* renderer) {
-  auto data = renderer->GetEditorData();
-
-  DrawTextProperties(data.text, data.font_family, data.pixel_size, data.h_align, data.line_spacing, data.letter_spacing);
-  DrawColorEditor("Color", data.color);
-  ImGui::DragInt("Layer ID", &data.layer_id);
-  ImGui::DragFloat2("Pivot", &data.pivot.x, 0.01f, 0.0f, 1.0f);
-  DrawRenderSettingsEditor(data.render_settings, false);
-
-  Math::Vector2 size = renderer->GetSize();
-  ImGui::Text("Size: %.1f x %.1f", size.x, size.y);
-
-  renderer->ApplyEditorData(data);
 }
 
 void EditorLayer::DrawSceneSettings() {
@@ -1215,9 +1072,10 @@ void EditorLayer::DrawEditorSettings() {
   ImGui::Begin("Editor Settings", &show_editor_settings_);
 
   if (ImGui::CollapsingHeader("Transform Snap", ImGuiTreeNodeFlags_DefaultOpen)) {
-    ImGui::DragFloat("Position Snap", &transform_position_snap_, 0.01f, 0.001f, 10.0f, "%.3f");
-    ImGui::DragFloat("Rotation Snap", &transform_rotation_snap_, 0.1f, 0.01f, 45.0f, "%.2f");
-    ImGui::DragFloat("Scale Snap", &transform_scale_snap_, 0.001f, 0.001f, 1.0f, "%.3f");
+    auto& snap = TransformComponent::GetSnapConfig();
+    ImGui::DragFloat("Position Snap", &snap.position, 0.01f, 0.001f, 10.0f, "%.3f");
+    ImGui::DragFloat("Rotation Snap", &snap.rotation, 0.1f, 0.01f, 45.0f, "%.2f");
+    ImGui::DragFloat("Scale Snap", &snap.scale, 0.001f, 0.001f, 1.0f, "%.3f");
   }
 
   ImGui::End();
@@ -1528,54 +1386,6 @@ void EditorLayer::DrawMeshRendererInspector(MeshRenderer* renderer) {
   }
 
   renderer->ApplyEditorData(data);
-}
-
-void EditorLayer::DrawCameraInspector(CameraComponent* camera) {
-  float exposure = camera->GetExposure();
-  if (ImGui::DragFloat("Exposure", &exposure, 0.01f, 0.01f, 10.0f)) {
-    camera->SetExposure(exposure);
-  }
-}
-
-void EditorLayer::DrawParticleEmitterInspector(ParticleEmitter* emitter) {
-  if (emitter->IsPlaying()) {
-    if (ImGui::Button("Stop")) emitter->Stop();
-  } else {
-    if (ImGui::Button("Play")) emitter->Play();
-  }
-  ImGui::SameLine();
-  if (ImGui::Button("Clear")) emitter->Clear();
-
-  auto data = emitter->GetEditorData();
-
-  ImGui::DragFloat("Emit Rate", &data.emit_rate, 0.5f, 0.1f, 200.0f);
-  ImGui::DragFloat("Lifetime", &data.particle_lifetime, 0.1f, 0.1f, 30.0f);
-  ImGui::DragFloat2("Particle Size", &data.particle_size.x, 0.01f, 0.01f, 10.0f);
-  DrawColorEditor("Start Color", data.start_color);
-  DrawColorEditor("End Color", data.end_color);
-  ImGui::DragFloat("Start Speed", &data.start_speed, 0.1f, 0.0f, 50.0f);
-  ImGui::DragFloat("Speed Variation", &data.speed_variation, 0.1f, 0.0f, 50.0f);
-  ImGui::DragFloat3("Gravity", &data.gravity.x, 0.01f);
-  ImGui::DragFloat3("Spawn Offset", &data.spawn_offset.x, 0.05f);
-  ImGui::DragFloat("Spawn Radius", &data.spawn_radius, 0.05f, 0.0f, 20.0f);
-  ImGui::DragFloat("Fade In", &data.fade_in_ratio, 0.01f, 0.0f, 1.0f);
-  ImGui::DragFloat("Fade Out", &data.fade_out_ratio, 0.01f, 0.0f, 1.0f);
-  ImGui::DragFloat("Emissive", &data.emissive_intensity, 0.1f, 0.0f, 10.0f);
-  ImGui::DragFloat("Soft Distance", &data.soft_distance, 0.01f, 0.01f, 5.0f);
-  ImGui::Checkbox("Loop", &data.loop);
-
-  emitter->ApplyEditorData(data);
-}
-
-void EditorLayer::DrawPointLightInspector(PointLightComponent* light) {
-  auto data = light->GetEditorData();
-
-  ImGui::ColorEdit3("Color", &data.color.x);
-  ImGui::DragFloat("Intensity", &data.intensity, 0.01f, 0.0f, 10.0f);
-  ImGui::DragFloat("Radius", &data.radius, 0.1f, 0.1f, 100.0f);
-  ImGui::DragFloat("Falloff", &data.falloff, 0.1f, 0.0f, 10.0f);
-
-  light->ApplyEditorData(data);
 }
 
 void EditorLayer::RebuildFontAtlas(float scale) {

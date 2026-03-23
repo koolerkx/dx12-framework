@@ -6,7 +6,7 @@
 
 #include <string>
 
-#include "Framework/Font/font_types.h"
+#include "Framework/Font/font_family.h"
 #include "Framework/Font/text_layout_data.h"
 #include "Framework/Render/texture_handle.h"
 

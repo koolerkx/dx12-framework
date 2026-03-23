@@ -40,7 +40,7 @@ add_library(framework STATIC
   Asset/font_service.h
 
   # Font
-  Font/font_types.h
+  Font/font_family.h
   Font/bmfont_parser.h
   Font/bmfont_parser.cpp
   Font/text_layout.h
@@ -80,6 +80,7 @@ add_library(framework STATIC
   ProceduralTexture/procedural_texture_factory.h
 
   # Render
+  Render/billboard_type.h
   Render/render_handles.h
   Render/texture_handle.h
   Render/render_types.h
@@ -105,6 +106,10 @@ add_library(framework STATIC
   Shader/vertex_shaders.h
   Shader/shader_descriptor.h
   Shader/shader_registration.h
+
+  # Editor UI abstraction
+  Editor/editor_ui.h
+  Editor/render_inspector.h
 
   # Serialization
   Serialize/serialize_node.h

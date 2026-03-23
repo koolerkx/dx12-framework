@@ -89,6 +89,10 @@ class CameraComponent : public Component<CameraComponent> {
     priority_ = priority;
   }
 
+#if ENABLE_EDITOR
+  void OnInspectorGUI() override;
+#endif
+
  private:
   void UpdateProjectionMatrix();
 

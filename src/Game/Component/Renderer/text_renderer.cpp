@@ -1,5 +1,8 @@
 #include "text_renderer.h"
 
+#if ENABLE_EDITOR
+#include "Framework/Editor/render_inspector.h"
+#endif
 #include "Component/pivot_type.h"
 #include "Component/transform_component.h"
 #include "Framework/Asset/asset_manager.h"
@@ -206,3 +209,21 @@ Matrix4 TextRenderer::GetBillboardWorldMatrix(const CameraData& camera) const {
   if (!transform) return Matrix4::Identity;
   return CalculateBaseWorldMatrix(transform, camera);
 }
+
+#if ENABLE_EDITOR
+void TextRenderer::OnInspectorGUI() {
+  auto data = GetEditorData();
+
+  inspector::TextPropertiesEditor(data.text, data.font_family, data.pixel_size, data.h_align, data.line_spacing, data.letter_spacing);
+  inspector::ColorEditor("Color", data.color);
+  inspector::BillboardEditor(data.billboard_mode);
+  editor_ui::DragFloat2("Pivot", &data.pivot.x, 0.01f, 0.0f, 1.0f);
+  inspector::RenderLayerEditor(data.render_layer);
+  inspector::RenderSettingsEditor(data.render_settings, false);
+
+  Vector2 size = GetSize();
+  editor_ui::Text("Size: %.1f x %.1f", size.x, size.y);
+
+  ApplyEditorData(data);
+}
+#endif

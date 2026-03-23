@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 
-#include "Component/billboard_type.h"
+#include "Framework/Render/billboard_type.h"
 #include "Component/pivot_type.h"
 #include "Component/renderer_component.h"
 #include "Framework/Core/utils.h"
@@ -12,7 +12,7 @@
 #include "Framework/Serialize/serialize_node.h"
 #include "Framework/Asset/asset_manager.h"
 #include "Framework/Render/frame_packet.h"
-#include "Framework/Font/font_types.h"
+#include "Framework/Font/font_family.h"
 #include "game_object.h"
 
 using Math::Matrix4;
@@ -219,6 +219,9 @@ class TextRenderer : public RendererComponent<TextRenderer> {
 
   void OnRender(FramePacket& packet) override;
   void OnDestroy() override;
+#if ENABLE_EDITOR
+  void OnInspectorGUI() override;
+#endif
 
  private:
   void RebuildTextMesh(AssetManager& asset_manager);

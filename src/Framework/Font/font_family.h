@@ -1,9 +1,4 @@
-/**
- * @file font_types.h
- * @brief Font family enumeration shared across Game and Graphic layers.
- */
 #pragma once
-
 #include <cstdint>
 
 namespace Font {

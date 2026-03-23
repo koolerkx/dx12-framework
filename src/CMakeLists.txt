@@ -14,7 +14,7 @@ add_subdirectory(Graphic)
 add_subdirectory(Game)
 add_subdirectory(SceneContent)
 
-function(setup_app_target target_name)
+function(setup_app_base target_name)
     set_msvc_runtime(${target_name})
     if(WIN32)
         target_compile_definitions(${target_name} PRIVATE _WIN32_WINNT=0x0A00)
@@ -26,21 +26,20 @@ function(setup_app_target target_name)
         uuid.lib
         framework
         graphic
-        game
-        scene_content
     )
     target_include_directories(${target_name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
     target_include_directories(${target_name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Framework)
 endfunction()
 
 add_executable(app WIN32 ${APP_SOURCES})
-setup_app_target(app)
+setup_app_base(app)
+target_link_libraries(app PRIVATE game scene_content)
 
 if(ENABLE_EDITOR)
     add_subdirectory(Editor)
 
     add_executable(app_editor WIN32 ${APP_SOURCES})
-    setup_app_target(app_editor)
+    setup_app_base(app_editor)
     target_compile_definitions(app_editor PRIVATE ENABLE_EDITOR=1)
-    target_link_libraries(app_editor PRIVATE editor)
+    target_link_libraries(app_editor PRIVATE game_editor scene_content_editor editor)
 endif()

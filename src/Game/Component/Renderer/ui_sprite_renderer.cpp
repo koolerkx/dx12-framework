@@ -1,5 +1,8 @@
 #include "ui_sprite_renderer.h"
 
+#if ENABLE_EDITOR
+#include "Framework/Editor/render_inspector.h"
+#endif
 #include "Component/pivot_type.h"
 #include "Component/transform_component.h"
 #include "Framework/Shader/default_shaders.h"
@@ -96,3 +99,19 @@ void UISpriteRenderer::OnDestroy() {
   }
   RendererComponent::OnDestroy();
 }
+
+#if ENABLE_EDITOR
+void UISpriteRenderer::OnInspectorGUI() {
+  auto data = GetEditorData();
+
+  inspector::ColorEditor("Color", data.color);
+  editor_ui::DragFloat2("Size", &data.size.x, 1.0f);
+  editor_ui::DragFloat2("Pivot", &data.pivot.x, 0.01f, 0.0f, 1.0f);
+  editor_ui::DragFloat2("UV Offset", &data.uv_offset.x, 0.01f);
+  editor_ui::DragFloat2("UV Scale", &data.uv_scale.x, 0.01f);
+  editor_ui::DragInt("Layer ID", &data.layer_id);
+  inspector::RenderSettingsEditor(data.render_settings, false);
+
+  ApplyEditorData(data);
+}
+#endif

@@ -119,6 +119,21 @@ class TransformComponent : public Component<TransformComponent> {
   Vector3 GetWorldPosition();
   Vector3 GetWorldScale();
 
+#if ENABLE_EDITOR
+  struct SnapConfig {
+    float position = 0.1f;
+    float rotation = 0.5f;
+    float scale = 0.01f;
+  };
+
+  static SnapConfig& GetSnapConfig() {
+    static SnapConfig config;
+    return config;
+  }
+
+  void OnInspectorGUI() override;
+#endif
+
  private:
   void UpdateLocalMatrix();
 

@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "Framework/Event/event_scope.hpp"
+#include "Framework/Shader/shader_id.h"
 #include "Graphic/Descriptor/descriptor_heap_allocator.h"
 #include "Graphic/Pipeline/shader_types.h"
 
@@ -21,15 +22,8 @@ class Game;
 class Graphic;
 class IScene;
 class GameObject;
-class TransformComponent;
-class SpriteRenderer;
-class UISpriteRenderer;
-class TextRenderer;
-class UITextRenderer;
 class MeshRenderer;
-class CameraComponent;
 class ModelComponent;
-class ParticleEmitter;
 class PointLightComponent;
 
 class DebugDrawer;
@@ -60,16 +54,8 @@ class EditorLayer {
   void DrawFpsCounter();
   void DrawHierarchy();
   void DrawInspector();
-  void DrawTransformInspector(TransformComponent* transform);
-  void DrawSpriteRendererInspector(SpriteRenderer* renderer);
-  void DrawUISpriteRendererInspector(UISpriteRenderer* renderer);
-  void DrawTextRendererInspector(TextRenderer* renderer);
-  void DrawUITextRendererInspector(UITextRenderer* renderer);
   void DrawMeshRendererInspector(MeshRenderer* renderer);
   void DrawModelComponentInspector(ModelComponent* model);
-  void DrawCameraInspector(CameraComponent* camera);
-  void DrawParticleEmitterInspector(ParticleEmitter* emitter);
-  void DrawPointLightInspector(PointLightComponent* light);
   void DrawMainMenu();
   void DrawSceneMenu();
   void DrawSaveSceneModal();
@@ -130,12 +116,6 @@ class EditorLayer {
   bool debug_draw_enabled_ = true;
   float debug_draw_opacity_ = 1.0f;
   bool wireframe_mode_ = false;
-
-  float view_gizmo_distance_ = 8.0f;
-
-  float transform_position_snap_ = 0.1f;
-  float transform_rotation_snap_ = 0.5f;
-  float transform_scale_snap_ = 0.01f;
 
   uint32_t pending_shadow_resolution_ = 0;
   uint32_t pending_cascade_count_ = 0;

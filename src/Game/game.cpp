@@ -43,10 +43,6 @@ void Game::Initialize(const Props& props) {
 
   scene_manager_.Register<EmptyScene>(DefaultScenes::EMPTY);
   scene_manager_.Register<BlankScene>(DefaultScenes::BLANK);
-
-  if (scene_registrar_) {
-    scene_registrar_(scene_manager_);
-  }
 }
 
 void Game::SetSceneRegistrar(SceneRegistrar registrar) {
@@ -54,6 +50,10 @@ void Game::SetSceneRegistrar(SceneRegistrar registrar) {
 }
 
 void Game::LoadInitialScene(const SceneKey& key) {
+  if (scene_registrar_) {
+    scene_registrar_(scene_manager_);
+  }
+
   scene_manager_.RequestLoad(key);
   scene_manager_.ProcessPending(asset_manager_, context_, context_->GetRenderService());
 }

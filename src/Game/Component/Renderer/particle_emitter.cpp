@@ -1,6 +1,9 @@
 #include "particle_emitter.h"
 
 #include <cmath>
+#if ENABLE_EDITOR
+#include "Framework/Editor/editor_ui.h"
+#endif
 
 #include "Framework/Asset/asset_manager.h"
 #include "Shaders/game_shaders.h"
@@ -260,3 +263,35 @@ ParticleEmitter::SpawnFn ParticleEmitter::SpawnFromDisk() {
     };
   };
 }
+
+#if ENABLE_EDITOR
+void ParticleEmitter::OnInspectorGUI() {
+  if (IsPlaying()) {
+    if (editor_ui::Button("Stop")) Stop();
+  } else {
+    if (editor_ui::Button("Play")) Play();
+  }
+  editor_ui::SameLine();
+  if (editor_ui::Button("Clear")) Clear();
+
+  auto data = GetEditorData();
+
+  editor_ui::DragFloat("Emit Rate", &data.emit_rate, 0.5f, 0.1f, 200.0f);
+  editor_ui::DragFloat("Lifetime", &data.particle_lifetime, 0.1f, 0.1f, 30.0f);
+  editor_ui::DragFloat2("Particle Size", &data.particle_size.x, 0.01f, 0.01f, 10.0f);
+  editor_ui::ColorEdit4("Start Color", &data.start_color.x);
+  editor_ui::ColorEdit4("End Color", &data.end_color.x);
+  editor_ui::DragFloat("Start Speed", &data.start_speed, 0.1f, 0.0f, 50.0f);
+  editor_ui::DragFloat("Speed Variation", &data.speed_variation, 0.1f, 0.0f, 50.0f);
+  editor_ui::DragFloat3("Gravity", &data.gravity.x, 0.01f);
+  editor_ui::DragFloat3("Spawn Offset", &data.spawn_offset.x, 0.05f);
+  editor_ui::DragFloat("Spawn Radius", &data.spawn_radius, 0.05f, 0.0f, 20.0f);
+  editor_ui::DragFloat("Fade In", &data.fade_in_ratio, 0.01f, 0.0f, 1.0f);
+  editor_ui::DragFloat("Fade Out", &data.fade_out_ratio, 0.01f, 0.0f, 1.0f);
+  editor_ui::DragFloat("Emissive", &data.emissive_intensity, 0.1f, 0.0f, 10.0f);
+  editor_ui::DragFloat("Soft Distance", &data.soft_distance, 0.01f, 0.01f, 5.0f);
+  editor_ui::Checkbox("Loop", &data.loop);
+
+  ApplyEditorData(data);
+}
+#endif

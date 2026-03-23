@@ -1,5 +1,8 @@
 #include "transform_component.h"
 
+#if ENABLE_EDITOR
+#include "Framework/Editor/editor_ui.h"
+#endif
 #include "game_object.h"
 
 void TransformComponent::Apply(const Props& props) {
@@ -124,3 +127,29 @@ Vector3 TransformComponent::GetWorldPosition() {
 Vector3 TransformComponent::GetWorldScale() {
   return GetWorldMatrix().GetScale();
 }
+
+#if ENABLE_EDITOR
+void TransformComponent::OnInspectorGUI() {
+  auto& snap = GetSnapConfig();
+
+  Vector3 position = GetPosition();
+  if (editor_ui::DragFloat3("Position", &position.x, snap.position)) SetPosition(position);
+
+  Vector3 euler_deg = GetRotationDegrees();
+  auto wrap = [](float deg) { return std::fmod(std::fmod(deg, 360.0f) + 540.0f, 360.0f) - 180.0f; };
+  Vector3 display_deg = {wrap(euler_deg.x), wrap(euler_deg.y), wrap(euler_deg.z)};
+  if (editor_ui::DragFloat3("Rotation", &display_deg.x, snap.rotation)) {
+    Vector3 delta = display_deg - Vector3{wrap(euler_deg.x), wrap(euler_deg.y), wrap(euler_deg.z)};
+    SetRotationEulerDegree(euler_deg + delta);
+  }
+
+  Vector3 scale = GetScale();
+  if (editor_ui::DragFloat3("Scale", &scale.x, snap.scale)) SetScale(scale);
+
+  Vector3 pivot = GetPivot();
+  if (editor_ui::DragFloat3("Pivot", &pivot.x, snap.position)) SetPivot(pivot);
+
+  Vector3 anchor = GetAnchor();
+  if (editor_ui::DragFloat3("Anchor", &anchor.x, snap.position)) SetAnchor(anchor);
+}
+#endif

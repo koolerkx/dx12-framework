@@ -238,6 +238,9 @@ class ParticleEmitter : public RendererComponent<ParticleEmitter> {
   void OnUpdate(float dt) override;
   void OnRender(FramePacket& packet) override;
   void OnDestroy() override;
+#if ENABLE_EDITOR
+  void OnInspectorGUI() override;
+#endif
 
   static SpawnFn SpawnFromCenter();
   static SpawnFn SpawnFromDisk();

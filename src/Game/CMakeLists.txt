@@ -1,4 +1,4 @@
-add_library(game STATIC
+set(GAME_SOURCES
     game.h
     game.cpp
 
@@ -27,7 +27,6 @@ add_library(game STATIC
     Component/camera_component.h
     Component/camera_component.cpp
     Component/behavior_component.h
-    Component/billboard_type.h
     Component/sprite_sheet_animator.h
     Component/sprite_sheet_animator.cpp
     Component/pivot_type.h
@@ -102,9 +101,20 @@ add_library(game STATIC
     Shaders/game_shaders.h
 )
 
-set_msvc_runtime(game)
+function(setup_game_target target_name)
+    add_library(${target_name} STATIC ${GAME_SOURCES})
+    set_msvc_runtime(${target_name})
+    target_include_directories(${target_name} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+    target_include_directories(${target_name} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../)
+    target_link_libraries(${target_name} PUBLIC graphic)
+endfunction()
 
-target_include_directories(game PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(game PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../)
+setup_game_target(game)
 
 target_link_libraries(game PUBLIC framework)
+
+if(ENABLE_EDITOR)
+    setup_game_target(game_editor)
+    target_compile_definitions(game_editor PUBLIC ENABLE_EDITOR=1)
+    target_link_libraries(game_editor PUBLIC framework)
+endif()

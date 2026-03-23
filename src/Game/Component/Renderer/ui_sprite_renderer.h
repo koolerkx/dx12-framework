@@ -171,6 +171,9 @@ class UISpriteRenderer : public RendererComponent<UISpriteRenderer> {
   void OnUpdate(float dt) override;
   void OnRender(FramePacket& packet) override;
   void OnDestroy() override;
+#if ENABLE_EDITOR
+  void OnInspectorGUI() override;
+#endif
 
  private:
   TextureHandle texture_;

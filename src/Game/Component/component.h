@@ -75,6 +75,10 @@ class IComponentBase {
   virtual const char* GetTypeName() const {
     return "Unknown";
   }
+#if ENABLE_EDITOR
+  virtual void OnInspectorGUI() {
+  }
+#endif
   virtual void OnSerialize(framework::SerializeNode& /*node*/) const {
   }
   virtual void OnDeserialize(const framework::SerializeNode& /*node*/) {

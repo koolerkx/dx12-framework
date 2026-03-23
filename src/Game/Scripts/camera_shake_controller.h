@@ -5,13 +5,6 @@
 #include "Component/behavior_component.h"
 #include "Component/transform_component.h"
 
-#if defined(DEBUG) || defined(_DEBUG)
-#include "Framework/Input/keyboard.h"
-#include "Framework/Render/render_service.h"
-#include "Scenes/city_scene/city_scene_config.h"
-#endif
-
-
 class CameraShakeController : public BehaviorComponent<CameraShakeController> {
  public:
   using BehaviorComponent::BehaviorComponent;
@@ -25,16 +18,6 @@ class CameraShakeController : public BehaviorComponent<CameraShakeController> {
   }
 
   void OnUpdate(float dt) override {
-#if defined(DEBUG) || defined(_DEBUG)
-    auto* input = GetContext()->GetInput();
-    if (input && input->GetKeyDown(Keyboard::KeyCode::O)) {
-      const CitySceneConfig::ArrivalScreenEffectConfig fx_cfg;
-      Trigger(fx_cfg.shake_intensity, fx_cfg.shake_duration);
-      GetContext()->GetRenderService()->SetChromaticAberrationIntensity(fx_cfg.chromatic_aberration_intensity);
-    }
-#endif
-
-
     if (remaining_ <= 0.0f) return;
 
     remaining_ -= dt;

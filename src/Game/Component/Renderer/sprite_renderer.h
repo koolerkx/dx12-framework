@@ -1,20 +1,21 @@
 #pragma once
 #include <optional>
 
-#include "Component/billboard_type.h"
 #include "Component/pivot_type.h"
 #include "Component/renderer_component.h"
 #include "Component/sprite_sheet_animator.h"
 #include "Component/transform_component.h"
+#include "Framework/Asset/asset_manager.h"
 #include "Framework/Math/Math.h"
+#include "Framework/Render/billboard_type.h"
 #include "Framework/Render/frame_packet.h"
 #include "Framework/Render/render_handles.h"
 #include "Framework/Render/render_settings.h"
 #include "Framework/Render/texture_handle.h"
 #include "Framework/Serialize/serialize_node.h"
-#include "Framework/Asset/asset_manager.h"
 #include "game_context.h"
 #include "game_object.h"
+
 
 using Math::Matrix4;
 using Math::Vector2;
@@ -204,6 +205,9 @@ class SpriteRenderer : public RendererComponent<SpriteRenderer> {
   void OnUpdate(float dt) override;
   void OnRender(FramePacket& packet) override;
   void OnDestroy() override;
+#if ENABLE_EDITOR
+  void OnInspectorGUI() override;
+#endif
 
  private:
   Matrix4 CalculateWorldMatrix(TransformComponent* transform, const CameraData& camera) const;

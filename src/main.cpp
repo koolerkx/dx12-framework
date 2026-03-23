@@ -114,7 +114,12 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
 #endif
     .scene_defaults = config.scene_defaults,
   });
+
+#ifdef ENABLE_EDITOR
+  game.LoadInitialScene(DefaultScenes::EMPTY);
+#else
   game.LoadInitialScene(UserScenes::TITLE);
+#endif
 
 #ifdef ENABLE_EDITOR
   editor.SetInputSystem(&inputSystem);

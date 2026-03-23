@@ -12,7 +12,7 @@
 #include "Framework/Serialize/serialize_node.h"
 #include "Framework/Asset/asset_manager.h"
 #include "Framework/Render/frame_packet.h"
-#include "Framework/Font/font_types.h"
+#include "Framework/Font/font_family.h"
 #include "game_object.h"
 
 using Math::Vector2;
@@ -200,6 +200,9 @@ class UITextRenderer : public RendererComponent<UITextRenderer> {
 
   void OnRender(FramePacket& packet) override;
   void OnDestroy() override;
+#if ENABLE_EDITOR
+  void OnInspectorGUI() override;
+#endif
 
  private:
   void RebuildTextMesh(AssetManager& asset_manager);

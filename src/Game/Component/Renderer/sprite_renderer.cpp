@@ -1,5 +1,8 @@
 #include "sprite_renderer.h"
 
+#if ENABLE_EDITOR
+#include "Framework/Editor/render_inspector.h"
+#endif
 #include "Component/pivot_type.h"
 #include "Component/transform_component.h"
 #include "Framework/Asset/asset_manager.h"
@@ -137,3 +140,20 @@ void SpriteRenderer::OnDestroy() {
   }
   RendererComponent::OnDestroy();
 }
+
+#if ENABLE_EDITOR
+void SpriteRenderer::OnInspectorGUI() {
+  auto data = GetEditorData();
+
+  inspector::ColorEditor("Color", data.color);
+  editor_ui::DragFloat2("Size", &data.size.x, 1.0f);
+  editor_ui::DragFloat2("Pivot", &data.pivot.x, 0.01f, 0.0f, 1.0f);
+  editor_ui::DragFloat2("UV Offset", &data.uv_offset.x, 0.01f);
+  editor_ui::DragFloat2("UV Scale", &data.uv_scale.x, 0.01f);
+  inspector::BillboardEditor(data.billboard_mode);
+  inspector::RenderLayerEditor(data.render_layer);
+  inspector::RenderSettingsEditor(data.render_settings, true);
+
+  ApplyEditorData(data);
+}
+#endif

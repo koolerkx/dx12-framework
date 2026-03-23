@@ -3,6 +3,9 @@
 #include "Component/renderer_component.h"
 #include "Component/transform_component.h"
 #include "Debug/debug_drawer.h"
+#if ENABLE_EDITOR
+#include "Framework/Editor/editor_ui.h"
+#endif
 #include "Framework/Math/Math.h"
 #include "Framework/Serialize/serialize_node.h"
 #include "Framework/Render/frame_packet.h"
@@ -83,6 +86,17 @@ class PointLightComponent : public RendererComponent<PointLightComponent> {
     radius_ = data.radius;
     falloff_ = data.falloff;
   }
+
+#if ENABLE_EDITOR
+  void OnInspectorGUI() override {
+    auto data = GetEditorData();
+    editor_ui::ColorEdit3("Color", &data.color.x);
+    editor_ui::DragFloat("Intensity", &data.intensity, 0.01f, 0.0f, 10.0f);
+    editor_ui::DragFloat("Radius", &data.radius, 0.1f, 0.1f, 100.0f);
+    editor_ui::DragFloat("Falloff", &data.falloff, 0.1f, 0.0f, 10.0f);
+    ApplyEditorData(data);
+  }
+#endif
 
   void OnDebugDraw(DebugDrawer& drawer) override {
     auto position = GetOwner()->GetTransform()->GetWorldPosition();

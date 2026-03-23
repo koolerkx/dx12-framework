@@ -1,5 +1,8 @@
 #include "camera_component.h"
 
+#if ENABLE_EDITOR
+#include "Framework/Editor/editor_ui.h"
+#endif
 #include "game_object.h"
 #include "transform_component.h"
 
@@ -66,3 +69,12 @@ CameraData CameraComponent::GetCameraData() const {
 
   return data;
 }
+
+#if ENABLE_EDITOR
+void CameraComponent::OnInspectorGUI() {
+  float exposure = exposure_;
+  if (editor_ui::DragFloat("Exposure", &exposure, 0.01f, 0.01f, 10.0f)) {
+    SetExposure(exposure);
+  }
+}
+#endif
