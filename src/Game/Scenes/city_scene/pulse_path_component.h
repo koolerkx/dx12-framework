@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "Component/behavior_component.h"
-#include "Framework/Render/shader_ids.h"
+#include "Shaders/game_shaders.h"
 
 class GameObject;
 

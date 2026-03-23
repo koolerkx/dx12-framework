@@ -6,6 +6,7 @@
 
 #include <stdexcept>
 #include <string>
+#include <string_view>
 
 namespace utils {
 
@@ -114,5 +115,14 @@ inline void CommandListEventGroup(ID3D12GraphicsCommandList* /*command_list*/, c
   std::forward<Fn>(fn)();
 }
 #endif
+
+constexpr uint32_t HashString(std::string_view str) {
+  uint32_t hash = 2166136261u;
+  for (char c : str) {
+    hash ^= static_cast<uint32_t>(c);
+    hash *= 16777619u;
+  }
+  return hash;
+}
 
 }  // namespace utils

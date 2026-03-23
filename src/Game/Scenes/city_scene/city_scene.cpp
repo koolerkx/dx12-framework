@@ -4,6 +4,8 @@
 #include <unordered_map>
 
 #include "Framework/Asset/asset_manager.h"
+#include "Framework/Shader/shader_registration.h"
+#include "Shaders/game_shaders.h"
 #include "Component/Collider/box_collider_component.h"
 #include "Component/Renderer/instanced_mesh_renderer.h"
 #include "Component/Renderer/instanced_model_renderer.h"
@@ -62,6 +64,15 @@ Matrix4 BuildWorldMatrix(const MapItemTransform& t, float y_offset, float origin
 }  // namespace
 
 void CityScene::OnEnter(AssetManager& asset_manager) {
+  if (auto* reg = GetContext()->GetShaderRegistration()) {
+    reg->RegisterShader(ToDescriptor<Shaders::NeonGrid>());
+    reg->RegisterShader(ToDescriptor<Shaders::LaserBeam>());
+    reg->RegisterShader(ToDescriptor<Shaders::RadarRange>());
+    reg->RegisterShader(ToDescriptor<Shaders::PathPulse>());
+    reg->RegisterShader(ToDescriptor<Shaders::SoftParticle>());
+    reg->RegisterShader(ToDescriptor<Shaders::UIGlass>());
+  }
+
   SetupCamera();
 
   constexpr cfg::LightConfig LIGHT;

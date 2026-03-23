@@ -2,8 +2,8 @@
 
 #include "Component/pivot_type.h"
 #include "Component/transform_component.h"
-#include "Framework/Render/shader_ids.h"
 #include "Framework/Asset/asset_manager.h"
+#include "Framework/Shader/default_shaders.h"
 #include "game_context.h"
 
 void SpriteRenderer::SetRenderLayer(RenderLayer layer) {
@@ -114,7 +114,7 @@ void SpriteRenderer::OnRender(FramePacket& packet) {
 
   RenderRequest request;
   request.mesh = context->GetAssetManager().GetDefaultMeshHandle(DefaultMesh::Quad);
-  request.shader_id = Shaders::Id::BASIC_3D;
+  request.shader_id = Shaders::Basic3D::ID;
   request.render_settings = render_settings_;
   request.material = material_handle_;
   request.color = color_;

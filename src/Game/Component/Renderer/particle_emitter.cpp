@@ -2,8 +2,8 @@
 
 #include <cmath>
 
-#include "Framework/Render/shader_ids.h"
 #include "Framework/Asset/asset_manager.h"
+#include "Shaders/game_shaders.h"
 #include "game_context.h"
 
 thread_local std::mt19937 ParticleEmitter::rng_{std::random_device{}()};
@@ -142,7 +142,7 @@ void ParticleEmitter::OnRender(FramePacket& packet) {
 
   InstancedRenderRequest request;
   request.mesh = rect_handle;
-  request.shader_id = Shaders::Id::SOFT_PARTICLE;
+  request.shader_id = Shaders::SoftParticle::ID;
   request.render_settings = render_settings_;
   request.material = material_handle_;
   request.depth = Vector3::DistanceSquared(GetOwner()->GetTransform()->GetWorldPosition(), packet.main_camera.position);

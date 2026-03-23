@@ -38,8 +38,9 @@ add_library(graphic STATIC
   Pipeline/sampler_builder.cpp
   Pipeline/root_parameter_slots.h
   Pipeline/shader_types.h
-  Pipeline/pixel_shader_descriptors.h
   Pipeline/shader_registry.h
+  Pipeline/shader_registration.h
+  Pipeline/vertex_format_mapping.h
   Pipeline/shader_manager.h
   Pipeline/shader_manager.cpp
   Pipeline/material.h

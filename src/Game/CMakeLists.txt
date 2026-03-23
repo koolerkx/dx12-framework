@@ -151,6 +151,8 @@ add_library(game STATIC
     Map/nav_grid.cpp
     Map/pathfinder.h
     Map/pathfinder.cpp
+
+    Shaders/game_shaders.h
 )
 
 set_msvc_runtime(game)

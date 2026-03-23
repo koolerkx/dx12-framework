@@ -2,17 +2,17 @@
 #include <array>
 #include <cstring>
 
-#include "Framework/Asset/asset_manager.h"
 #include "Component/renderer_component.h"
 #include "Component/transform_component.h"
+#include "Framework/Asset/asset_manager.h"
 #include "Framework/Math/Math.h"
 #include "Framework/Render/frame_packet.h"
 #include "Framework/Render/render_handles.h"
-#include "Framework/Render/render_settings.h"
 #include "Framework/Render/render_service.h"
-#include "Framework/Render/shader_ids.h"
+#include "Framework/Render/render_settings.h"
 #include "Framework/Render/texture_handle.h"
 #include "Framework/Serialize/serialize_node.h"
+#include "Framework/Shader/default_shaders.h"
 #include "game_context.h"
 #include "game_object.h"
 #include "scene.h"
@@ -93,7 +93,7 @@ class MeshRenderer : public RendererComponent<MeshRenderer> {
     std::string texture_path = "";
     TextureHandle texture;
     Vector4 color = {1, 1, 1, 1};
-    Graphics::ShaderId shader_id = Shaders::Id::BASIC_3D;
+    ShaderId shader_id = Shaders::Basic3D::ID;
     RenderLayer render_layer = RenderLayer::Opaque;
     float specular_intensity = 0.5f;
     float specular_power = 32.0f;
@@ -293,13 +293,16 @@ class MeshRenderer : public RendererComponent<MeshRenderer> {
   void SetRenderSettings(const Rendering::RenderSettings& settings) {
     render_settings_ = settings;
   }
-  void SetShaderId(Graphics::ShaderId shader_id) {
+  void SetShaderId(ShaderId shader_id) {
     shader_id_ = shader_id;
   }
 
   template <typename ShaderType>
   void SetShader() {
     shader_id_ = ShaderType::ID;
+    if constexpr (requires { ShaderType::RENDER_LAYER; }) render_layer_ = ShaderType::RENDER_LAYER;
+    if constexpr (requires { ShaderType::RENDER_TAGS; }) render_tags_ = ShaderType::RENDER_TAGS;
+    if constexpr (requires { ShaderType::DefaultRenderSettings(); }) render_settings_ = ShaderType::DefaultRenderSettings();
   }
 
   template <typename ShaderType>
@@ -375,7 +378,7 @@ class MeshRenderer : public RendererComponent<MeshRenderer> {
   bool HasMesh() const {
     return mesh_handle_.IsValid();
   }
-  Graphics::ShaderId GetShaderId() const {
+  ShaderId GetShaderId() const {
     return shader_id_;
   }
 
@@ -579,7 +582,7 @@ class MeshRenderer : public RendererComponent<MeshRenderer> {
   bool material_dirty_ = true;
   TextureBinding albedo_;
   std::string mesh_type_name_;
-  Graphics::ShaderId shader_id_ = Shaders::Id::BASIC_3D;
+  ShaderId shader_id_ = Shaders::Basic3D::ID;
   Rendering::RenderSettings render_settings_ = Rendering::RenderSettings::Opaque();
   Vector4 color_ = {1.0f, 1.0f, 1.0f, 1.0f};
 

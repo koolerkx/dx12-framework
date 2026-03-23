@@ -12,7 +12,7 @@
 #include "Component/transform_component.h"
 #include "Framework/Event/event_bus.hpp"
 #include "Framework/Input/input.h"
-#include "Framework/Render/shader_ids.h"
+#include "Shaders/game_shaders.h"
 #include "Map/ground_ray_caster.h"
 #include "Map/nav_grid.h"
 #include "Map/nav_grid_events.h"

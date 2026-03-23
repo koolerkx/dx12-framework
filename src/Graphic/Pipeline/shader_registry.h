@@ -28,9 +28,12 @@
 #include <optional>
 #include <span>
 #include <string_view>
+#include <unordered_map>
 
+#include "Framework/Render/render_settings.h"
 #include "shader_descriptors.h"
 #include "shader_types.h"
+#include "vertex_format_mapping.h"
 
 namespace ShaderRegistry {
 
@@ -49,6 +52,7 @@ struct ShaderMetadata {
   ShaderRenderHints render_hints;
   bool supports_instancing;
   bool supports_structured_instancing;
+  Rendering::RenderSettings default_settings;
 };
 
 namespace detail {
@@ -72,18 +76,58 @@ constexpr bool GetStructuredInstancing() {
 }
 
 template <typename ShaderType>
+Rendering::RenderSettings GetDefaultSettings() {
+  if constexpr (requires { ShaderType::DefaultRenderSettings(); }) {
+    return ShaderType::DefaultRenderSettings();
+  } else {
+    return Rendering::RenderSettings::Opaque();
+  }
+}
+
+template <typename T>
+constexpr std::wstring_view GetVSPath() {
+  if constexpr (requires { typename T::VertexShader; })
+    return T::VertexShader::PATH;
+  else
+    return T::VS_PATH;
+}
+
+template <typename T>
+constexpr std::wstring_view GetPSPath() {
+  if constexpr (requires { typename T::PixelShader; })
+    return T::PixelShader::PATH;
+  else
+    return T::PS_PATH;
+}
+
+template <typename ShaderType>
 ShaderMetadata MakeMetadata() {
-  auto layout = ShaderType::GetInputLayout();
+  std::span<const D3D12_INPUT_ELEMENT_DESC> layout;
+  ShaderRenderHints hints = {};
+
+  if constexpr (requires { typename ShaderType::VertexShader; }) {
+    layout = Graphics::GetInputLayoutForFormat(ShaderType::VertexShader::VERTEX_FORMAT);
+    if constexpr (requires { ShaderType::VertexShader::TOPOLOGY; })
+      hints.topology = Graphics::ToD3D12Topology(ShaderType::VertexShader::TOPOLOGY);
+  } else {
+    layout = ShaderType::GetInputLayout();
+    hints = ShaderType::HINTS;
+  }
+
+  RSPreset rs = RSPreset::Standard;
+  if constexpr (requires { ShaderType::RS_PRESET; }) rs = ShaderType::RS_PRESET;
+
   return {
     ShaderType::ID,
-    ShaderType::RS_PRESET,
+    rs,
     ShaderType::NAME,
-    ShaderType::VS_PATH,
-    ShaderType::PS_PATH,
+    GetVSPath<ShaderType>(),
+    GetPSPath<ShaderType>(),
     layout,
-    ShaderType::HINTS,
+    hints,
     HasInstanceElements(layout),
     GetStructuredInstancing<ShaderType>(),
+    GetDefaultSettings<ShaderType>(),
   };
 }
 
@@ -94,14 +138,27 @@ auto MakeMetadataArray(std::index_sequence<Is...>) {
 
 inline const auto METADATA_TABLE = MakeMetadataArray<Graphics::AllShaders>(std::make_index_sequence<Graphics::SHADER_COUNT>{});
 
+inline std::unordered_map<ShaderId, ShaderMetadata>& GetDynamicCache() {
+  static std::unordered_map<ShaderId, ShaderMetadata> cache;
+  return cache;
+}
+
 }  // namespace detail
 
-// Public API
+inline void RegisterDynamic(const ShaderMetadata& metadata) {
+  detail::GetDynamicCache().try_emplace(metadata.id, metadata);
+}
+
 inline const ShaderMetadata& GetMetadata(ShaderId id) {
   for (const auto& meta : detail::METADATA_TABLE) {
     if (meta.id == id) {
       return meta;
     }
+  }
+  auto& cache = detail::GetDynamicCache();
+  auto it = cache.find(id);
+  if (it != cache.end()) {
+    return it->second;
   }
   return detail::METADATA_TABLE[0];
 }
@@ -123,15 +180,22 @@ inline std::optional<ShaderId> FindIdByName(std::string_view name) {
   for (const auto& meta : detail::METADATA_TABLE) {
     if (meta.name == name) return meta.id;
   }
+  for (const auto& [_, meta] : detail::GetDynamicCache()) {
+    if (meta.name == name) return meta.id;
+  }
   return std::nullopt;
 }
 
-inline constexpr size_t GetShaderCount() {
-  return Graphics::SHADER_COUNT;
+inline size_t GetShaderCount() {
+  return Graphics::SHADER_COUNT + detail::GetDynamicCache().size();
 }
 
-inline const auto& GetAllMetadata() {
+inline const auto& GetEngineMetadata() {
   return detail::METADATA_TABLE;
+}
+
+inline const auto& GetDynamicMetadata() {
+  return detail::GetDynamicCache();
 }
 
 }  // namespace ShaderRegistry

@@ -4,22 +4,23 @@
 #include <string>
 #include <vector>
 
-#include "Framework/Asset/model_data.h"
 #include "Component/Renderer/mesh_renderer.h"
 #include "Component/component.h"
 #include "Component/transform_component.h"
+#include "Framework/Asset/model_data.h"
 #include "Framework/Model/node_hierarchy.h"
 #include "Framework/Render/render_types.h"
-#include "Framework/Render/shader_ids.h"
+#include "Framework/Shader/default_shaders.h"
 #include "game_context.h"
 #include "game_object.h"
 #include "scene.h"
+
 
 class ModelComponent : public Component<ModelComponent> {
  public:
   struct Props {
     std::shared_ptr<ModelData> model;
-    Graphics::ShaderId shader_id = Shaders::Id::PBR;
+    ShaderId shader_id = Shaders::PBR::ID;
     RenderLayer render_layer = RenderLayer::Opaque;
     bool split_mesh_to_children = false;
     float model_scale = 1.0f;
@@ -66,7 +67,7 @@ class ModelComponent : public Component<ModelComponent> {
     return model_;
   }
 
-  Graphics::ShaderId GetShaderId() const {
+  ShaderId GetShaderId() const {
     return shader_id_;
   }
   float GetModelScale() const {
@@ -203,7 +204,7 @@ class ModelComponent : public Component<ModelComponent> {
 
   std::shared_ptr<ModelData> model_;
   std::string model_path_;
-  Graphics::ShaderId shader_id_ = Shaders::Id::PBR;
+  ShaderId shader_id_ = Shaders::PBR::ID;
   RenderLayer render_layer_ = RenderLayer::Opaque;
   bool split_mesh_to_children_ = false;
   float model_scale_ = 1.0f;

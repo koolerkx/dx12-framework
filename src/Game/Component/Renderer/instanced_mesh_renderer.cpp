@@ -1,10 +1,11 @@
 #include "instanced_mesh_renderer.h"
 
 #include "Framework/Render/render_settings.h"
-#include "Framework/Render/shader_ids.h"
 #include "Framework/Render/texture_handle.h"
+#include "Framework/Shader/default_shaders.h"
 #include "game_context.h"
 #include "game_object.h"
+
 
 InstancedMeshRenderer::InstancedMeshRenderer(GameObject* owner, const Props& props)
     : RendererComponent(owner), mesh_type_(props.mesh_type), entries_(props.instances) {
@@ -43,7 +44,7 @@ void InstancedMeshRenderer::OnRender(FramePacket& packet) {
 
   InstancedRenderRequest request;
   request.mesh = mesh_handle;
-  request.shader_id = Shaders::Id::PBR;
+  request.shader_id = Shaders::PBR::ID;
   request.render_settings = Rendering::RenderSettings::Opaque();
   request.material = material_handle_;
   request.layer = RenderLayer::Opaque;

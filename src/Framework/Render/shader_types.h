@@ -1,14 +1,13 @@
 /**
  * @file shader_types.h
- * @brief Shader identifier type shared across Game and Graphic layers.
+ * @brief Backward compatibility alias for Graphics::ShaderId.
  */
 #pragma once
 
-#include <cstdint>
+#include "Framework/Shader/shader_id.h"
 
 namespace Graphics {
 
-/// Shader identifier type - each shader struct defines its own unique ID
-using ShaderId = uint32_t;
+using ShaderId = ::ShaderId;
 
 }  // namespace Graphics

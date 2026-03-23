@@ -1,6 +1,7 @@
 #include "turret_component.h"
 
 #include "Component/Renderer/mesh_renderer.h"
+#include "Shaders/game_shaders.h"
 #include "Component/transform_component.h"
 #include "Framework/Math/Math.h"
 #include "game_object.h"

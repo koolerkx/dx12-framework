@@ -10,13 +10,14 @@
 #include <cstdio>
 #include <filesystem>
 
+#include "Framework/Asset/asset_manager.h"
 #include "Framework/Core/utils.h"
 #include "Framework/Event/event_bus.hpp"
 #include "Framework/Event/input_events.h"
 #include "Framework/Input/input.h"
 #include "Framework/Input/keyboard.h"
 #include "Framework/Render/frame_packet.h"
-#include "Framework/Asset/asset_manager.h"
+#include "Framework/Shader/default_shaders.h"
 #include "Game/Component/Renderer/mesh_renderer.h"
 #include "Game/Component/Renderer/particle_emitter.h"
 #include "Game/Component/Renderer/sprite_renderer.h"
@@ -37,7 +38,6 @@
 #include "Game/scene_id.h"
 #include "Game/scene_manager.h"
 #include "Graphic/Descriptor/descriptor_heap_manager.h"
-#include "Graphic/Pipeline/shader_descriptors.h"
 #include "Graphic/Pipeline/shader_registry.h"
 #include "Graphic/Presentation/swapchain_manager.h"
 #include "Graphic/Render/render_graph.h"
@@ -647,13 +647,13 @@ void EditorLayer::DrawHierarchy() {
 
     if (ImGui::BeginPopup("##AddGameObject")) {
       if (ImGui::BeginMenu("Add Mesh")) {
-        if (ImGui::MenuItem("Basic Cube")) CreateMeshGameObject("Cube", DefaultMesh::Cube, Graphics::Basic3DShader::ID);
-        if (ImGui::MenuItem("Basic Sphere")) CreateMeshGameObject("Sphere", DefaultMesh::Sphere, Graphics::Basic3DShader::ID);
-        if (ImGui::MenuItem("Basic Plane")) CreateMeshGameObject("Plane", DefaultMesh::Plane, Graphics::Basic3DShader::ID);
+        if (ImGui::MenuItem("Basic Cube")) CreateMeshGameObject("Cube", DefaultMesh::Cube, Shaders::Basic3D::ID);
+        if (ImGui::MenuItem("Basic Sphere")) CreateMeshGameObject("Sphere", DefaultMesh::Sphere, Shaders::Basic3D::ID);
+        if (ImGui::MenuItem("Basic Plane")) CreateMeshGameObject("Plane", DefaultMesh::Plane, Shaders::Basic3D::ID);
         ImGui::Separator();
-        if (ImGui::MenuItem("PBR Cube")) CreateMeshGameObject("Cube", DefaultMesh::Cube, Graphics::PBRShader::ID);
-        if (ImGui::MenuItem("PBR Sphere")) CreateMeshGameObject("Sphere", DefaultMesh::Sphere, Graphics::PBRShader::ID);
-        if (ImGui::MenuItem("PBR Plane")) CreateMeshGameObject("Plane", DefaultMesh::Plane, Graphics::PBRShader::ID);
+        if (ImGui::MenuItem("PBR Cube")) CreateMeshGameObject("Cube", DefaultMesh::Cube, Shaders::PBR::ID);
+        if (ImGui::MenuItem("PBR Sphere")) CreateMeshGameObject("Sphere", DefaultMesh::Sphere, Shaders::PBR::ID);
+        if (ImGui::MenuItem("PBR Plane")) CreateMeshGameObject("Plane", DefaultMesh::Plane, Shaders::PBR::ID);
         ImGui::EndMenu();
       }
       if (ImGui::MenuItem("Add Model...")) {
@@ -1493,7 +1493,7 @@ void EditorLayer::DrawMeshRendererInspector(MeshRenderer* renderer) {
   ImGui::ColorEdit3("Rim Color", &data.rim_color.x);
   ImGui::Checkbox("Rim Shadow Affected", &data.rim_shadow_affected);
 
-  bool is_pbr = (renderer->GetShaderId() == Graphics::PBRShader::ID);
+  bool is_pbr = (renderer->GetShaderId() == Shaders::PBR::ID);
 
   if (is_pbr) {
     ImGui::SeparatorText("PBR");
@@ -1638,7 +1638,7 @@ void EditorLayer::ApplyPendingModelCreation() {
     auto* go = scene_->CreateGameObject(pending_model_path_);
     go->AddComponent<ModelComponent>(ModelComponent::Props{
       .model = model_data,
-      .shader_id = Graphics::PBRShader::ID,
+      .shader_id = Shaders::PBR::ID,
     });
     selected_object_ = go;
   }

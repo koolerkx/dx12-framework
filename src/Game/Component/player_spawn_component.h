@@ -2,13 +2,13 @@
 
 #include <cstdint>
 
-#include "Framework/Asset/asset_manager.h"
 #include "Component/Renderer/mesh_renderer.h"
 #include "Component/Renderer/particle_emitter.h"
 #include "Component/behavior_component.h"
+#include "Framework/Asset/asset_manager.h"
 #include "Framework/Core/color.h"
-#include "Framework/Render/shader_ids.h"
 #include "ProceduralTexture/procedural_texture_factory.h"
+#include "Shaders/game_shaders.h"
 #include "game_context.h"
 #include "game_object.h"
 

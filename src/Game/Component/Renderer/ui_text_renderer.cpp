@@ -2,7 +2,7 @@
 
 #include "Component/pivot_type.h"
 #include "Component/transform_component.h"
-#include "Framework/Render/shader_ids.h"
+#include "Framework/Shader/default_shaders.h"
 #include "Framework/Render/texture_handle.h"
 #include "Framework/Asset/asset_manager.h"
 #include "game_context.h"
@@ -118,7 +118,7 @@ void UITextRenderer::OnRender(FramePacket& packet) {
   if (!glyph_instances.empty()) {
     InstancedRenderRequest request;
     request.mesh = rect_handle;
-    request.shader_id = Shaders::Id::SPRITE;
+    request.shader_id = Shaders::Sprite::ID;
     request.render_settings = render_settings_;
     request.material = material_handle_;
     request.depth = static_cast<float>(layer_id_);

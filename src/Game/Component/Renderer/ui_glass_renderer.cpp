@@ -1,13 +1,12 @@
 #include "ui_glass_renderer.h"
 
-#include "Framework/Render/mesh_data_factory.h"
-#include "Framework/Render/shader_ids.h"
-
 #include <cstdio>
 #include <cstring>
 
 #include "Component/transform_component.h"
 #include "Framework/Asset/asset_manager.h"
+#include "Framework/Render/mesh_data_factory.h"
+#include "Shaders/game_shaders.h"
 #include "game_context.h"
 
 using Math::Matrix4;
@@ -76,7 +75,7 @@ void UIGlassRenderer::OnRender(FramePacket& packet) {
 
   RenderRequest request;
   request.mesh = mesh_handle;
-  request.shader_id = Shaders::Id::UI_GLASS;
+  request.shader_id = Shaders::UIGlass::ID;
   request.render_settings = Shaders::UIGlass::DefaultRenderSettings();
   request.color = {1, 1, 1, 1};
   request.world_matrix = pivot_mat * size_scale * transform->GetWorldMatrix();

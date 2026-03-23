@@ -91,7 +91,6 @@ add_library(framework STATIC
   Render/shader_types.h
   Render/material_descriptor.h
   Render/frame_packet.h
-  Render/shader_ids.h
   Render/shader_name_service.h
   Render/render_service.h
   Render/vertex_data.h
@@ -99,6 +98,14 @@ add_library(framework STATIC
   Render/mesh_data_factory.h
   Render/mesh_data_factory.cpp
   Render/debug_draw_service.h
+
+  # Shader
+  Shader/shader_id.h
+  Shader/default_shaders.h
+  Shader/vertex_format.h
+  Shader/vertex_shaders.h
+  Shader/shader_descriptor.h
+  Shader/shader_registration.h
 
   # Serialization
   Serialize/serialize_node.h

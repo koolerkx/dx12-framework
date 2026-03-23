@@ -12,6 +12,7 @@ class ITextureService;
 class IMeshService;
 class IFontService;
 class IDebugDrawService;
+class IShaderRegistration;
 
 class GameContext {
  public:
@@ -109,6 +110,13 @@ class GameContext {
     debug_draw_service_ = service;
   }
 
+  IShaderRegistration* GetShaderRegistration() const {
+    return shader_registration_;
+  }
+  void SetShaderRegistration(IShaderRegistration* service) {
+    shader_registration_ = service;
+  }
+
  private:
   InputSystem* input_ = nullptr;
   IRenderService* render_service_ = nullptr;
@@ -124,4 +132,5 @@ class GameContext {
   IMeshService* mesh_service_ = nullptr;
   IFontService* font_service_ = nullptr;
   IDebugDrawService* debug_draw_service_ = nullptr;
+  IShaderRegistration* shader_registration_ = nullptr;
 };

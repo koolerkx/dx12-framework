@@ -20,13 +20,13 @@
 #include "Framework/Logging/sinks.h"
 #include "Game/game.h"
 #include "Game/game_context.h"
+#include "Graphic/Pipeline/shader_registration.h"
 #include "Graphic/Resource/font_service.h"
 #include "Graphic/Resource/mesh_service.h"
 #include "Graphic/Resource/texture_service.h"
 #include "Graphic/debug_draw_service.h"
 #include "Graphic/graphic.h"
 #include "Graphic/render_service.h"
-
 
 template <typename T>
 using ComPtr = Microsoft::WRL::ComPtr<T>;
@@ -87,6 +87,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
   MeshService mesh_service(graphic.GetMeshBufferPool());
   FontService font_service(graphic.GetSpriteFontManager());
   DebugDrawService debug_draw_service(graphic);
+  ShaderRegistration shader_registration;
 
   GameContext context;
   context.SetRenderService(&render_service);
@@ -96,6 +97,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
   context.SetMeshService(&mesh_service);
   context.SetFontService(&font_service);
   context.SetDebugDrawService(&debug_draw_service);
+  context.SetShaderRegistration(&shader_registration);
 
   Game game;
   game.Initialize({

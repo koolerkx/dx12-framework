@@ -4,7 +4,7 @@
 
 #include "Component/behavior_component.h"
 #include "Framework/Event/event_scope.hpp"
-#include "Framework/Render/shader_ids.h"
+#include "Shaders/game_shaders.h"
 
 class TowerPlacementComponent;
 class PulsePathComponent;

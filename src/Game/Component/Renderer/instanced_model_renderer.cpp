@@ -1,7 +1,7 @@
 #include "instanced_model_renderer.h"
 
 #include "Framework/Render/render_settings.h"
-#include "Framework/Render/shader_ids.h"
+#include "Framework/Shader/default_shaders.h"
 #include "Framework/Render/texture_handle.h"
 #include "game_context.h"
 #include "game_object.h"
@@ -74,7 +74,7 @@ void InstancedModelRenderer::OnRender(FramePacket& packet) {
 
     InstancedRenderRequest request;
     request.mesh = entry.mesh_handle;
-    request.shader_id = Shaders::Id::PBR;
+    request.shader_id = Shaders::PBR::ID;
     request.render_settings = Rendering::RenderSettings::Opaque();
     request.material = (i < submesh_material_handles_.size()) ? submesh_material_handles_[i] : MaterialHandle::Invalid();
     if (entry.surface_material_index < model_->surface_materials.size()) {

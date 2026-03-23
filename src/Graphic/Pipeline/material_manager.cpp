@@ -23,29 +23,7 @@ bool MaterialManager::Initialize(ID3D12Device* device, ShaderManager* shader_man
 }
 
 Rendering::RenderSettings MaterialManager::GetDefaultSettings(Graphics::ShaderId shader_id) {
-  Rendering::RenderSettings settings;
-
-  if (shader_id == Graphics::DebugLineShader::ID) {
-    settings.blend_mode = Rendering::BlendMode::AlphaBlend;
-    settings.depth_test = true;
-    settings.depth_write = false;
-    settings.double_sided = true;
-    settings.sampler_type = Rendering::SamplerType::LinearWrap;
-    settings.render_target_format = Rendering::RenderTargetFormat::HDR;
-  } else if (shader_id == Graphics::SpriteShader::ID) {
-    settings.blend_mode = Rendering::BlendMode::AlphaBlend;
-    settings.depth_test = false;
-    settings.depth_write = false;
-    settings.double_sided = false;
-    settings.sampler_type = Rendering::SamplerType::LinearWrap;
-    settings.render_target_format = Rendering::RenderTargetFormat::HDR;
-  } else if (shader_id == Graphics::Basic3DShader::ID) {
-    settings = Rendering::RenderSettings::Opaque();
-  } else {
-    settings = Rendering::RenderSettings::Opaque();
-  }
-
-  return settings;
+  return ShaderRegistry::GetMetadata(shader_id).default_settings;
 }
 
 Material* MaterialManager::GetOrCreateMaterial(Graphics::ShaderId shader_id, const Rendering::RenderSettings& settings) {
