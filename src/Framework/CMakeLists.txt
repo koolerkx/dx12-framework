@@ -58,6 +58,7 @@ add_library(framework STATIC
   Error/framework_bootstrap_log.cpp
 
   # Utils
+  Utils/file_scanner.h
   Utils/path_utils.h
 
   # Logging

@@ -16,7 +16,6 @@
 #include "Framework/Input/keyboard.h"
 #include "Framework/Render/frame_packet.h"
 #include "Framework/Shader/default_shaders.h"
-#include "Game/Component/Renderer/mesh_renderer.h"
 #include "Game/Component/camera_component.h"
 #include "Game/Component/model_component.h"
 #include "Game/Component/point_light_component.h"
@@ -97,7 +96,6 @@ void EditorLayer::BeginFrame() {
     pending_delete_ = nullptr;
   }
 
-  ResolveDirtyRenderers();
   ApplyPendingModelCreation();
 
   if (pending_cascade_count_ > 0 && scene_) {
@@ -168,9 +166,7 @@ void EditorLayer::SetScene(IScene* scene) {
   scene_ = scene;
   selected_object_ = nullptr;
   pending_delete_ = nullptr;
-  dirty_renderers_.clear();
   pending_model_path_.clear();
-  ScanTextureFiles();
 }
 
 void EditorLayer::SubscribeEvents(EventBus& bus) {
@@ -701,47 +697,6 @@ void EditorLayer::DrawGameObjectNode(GameObject* go) {
   if (inactive) ImGui::PopStyleColor();
 }
 
-namespace {
-
-void DrawColorEditor(const char* label, Math::Vector4& color) {
-  ImGui::ColorEdit4(label, &color.x);
-}
-
-void DrawRenderSettingsEditor(Rendering::RenderSettings& settings, bool show_depth) {
-  static const char* kBlendModeNames[] = {"Opaque", "AlphaBlend", "Additive", "Premultiplied"};
-  int blend = static_cast<int>(settings.blend_mode);
-  if (ImGui::Combo("Blend Mode", &blend, kBlendModeNames, IM_ARRAYSIZE(kBlendModeNames))) {
-    settings.blend_mode = static_cast<Rendering::BlendMode>(blend);
-  }
-
-  static const char* kSamplerNames[] = {"PointWrap", "LinearWrap", "AnisotropicWrap", "PointClamp", "LinearClamp"};
-  int sampler = static_cast<int>(settings.sampler_type);
-  if (ImGui::Combo("Sampler", &sampler, kSamplerNames, IM_ARRAYSIZE(kSamplerNames))) {
-    settings.sampler_type = static_cast<Rendering::SamplerType>(sampler);
-  }
-
-  if (show_depth) {
-    if (ImGui::Checkbox("Depth Test", &settings.depth_test)) {
-      if (!settings.depth_test) settings.depth_write = false;
-    }
-    ImGui::BeginDisabled(!settings.depth_test);
-    ImGui::Checkbox("Depth Write", &settings.depth_write);
-    ImGui::EndDisabled();
-    ImGui::Checkbox("Double Sided", &settings.double_sided);
-  }
-}
-
-void DrawRenderLayerEditor(RenderLayer& layer) {
-  static const char* kLayerNames[] = {"Opaque", "Transparent"};
-  int current = static_cast<int>(layer);
-  if (current >= IM_ARRAYSIZE(kLayerNames)) current = 1;
-  if (ImGui::Combo("Render Layer", &current, kLayerNames, IM_ARRAYSIZE(kLayerNames))) {
-    layer = static_cast<RenderLayer>(current);
-  }
-}
-
-}  // namespace
-
 void EditorLayer::DrawInspector() {
   ImGui::Begin("Inspector");
 
@@ -777,8 +732,6 @@ void EditorLayer::DrawInspector() {
         }
       } else if (auto* model = dynamic_cast<ModelComponent*>(comp.get())) {
         if (ImGui::CollapsingHeader("ModelComponent")) DrawModelComponentInspector(model);
-      } else if (auto* mesh = dynamic_cast<MeshRenderer*>(comp.get())) {
-        if (ImGui::CollapsingHeader("MeshRenderer")) DrawMeshRendererInspector(mesh);
       } else if (auto* point_light = dynamic_cast<PointLightComponent*>(comp.get())) {
         if (ImGui::CollapsingHeader("PointLightComponent", ImGuiTreeNodeFlags_DefaultOpen)) {
           bool dbg = comp->IsDebugDrawEnabled();
@@ -1250,136 +1203,6 @@ void EditorLayer::DrawModelComponentInspector(ModelComponent* model) {
   }
 }
 
-void EditorLayer::DrawMeshRendererInspector(MeshRenderer* renderer) {
-  ImGui::Text("Mesh: %s", renderer->HasMesh() ? "Loaded" : "None");
-
-  auto DrawTexturePicker = [&](const char* label,
-                             const std::string& current_path,
-                             TextureHandle current_tex,
-                             TextureSlot slot,
-                             const char* clear_id,
-                             const char* none_label = "(None)") {
-    bool is_embedded = current_path.empty() && current_tex.IsValid();
-    if (is_embedded) {
-      ImGui::Text("%s: (Embedded)", label);
-      return;
-    }
-    std::string preview = current_path.empty() ? none_label : current_path;
-    if (ImGui::BeginCombo(label, preview.c_str())) {
-      if (ImGui::Selectable("(None)", current_path.empty())) {
-        renderer->RequestTextureChange(slot, "");
-        dirty_renderers_.push_back(renderer);
-      }
-      for (const auto& tex : texture_file_list_) {
-        std::string full_path = "Content/textures/" + tex;
-        bool is_selected = (current_path == full_path);
-        if (ImGui::Selectable(tex.c_str(), is_selected)) {
-          renderer->RequestTextureChange(slot, full_path);
-          dirty_renderers_.push_back(renderer);
-        }
-      }
-      ImGui::EndCombo();
-    }
-    if (!current_path.empty()) {
-      ImGui::SameLine();
-      if (ImGui::SmallButton(clear_id)) {
-        renderer->RequestTextureChange(slot, "");
-        dirty_renderers_.push_back(renderer);
-      }
-    }
-  };
-
-  DrawTexturePicker(
-    "Texture", renderer->GetTexturePath(), renderer->GetTexture(), TextureSlot::Albedo, "X##clear_tex", "(None - White Fallback)");
-
-  auto shader_name = ShaderRegistry::GetName(renderer->GetShaderId());
-  ImGui::Text("Shader: %.*s", static_cast<int>(shader_name.size()), shader_name.data());
-
-  auto data = renderer->GetEditorData();
-
-  DrawColorEditor("Color", data.color);
-  DrawRenderLayerEditor(data.render_layer);
-  DrawRenderSettingsEditor(data.render_settings, true);
-
-  {
-    struct TagEntry {
-      const char* label;
-      RenderTag tag;
-    };
-    static constexpr TagEntry TAG_ENTRIES[] = {
-      {"Cast Shadow", RenderTag::CastShadow},
-      {"Receive Shadow", RenderTag::ReceiveShadow},
-      {"Lit", RenderTag::Lit},
-    };
-
-    std::string preview;
-    for (const auto& [label, tag] : TAG_ENTRIES) {
-      if (HasTag(data.render_tags, tag)) {
-        if (!preview.empty()) preview += ", ";
-        preview += label;
-      }
-    }
-    if (preview.empty()) preview = "None";
-
-    if (ImGui::BeginCombo("Render Tags", preview.c_str())) {
-      for (const auto& [label, tag] : TAG_ENTRIES) {
-        bool has = HasTag(data.render_tags, tag);
-        if (ImGui::Checkbox(label, &has)) {
-          if (has)
-            data.render_tags |= static_cast<uint32_t>(tag);
-          else
-            data.render_tags &= ~static_cast<uint32_t>(tag);
-        }
-      }
-      ImGui::EndCombo();
-    }
-  }
-
-  ImGui::SliderFloat("Specular Intensity", &data.specular_intensity, 0.0f, 2.0f);
-  ImGui::SliderFloat("Specular Power", &data.specular_power, 1.0f, 256.0f);
-
-  ImGui::SliderFloat("Rim Intensity", &data.rim_intensity, 0.0f, 2.0f);
-  ImGui::SliderFloat("Rim Power", &data.rim_power, 0.5f, 16.0f);
-  ImGui::ColorEdit3("Rim Color", &data.rim_color.x);
-  ImGui::Checkbox("Rim Shadow Affected", &data.rim_shadow_affected);
-
-  bool is_pbr = (renderer->GetShaderId() == Shaders::PBR::ID);
-
-  if (is_pbr) {
-    ImGui::SeparatorText("PBR");
-
-    bool has_mr_map = renderer->GetMetallicRoughnessTexture().IsValid();
-    ImGui::SliderFloat("Metallic", &data.metallic, 0.0f, 1.0f);
-    if (has_mr_map && ImGui::IsItemHovered()) {
-      ImGui::SetTooltip("Multiplied with metallic-roughness map");
-    }
-    ImGui::SliderFloat("Roughness", &data.roughness, 0.0f, 1.0f);
-    if (has_mr_map && ImGui::IsItemHovered()) {
-      ImGui::SetTooltip("Multiplied with metallic-roughness map");
-    }
-
-    bool has_emissive_map = renderer->GetEmissiveTexture().IsValid();
-    ImGui::ColorEdit3("Emissive", &data.emissive_color.x);
-    if (has_emissive_map && ImGui::IsItemHovered()) {
-      ImGui::SetTooltip("Multiplied with emissive map");
-    }
-    ImGui::SliderFloat("Emissive Intensity", &data.emissive_intensity, 0.0f, 10.0f);
-
-    ImGui::SeparatorText("PBR Textures");
-
-    DrawTexturePicker("Normal Map", renderer->GetNormalTexturePath(), renderer->GetNormalTexture(), TextureSlot::Normal, "X##clear_normal");
-    DrawTexturePicker("MR Map",
-      renderer->GetMetallicRoughnessPath(),
-      renderer->GetMetallicRoughnessTexture(),
-      TextureSlot::MetallicRoughness,
-      "X##clear_mr");
-    DrawTexturePicker(
-      "Emissive Map", renderer->GetEmissivePath(), renderer->GetEmissiveTexture(), TextureSlot::Emissive, "X##clear_emissive");
-  }
-
-  renderer->ApplyEditorData(data);
-}
-
 void EditorLayer::RebuildFontAtlas(float scale) {
   ImGuiIO& io = ImGui::GetIO();
   io.Fonts->Clear();
@@ -1421,15 +1244,6 @@ void EditorLayer::ScaleExistingWindows(float ratio) {
       ScaleDockNodeRecursive(node, ratio);
     }
   }
-}
-
-void EditorLayer::ResolveDirtyRenderers() {
-  for (auto* renderer : dirty_renderers_) {
-    if (renderer && !renderer->GetOwner()->IsPendingDestroy()) {
-      renderer->ResolvePendingTextures();
-    }
-  }
-  dirty_renderers_.clear();
 }
 
 void EditorLayer::ApplyPendingModelCreation() {
@@ -1532,19 +1346,6 @@ void EditorLayer::ScanModelFiles() {
     }
   }
   std::sort(model_file_list_.begin(), model_file_list_.end());
-}
-
-void EditorLayer::ScanTextureFiles() {
-  texture_file_list_.clear();
-  std::filesystem::path dir("Content/textures");
-  if (!std::filesystem::exists(dir)) return;
-  for (auto& entry : std::filesystem::directory_iterator(dir)) {
-    auto ext = entry.path().extension().string();
-    if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".tga" || ext == ".bmp") {
-      texture_file_list_.push_back(entry.path().filename().string());
-    }
-  }
-  std::sort(texture_file_list_.begin(), texture_file_list_.end());
 }
 
 int EditorLayer::CountPointLightsInScene() const {

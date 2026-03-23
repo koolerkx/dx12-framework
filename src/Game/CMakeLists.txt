@@ -36,6 +36,7 @@ set(GAME_SOURCES
     Component/sprite_sheet_helper.cpp
     Component/model_component.h
     Component/Renderer/mesh_renderer.h
+    Component/Renderer/mesh_renderer.cpp
     Component/Renderer/sprite_renderer.h
     Component/Renderer/sprite_renderer.cpp
     Component/Renderer/text_renderer.h

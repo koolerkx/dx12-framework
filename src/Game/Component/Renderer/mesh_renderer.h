@@ -576,6 +576,10 @@ class MeshRenderer : public RendererComponent<MeshRenderer> {
     RendererComponent::OnDestroy();
   }
 
+#if ENABLE_EDITOR
+  void OnInspectorGUI() override;
+#endif
+
  private:
   MeshHandle mesh_handle_;
   MaterialHandle material_handle_;

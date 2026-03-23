@@ -22,7 +22,6 @@ class Game;
 class Graphic;
 class IScene;
 class GameObject;
-class MeshRenderer;
 class ModelComponent;
 class PointLightComponent;
 
@@ -54,7 +53,6 @@ class EditorLayer {
   void DrawFpsCounter();
   void DrawHierarchy();
   void DrawInspector();
-  void DrawMeshRendererInspector(MeshRenderer* renderer);
   void DrawModelComponentInspector(ModelComponent* model);
   void DrawMainMenu();
   void DrawSceneMenu();
@@ -79,11 +77,9 @@ class EditorLayer {
   void UpdateScaling();
   void ScanSceneFiles();
   void ScanModelFiles();
-  void ScanTextureFiles();
   int CountPointLightsInScene() const;
   void CreateMeshGameObject(const char* name, DefaultMesh mesh, ShaderId shader);
   void ApplyPendingModelCreation();
-  void ResolveDirtyRenderers();
   void ApplyLoadedShadowSettings();
 
   Game* game_ = nullptr;
@@ -133,9 +129,6 @@ class EditorLayer {
   bool show_add_model_modal_ = false;
   std::vector<std::string> model_file_list_;
   int selected_model_index_ = -1;
-
-  std::vector<std::string> texture_file_list_;
-  std::vector<MeshRenderer*> dirty_renderers_;
 
   std::string pending_model_path_;
 
