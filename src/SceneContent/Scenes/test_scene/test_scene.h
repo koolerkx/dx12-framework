@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Game/scene_key.h"
 #include "scene.h"
 
 class TestScene : public IScene {
@@ -17,4 +18,10 @@ class TestScene : public IScene {
   GameObject* sphere_object_ = nullptr;
 
   void SetupCamera();
+};
+
+template <>
+struct SceneKeyTrait<TestScene> {
+  static constexpr std::string_view NAME = "test";
+  static constexpr SceneKey KEY = MakeSceneKey(NAME);
 };

@@ -5,6 +5,7 @@ set(GAME_SOURCES
     game_context.h
 
     scene_key.h
+    scene_key.cpp
     scene_events.h
     scene_manager.h
     scene_manager.cpp

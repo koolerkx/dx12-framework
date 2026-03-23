@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "Game/scene_key.h"
 #include "Map/map_data.h"
 #include "Map/nav_grid.h"
 #include "SceneSetting/scene_transition_overlay.h"
@@ -33,4 +34,10 @@ class CityScene : public IScene {
   SceneTransitionOverlay transition_overlay_;
   std::unique_ptr<WaveSystem> wave_system_;
   std::unique_ptr<TurretSystem> turret_system_;
+};
+
+template <>
+struct SceneKeyTrait<CityScene> {
+  static constexpr std::string_view NAME = "city";
+  static constexpr SceneKey KEY = MakeSceneKey(NAME);
 };

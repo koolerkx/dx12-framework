@@ -71,7 +71,7 @@ void CubeScene::OnEnter(AssetManager&) {
 
   auto& bus = *GetContext()->GetEventBus();
   GetEventScope().Subscribe<KeyDownEvent>(bus, [this](const KeyDownEvent& e) {
-    if (e.key == Keyboard::KeyCode::F1) GetContext()->GetSceneManager()->RequestLoad(UserScenes::TEST);
+    if (e.key == Keyboard::KeyCode::F1) GetContext()->GetSceneManager()->RequestLoad(MakeSceneKey("test"));
   });
 }
 

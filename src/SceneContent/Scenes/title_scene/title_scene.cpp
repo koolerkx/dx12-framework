@@ -248,7 +248,7 @@ void TitleScene::OnPreUpdate(float dt) {
 
   if (input_->GetMouseButtonDown(Mouse::Button::Left)) {
     if (over_start) {
-      transition_overlay_.FadeIn([this]() { GetContext()->GetSceneManager()->RequestLoad(UserScenes::CITY); });
+      transition_overlay_.FadeIn([this]() { GetContext()->GetSceneManager()->RequestLoad(MakeSceneKey("city")); });
     } else if (over_leave) {
       GetContext()->RequestQuit();
     }

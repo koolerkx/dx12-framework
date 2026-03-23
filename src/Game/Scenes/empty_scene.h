@@ -9,6 +9,7 @@
 #include "Framework/Core/color.h"
 #include "Scripts/free_camera_controller.h"
 #include "scene.h"
+#include "scene_key.h"
 
 constexpr const char* SKYBOX_PATH = "Content/skybox/sunflowers_puresky_standard_cubemap_4k.hdr";
 
@@ -51,4 +52,10 @@ class EmptyScene : public IScene {
 
   void OnExit() override {
   }
+};
+
+template <>
+struct SceneKeyTrait<EmptyScene> {
+  static constexpr std::string_view NAME = "empty";
+  static constexpr SceneKey KEY = MakeSceneKey(NAME);
 };

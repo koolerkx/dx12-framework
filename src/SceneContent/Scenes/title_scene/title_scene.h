@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Game/scene_key.h"
 #include "SceneSetting/scene_transition_overlay.h"
 #include "scene.h"
 
@@ -44,4 +45,10 @@ class TitleScene : public IScene {
   Rect leave_rect_{};
 
   SceneTransitionOverlay transition_overlay_;
+};
+
+template <>
+struct SceneKeyTrait<TitleScene> {
+  static constexpr std::string_view NAME = "title";
+  static constexpr SceneKey KEY = MakeSceneKey(NAME);
 };

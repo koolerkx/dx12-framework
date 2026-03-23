@@ -784,7 +784,7 @@ void HudManagerComponent::UpdateGameOverInteraction() {
     if (over_restart) {
       gameover_overlay_.FadeIn([this]() { GetContext()->GetEventBus()->Emit(RestartGameEvent{}); });
     } else if (over_title) {
-      gameover_overlay_.FadeIn([this]() { GetContext()->GetSceneManager()->RequestLoad(UserScenes::TITLE); });
+      gameover_overlay_.FadeIn([this]() { GetContext()->GetSceneManager()->RequestLoad(MakeSceneKey("title")); });
     }
   }
 }

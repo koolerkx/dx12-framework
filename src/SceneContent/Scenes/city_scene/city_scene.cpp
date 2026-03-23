@@ -3,9 +3,6 @@
 #include <algorithm>
 #include <unordered_map>
 
-#include "Framework/Asset/asset_manager.h"
-#include "Framework/Shader/shader_registration.h"
-#include "Shaders/game_shaders.h"
 #include "Component/Collider/box_collider_component.h"
 #include "Component/Renderer/instanced_mesh_renderer.h"
 #include "Component/Renderer/instanced_model_renderer.h"
@@ -16,11 +13,13 @@
 #include "Component/player_spawn_component.h"
 #include "Component/transform_component.h"
 #include "Debug/debug_drawer.h"
+#include "Framework/Asset/asset_manager.h"
 #include "Framework/Core/color.h"
 #include "Framework/Event/input_events.h"
 #include "Framework/Logging/logger.h"
 #include "Framework/Math/Math.h"
 #include "Framework/Render/render_service.h"
+#include "Framework/Shader/shader_registration.h"
 #include "Map/map_loader.h"
 #include "Scenes/city_scene/base_health_component.h"
 #include "Scenes/city_scene/city_scene_config.h"
@@ -38,6 +37,7 @@
 #include "Scripts/camera_shake_controller.h"
 #include "Scripts/free_camera_controller.h"
 #include "Scripts/screen_effect_controller.h"
+#include "Shaders/game_shaders.h"
 #include "game_context.h"
 #include "play_state.h"
 #include "scene_key.h"
@@ -194,12 +194,12 @@ void CityScene::OnEnter(AssetManager& asset_manager) {
 
   auto& bus = *GetContext()->GetEventBus();
   GetEventScope().Subscribe<KeyDownEvent>(bus, [this](const KeyDownEvent& e) {
-    if (e.key == Keyboard::KeyCode::F1) GetContext()->GetSceneManager()->RequestLoad(UserScenes::TEST);
-    if (e.key == Keyboard::KeyCode::F2) GetContext()->GetSceneManager()->RequestLoad(UserScenes::MODEL);
+    if (e.key == Keyboard::KeyCode::F1) GetContext()->GetSceneManager()->RequestLoad(MakeSceneKey("test"));
+    if (e.key == Keyboard::KeyCode::F2) GetContext()->GetSceneManager()->RequestLoad(MakeSceneKey("model"));
   });
 
   GetEventScope().Subscribe<RestartGameEvent>(
-    bus, [this](const RestartGameEvent&) { GetContext()->GetSceneManager()->RequestLoad(UserScenes::CITY); });
+    bus, [this](const RestartGameEvent&) { GetContext()->GetSceneManager()->RequestLoad(MakeSceneKey("city")); });
 }
 
 void CityScene::OnExit() {

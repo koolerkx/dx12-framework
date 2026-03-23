@@ -292,17 +292,9 @@ void EditorLayer::DrawSceneMenu() {
     ImGui::EndMenu();
   }
 
-  if (ImGui::BeginMenu("Hardcoded Scene")) {
-    static const std::pair<const char*, SceneKey> scenes[] = {
-      {"Title", UserScenes::TITLE},
-      {"Test", UserScenes::TEST},
-      {"Cube", UserScenes::CUBE},
-      {"Empty", DefaultScenes::EMPTY},
-      {"Model", UserScenes::MODEL},
-      {"City", UserScenes::CITY},
-    };
-    for (const auto& [label, key] : scenes) {
-      if (ImGui::MenuItem(label)) {
+  if (ImGui::BeginMenu("Scene")) {
+    for (const auto& [key, name] : SceneKeyTable::Instance().GetAll()) {
+      if (ImGui::MenuItem(name.data())) {
         scene_->GetContext()->GetSceneManager()->RequestLoad(key);
       }
     }

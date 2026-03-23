@@ -14,8 +14,10 @@ class IRenderService;
 class SceneManager {
  public:
   template <typename T>
-  void Register(SceneKey key) {
+  void Register() {
+    constexpr auto key = SceneKeyTrait<T>::KEY;
     factories_[key] = []() { return std::make_unique<T>(); };
+    SceneKeyTable::Instance().Register(key, SceneKeyTrait<T>::NAME);
   }
 
   void RequestLoad(SceneKey key);

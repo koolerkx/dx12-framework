@@ -41,8 +41,8 @@ void Game::Initialize(const Props& props) {
     play_state_ = PlayState::Playing;
   }
 
-  scene_manager_.Register<EmptyScene>(DefaultScenes::EMPTY);
-  scene_manager_.Register<BlankScene>(DefaultScenes::BLANK);
+  scene_manager_.Register<EmptyScene>();
+  scene_manager_.Register<BlankScene>();
 }
 
 void Game::SetSceneRegistrar(SceneRegistrar registrar) {

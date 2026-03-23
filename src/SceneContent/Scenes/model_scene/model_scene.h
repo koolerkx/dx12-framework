@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Game/scene_key.h"
 #include "scene.h"
 
 class ModelScene : public IScene {
@@ -10,4 +11,10 @@ class ModelScene : public IScene {
 
  private:
   void SetupCamera();
+};
+
+template <>
+struct SceneKeyTrait<ModelScene> {
+  static constexpr std::string_view NAME = "model";
+  static constexpr SceneKey KEY = MakeSceneKey(NAME);
 };

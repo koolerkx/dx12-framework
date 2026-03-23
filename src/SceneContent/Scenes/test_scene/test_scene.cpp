@@ -166,9 +166,9 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
 
   auto& bus = *GetContext()->GetEventBus();
   GetEventScope().Subscribe<KeyDownEvent>(bus, [this](const KeyDownEvent& e) {
-    if (e.key == Keyboard::KeyCode::F1) GetContext()->GetSceneManager()->RequestLoad(UserScenes::CUBE);
-    if (e.key == Keyboard::KeyCode::F2) GetContext()->GetSceneManager()->RequestLoad(UserScenes::MODEL);
-    if (e.key == Keyboard::KeyCode::F3) GetContext()->GetSceneManager()->RequestLoad(UserScenes::CITY);
+    if (e.key == Keyboard::KeyCode::F1) GetContext()->GetSceneManager()->RequestLoad(MakeSceneKey("cube"));
+    if (e.key == Keyboard::KeyCode::F2) GetContext()->GetSceneManager()->RequestLoad(MakeSceneKey("model"));
+    if (e.key == Keyboard::KeyCode::F3) GetContext()->GetSceneManager()->RequestLoad(MakeSceneKey("city"));
   });
 }
 

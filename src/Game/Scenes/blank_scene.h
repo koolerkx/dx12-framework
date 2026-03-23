@@ -1,6 +1,7 @@
 #pragma once
 
 #include "scene.h"
+#include "scene_key.h"
 
 class BlankScene : public IScene {
  public:
@@ -24,4 +25,10 @@ class BlankScene : public IScene {
 
   void OnExit() override {
   }
+};
+
+template <>
+struct SceneKeyTrait<BlankScene> {
+  static constexpr std::string_view NAME = "blank";
+  static constexpr SceneKey KEY = MakeSceneKey(NAME);
 };

@@ -65,8 +65,8 @@ void ModelScene::OnEnter(AssetManager& asset_manager) {
 
   auto& bus = *GetContext()->GetEventBus();
   GetEventScope().Subscribe<KeyDownEvent>(bus, [this](const KeyDownEvent& e) {
-    if (e.key == Keyboard::KeyCode::F2) GetContext()->GetSceneManager()->RequestLoad(UserScenes::TEST);
-    if (e.key == Keyboard::KeyCode::F3) GetContext()->GetSceneManager()->RequestLoad(UserScenes::CITY);
+    if (e.key == Keyboard::KeyCode::F2) GetContext()->GetSceneManager()->RequestLoad(MakeSceneKey("test"));
+    if (e.key == Keyboard::KeyCode::F3) GetContext()->GetSceneManager()->RequestLoad(MakeSceneKey("city"));
   });
 }
 
