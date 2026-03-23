@@ -341,7 +341,5 @@ TextMeshHandle AssetManager::CreateTextMesh(
     glyphs.push_back(glyph_data);
   }
 
-  TextureHandle texture_handle = impl_->font_service->GetFontTextureHandle(layout_data);
-
-  return TextMeshHandle(std::move(glyphs), layout_data.width, layout_data.height, texture_handle);
+  return TextMeshHandle(std::move(glyphs), layout_data.width, layout_data.height, layout_data.font_texture);
 }

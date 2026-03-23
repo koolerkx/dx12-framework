@@ -6,9 +6,9 @@
 
 #include <vector>
 
-namespace Font {
+#include "Framework/Render/texture_handle.h"
 
-struct SpriteFontVariant;
+namespace Font {
 
 struct TextLayoutData {
   struct GlyphData {
@@ -25,7 +25,7 @@ struct TextLayoutData {
   std::vector<GlyphData> glyphs;
   float width = 0.0f;
   float height = 0.0f;
-  const SpriteFontVariant* variant = nullptr;
+  TextureHandle font_texture;
 };
 
 }  // namespace Font

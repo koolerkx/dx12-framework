@@ -15,9 +15,11 @@ class FontService : public IFontService {
   explicit FontService(Font::SpriteFontManager& font_manager);
 
   bool LoadFontVariant(Font::FontFamily family, const std::string& fnt, const std::string& tex) override;
-  bool CreateTextLayout(const std::wstring& text, Font::FontFamily family, float pixel_size,
-    const Text::TextLayoutProps& props, Font::TextLayoutData& out_layout) override;
-  TextureHandle GetFontTextureHandle(const Font::TextLayoutData& layout) const override;
+  bool CreateTextLayout(const std::wstring& text,
+    Font::FontFamily family,
+    float pixel_size,
+    const Text::TextLayoutProps& props,
+    Font::TextLayoutData& out_layout) override;
 
  private:
   Font::SpriteFontManager& font_manager_;

@@ -1,7 +1,7 @@
 #include "sprite_font_manager.h"
 
-#include "Framework/Font/text_layout.h"
 #include "Framework/Logging/logger.h"
+#include "Resource/Texture/texture.h"
 #include "Resource/Texture/texture_manager.h"
 
 namespace Font {
@@ -17,109 +17,38 @@ bool SpriteFontManager::LoadFontVariant(FontFamily family, const std::string& fn
     return false;
   }
 
-  // Parse font file
   BMFont::BmFontData font_data;
   if (!BMFont::ParseBmFontText(fnt_path, font_data)) {
     return false;
   }
 
-  // Load texture
+  // Load texture BEFORE registering variant — if texture fails, registry stays clean
   auto texture = texture_manager_->LoadTexture(texture_path);
   if (!texture) {
     return false;
   }
 
-  // Create variant
-  SpriteFontVariant variant;
-  variant.native_line_height = font_data.common.lineHeight;
-  variant.font_data = std::move(font_data);
-  variant.texture = texture;
-
-  // Get or create family
-  auto& family_entry = families_[family];
-  family_entry.id = family;
-
-  // Add variant (key is lineHeight)
-  family_entry.variants_by_line_height[variant.native_line_height] = std::move(variant);
+  const FontVariant* variant = font_registry_.RegisterVariant(family, std::move(font_data));
+  variant_textures_[variant] = std::move(texture);
 
   return true;
 }
 
 bool SpriteFontManager::CreateTextLayout(
   const std::wstring& text, FontFamily family, float pixel_size, const Text::TextLayoutProps& props, TextLayoutData& out_layout) {
-  out_layout.glyphs.clear();
-  out_layout.width = 0.0f;
-  out_layout.height = 0.0f;
-  out_layout.variant = nullptr;
+  auto result = font_registry_.CreateTextLayout(text, family, pixel_size, props, out_layout);
 
-  // Select font variant
-  float scale = 1.0f;
-  const SpriteFontVariant* variant = SelectVariant(family, pixel_size, scale);
-
-  if (!variant) {
+  if (!result.success) {
     return false;
   }
 
-  // Compute layout using text_layout module
-  Text::TextLayoutResult layout_result;
-  if (!Text::LayoutText(text, variant->font_data, props, layout_result)) {
+  auto tex_it = variant_textures_.find(result.selected_variant);
+  if (tex_it == variant_textures_.end() || !tex_it->second) {
     return false;
   }
 
-  // Convert to TextLayoutData - pure CPU data with UV coordinates
-  out_layout.glyphs.reserve(layout_result.glyphs.size());
-  for (const auto& glyph : layout_result.glyphs) {
-    TextLayoutData::GlyphData glyph_data;
-    glyph_data.x = glyph.x;
-    glyph_data.y = glyph.y;
-    glyph_data.width = glyph.width;
-    glyph_data.height = glyph.height;
-    glyph_data.u0 = glyph.u0;
-    glyph_data.v0 = glyph.v0;
-    glyph_data.u1 = glyph.u1;
-    glyph_data.v1 = glyph.v1;
-    out_layout.glyphs.push_back(glyph_data);
-  }
-
-  out_layout.width = layout_result.width;
-  out_layout.height = layout_result.height;
-  out_layout.variant = variant;
-
+  out_layout.font_texture = TextureHandle{tex_it->second->GetBindlessIndex()};
   return true;
-}
-
-const SpriteFontVariant* SpriteFontManager::SelectVariant(FontFamily family, float desired_pixel_size, float& out_scale) const {
-  auto family_it = families_.find(family);
-  if (family_it == families_.end() || family_it->second.variants_by_line_height.empty()) {
-    out_scale = 1.0f;
-    return nullptr;
-  }
-
-  const auto& variants = family_it->second.variants_by_line_height;
-
-  // Find the closest variant using lower_bound
-  auto it = variants.lower_bound(static_cast<int>(desired_pixel_size));
-
-  // If we're past the end, use the largest variant
-  if (it == variants.end()) {
-    --it;
-  }
-  // If we're at the beginning and the size is smaller than desired,
-  // consider using the next larger one if available
-  else if (it != variants.begin()) {
-    auto prev_it = std::prev(it);
-    // Use the closer one
-    int dist_current = std::abs(it->first - static_cast<int>(desired_pixel_size));
-    int dist_prev = std::abs(prev_it->first - static_cast<int>(desired_pixel_size));
-    if (dist_prev < dist_current) {
-      it = prev_it;
-    }
-  }
-
-  const SpriteFontVariant* selected = &it->second;
-  out_scale = desired_pixel_size / static_cast<float>(selected->native_line_height);
-
-  return selected;
 }
 
 void LoadDefaultFonts(SpriteFontManager& sprite_font_manager) {

@@ -41,6 +41,8 @@ add_library(framework STATIC
 
   # Font
   Font/font_family.h
+  Font/font_registry.h
+  Font/font_registry.cpp
   Font/bmfont_parser.h
   Font/bmfont_parser.cpp
   Font/text_layout.h
