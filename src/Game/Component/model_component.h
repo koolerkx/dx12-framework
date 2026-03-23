@@ -6,6 +6,9 @@
 
 #include "Component/Renderer/mesh_renderer.h"
 #include "Component/component.h"
+#if ENABLE_EDITOR
+#include "Framework/Editor/editor_ui.h"
+#endif
 #include "Component/transform_component.h"
 #include "Framework/Asset/model_data.h"
 #include "Framework/Model/node_hierarchy.h"
@@ -14,7 +17,6 @@
 #include "game_context.h"
 #include "game_object.h"
 #include "scene.h"
-
 
 class ModelComponent : public Component<ModelComponent> {
  public:
@@ -73,6 +75,26 @@ class ModelComponent : public Component<ModelComponent> {
   float GetModelScale() const {
     return model_scale_;
   }
+
+#if ENABLE_EDITOR
+  void OnInspectorGUI() override {
+    auto* data = model_.get();
+    editor_ui::Text("Model: %s", data ? data->path.c_str() : "None");
+    if (data) {
+      editor_ui::Text("Sub-meshes: %d", static_cast<int>(data->sub_meshes.size()));
+      editor_ui::Text("Materials: %d", static_cast<int>(data->surface_materials.size()));
+      editor_ui::Text("Textures: %d", static_cast<int>(data->texture_handles_.size()));
+    }
+
+    auto& shader_service = GetOwner()->GetContext()->GetRenderService()->GetShaderNameService();
+    auto shader_name = shader_service.GetName(shader_id_);
+    editor_ui::Text("Shader: %.*s", static_cast<int>(shader_name.size()), shader_name.data());
+    editor_ui::Text("Model Scale: %.3f", model_scale_);
+    if (data) {
+      editor_ui::Text("Min Y: %.3f", data->min_y);
+    }
+  }
+#endif
 
   void OnSerialize(framework::SerializeNode& node) const override {
     node.Write("ModelPath", model_path_);

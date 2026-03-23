@@ -16,6 +16,7 @@
 #include "Framework/Input/keyboard.h"
 #include "Framework/Render/frame_packet.h"
 #include "Framework/Shader/default_shaders.h"
+#include "Game/Component/Renderer/mesh_renderer.h"
 #include "Game/Component/camera_component.h"
 #include "Game/Component/model_component.h"
 #include "Game/Component/point_light_component.h"
@@ -30,7 +31,6 @@
 #include "Game/scene_key.h"
 #include "Game/scene_manager.h"
 #include "Graphic/Descriptor/descriptor_heap_manager.h"
-#include "Graphic/Pipeline/shader_registry.h"
 #include "Graphic/Presentation/swapchain_manager.h"
 #include "Graphic/Render/render_graph.h"
 #include "Graphic/Resource/Mesh/mesh_buffer_pool.h"
@@ -730,8 +730,6 @@ void EditorLayer::DrawInspector() {
           ImGui::EndDisabled();
           transform->OnInspectorGUI();
         }
-      } else if (auto* model = dynamic_cast<ModelComponent*>(comp.get())) {
-        if (ImGui::CollapsingHeader("ModelComponent")) DrawModelComponentInspector(model);
       } else if (auto* point_light = dynamic_cast<PointLightComponent*>(comp.get())) {
         if (ImGui::CollapsingHeader("PointLightComponent", ImGuiTreeNodeFlags_DefaultOpen)) {
           bool dbg = comp->IsDebugDrawEnabled();
@@ -1184,23 +1182,6 @@ void EditorLayer::DrawShadowMapPanel(ID3D12GraphicsCommandList* cmd) {
   }
 
   ImGui::End();
-}
-
-void EditorLayer::DrawModelComponentInspector(ModelComponent* model) {
-  auto* data = model->GetModelData().get();
-  ImGui::Text("Model: %s", data ? data->path.c_str() : "None");
-  if (data) {
-    ImGui::Text("Sub-meshes: %d", static_cast<int>(data->sub_meshes.size()));
-    ImGui::Text("Materials: %d", static_cast<int>(data->surface_materials.size()));
-    ImGui::Text("Textures: %d", static_cast<int>(data->texture_handles_.size()));
-  }
-
-  auto shader_name = ShaderRegistry::GetName(model->GetShaderId());
-  ImGui::Text("Shader: %.*s", static_cast<int>(shader_name.size()), shader_name.data());
-  ImGui::Text("Model Scale: %.3f", model->GetModelScale());
-  if (data) {
-    ImGui::Text("Min Y: %.3f", data->min_y);
-  }
 }
 
 void EditorLayer::RebuildFontAtlas(float scale) {

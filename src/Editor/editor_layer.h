@@ -12,7 +12,6 @@
 #include "Framework/Event/event_scope.hpp"
 #include "Framework/Shader/shader_id.h"
 #include "Graphic/Descriptor/descriptor_heap_allocator.h"
-#include "Graphic/Pipeline/shader_types.h"
 
 enum class DefaultMesh;
 enum class LoadScope : uint8_t;
@@ -22,7 +21,6 @@ class Game;
 class Graphic;
 class IScene;
 class GameObject;
-class ModelComponent;
 class PointLightComponent;
 
 class DebugDrawer;
@@ -53,7 +51,6 @@ class EditorLayer {
   void DrawFpsCounter();
   void DrawHierarchy();
   void DrawInspector();
-  void DrawModelComponentInspector(ModelComponent* model);
   void DrawMainMenu();
   void DrawSceneMenu();
   void DrawSaveSceneModal();
