@@ -14,7 +14,7 @@ Lower layers never depend on higher layers.
 |------|------|
 | `Game` | Top-level orchestrator. Owns `SceneManager`, `AssetManager`, `DebugDrawer`. Routes update/render per `PlayState`. |
 | `GameContext` | Service locator. Holds non-owning pointers to shared systems. |
-| `SceneManager` | Factory + loader. Registers scene types by `SceneId`, handles deferred scene transitions. |
+| `SceneManager` | Factory + loader. Registers scene types by `SceneKey`, handles deferred scene transitions. |
 | `IScene` | Base class for scenes. Owns all `GameObject`s and manages their lifecycle. |
 | `GameObject` | Entity node in the scene tree. Owns components and maintains parent/child hierarchy. Always has a `TransformComponent`. |
 | `IComponentBase` | Base class for all components. Provides lifecycle hooks gated by `enabled` and `is_started`. |

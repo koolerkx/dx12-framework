@@ -12,7 +12,7 @@
 #include "game_object.h"
 #include "scene.h"
 #include "scene_events.h"
-#include "scene_id.h"
+#include "scene_key.h"
 #include "scene_manager.h"
 
 namespace {
@@ -784,7 +784,7 @@ void HudManagerComponent::UpdateGameOverInteraction() {
     if (over_restart) {
       gameover_overlay_.FadeIn([this]() { GetContext()->GetEventBus()->Emit(RestartGameEvent{}); });
     } else if (over_title) {
-      gameover_overlay_.FadeIn([this]() { GetContext()->GetSceneManager()->RequestLoad(SceneId::TITLE_SCENE); });
+      gameover_overlay_.FadeIn([this]() { GetContext()->GetSceneManager()->RequestLoad(UserScenes::TITLE); });
     }
   }
 }

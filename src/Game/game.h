@@ -1,30 +1,37 @@
-// game.h
+/**
+ * @file game.h
+ * @brief Top-level game orchestrator owning SceneManager, AssetManager, and DebugDrawer.
+ */
 #pragma once
+#include <functional>
 #include <memory>
 
 #include "Framework/Asset/asset_manager.h"
 #include "Framework/Render/frame_packet.h"
 #include "play_state.h"
 #include "scene_defaults.h"
-#include "scene_id.h"
+#include "scene_key.h"
 #include "scene_manager.h"
 
 class GameContext;
 
 class Game {
  public:
+  using SceneRegistrar = std::function<void(SceneManager&)>;
+
   Game();
   ~Game();
 
   struct Props {
     GameContext* context = nullptr;
-    SceneId initial_scene = SceneId::TITLE_SCENE;
     bool auto_play = false;
     bool debug_draw_enabled = true;
     SceneDefaults scene_defaults;
   };
 
   void Initialize(const Props& props);
+  void SetSceneRegistrar(SceneRegistrar registrar);
+  void LoadInitialScene(const SceneKey& key);
   void Shutdown();
 
   IScene* GetCurrentScene() const {
@@ -54,5 +61,6 @@ class Game {
   SceneManager scene_manager_;
   float elapsed_time_ = 0.0f;
 
+  SceneRegistrar scene_registrar_;
   std::atomic<bool> is_shutting_down_{false};
 };

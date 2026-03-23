@@ -5,17 +5,17 @@
 #include "game_context.h"
 #include "scene_events.h"
 
-void SceneManager::RequestLoad(SceneId id) {
-  pending_scene_ = id;
+void SceneManager::RequestLoad(const SceneKey& key) {
+  pending_scene_ = key;
 }
 
 void SceneManager::ProcessPending(AssetManager& asset_manager, GameContext* context, IRenderService* render_service) {
   if (!pending_scene_.has_value()) return;
 
-  SceneId id = pending_scene_.value();
+  SceneKey key = pending_scene_.value();
   pending_scene_.reset();
 
-  auto it = factories_.find(id);
+  auto it = factories_.find(key);
   if (it == factories_.end()) return;
 
   auto new_scene = it->second();
@@ -32,7 +32,7 @@ void SceneManager::ProcessPending(AssetManager& asset_manager, GameContext* cont
   current_scene_ = std::move(new_scene);
 
   if (auto bus = context->GetEventBus()) {
-    bus->Emit(SceneChangedEvent{.new_scene = current_scene_.get(), .scene_id = id});
+    bus->Emit(SceneChangedEvent{.new_scene = current_scene_.get(), .scene_key = key});
   }
 }
 

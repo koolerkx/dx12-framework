@@ -20,7 +20,6 @@
 #include "scene_manager.h"
 #include "test_scene.h"
 
-
 using Math::Vector3;
 
 static float rotation_angle_ = 0.0f;
@@ -167,9 +166,9 @@ void TestScene::OnEnter(AssetManager& asset_manager) {
 
   auto& bus = *GetContext()->GetEventBus();
   GetEventScope().Subscribe<KeyDownEvent>(bus, [this](const KeyDownEvent& e) {
-    if (e.key == Keyboard::KeyCode::F1) GetContext()->GetSceneManager()->RequestLoad(SceneId::CUBE_SCENE);
-    if (e.key == Keyboard::KeyCode::F2) GetContext()->GetSceneManager()->RequestLoad(SceneId::MODEL_SCENE);
-    if (e.key == Keyboard::KeyCode::F3) GetContext()->GetSceneManager()->RequestLoad(SceneId::CITY_SCENE);
+    if (e.key == Keyboard::KeyCode::F1) GetContext()->GetSceneManager()->RequestLoad(UserScenes::CUBE);
+    if (e.key == Keyboard::KeyCode::F2) GetContext()->GetSceneManager()->RequestLoad(UserScenes::MODEL);
+    if (e.key == Keyboard::KeyCode::F3) GetContext()->GetSceneManager()->RequestLoad(UserScenes::CITY);
   });
 }
 

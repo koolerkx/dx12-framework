@@ -19,17 +19,16 @@
 #include "Game/Component/component.h"
 #include "Game/Component/model_component.h"
 #include "Game/Component/point_light_component.h"
-#include "Game/Scenes/test_scene/character_mover_component.h"
 #include "Game/Scripts/free_camera_controller.h"
 #include "Game/game_object.h"
 #include "Game/scene.h"
 
 namespace {
 
-using ComponentFactory = std::function<IComponentBase*(GameObject*)>;
+using ComponentFactory = SceneSerializer::ComponentFactory;
 
-const std::unordered_map<std::string, ComponentFactory>& GetComponentFactories() {
-  static const std::unordered_map<std::string, ComponentFactory> factories = {
+std::unordered_map<std::string, ComponentFactory>& GetComponentRegistry() {
+  static std::unordered_map<std::string, ComponentFactory> registry = {
     {"CameraComponent", [](GameObject* o) { return o->AddComponent<CameraComponent>(); }},
     {"SpriteRenderer", [](GameObject* o) { return o->AddComponent<SpriteRenderer>(); }},
     {"MeshRenderer", [](GameObject* o) { return o->AddComponent<MeshRenderer>(); }},
@@ -40,9 +39,8 @@ const std::unordered_map<std::string, ComponentFactory>& GetComponentFactories()
     {"PointLightComponent", [](GameObject* o) { return o->AddComponent<PointLightComponent>(); }},
     {"ModelComponent", [](GameObject* o) { return o->AddComponent<ModelComponent>(); }},
     {"FreeCameraController", [](GameObject* o) { return o->AddComponent<FreeCameraController>(); }},
-    {"CharacterMover", [](GameObject* o) { return o->AddComponent<CharacterMover>(); }},
   };
-  return factories;
+  return registry;
 }
 
 ShadowAlgorithm ParseShadowAlgorithm(const std::string& name) {
@@ -62,8 +60,11 @@ bool IsExcluded(const GameObject* go, const std::unordered_set<GameObject*>& exc
 
 }  // namespace
 
-bool SceneSerializer::SaveScene(const IScene& scene, const std::string& name,
-                                const std::unordered_set<GameObject*>& excluded) {
+void SceneSerializer::RegisterComponentFactory(const std::string& type_name, ComponentFactory factory) {
+  GetComponentRegistry()[type_name] = std::move(factory);
+}
+
+bool SceneSerializer::SaveScene(const IScene& scene, const std::string& name, const std::unordered_set<GameObject*>& excluded) {
   framework::SerializeDocument doc;
   auto& root = doc.Root();
   root.Write("SceneName", name);
@@ -164,8 +165,7 @@ bool SceneSerializer::DumpSettings(const IScene& scene, const std::string& name)
   return doc.SaveToFile(path);
 }
 
-bool SceneSerializer::SaveAndDump(const IScene& scene, const std::string& name,
-                                  const std::unordered_set<GameObject*>& excluded) {
+bool SceneSerializer::SaveAndDump(const IScene& scene, const std::string& name, const std::unordered_set<GameObject*>& excluded) {
   bool scene_ok = SaveScene(scene, name, excluded);
   bool settings_ok = DumpSettings(scene, name);
   return scene_ok && settings_ok;
@@ -218,7 +218,7 @@ bool SceneSerializer::LoadScene(IScene& scene, const std::string& name) {
   }
 
   // Pass 3: Create and deserialize components
-  const auto& factories = GetComponentFactories();
+  const auto& factories = GetComponentRegistry();
 
   for (size_t i = 0; i < entity_count; ++i) {
     auto entities_seq = root.GetSequence("Entities");

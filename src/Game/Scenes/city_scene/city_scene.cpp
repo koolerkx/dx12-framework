@@ -40,7 +40,7 @@
 #include "Scripts/screen_effect_controller.h"
 #include "game_context.h"
 #include "play_state.h"
-#include "scene_id.h"
+#include "scene_key.h"
 #include "scene_manager.h"
 
 CityScene::CityScene() = default;
@@ -194,12 +194,12 @@ void CityScene::OnEnter(AssetManager& asset_manager) {
 
   auto& bus = *GetContext()->GetEventBus();
   GetEventScope().Subscribe<KeyDownEvent>(bus, [this](const KeyDownEvent& e) {
-    if (e.key == Keyboard::KeyCode::F1) GetContext()->GetSceneManager()->RequestLoad(SceneId::TEST_SCENE);
-    if (e.key == Keyboard::KeyCode::F2) GetContext()->GetSceneManager()->RequestLoad(SceneId::MODEL_SCENE);
+    if (e.key == Keyboard::KeyCode::F1) GetContext()->GetSceneManager()->RequestLoad(UserScenes::TEST);
+    if (e.key == Keyboard::KeyCode::F2) GetContext()->GetSceneManager()->RequestLoad(UserScenes::MODEL);
   });
 
   GetEventScope().Subscribe<RestartGameEvent>(
-    bus, [this](const RestartGameEvent&) { GetContext()->GetSceneManager()->RequestLoad(SceneId::CITY_SCENE); });
+    bus, [this](const RestartGameEvent&) { GetContext()->GetSceneManager()->RequestLoad(UserScenes::CITY); });
 }
 
 void CityScene::OnExit() {

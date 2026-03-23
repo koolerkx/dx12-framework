@@ -13,7 +13,7 @@
 #include "Framework/Event/input_events.h"
 #include "Framework/Logging/logger.h"
 #include "Scripts/free_camera_controller.h"
-#include "scene_id.h"
+#include "scene_key.h"
 #include "scene_manager.h"
 
 using Math::Vector3;
@@ -65,8 +65,8 @@ void ModelScene::OnEnter(AssetManager& asset_manager) {
 
   auto& bus = *GetContext()->GetEventBus();
   GetEventScope().Subscribe<KeyDownEvent>(bus, [this](const KeyDownEvent& e) {
-    if (e.key == Keyboard::KeyCode::F2) GetContext()->GetSceneManager()->RequestLoad(SceneId::TEST_SCENE);
-    if (e.key == Keyboard::KeyCode::F3) GetContext()->GetSceneManager()->RequestLoad(SceneId::CITY_SCENE);
+    if (e.key == Keyboard::KeyCode::F2) GetContext()->GetSceneManager()->RequestLoad(UserScenes::TEST);
+    if (e.key == Keyboard::KeyCode::F3) GetContext()->GetSceneManager()->RequestLoad(UserScenes::CITY);
   });
 }
 

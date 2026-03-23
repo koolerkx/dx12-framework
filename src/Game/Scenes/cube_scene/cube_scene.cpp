@@ -10,7 +10,7 @@
 #include "Framework/Shader/shader_registration.h"
 #include "Scripts/free_camera_controller.h"
 #include "Shaders/game_shaders.h"
-#include "scene_id.h"
+#include "scene_key.h"
 #include "scene_manager.h"
 
 void CubeScene::OnEnter(AssetManager&) {
@@ -71,7 +71,7 @@ void CubeScene::OnEnter(AssetManager&) {
 
   auto& bus = *GetContext()->GetEventBus();
   GetEventScope().Subscribe<KeyDownEvent>(bus, [this](const KeyDownEvent& e) {
-    if (e.key == Keyboard::KeyCode::F1) GetContext()->GetSceneManager()->RequestLoad(SceneId::TEST_SCENE);
+    if (e.key == Keyboard::KeyCode::F1) GetContext()->GetSceneManager()->RequestLoad(UserScenes::TEST);
   });
 }
 

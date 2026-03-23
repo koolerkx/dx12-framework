@@ -17,7 +17,7 @@
 #include "game_context.h"
 #include "game_object.h"
 #include "play_state.h"
-#include "scene_id.h"
+#include "scene_key.h"
 #include "scene_manager.h"
 
 namespace {
@@ -248,7 +248,7 @@ void TitleScene::OnPreUpdate(float dt) {
 
   if (input_->GetMouseButtonDown(Mouse::Button::Left)) {
     if (over_start) {
-      transition_overlay_.FadeIn([this]() { GetContext()->GetSceneManager()->RequestLoad(SceneId::CITY_SCENE); });
+      transition_overlay_.FadeIn([this]() { GetContext()->GetSceneManager()->RequestLoad(UserScenes::CITY); });
     } else if (over_leave) {
       GetContext()->RequestQuit();
     }

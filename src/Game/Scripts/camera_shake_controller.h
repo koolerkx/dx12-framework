@@ -11,6 +11,7 @@
 #include "Scenes/city_scene/city_scene_config.h"
 #endif
 
+
 class CameraShakeController : public BehaviorComponent<CameraShakeController> {
  public:
   using BehaviorComponent::BehaviorComponent;
@@ -32,6 +33,7 @@ class CameraShakeController : public BehaviorComponent<CameraShakeController> {
       GetContext()->GetRenderService()->SetChromaticAberrationIntensity(fx_cfg.chromatic_aberration_intensity);
     }
 #endif
+
 
     if (remaining_ <= 0.0f) return;
 

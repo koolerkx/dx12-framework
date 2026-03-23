@@ -6,9 +6,30 @@
 #include "Scenes/cube_scene/cube_scene.h"
 #include "Scenes/empty_scene.h"
 #include "Scenes/model_scene/model_scene.h"
+#include "Scenes/test_scene/character_mover_component.h"
 #include "Scenes/test_scene/test_scene.h"
 #include "Scenes/title_scene/title_scene.h"
+#include "Serialization/scene_serializer.h"
 #include "game_context.h"
+#include "game_object.h"
+
+namespace {
+
+void RegisterDefaultScenes(SceneManager& manager) {
+  manager.Register<EmptyScene>(DefaultScenes::EMPTY);
+  manager.Register<BlankScene>(DefaultScenes::BLANK);
+  manager.Register<TestScene>(UserScenes::TEST);
+  manager.Register<CubeScene>(UserScenes::CUBE);
+  manager.Register<ModelScene>(UserScenes::MODEL);
+  manager.Register<CityScene>(UserScenes::CITY);
+  manager.Register<TitleScene>(UserScenes::TITLE);
+}
+
+void RegisterDefaultComponents() {
+  SceneSerializer::RegisterComponentFactory("CharacterMover", [](GameObject* o) { return o->AddComponent<CharacterMover>(); });
+}
+
+}  // namespace
 
 Game::Game() {
 }
@@ -46,14 +67,21 @@ void Game::Initialize(const Props& props) {
     play_state_ = PlayState::Playing;
   }
 
-  scene_manager_.Register<TestScene>(SceneId::TEST_SCENE);
-  scene_manager_.Register<CubeScene>(SceneId::CUBE_SCENE);
-  scene_manager_.Register<EmptyScene>(SceneId::EMPTY_SCENE);
-  scene_manager_.Register<BlankScene>(SceneId::BLANK_SCENE);
-  scene_manager_.Register<ModelScene>(SceneId::MODEL_SCENE);
-  scene_manager_.Register<CityScene>(SceneId::CITY_SCENE);
-  scene_manager_.Register<TitleScene>(SceneId::TITLE_SCENE);
-  scene_manager_.RequestLoad(props.initial_scene);
+  RegisterDefaultComponents();
+
+  if (scene_registrar_) {
+    scene_registrar_(scene_manager_);
+  } else {
+    RegisterDefaultScenes(scene_manager_);
+  }
+}
+
+void Game::SetSceneRegistrar(SceneRegistrar registrar) {
+  scene_registrar_ = std::move(registrar);
+}
+
+void Game::LoadInitialScene(const SceneKey& key) {
+  scene_manager_.RequestLoad(key);
   scene_manager_.ProcessPending(asset_manager_, context_, context_->GetRenderService());
 }
 

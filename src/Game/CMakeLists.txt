@@ -4,7 +4,7 @@ add_library(game STATIC
 
     game_context.h
 
-    scene_id.h
+    scene_key.h
     scene_events.h
     scene_manager.h
     scene_manager.cpp

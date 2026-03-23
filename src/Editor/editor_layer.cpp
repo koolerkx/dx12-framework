@@ -35,7 +35,7 @@
 #include "Game/game_object.h"
 #include "Game/scene.h"
 #include "Game/scene_events.h"
-#include "Game/scene_id.h"
+#include "Game/scene_key.h"
 #include "Game/scene_manager.h"
 #include "Graphic/Descriptor/descriptor_heap_manager.h"
 #include "Graphic/Pipeline/shader_registry.h"
@@ -261,7 +261,7 @@ void EditorLayer::DrawSceneMenu() {
   if (ImGui::BeginMenu("Scene")) {
     if (ImGui::MenuItem("New Scene")) {
       if (scene_ && scene_->GetContext()) {
-        scene_->GetContext()->GetSceneManager()->RequestLoad(SceneId::EMPTY_SCENE);
+        scene_->GetContext()->GetSceneManager()->RequestLoad(DefaultScenes::EMPTY);
       }
     }
     if (ImGui::MenuItem("Load Scene")) {
@@ -519,7 +519,7 @@ void EditorLayer::DrawLoadSceneModal() {
         save_status_timer_ = 3.0f;
         pending_load_path_.clear();
       } else if (scene_ && scene_->GetContext()) {
-        scene_->GetContext()->GetSceneManager()->RequestLoad(SceneId::BLANK_SCENE);
+        scene_->GetContext()->GetSceneManager()->RequestLoad(DefaultScenes::BLANK);
       }
 
       ImGui::CloseCurrentPopup();
