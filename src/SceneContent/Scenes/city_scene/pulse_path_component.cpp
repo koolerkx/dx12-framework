@@ -3,6 +3,10 @@
 #include "Component/Renderer/mesh_renderer.h"
 #include "Component/transform_component.h"
 #include "Framework/Math/Math.h"
+#include "Framework/Shader/shader_descriptor.h"
+#include "Framework/Shader/shader_id.h"
+#include "Framework/Shader/shader_registration.h"
+#include "Framework/Shader/vertex_shaders.h"
 #include "Scenes/city_scene/object_movement_component.h"
 #include "game_object.h"
 #include "scene.h"
@@ -38,7 +42,7 @@ void PulsePathComponent::OnDestroy() {
   DestroySegments();
 }
 
-void PulsePathComponent::Show(GameObject* target, const Shaders::PathPulse::Params& params) {
+void PulsePathComponent::Show(GameObject* target, const PathPulseParams& params) {
   DestroySegments();
   target_ = target;
   shader_params_ = params;
@@ -62,6 +66,23 @@ void PulsePathComponent::RebuildSegments() {
   last_waypoint_count_ = waypoints.size();
 
   if (start >= waypoints.size()) return;
+
+  if (auto* reg = GetContext()->GetShaderRegistration()) {
+    ShaderDescriptor desc{
+      .id = HashShaderName("PathPulse"),
+      .name = "PathPulse",
+      .vs_path = VS::Basic3D::PATH,
+      .ps_path = L"Content/shaders/path_pulse.ps.cso",
+      .vertex_format = VS::Basic3D::VERTEX_FORMAT,
+      .default_settings = {
+        .blend_mode = Rendering::BlendMode::Additive,
+        .depth_test = true,
+        .double_sided = true,
+        .render_target_format = Rendering::RenderTargetFormat::HDR,
+      },
+    };
+    reg->RegisterShader(desc);
+  }
 
   auto* scene = GetOwner()->GetScene();
   float accumulated_dist = 0.0f;
@@ -95,7 +116,15 @@ void PulsePathComponent::RebuildSegments() {
     auto params = shader_params_;
     params.distance_offset = accumulated_dist;
     params.segment_length = distance;
-    renderer->SetShaderWithParams<Shaders::PathPulse>(params);
+    renderer->SetShaderId(HashShaderName("PathPulse"));
+    renderer->SetRenderLayer(RenderLayer::Transparent);
+    renderer->SetRenderSettings({
+      .blend_mode = Rendering::BlendMode::Additive,
+      .depth_test = true,
+      .double_sided = true,
+      .render_target_format = Rendering::RenderTargetFormat::HDR,
+    });
+    renderer->SetCustomData(params);
 
     segment_gos_.push_back(go);
     accumulated_dist += distance;

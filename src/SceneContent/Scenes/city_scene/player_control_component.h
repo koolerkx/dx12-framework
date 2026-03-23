@@ -4,10 +4,9 @@
 
 #include "Component/behavior_component.h"
 #include "Framework/Event/event_scope.hpp"
-#include "Shaders/game_shaders.h"
+#include "Scenes/city_scene/pulse_path_component.h"
 
 class TowerPlacementComponent;
-class PulsePathComponent;
 class InputSystem;
 class NavGrid;
 class GameObject;
@@ -40,7 +39,7 @@ class PlayerControlComponent : public BehaviorComponent<PlayerControlComponent> 
   PulsePathComponent* pulse_path_ = nullptr;
   GameObject* hovered_enemy_ = nullptr;
 
-  Shaders::PathPulse::Params pulse_params_ = {
+  PathPulseParams pulse_params_ = {
     .pulse_r = 1.0f,
     .pulse_g = 0.15f,
     .pulse_b = 0.1f,

@@ -10,6 +10,8 @@
 
 #include <cstdint>
 
+#include "Framework/Shader/shader_id.h"
+
 namespace Graphics {
 
 /// Root Signature Preset - determines which root signature to use

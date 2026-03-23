@@ -19,7 +19,6 @@
 #include "Framework/Logging/logger.h"
 #include "Framework/Math/Math.h"
 #include "Framework/Render/render_service.h"
-#include "Framework/Shader/shader_registration.h"
 #include "Map/map_loader.h"
 #include "Scenes/city_scene/base_health_component.h"
 #include "Scenes/city_scene/city_scene_config.h"
@@ -37,7 +36,6 @@
 #include "Scripts/camera_shake_controller.h"
 #include "Scripts/free_camera_controller.h"
 #include "Scripts/screen_effect_controller.h"
-#include "Shaders/game_shaders.h"
 #include "game_context.h"
 #include "play_state.h"
 #include "scene_key.h"
@@ -64,15 +62,6 @@ Matrix4 BuildWorldMatrix(const MapItemTransform& t, float y_offset, float origin
 }  // namespace
 
 void CityScene::OnEnter(AssetManager& asset_manager) {
-  if (auto* reg = GetContext()->GetShaderRegistration()) {
-    reg->RegisterShader(ToDescriptor<Shaders::NeonGrid>());
-    reg->RegisterShader(ToDescriptor<Shaders::LaserBeam>());
-    reg->RegisterShader(ToDescriptor<Shaders::RadarRange>());
-    reg->RegisterShader(ToDescriptor<Shaders::PathPulse>());
-    reg->RegisterShader(ToDescriptor<Shaders::SoftParticle>());
-    reg->RegisterShader(ToDescriptor<Shaders::UIGlass>());
-  }
-
   SetupCamera();
 
   constexpr cfg::LightConfig LIGHT;

@@ -1,6 +1,5 @@
 #include "tower_placement_component.h"
 
-#include "Framework/Asset/asset_manager.h"
 #include "Component/Collider/box_collider_component.h"
 #include "Component/Collider/sphere_collider_component.h"
 #include "Component/Renderer/instanced_model_renderer.h"
@@ -10,9 +9,13 @@
 #include "Component/model_component.h"
 #include "Component/player_spawn_component.h"
 #include "Component/transform_component.h"
+#include "Framework/Asset/asset_manager.h"
 #include "Framework/Event/event_bus.hpp"
 #include "Framework/Input/input.h"
-#include "Shaders/game_shaders.h"
+#include "Framework/Shader/shader_descriptor.h"
+#include "Framework/Shader/shader_id.h"
+#include "Framework/Shader/shader_registration.h"
+#include "Framework/Shader/vertex_shaders.h"
 #include "Map/ground_ray_caster.h"
 #include "Map/nav_grid.h"
 #include "Map/nav_grid_events.h"
@@ -40,7 +43,35 @@ struct RadarColor {
 constexpr RadarColor RADAR_COLOR_PREVIEW = {0.3f, 0.5f, 1.0f};
 constexpr RadarColor RADAR_COLOR_PLACED = {0.2f, 1.0f, 0.3f};
 
+struct RadarRangeParams {
+  float radar_r, radar_g, radar_b;
+  float scan_speed;
+  float ring_count;
+  float opacity;
+  float emissive_intensity;
+  float ring_width;
+};
+static_assert(sizeof(RadarRangeParams) == 32);
+
 GameObject* CreateRadarDisc(IScene* scene, const Math::Vector3& world_pos, float range, RadarColor color) {
+  if (auto* reg = scene->GetContext()->GetShaderRegistration()) {
+    ShaderDescriptor desc{
+      .id = HashShaderName("RadarRange"),
+      .name = "RadarRange",
+      .vs_path = VS::Basic3D::PATH,
+      .ps_path = L"Content/shaders/radar_range.ps.cso",
+      .vertex_format = VS::Basic3D::VERTEX_FORMAT,
+      .default_settings =
+        {
+          .blend_mode = Rendering::BlendMode::Additive,
+          .depth_test = true,
+          .double_sided = true,
+          .render_target_format = Rendering::RenderTargetFormat::HDR,
+        },
+    };
+    reg->RegisterShader(desc);
+  }
+
   auto* radar = scene->CreateGameObject("RadarDisc");
   radar->SetTransient(true);
 
@@ -52,7 +83,15 @@ GameObject* CreateRadarDisc(IScene* scene, const Math::Vector3& world_pos, float
     .mesh_type = DefaultMesh::Plane,
   });
 
-  Shaders::RadarRange::Params params{
+  renderer->SetShaderId(HashShaderName("RadarRange"));
+  renderer->SetRenderLayer(RenderLayer::Transparent);
+  renderer->SetRenderSettings({
+    .blend_mode = Rendering::BlendMode::Additive,
+    .depth_test = true,
+    .double_sided = true,
+    .render_target_format = Rendering::RenderTargetFormat::HDR,
+  });
+  renderer->SetCustomData(RadarRangeParams{
     .radar_r = color.r,
     .radar_g = color.g,
     .radar_b = color.b,
@@ -61,8 +100,7 @@ GameObject* CreateRadarDisc(IScene* scene, const Math::Vector3& world_pos, float
     .opacity = 0.5f,
     .emissive_intensity = 3.0f,
     .ring_width = 2.0f,
-  };
-  renderer->SetShaderWithParams<Shaders::RadarRange>(params);
+  });
 
   return radar;
 }

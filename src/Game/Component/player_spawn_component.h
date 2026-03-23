@@ -7,8 +7,10 @@
 #include "Component/behavior_component.h"
 #include "Framework/Asset/asset_manager.h"
 #include "Framework/Core/color.h"
+#include "Framework/Shader/shader_descriptor.h"
+#include "Framework/Shader/shader_registration.h"
+#include "Framework/Shader/vertex_shaders.h"
 #include "ProceduralTexture/procedural_texture_factory.h"
-#include "Shaders/game_shaders.h"
 #include "game_context.h"
 #include "game_object.h"
 
@@ -20,11 +22,47 @@ class PlayerSpawnComponent : public BehaviorComponent<PlayerSpawnComponent> {
     auto& assets = GetContext()->GetAssetManager();
     MeshHandle mesh = CreateSpawnCubeMesh(assets);
 
+    if (auto* reg = GetContext()->GetShaderRegistration()) {
+      ShaderDescriptor desc{
+        .id = HashShaderName("NeonGrid"),
+        .name = "NeonGrid",
+        .vs_path = VS::Basic3D::PATH,
+        .ps_path = L"Content/shaders/neon_grid.ps.cso",
+        .vertex_format = VS::Basic3D::VERTEX_FORMAT,
+        .default_settings =
+          {
+            .blend_mode = Rendering::BlendMode::Additive,
+            .depth_test = true,
+            .double_sided = true,
+            .render_target_format = Rendering::RenderTargetFormat::HDR,
+          },
+      };
+      reg->RegisterShader(desc);
+    }
+
+    struct NeonGridParams {
+      float grid_r, grid_g, grid_b;
+      float grid_divisions;
+      float fill_r, fill_g, fill_b;
+      float fill_opacity;
+      float grid_line_width;
+      float glow_intensity;
+    };
+    static_assert(sizeof(NeonGridParams) == 40);
+
     auto* renderer = GetOwner()->AddComponent<MeshRenderer>(MeshRenderer::Props{
       .mesh_handle = mesh,
     });
 
-    renderer->SetShaderWithParams<Shaders::NeonGrid>(Shaders::NeonGrid::Params{
+    renderer->SetShaderId(HashShaderName("NeonGrid"));
+    renderer->SetRenderLayer(RenderLayer::Transparent);
+    renderer->SetRenderSettings({
+      .blend_mode = Rendering::BlendMode::Additive,
+      .depth_test = true,
+      .double_sided = true,
+      .render_target_format = Rendering::RenderTargetFormat::HDR,
+    });
+    renderer->SetCustomData(NeonGridParams{
       .grid_r = 0.0f,
       .grid_g = 1.0f,
       .grid_b = 0.8f,

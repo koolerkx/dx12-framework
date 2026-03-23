@@ -1,9 +1,10 @@
 #pragma once
 
-#include "Component/renderer_component.h"
 #include "Component/pivot_type.h"
+#include "Component/renderer_component.h"
 #include "Framework/Math/Math.h"
 #include "Framework/Render/frame_packet.h"
+#include "Framework/Shader/shader_id.h"
 #include "game_object.h"
 
 using Math::Vector2;
@@ -75,9 +76,11 @@ class UIGlassRenderer : public RendererComponent<UIGlassRenderer> {
     return layer_id_;
   }
 
+  void OnInit() override;
   void OnRender(FramePacket& packet) override;
 
  private:
+  ShaderId shader_id_ = 0;
   Vector2 size_ = {200, 100};
   Vector4 tint_color_ = {1.0f, 1.0f, 1.0f, 0.1f};
   float distortion_strength_ = 0.02f;

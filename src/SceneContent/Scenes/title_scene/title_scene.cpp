@@ -10,10 +10,8 @@
 #include "Framework/Asset/asset_manager.h"
 #include "Framework/Input/input.h"
 #include "Framework/Render/render_service.h"
-#include "Framework/Shader/shader_registration.h"
 #include "Math/Math.h"
 #include "ProceduralTexture/procedural_texture_factory.h"
-#include "Shaders/game_shaders.h"
 #include "game_context.h"
 #include "game_object.h"
 #include "play_state.h"
@@ -62,11 +60,6 @@ ParticleEmitter::SpawnFn SpawnEnvironmentParticle() {
 }  // namespace
 
 void TitleScene::OnEnter(AssetManager& asset_manager) {
-  if (auto* reg = GetContext()->GetShaderRegistration()) {
-    reg->RegisterShader(ToDescriptor<Shaders::SoftParticle>());
-    reg->RegisterShader(ToDescriptor<Shaders::UIGlass>());
-  }
-
   SetSceneName("Title");
   input_ = GetContext()->GetInput();
 

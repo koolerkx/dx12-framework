@@ -287,5 +287,6 @@ class ParticleEmitter : public RendererComponent<ParticleEmitter> {
   SpawnFn spawn_fn_;
   std::function<void()> on_all_dead_;
 
+  bool shader_registered_ = false;
   thread_local static std::mt19937 rng_;
 };

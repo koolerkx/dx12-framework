@@ -7,17 +7,11 @@
 #include "Debug/debug_drawer.h"
 #include "Framework/Core/color.h"
 #include "Framework/Event/input_events.h"
-#include "Framework/Shader/shader_registration.h"
 #include "Scripts/free_camera_controller.h"
-#include "Shaders/game_shaders.h"
-#include "scene_key.h"
+#include "Game/scene_key.h"
 #include "scene_manager.h"
 
 void CubeScene::OnEnter(AssetManager&) {
-  if (auto* reg = GetContext()->GetShaderRegistration()) {
-    reg->RegisterShader(ToDescriptor<Shaders::SoftParticle>());
-  }
-
   SetupCamera();
 
   GetBackgroundSetting().SetClearColorValue(colors::ColorFromHex("#18181B"));

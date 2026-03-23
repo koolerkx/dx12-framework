@@ -1,9 +1,12 @@
 #include "turret_component.h"
 
 #include "Component/Renderer/mesh_renderer.h"
-#include "Shaders/game_shaders.h"
 #include "Component/transform_component.h"
 #include "Framework/Math/Math.h"
+#include "Framework/Shader/shader_descriptor.h"
+#include "Framework/Shader/shader_id.h"
+#include "Framework/Shader/shader_registration.h"
+#include "Framework/Shader/vertex_shaders.h"
 #include "game_object.h"
 #include "scene.h"
 #include "scene_events.h"
@@ -58,10 +61,48 @@ void TurretComponent::UpdateLaser() {
     laser_go_ = scene->CreateGameObject("Laser_" + std::to_string(laser_id++), {});
     laser_go_->SetTransient(true);
 
+    if (auto* reg = GetContext()->GetShaderRegistration()) {
+      ShaderDescriptor desc{
+        .id = HashShaderName("LaserBeam"),
+        .name = "LaserBeam",
+        .vs_path = VS::Basic3D::PATH,
+        .ps_path = L"Content/shaders/laser_beam.ps.cso",
+        .vertex_format = VS::Basic3D::VERTEX_FORMAT,
+        .default_settings =
+          {
+            .blend_mode = Rendering::BlendMode::Additive,
+            .depth_test = true,
+            .double_sided = true,
+            .render_target_format = Rendering::RenderTargetFormat::HDR,
+          },
+      };
+      reg->RegisterShader(desc);
+    }
+
+    struct LaserBeamParams {
+      float laser_r, laser_g, laser_b;
+      float emissive_intensity;
+      float pulse_speed;
+      float pulse_frequency;
+      float beam_width;
+      float end_fade_ratio;
+      float end_fade_power;
+      float _pad[3] = {0, 0, 0};
+    };
+    static_assert(sizeof(LaserBeamParams) == 48);
+
     auto* renderer = laser_go_->AddComponent<MeshRenderer>(MeshRenderer::Props{
       .mesh_type = DefaultMesh::Cylinder,
     });
-    renderer->SetShaderWithParams<Shaders::LaserBeam>(Shaders::LaserBeam::Params{
+    renderer->SetShaderId(HashShaderName("LaserBeam"));
+    renderer->SetRenderLayer(RenderLayer::Transparent);
+    renderer->SetRenderSettings({
+      .blend_mode = Rendering::BlendMode::Additive,
+      .depth_test = true,
+      .double_sided = true,
+      .render_target_format = Rendering::RenderTargetFormat::HDR,
+    });
+    renderer->SetCustomData(LaserBeamParams{
       .laser_r = 1.0f,
       .laser_g = 0.2f,
       .laser_b = 0.2f,

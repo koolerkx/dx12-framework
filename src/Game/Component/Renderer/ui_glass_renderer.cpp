@@ -6,11 +6,35 @@
 #include "Component/transform_component.h"
 #include "Framework/Asset/asset_manager.h"
 #include "Framework/Render/mesh_data_factory.h"
-#include "Shaders/game_shaders.h"
+#include "Framework/Shader/default_shaders.h"
+#include "Framework/Shader/shader_descriptor.h"
+#include "Framework/Shader/shader_registration.h"
+#include "Framework/Shader/vertex_shaders.h"
 #include "game_context.h"
 
 using Math::Matrix4;
 using Math::Vector3;
+
+void UIGlassRenderer::OnInit() {
+  RendererComponent::OnInit();
+
+  if (auto* reg = GetOwner()->GetContext()->GetShaderRegistration()) {
+    ShaderDescriptor desc{
+      .id = HashShaderName("UIGlass"),
+      .name = "UIGlass",
+      .vs_path = VS::Sprite::PATH,
+      .ps_path = L"Content/shaders/ui_glass.ps.cso",
+      .vertex_format = VS::Sprite::VERTEX_FORMAT,
+      .default_settings =
+        {
+          .blend_mode = Rendering::BlendMode::AlphaBlend,
+          .render_target_format = Rendering::RenderTargetFormat::SDR,
+        },
+    };
+    reg->RegisterShader(desc);
+    shader_id_ = desc.id;
+  }
+}
 
 void UIGlassRenderer::OnRender(FramePacket& packet) {
   auto* context = GetOwner()->GetContext();
@@ -74,7 +98,11 @@ void UIGlassRenderer::OnRender(FramePacket& packet) {
   Matrix4 size_scale = Matrix4::CreateScale(Vector3(size_.x, size_.y, 1.0f));
 
   RenderRequest request;
-  request.SetShader<Shaders::UIGlass>();
+  request.SetShader(shader_id_);
+  request.render_settings = {
+    .blend_mode = Rendering::BlendMode::AlphaBlend,
+    .render_target_format = Rendering::RenderTargetFormat::SDR,
+  };
   request.mesh = mesh_handle;
   request.color = {1, 1, 1, 1};
   request.world_matrix = pivot_mat * size_scale * transform->GetWorldMatrix();

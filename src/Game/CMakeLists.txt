@@ -99,7 +99,6 @@ set(GAME_SOURCES
     Map/pathfinder.h
     Map/pathfinder.cpp
 
-    Shaders/game_shaders.h
 )
 
 function(setup_game_target target_name)

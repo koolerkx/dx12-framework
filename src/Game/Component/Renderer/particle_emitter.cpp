@@ -6,7 +6,10 @@
 #endif
 
 #include "Framework/Asset/asset_manager.h"
-#include "Shaders/game_shaders.h"
+#include "Framework/Shader/shader_descriptor.h"
+#include "Framework/Shader/shader_id.h"
+#include "Framework/Shader/shader_registration.h"
+#include "Framework/Shader/vertex_shaders.h"
 #include "game_context.h"
 
 thread_local std::mt19937 ParticleEmitter::rng_{std::random_device{}()};
@@ -112,6 +115,20 @@ void ParticleEmitter::OnRender(FramePacket& packet) {
   auto* context = GetOwner()->GetContext();
   auto* rs = context->GetRenderService();
 
+  if (!shader_registered_) {
+    if (auto* reg = context->GetShaderRegistration()) {
+      ShaderDescriptor desc{
+        .id = HashShaderName("SoftParticle"),
+        .name = "SoftParticle",
+        .vs_path = VS::Sprite::PATH,
+        .ps_path = L"Content/shaders/soft_particle.ps.cso",
+        .vertex_format = VS::Sprite::VERTEX_FORMAT,
+      };
+      reg->RegisterShader(desc);
+    }
+    shader_registered_ = true;
+  }
+
   if (!material_handle_.IsValid() || material_dirty_) {
     MaterialDescriptor desc{};
     desc.albedo_texture_index = texture_.GetBindlessIndex();
@@ -143,16 +160,24 @@ void ParticleEmitter::OnRender(FramePacket& packet) {
     });
   }
 
+  struct SoftParticleParams {
+    uint32_t depth_srv_index;
+    float emissive_intensity;
+    float soft_distance;
+    uint32_t _pad;
+  };
+  static_assert(sizeof(SoftParticleParams) == 16);
+
   InstancedRenderRequest request;
   request.mesh = rect_handle;
-  request.shader_id = Shaders::SoftParticle::ID;
+  request.shader_id = HashShaderName("SoftParticle");
   request.render_settings = render_settings_;
   request.material = material_handle_;
   request.depth = Vector3::DistanceSquared(GetOwner()->GetTransform()->GetWorldPosition(), packet.main_camera.position);
   request.layer = RenderLayer::Transparent;
   request.tags = 0;
 
-  Shaders::SoftParticle::Params params{
+  SoftParticleParams params{
     .depth_srv_index = rs->GetNormalDepthSrvIndex(),
     .emissive_intensity = emissive_intensity_,
     .soft_distance = soft_distance_,
