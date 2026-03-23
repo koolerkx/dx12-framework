@@ -7,7 +7,6 @@
 #include "play_state.h"
 #include "scene_defaults.h"
 
-class Graphic;
 class SceneManager;
 class ITextureService;
 class IMeshService;
@@ -23,13 +22,6 @@ class GameContext {
   }
   void SetInputSystem(InputSystem* input) {
     input_ = input;
-  }
-
-  Graphic* GetGraphic() const {
-    return graphic_;
-  }
-  void SetGraphic(Graphic* graphic) {
-    graphic_ = graphic;
   }
 
   std::shared_ptr<EventBus> GetEventBus() const {
@@ -119,7 +111,6 @@ class GameContext {
 
  private:
   InputSystem* input_ = nullptr;
-  Graphic* graphic_ = nullptr;
   IRenderService* render_service_ = nullptr;
   std::shared_ptr<EventBus> event_bus_;
   AssetManager* asset_manager_ = nullptr;

@@ -80,8 +80,7 @@ class Graphic {
 
   RenderFrameContext BeginFrame();
   void EndFrame(const RenderFrameContext& frame);
-  void UploadPointLights(RenderFrameContext& frame, const FramePacket& world);
-  void RenderScene(const RenderFrameContext& frame, const FramePacket& world);
+  void RenderScene(RenderFrameContext& frame, const FramePacket& world);
 
   void AddDebugLine(const Math::Vector3& start, const Math::Vector3& end, const Math::Vector4& color = colors::White);
 
@@ -293,6 +292,7 @@ class Graphic {
 
   void BuildRenderPipeline();
   void MarkActivePreviewResources();
+  void UploadPointLights(RenderFrameContext& frame, const FramePacket& world);
 
  public:
   void RequestPipelineRebuild();

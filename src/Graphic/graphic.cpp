@@ -603,7 +603,8 @@ void Graphic::UploadPointLights(RenderFrameContext& frame, const FramePacket& wo
   frame.point_light_count = light_count;
 }
 
-void Graphic::RenderScene(const RenderFrameContext& frame, const FramePacket& world) {
+void Graphic::RenderScene(RenderFrameContext& frame, const FramePacket& world) {
+  UploadPointLights(frame, world);
   render_graph_->Execute(frame, world);
 }
 

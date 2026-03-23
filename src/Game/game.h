@@ -40,7 +40,11 @@ class Game {
 
   void OnUpdate(float dt);
   void OnFixedUpdate(float dt);
-  void OnRender();
+  void CollectRenderData(FramePacket& packet);
+
+  float GetElapsedTime() const {
+    return elapsed_time_;
+  }
 
  private:
   PlayState play_state_ = PlayState::Stopped;
@@ -48,7 +52,6 @@ class Game {
   AssetManager asset_manager_;
   std::unique_ptr<DebugDrawer> debug_drawer_;
   SceneManager scene_manager_;
-  FramePacket frame_packet_;
   float elapsed_time_ = 0.0f;
 
   std::atomic<bool> is_shutting_down_{false};

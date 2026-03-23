@@ -1,7 +1,6 @@
 #include "game.h"
 
 #include "Debug/debug_drawer.h"
-#include "Graphic/graphic.h"
 #include "Scenes/blank_scene.h"
 #include "Scenes/city_scene/city_scene.h"
 #include "Scenes/cube_scene/cube_scene.h"
@@ -21,11 +20,8 @@ Game::~Game() {
 void Game::Initialize(const Props& props) {
   context_ = props.context;
 
-  bool has_services = context_
-    && context_->GetTextureService()
-    && context_->GetMeshService()
-    && context_->GetFontService()
-    && context_->GetDebugDrawService();
+  bool has_services = context_ && context_->GetTextureService() && context_->GetMeshService() && context_->GetFontService() &&
+                      context_->GetDebugDrawService();
 
   if (has_services) {
     asset_manager_.Initialize({
@@ -110,26 +106,17 @@ void Game::OnFixedUpdate(float dt) {
   }
 }
 
-void Game::OnRender() {
-  if (!context_ || !context_->GetGraphic()) return;
-
-  Graphic* graphic = context_->GetGraphic();
-  frame_packet_.Clear();
-  frame_packet_.time = elapsed_time_;
-
-  RenderFrameContext frame_context = graphic->BeginFrame();
+void Game::CollectRenderData(FramePacket& packet) {
+  packet.Clear();
+  packet.time = elapsed_time_;
 
   IScene* scene = scene_manager_.GetCurrentScene();
-  if (scene) {
-    scene->Render(frame_packet_);
-    scene->OnRender(frame_packet_);
+  if (!scene) return;
 
-    if (debug_drawer_ && debug_drawer_->IsEnabled()) {
-      scene->DebugDraw(*debug_drawer_);
-    }
+  scene->Render(packet);
+  scene->OnRender(packet);
+
+  if (debug_drawer_ && debug_drawer_->IsEnabled()) {
+    scene->DebugDraw(*debug_drawer_);
   }
-
-  graphic->UploadPointLights(frame_context, frame_packet_);
-  graphic->RenderScene(frame_context, frame_packet_);
-  graphic->EndFrame(frame_context);
 }

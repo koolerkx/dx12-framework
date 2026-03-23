@@ -6,15 +6,16 @@
 
 #include "Framework/Event/event_scope.hpp"
 #include "Framework/Render/frame_packet.h"
-#include "System/render_system.h"
 #include "SceneSetting/active_camera_setting.h"
 #include "SceneSetting/active_ui_camera_setting.h"
 #include "SceneSetting/background_setting.h"
 #include "SceneSetting/light_setting.h"
 #include "SceneSetting/shadow_setting.h"
+#include "System/render_system.h"
 #include "game_context.h"
 #include "game_object.h"
 #include "scene_defaults.h"
+
 
 class AssetManager;
 class DebugDrawer;

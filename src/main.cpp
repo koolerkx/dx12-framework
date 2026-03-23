@@ -20,12 +20,13 @@
 #include "Framework/Logging/sinks.h"
 #include "Game/game.h"
 #include "Game/game_context.h"
-#include "Graphic/debug_draw_service.h"
-#include "Graphic/graphic.h"
-#include "Graphic/render_service.h"
 #include "Graphic/Resource/font_service.h"
 #include "Graphic/Resource/mesh_service.h"
 #include "Graphic/Resource/texture_service.h"
+#include "Graphic/debug_draw_service.h"
+#include "Graphic/graphic.h"
+#include "Graphic/render_service.h"
+
 
 template <typename T>
 using ComPtr = Microsoft::WRL::ComPtr<T>;
@@ -88,7 +89,6 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
   DebugDrawService debug_draw_service(graphic);
 
   GameContext context;
-  context.SetGraphic(&graphic);
   context.SetRenderService(&render_service);
   context.SetInputSystem(&inputSystem);
   context.SetEventBus(event_bus);
@@ -121,6 +121,8 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
 
   InputEventGenerator event_generator(inputSystem, *event_bus);
 
+  FramePacket frame_packet;
+
   const std::function<void(float dt)> OnUpdate = [&]([[maybe_unused]] float dt) {
 #ifdef ENABLE_EDITOR
     editor.BeginFrame();
@@ -134,7 +136,11 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
       DestroyWindow(app.GetHwnd());
       return;
     }
-    game.OnRender();
+
+    RenderFrameContext frame_context = graphic.BeginFrame();
+    game.CollectRenderData(frame_packet);
+    graphic.RenderScene(frame_context, frame_packet);
+    graphic.EndFrame(frame_context);
   };
 
   const std::function<void(float fdt)> OnFixedUpdate = [&]([[maybe_unused]] float fdt) { game.OnFixedUpdate(fdt); };
