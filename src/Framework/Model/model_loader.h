@@ -338,7 +338,7 @@ class ModelLoader {
     }
 
     // Scene Hierarchy
-    result.root_node = BuildNodeHierarchy(scene->mRootNode);
+    result.root_node = BuildNodeHierarchy(scene->mRootNode, options.flatten_node_transforms);
 
     result.success = true;
     return result;
@@ -615,23 +615,25 @@ class ModelLoader {
   /**
    * @brief Build scene node hierarchy from Assimp node
    */
-  static Node BuildNodeHierarchy(aiNode* ai_node) {
+  static Node BuildNodeHierarchy(aiNode* ai_node, bool flatten_transforms = false) {
     Node node;
     node.name = ai_node->mName.C_Str();
 
     // Convert transform
-    aiVector3D ai_scale;
-    aiQuaternion ai_rotation;
-    aiVector3D ai_position;
-    ai_node->mTransformation.Decompose(ai_scale, ai_rotation, ai_position);
+    if (!flatten_transforms) {
+      aiVector3D ai_scale;
+      aiQuaternion ai_rotation;
+      aiVector3D ai_position;
+      ai_node->mTransformation.Decompose(ai_scale, ai_rotation, ai_position);
 
-    node.transform.translation = DirectX::XMFLOAT3(ai_position.x, ai_position.y, ai_position.z);
-    node.transform.rotation = DirectX::XMFLOAT4(ai_rotation.x, ai_rotation.y, ai_rotation.z, ai_rotation.w);
-    node.transform.scale = DirectX::XMFLOAT3(ai_scale.x, ai_scale.y, ai_scale.z);
+      node.transform.translation = DirectX::XMFLOAT3(ai_position.x, ai_position.y, ai_position.z);
+      node.transform.rotation = DirectX::XMFLOAT4(ai_rotation.x, ai_rotation.y, ai_rotation.z, ai_rotation.w);
+      node.transform.scale = DirectX::XMFLOAT3(ai_scale.x, ai_scale.y, ai_scale.z);
 
-    static_assert(sizeof(DirectX::XMFLOAT4X4) == sizeof(aiMatrix4x4));
-    // BUG: needs transpose for DirectX row-major convention, not used currently
-    std::memcpy(&node.transform.local_matrix, &ai_node->mTransformation, sizeof(DirectX::XMFLOAT4X4));
+      static_assert(sizeof(DirectX::XMFLOAT4X4) == sizeof(aiMatrix4x4));
+      // BUG: needs transpose for DirectX row-major convention, not used currently
+      std::memcpy(&node.transform.local_matrix, &ai_node->mTransformation, sizeof(DirectX::XMFLOAT4X4));
+    }
 
     // Store mesh indices
     node.mesh_indices.reserve(ai_node->mNumMeshes);
@@ -642,7 +644,7 @@ class ModelLoader {
     // Recursively build children
     node.children.reserve(ai_node->mNumChildren);
     for (unsigned int i = 0; i < ai_node->mNumChildren; ++i) {
-      node.children.push_back(BuildNodeHierarchy(ai_node->mChildren[i]));
+      node.children.push_back(BuildNodeHierarchy(ai_node->mChildren[i], flatten_transforms));
     }
 
     return node;

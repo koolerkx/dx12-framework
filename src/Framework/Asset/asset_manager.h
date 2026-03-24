@@ -58,7 +58,12 @@ class AssetManager {
   TextureHandle LoadCubemap(const std::string& path);
   std::vector<TextureHandle> LoadTextures(const std::vector<std::string>& paths);
 
+  struct ModelLoadOptions {
+    float global_scale = 1.0f;
+    bool flatten_node_transforms = false;
+  };
   std::shared_ptr<ModelData> LoadModel(const std::string& path, float global_scale = 1.0f);
+  std::shared_ptr<ModelData> LoadModel(const std::string& path, const ModelLoadOptions& options);
 
   void CreateTextureFromPixels(const std::string& cache_key, const uint8_t* pixels, uint32_t width, uint32_t height);
 

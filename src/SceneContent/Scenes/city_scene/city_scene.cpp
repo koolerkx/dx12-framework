@@ -14,6 +14,7 @@
 #include "Component/transform_component.h"
 #include "Debug/debug_drawer.h"
 #include "Framework/Asset/asset_manager.h"
+#include "Framework/Asset/model_data.h"
 #include "Framework/Core/color.h"
 #include "Framework/Event/input_events.h"
 #include "Framework/Logging/logger.h"
@@ -68,7 +69,7 @@ void CityScene::OnEnter(AssetManager& asset_manager) {
 
   std::unordered_map<std::string, std::shared_ptr<ModelData>> model_cache;
   for (const auto& res : map_data->mesh_resources) {
-    auto model = asset_manager.LoadModel(res.path, cfg::FBX_UNIT_SCALE);
+    auto model = asset_manager.LoadModel(res.path, {.global_scale = cfg::FBX_UNIT_SCALE, .flatten_node_transforms = true});
     if (model) {
       model_cache[res.id] = model;
     } else {

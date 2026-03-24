@@ -135,6 +135,7 @@ struct LoadOptions {
   bool combine_meshes_by_material = false;
   bool generate_smooth_normals = false;
   float normal_smoothing_angle = 60.0f;
+  bool flatten_node_transforms = false;
 };
 
 }  // namespace Model

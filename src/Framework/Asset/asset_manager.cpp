@@ -116,6 +116,11 @@ MeshHandle AssetManager::CreateCubeMesh(const std::string& key, const CubeCorner
 }
 
 std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path, float global_scale) {
+  return LoadModel(path, {.global_scale = global_scale});
+}
+
+std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path, const ModelLoadOptions& options) {
+  float global_scale = options.global_scale;
   auto format_scale = [](float s) -> std::string {
     char buf[32];
     std::snprintf(buf, sizeof(buf), "%.6g", s);
@@ -123,7 +128,8 @@ std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path, floa
   };
 
   std::string scale_suffix = (global_scale == 1.0f) ? "" : "@" + format_scale(global_scale);
-  std::string cache_key = path + scale_suffix;
+  std::string flattern_suffix = options.flatten_node_transforms ? "#ft" : "";
+  std::string cache_key = path + scale_suffix + flattern_suffix;
   auto cache_it = model_cache_.find(cache_key);
   if (cache_it != model_cache_.end()) {
     return cache_it->second;
@@ -245,6 +251,7 @@ std::shared_ptr<ModelData> AssetManager::LoadModel(const std::string& path, floa
 
   Model::LoadOptions load_options;
   load_options.global_scale = global_scale;
+  load_options.flatten_node_transforms = options.flatten_node_transforms;
   auto result = Loader::Load<VertexData::ModelVertex, MeshHandle, ModelSurfaceMaterial, TextureHandle>(
     path, texture_cb, material_cb, mesh_cb, load_options);
 
