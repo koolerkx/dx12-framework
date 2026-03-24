@@ -543,9 +543,9 @@ class MeshRenderer : public RendererComponent<MeshRenderer> {
       material_dirty_ = false;
     }
 
-    Vector3 worldPos = transform->GetWorldPosition();
-    Vector3 camPos = packet.main_camera.position;
-    float depth = Vector3::DistanceSquared(worldPos, camPos);
+    Matrix4 world = transform->GetWorldMatrix();
+    Vector3 worldPos = world.GetTranslation();
+    float depth = Vector3::DistanceSquared(worldPos, packet.main_camera.position);
 
     RenderRequest request;
     request.mesh = mesh_handle_;
@@ -553,7 +553,7 @@ class MeshRenderer : public RendererComponent<MeshRenderer> {
     request.render_settings = render_settings_;
     request.material = material_handle_;
     request.color = color_;
-    request.world_matrix = transform->GetWorldMatrix();
+    request.world_matrix = world;
     request.depth = depth;
     request.layer = render_layer_;
     request.tags = render_tags_;

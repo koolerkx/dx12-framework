@@ -27,22 +27,36 @@ void TransformComponent::OnParentChanged() {
   }
 
   is_dirty_ = true;
+  MarkWorldDirty();
+}
+
+void TransformComponent::MarkWorldDirty() {
+  if (world_dirty_) return;
+  world_dirty_ = true;
+  for (auto* child : owner_->GetChildren()) {
+    if (auto* t = child->GetComponent<TransformComponent>()) {
+      t->MarkWorldDirty();
+    }
+  }
 }
 
 void TransformComponent::SetPosition(const Vector3& pos) {
   local_pos_ = pos;
   is_dirty_ = true;
+  MarkWorldDirty();
 }
 
 void TransformComponent::SetScale(const Vector3& scale) {
   local_scale_ = scale;
   is_dirty_ = true;
+  MarkWorldDirty();
 }
 
 void TransformComponent::SetRotation(const Quaternion& quat) {
   local_rot_ = quat;
   local_euler_degrees_ = quat.ToEulerAngles() * Math::ToDegrees(1.0f);
   is_dirty_ = true;
+  MarkWorldDirty();
 }
 
 void TransformComponent::SetRotationEuler(float pitch, float yaw, float roll) {
@@ -59,6 +73,7 @@ void TransformComponent::SetRotationEulerDegree(float pitch, float yaw, float ro
   local_rot_ = Quaternion::CreateFromEulerAngles(Math::ToRadians(pitch), Math::ToRadians(yaw), Math::ToRadians(roll));
   local_euler_degrees_ = {pitch, yaw, roll};
   is_dirty_ = true;
+  MarkWorldDirty();
 }
 
 void TransformComponent::SetRotationEulerDegree(const Vector3& euler) {
@@ -68,11 +83,13 @@ void TransformComponent::SetRotationEulerDegree(const Vector3& euler) {
 void TransformComponent::SetPivot(const Vector3& pivot) {
   local_pivot_ = pivot;
   is_dirty_ = true;
+  MarkWorldDirty();
 }
 
 void TransformComponent::SetAnchor(const Vector3& anchor) {
   local_anchor_ = anchor;
   is_dirty_ = true;
+  MarkWorldDirty();
 }
 
 void TransformComponent::UpdateLocalMatrix() {
@@ -92,20 +109,21 @@ void TransformComponent::UpdateLocalMatrix() {
 }
 
 Matrix4 TransformComponent::GetWorldMatrix() {
+  if (!is_dirty_ && !world_dirty_) return world_matrix_;
+
   if (is_dirty_) {
     UpdateLocalMatrix();
+    is_dirty_ = false;
   }
-
-  Matrix4 local = local_matrix_;
 
   if (parent_transform_) {
-    Matrix4 parent_world = parent_transform_->GetWorldMatrix();
-    world_matrix_ = local * parent_world;
-    return world_matrix_;
+    world_matrix_ = local_matrix_ * parent_transform_->GetWorldMatrix();
+  } else {
+    world_matrix_ = local_matrix_;
   }
 
-  world_matrix_ = local;
-  return local;
+  world_dirty_ = false;
+  return world_matrix_;
 }
 
 Vector3 TransformComponent::GetForward() {

@@ -136,8 +136,8 @@ class TransformComponent : public Component<TransformComponent> {
 
  private:
   void UpdateLocalMatrix();
+  void MarkWorldDirty();
 
- private:
   Vector3 local_pos_ = Vector3::Zero;
   Vector3 local_scale_ = Vector3::One;
   Quaternion local_rot_ = Quaternion::Identity;
@@ -149,6 +149,7 @@ class TransformComponent : public Component<TransformComponent> {
   Matrix4 world_matrix_;
 
   bool is_dirty_ = true;
+  bool world_dirty_ = true;
 
   TransformComponent* parent_transform_ = nullptr;
 };
