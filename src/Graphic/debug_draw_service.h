@@ -4,7 +4,7 @@
  */
 #pragma once
 
-#include "Framework/Render/debug_draw_service.h"
+#include "Framework/Render/render_service.h"
 
 class Graphic;
 

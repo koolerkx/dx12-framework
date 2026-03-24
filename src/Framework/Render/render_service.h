@@ -1,14 +1,30 @@
 /**
  * @file render_service.h
- * @brief Abstract render service interface for Game layer to access Graphic functionality.
+ * @brief Abstract service interfaces for Game layer to access Graphic functionality.
  */
 #pragma once
 
 #include <cstdint>
+#include <optional>
+#include <string_view>
 
+#include "Framework/Math/Math.h"
 #include "Framework/Render/material_descriptor.h"
 #include "Framework/Render/render_handles.h"
-#include "Framework/Render/shader_name_service.h"
+#include "Framework/Shader/shader_id.h"
+
+class IShaderNameService {
+ public:
+  virtual ~IShaderNameService() = default;
+  virtual std::string_view GetName(ShaderId shader_id) const = 0;
+  virtual std::optional<ShaderId> FindIdByName(std::string_view name) const = 0;
+};
+
+class IDebugDrawService {
+ public:
+  virtual ~IDebugDrawService() = default;
+  virtual void AddDebugLine(const Math::Vector3& start, const Math::Vector3& end, const Math::Vector4& color) = 0;
+};
 
 class IRenderService {
  public:

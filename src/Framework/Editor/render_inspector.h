@@ -7,10 +7,9 @@
 
 #include "Core/utils.h"
 #include "Editor/editor_ui.h"
-#include "Font/font_family.h"
+#include "Font/text_layout_data.h"
 #include "Font/text_layout.h"
 #include "Math/Math.h"
-#include "Render/billboard_type.h"
 #include "Render/render_settings.h"
 #include "Render/render_types.h"
 

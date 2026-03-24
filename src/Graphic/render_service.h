@@ -5,7 +5,6 @@
 #pragma once
 
 #include "Framework/Render/render_service.h"
-#include "Framework/Render/shader_name_service.h"
 #include "Graphic/Pipeline/shader_registry.h"
 
 class Graphic;

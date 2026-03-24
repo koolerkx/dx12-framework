@@ -13,7 +13,7 @@
 #include "Framework/Model/model_loader.h"
 #include "Framework/Render/mesh_data.h"
 #include "Framework/Render/mesh_data_factory.h"
-#include "Framework/Render/texture_handle.h"
+#include "Framework/Render/render_handles.h"
 #include "Framework/Render/vertex_data.h"
 
 class AssetManager::Impl {

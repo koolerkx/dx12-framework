@@ -1,7 +1,7 @@
 #include "instanced_model_renderer.h"
 
 #include "Framework/Render/render_settings.h"
-#include "Framework/Render/texture_handle.h"
+#include "Framework/Render/render_handles.h"
 #include "Framework/Shader/default_shaders.h"
 #include "game_context.h"
 #include "game_object.h"

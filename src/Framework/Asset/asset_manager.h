@@ -21,7 +21,6 @@
 #include "Framework/Math/Math.h"
 #include "Framework/Render/mesh_data.h"
 #include "Framework/Render/render_handles.h"
-#include "Framework/Render/texture_handle.h"
 
 namespace Font {
 enum class FontFamily : uint16_t;

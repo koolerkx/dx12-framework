@@ -12,7 +12,7 @@
 #include "Framework/Serialize/serialize_node.h"
 #include "Framework/Asset/asset_manager.h"
 #include "Framework/Render/frame_packet.h"
-#include "Framework/Font/font_family.h"
+#include "Framework/Font/text_layout_data.h"
 #include "game_object.h"
 
 using Math::Vector2;

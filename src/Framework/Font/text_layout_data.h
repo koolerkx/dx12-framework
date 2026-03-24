@@ -1,14 +1,34 @@
 /**
  * @file text_layout_data.h
- * @brief Font text layout result data, shared between Framework and Graphic layers.
+ * @brief CPU-only font variant/family data structures and text layout result data.
  */
 #pragma once
 
+#include <cstdint>
+#include <map>
 #include <vector>
 
-#include "Framework/Render/texture_handle.h"
+#include "Framework/Font/bmfont_parser.h"
+#include "Framework/Render/render_handles.h"
 
 namespace Font {
+
+enum class FontFamily : uint16_t {
+  ZenOldMincho,
+};
+
+// Font variant for a specific size
+struct FontVariant {
+  uint16_t native_line_height = 0;
+  BMFont::BmFontData font_data;
+};
+
+// Font family with multiple size variants
+struct FontFamilyData {
+  FontFamily id;
+  // Key: native lineHeight, Value: variant
+  std::map<int, FontVariant> variants_by_line_height;
+};
 
 struct TextLayoutData {
   struct GlyphData {

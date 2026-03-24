@@ -4,7 +4,7 @@
 
 #include "Framework/Core/color.h"
 #include "Framework/Render/frame_packet.h"
-#include "Framework/Render/texture_handle.h"
+#include "Framework/Render/render_handles.h"
 
 class AssetManager;
 

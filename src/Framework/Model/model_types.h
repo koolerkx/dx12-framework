@@ -2,6 +2,7 @@
 
 #include <DirectXMath.h>
 
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <vector>
@@ -97,6 +98,43 @@ struct NodeTransform {
 
   // Computed local transform matrix (translation * rotation * scale)
   DirectX::XMFLOAT4X4 local_matrix{1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
+};
+
+template <typename T>
+concept VertexWithPosition = requires(T vertex) {
+  { vertex.position };
+};
+
+template <typename T>
+concept VertexWithNormal = requires(T vertex) {
+  { vertex.normal };
+};
+
+template <typename T>
+concept VertexWithTangent = requires(T vertex) {
+  { vertex.tangent };
+};
+
+template <typename T>
+concept VertexWithTexcoord = requires(T vertex) {
+  { vertex.texcoord };
+};
+
+template <typename VertexType>
+struct MeshData {
+  std::string name;
+  std::vector<VertexType> vertices;
+  std::vector<uint32_t> indices;
+  uint32_t material_index = 0;
+};
+
+struct LoadOptions {
+  float global_scale = 1.0f;
+  bool load_animations = false;
+  bool generate_tangents = true;
+  bool combine_meshes_by_material = false;
+  bool generate_smooth_normals = false;
+  float normal_smoothing_angle = 60.0f;
 };
 
 }  // namespace Model

@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-#include "Framework/Render/texture_handle.h"
+#include "Framework/Render/render_handles.h"
 
 class ITextureService {
  public:

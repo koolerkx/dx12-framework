@@ -6,7 +6,6 @@
 
 #include <string>
 
-#include "Framework/Font/font_family.h"
 #include "Framework/Font/text_layout_data.h"
 
 namespace Text {

@@ -6,7 +6,7 @@
 #include "Component/pivot_type.h"
 #include "Component/transform_component.h"
 #include "Framework/Shader/default_shaders.h"
-#include "Framework/Render/texture_handle.h"
+#include "Framework/Render/render_handles.h"
 #include "Framework/Asset/asset_manager.h"
 #include "game_context.h"
 

@@ -8,7 +8,6 @@
 #include <memory>
 #include <string>
 
-#include "Framework/Font/font_family.h"
 #include "Framework/Font/font_registry.h"
 
 class TextureManager;

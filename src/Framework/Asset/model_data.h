@@ -9,7 +9,6 @@
 #include "Framework/Math/Math.h"
 #include "Framework/Model/node_hierarchy.h"
 #include "Framework/Render/render_handles.h"
-#include "Framework/Render/texture_handle.h"
 
 struct ModelSurfaceMaterial {
   DirectX::XMFLOAT4 base_color_factor = {1.0f, 1.0f, 1.0f, 1.0f};

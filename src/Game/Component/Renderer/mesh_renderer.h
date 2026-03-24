@@ -10,7 +10,6 @@
 #include "Framework/Render/render_handles.h"
 #include "Framework/Render/render_service.h"
 #include "Framework/Render/render_settings.h"
-#include "Framework/Render/texture_handle.h"
 #include "Framework/Serialize/serialize_node.h"
 #include "Framework/Shader/default_shaders.h"
 #include "game_context.h"

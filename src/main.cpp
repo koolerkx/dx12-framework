@@ -2,8 +2,6 @@
 #include <Windows.h>
 #include <d3d12.h>
 #include <dxgi1_6.h>
-#include <wrl/client.h>
-
 #include <exception>
 
 #include "Application/Application.h"
@@ -28,10 +26,8 @@
 #include "Graphic/debug_draw_service.h"
 #include "Graphic/graphic.h"
 #include "Graphic/render_service.h"
+#include "Framework/Core/types.h"
 #include "SceneContent/scene_registration.h"
-
-template <typename T>
-using ComPtr = Microsoft::WRL::ComPtr<T>;
 
 void InitializeLogger();
 

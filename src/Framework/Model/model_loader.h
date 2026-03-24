@@ -13,8 +13,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include "model_concepts.h"
-#include "model_data.h"
 #include "model_types.h"
 #include "node_hierarchy.h"
 
