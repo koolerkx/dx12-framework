@@ -6,7 +6,6 @@
 
 #include "Framework/Render/frame_packet.h"
 #include "Frame/render_frame_context.h"
-#include "Render/render_graph_handle.h"
 #include "Render/render_pass.h"
 
 class RenderTexture;

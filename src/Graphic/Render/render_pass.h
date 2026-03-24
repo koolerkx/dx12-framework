@@ -1,10 +1,12 @@
 #pragma once
 
+#include <cstdint>
 #include <vector>
 
 #include "Framework/Render/frame_packet.h"
 #include "Frame/render_frame_context.h"
-#include "Render/render_graph_handle.h"
+
+enum class RenderGraphHandle : uint16_t { Invalid = 0xFFFF };
 
 struct PassSetup {
   std::vector<RenderGraphHandle> resource_writes;

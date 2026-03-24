@@ -1,8 +1,6 @@
 #pragma once
 
 #include "Render/pass_group.h"
-#include "Render/pipeline_context.h"
-#include "Render/render_graph_handle.h"
 
 struct OutlineConfig;
 class RenderGraph;

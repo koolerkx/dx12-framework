@@ -1,11 +1,20 @@
 #pragma once
 #include <d3d12.h>
 
+#include <cstdint>
+
 #include "Framework/Math/Math.h"
 #include "Framework/Render/render_handles.h"
 #include "Framework/Render/render_request.h"
 #include "Framework/Render/render_types.h"
-#include "Graphic/Frame/mesh_geometry.h"
+
+struct MeshGeometry {
+  D3D12_VERTEX_BUFFER_VIEW vbv{};
+  D3D12_INDEX_BUFFER_VIEW ibv{};
+  uint32_t index_count = 0;
+  uint32_t index_offset = 0;
+  int32_t vertex_offset = 0;
+};
 
 class Material;
 

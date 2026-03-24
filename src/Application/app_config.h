@@ -3,12 +3,7 @@
 #include <string>
 
 #include "Game/scene_defaults.h"
-#include "Graphic/Rendering/fog_config.h"
-#include "Graphic/Rendering/hdr_config.h"
-#include "Graphic/Rendering/outline_config.h"
-#include "Graphic/Rendering/smaa_config.h"
-#include "Graphic/Rendering/ssao_config.h"
-#include "Graphic/Rendering/vignette_config.h"
+#include "Graphic/Rendering/post_process_config.h"
 
 struct AppConfig {
   uint32_t window_width = 1920;

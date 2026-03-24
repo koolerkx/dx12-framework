@@ -4,8 +4,6 @@
 #include <vector>
 
 #include "Render/pass_group.h"
-#include "Render/pipeline_context.h"
-#include "Render/render_graph_handle.h"
 
 class RenderGraph;
 struct ShadowFrameData;

@@ -28,7 +28,7 @@ add_library(graphic STATIC
   Presentation/presentation_context.h
   Presentation/presentation_context.cpp
 
-  Rendering/hdr_config.h
+  Rendering/post_process_config.h
 
   Pipeline/pipeline_state_builder.h
   Pipeline/pipeline_state_builder.cpp
@@ -82,7 +82,6 @@ add_library(graphic STATIC
   Frame/dynamic_upload_buffer.h
   Frame/render_frame_context.h
   Frame/constant_buffers.h
-  Frame/mesh_geometry.h
   Frame/resolved_draw_command.h
 
   Command/buffer.h
@@ -94,7 +93,6 @@ add_library(graphic STATIC
   Render/render_graph.cpp
   Render/render_pass.h
   Render/fullscreen_pass.h
-  Render/render_graph_handle.h
   Render/material_renderer.h
   Render/material_renderer.cpp
   Render/draw_command_resolver.h
@@ -131,7 +129,6 @@ add_library(graphic STATIC
 
   Render/pass_group.h
   Render/pass_group.cpp
-  Render/pipeline_context.h
   Render/shadow_pass_group.h
   Render/shadow_pass_group.cpp
   Render/prepass_group.h
@@ -169,12 +166,6 @@ add_library(graphic STATIC
   Render/chromatic_aberration_pass.h
   Render/chromatic_aberration_pass.cpp
 
-  Rendering/fog_config.h
-  Rendering/ssao_config.h
-  Rendering/smaa_config.h
-  Rendering/outline_config.h
-  Rendering/vignette_config.h
-  Rendering/chromatic_aberration_config.h
 )
 
 target_link_libraries(graphic PUBLIC framework)

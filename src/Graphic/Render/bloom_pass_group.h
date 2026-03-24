@@ -3,7 +3,6 @@
 #include <cstdint>
 
 #include "Render/pass_group.h"
-#include "Render/render_graph_handle.h"
 
 struct BloomConfig;
 class RenderGraph;

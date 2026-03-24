@@ -3,7 +3,7 @@
 #include "Pipeline/shader_descriptors.h"
 #include "Render/fullscreen_pass.h"
 #include "Render/render_graph.h"
-#include "Rendering/ssao_config.h"
+#include "Rendering/post_process_config.h"
 
 namespace {
 

@@ -13,6 +13,7 @@
 #include "Graphic/graphic.h"
 #include "editor_layer.h"
 
+
 void EditorLayer::ClearBackbuffer(ID3D12GraphicsCommandList* cmd) {
   auto& swapchain = graphic_->GetPresentationContext()->GetSwapChainManager();
   auto rtv = swapchain.GetCurrentRTV();

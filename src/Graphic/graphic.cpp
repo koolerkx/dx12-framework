@@ -21,7 +21,6 @@
 #include "Render/fog_pass.h"
 #include "Render/material_pass.h"
 #include "Render/outline_pass.h"
-#include "Render/pipeline_context.h"
 #include "Render/post_process_group.h"
 #include "Render/prepass_group.h"
 #include "Render/preview_group.h"

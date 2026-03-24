@@ -3,7 +3,7 @@
 #include "Render/bloom_pass_group.h"
 #include "Render/render_graph.h"
 #include "Render/tone_map_pass.h"
-#include "Rendering/hdr_config.h"
+#include "Rendering/post_process_config.h"
 
 void PostProcessGroup::Build(RenderGraph& graph, RenderGraphHandle scene_rt, const Props& props) {
   tonemap_rt_ = graph.CreateRenderTexture({
