@@ -45,6 +45,10 @@ endif()
 add_library(editor STATIC
   editor_layer.h
   editor_layer.cpp
+  editor_scene.cpp
+  editor_hierarchy.cpp
+  editor_viewport.cpp
+  editor_settings.cpp
   editor_ui_imgui.cpp
 )
 
