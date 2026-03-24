@@ -4,12 +4,12 @@
 
 #include <cstdint>
 #include <functional>
+#include <unordered_map>
 #include <vector>
 
-#include "Frame/constant_buffers.h"
+#include "Framework/Render/material_descriptor.h"
 #include "Framework/Render/render_handles.h"
 #include "Resource/Buffer/structured_buffer.h"
-
 
 struct MaterialDescriptorPoolConfig {
   uint32_t max_material_count = 4096;
@@ -25,7 +25,7 @@ class MaterialDescriptorPool {
     ID3D12Device* device, GetFenceValueFn get_fence_value, uint32_t frame_buffer_count, const MaterialDescriptorPoolConfig& config = {});
 
   MaterialHandle Allocate(const MaterialDescriptor& descriptor);
-  void Update(MaterialHandle handle, const MaterialDescriptor& descriptor);
+  MaterialHandle Update(MaterialHandle handle, const MaterialDescriptor& descriptor);
   void Free(MaterialHandle handle);
 
   void SetCurrentFrame(uint32_t frame_index);
@@ -48,6 +48,7 @@ class MaterialDescriptorPool {
   struct Slot {
     MaterialDescriptor descriptor{};
     uint32_t generation = 0;
+    uint32_t ref_count = 0;
     bool occupied = false;
   };
 
@@ -73,4 +74,6 @@ class MaterialDescriptorPool {
 
   uint32_t max_material_count_ = 0;
   uint32_t active_count_ = 0;
+
+  std::unordered_map<MaterialDescriptor, uint32_t, MaterialDescriptorHash> dedup_map_;
 };

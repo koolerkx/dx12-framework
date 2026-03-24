@@ -65,7 +65,7 @@ void UISpriteRenderer::OnRender(FramePacket& packet) {
     if (!material_handle_.IsValid()) {
       material_handle_ = rs->AllocateMaterial(desc);
     } else {
-      rs->UpdateMaterial(material_handle_, desc);
+      material_handle_ = rs->UpdateMaterial(material_handle_, desc);
     }
     material_dirty_ = false;
   }

@@ -6,8 +6,8 @@ MaterialHandle RenderService::AllocateMaterial(const MaterialDescriptor& descrip
   return graphic_.GetMaterialDescriptorPool().Allocate(descriptor);
 }
 
-void RenderService::UpdateMaterial(MaterialHandle handle, const MaterialDescriptor& descriptor) {
-  graphic_.GetMaterialDescriptorPool().Update(handle, descriptor);
+MaterialHandle RenderService::UpdateMaterial(MaterialHandle handle, const MaterialDescriptor& descriptor) {
+  return graphic_.GetMaterialDescriptorPool().Update(handle, descriptor);
 }
 
 void RenderService::FreeMaterial(MaterialHandle handle) {

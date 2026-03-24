@@ -5,6 +5,7 @@
 #pragma once
 
 #include <cstdint>
+#include <cstring>
 
 #include "Framework/Math/Math.h"
 
@@ -58,3 +59,19 @@ struct MaterialDescriptor {
   float _pad1;
 };
 static_assert(sizeof(MaterialDescriptor) == 80);
+
+inline bool operator==(const MaterialDescriptor& a, const MaterialDescriptor& b) {
+  return memcmp(&a, &b, sizeof(MaterialDescriptor)) == 0;
+}
+
+struct MaterialDescriptorHash {
+  size_t operator()(const MaterialDescriptor& d) const {
+    const auto* bytes = reinterpret_cast<const uint8_t*>(&d);
+    size_t hash = 14695981039346656037ull;
+    for (size_t i = 0; i < sizeof(d); ++i) {
+      hash ^= bytes[i];
+      hash *= 1099511628211ull;
+    }
+    return hash;
+  }
+};

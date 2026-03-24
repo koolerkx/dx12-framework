@@ -26,7 +26,7 @@ class RenderService final : public IRenderService {
   }
 
   MaterialHandle AllocateMaterial(const MaterialDescriptor& descriptor) override;
-  void UpdateMaterial(MaterialHandle handle, const MaterialDescriptor& descriptor) override;
+  MaterialHandle UpdateMaterial(MaterialHandle handle, const MaterialDescriptor& descriptor) override;
   void FreeMaterial(MaterialHandle handle) override;
 
   uint32_t GetSceneWidth() const override;

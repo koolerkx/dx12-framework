@@ -42,6 +42,19 @@ bool MaterialDescriptorPool::Initialize(
 }
 
 MaterialHandle MaterialDescriptorPool::Allocate(const MaterialDescriptor& descriptor) {
+  auto it = dedup_map_.find(descriptor);
+  if (it != dedup_map_.end()) {
+    uint32_t slot = it->second;
+    if (slots_[slot].occupied) {
+      slots_[slot].ref_count++;
+      MaterialHandle handle;
+      handle.index = slot;
+      handle.generation = slots_[slot].generation;
+      return handle;
+    }
+    dedup_map_.erase(it);
+  }
+
   if (active_count_ >= max_material_count_) {
     Logger::LogFormat(
       LogLevel::Error, LogCategory::Graphic, Logger::Here(), "MaterialDescriptorPool full ({}/{})", active_count_, max_material_count_);
@@ -51,12 +64,14 @@ MaterialHandle MaterialDescriptorPool::Allocate(const MaterialDescriptor& descri
   uint32_t slot = AllocateSlot();
   slots_[slot].descriptor = descriptor;
   slots_[slot].occupied = true;
+  slots_[slot].ref_count = 1;
 
   for (uint32_t i = 0; i < frame_buffer_count_; ++i) {
     buffers_[i].UpdateAt(slot, descriptor);
   }
 
   ++active_count_;
+  dedup_map_[descriptor] = slot;
 
   MaterialHandle handle;
   handle.index = slot;
@@ -64,20 +79,61 @@ MaterialHandle MaterialDescriptorPool::Allocate(const MaterialDescriptor& descri
   return handle;
 }
 
-void MaterialDescriptorPool::Update(MaterialHandle handle, const MaterialDescriptor& descriptor) {
-  if (!IsValid(handle)) return;
+MaterialHandle MaterialDescriptorPool::Update(MaterialHandle handle, const MaterialDescriptor& descriptor) {
+  if (!IsValid(handle)) return handle;
 
   uint32_t slot = handle.index;
+
+  if (slots_[slot].ref_count > 1) {
+    slots_[slot].ref_count--;
+
+    if (active_count_ >= max_material_count_) {
+      Logger::LogFormat(LogLevel::Error,
+        LogCategory::Graphic,
+        Logger::Here(),
+        "MaterialDescriptorPool full on COW ({}/{})",
+        active_count_,
+        max_material_count_);
+      return handle;
+    }
+
+    uint32_t new_slot = AllocateSlot();
+    slots_[new_slot].descriptor = descriptor;
+    slots_[new_slot].occupied = true;
+    slots_[new_slot].ref_count = 1;
+    for (uint32_t i = 0; i < frame_buffer_count_; ++i) {
+      buffers_[i].UpdateAt(new_slot, descriptor);
+    }
+    ++active_count_;
+
+    MaterialHandle new_handle;
+    new_handle.index = new_slot;
+    new_handle.generation = slots_[new_slot].generation;
+    return new_handle;
+  }
+
+  dedup_map_.erase(slots_[slot].descriptor);
+
   slots_[slot].descriptor = descriptor;
   buffers_[current_frame_index_].UpdateAt(slot, descriptor);
   pending_sync_.push_back(slot);
+
+  dedup_map_[descriptor] = slot;
+
+  return handle;
 }
 
 void MaterialDescriptorPool::Free(MaterialHandle handle) {
   if (!IsValid(handle)) return;
 
-  uint64_t fence_value = get_current_fence_value_ ? get_current_fence_value_() : 0;
-  pending_frees_.push_back({handle.index, handle.generation, fence_value});
+  uint32_t slot = handle.index;
+  slots_[slot].ref_count--;
+
+  if (slots_[slot].ref_count == 0) {
+    dedup_map_.erase(slots_[slot].descriptor);
+    uint64_t fence_value = get_current_fence_value_ ? get_current_fence_value_() : 0;
+    pending_frees_.push_back({slot, handle.generation, fence_value});
+  }
 }
 
 void MaterialDescriptorPool::SetCurrentFrame(uint32_t frame_index) {
@@ -129,6 +185,7 @@ MaterialDescriptorPool::Stats MaterialDescriptorPool::GetStats() const {
 }
 
 void MaterialDescriptorPool::Shutdown() {
+  dedup_map_.clear();
   pending_frees_.clear();
   pending_sync_.clear();
   slots_.clear();
