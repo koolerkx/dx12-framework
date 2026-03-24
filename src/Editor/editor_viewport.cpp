@@ -1,6 +1,8 @@
+// clang-format off
 // imgui.h must precede ImGuizmo.h (ImGuizmo depends on ImGui types)
-#include <ImGuizmo.h>
 #include <imgui.h>
+#include <ImGuizmo.h>
+// clang-format on
 
 #include <cstdio>
 
@@ -12,7 +14,6 @@
 #include "Graphic/Render/render_graph.h"
 #include "Graphic/graphic.h"
 #include "editor_layer.h"
-
 
 void EditorLayer::ClearBackbuffer(ID3D12GraphicsCommandList* cmd) {
   auto& swapchain = graphic_->GetPresentationContext()->GetSwapChainManager();
