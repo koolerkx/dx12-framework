@@ -63,16 +63,11 @@ void DebugLineRenderer::Render(const RenderFrameContext& frame, const Material* 
   frame.command_list->SetPipelineState(line_material->GetPipelineState());
   frame.command_list->SetGraphicsRootSignature(line_material->GetRootSignature());
 
-  frame.command_list->SetGraphicsRootConstantBufferView(0, frame.frame_cb->GetGPUAddress());
-
-  ObjectCB obj_cb;
-  obj_cb.world = Matrix4::Identity;
-  obj_cb.worldViewProj = view_proj;
-  obj_cb.color = colors::White;
-
-  auto obj_alloc = frame.object_cb_allocator->Allocate(sizeof(ObjectCB));
-  memcpy(obj_alloc.cpu_ptr, &obj_cb, sizeof(ObjectCB));
-  frame.command_list->SetGraphicsRootConstantBufferView(1, obj_alloc.gpu_ptr);
+  FrameCB frame_cb = {};
+  frame_cb.viewProj = view_proj;
+  auto cb_alloc = frame.object_cb_allocator->Allocate<FrameCB>();
+  memcpy(cb_alloc.cpu_ptr, &frame_cb, sizeof(FrameCB));
+  frame.command_list->SetGraphicsRootConstantBufferView(0, cb_alloc.gpu_ptr);
 
   frame.command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
 

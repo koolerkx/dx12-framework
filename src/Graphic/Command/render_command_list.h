@@ -82,16 +82,6 @@ class RenderCommandList {
     cmd_->SetGraphicsRootConstantBufferView(RootSlot::ToIndex(RootSlot::ConstantBuffer::Frame), allocation.gpu_ptr);
   }
 
-  // Automatically uploads and binds Object CB
-  void SetObjectConstants(const ObjectCB& data) {
-    auto allocation = object_allocator_->Allocate<ObjectCB>();
-    if (allocation.cpu_ptr == nullptr) {
-      return;
-    }
-    memcpy(allocation.cpu_ptr, &data, sizeof(ObjectCB));
-    cmd_->SetGraphicsRootConstantBufferView(RootSlot::ToIndex(RootSlot::ConstantBuffer::Object), allocation.gpu_ptr);
-  }
-
   void SetLightingConstants(const LightingCB& data) {
     auto allocation = object_allocator_->Allocate<LightingCB>();
     if (allocation.cpu_ptr == nullptr) {

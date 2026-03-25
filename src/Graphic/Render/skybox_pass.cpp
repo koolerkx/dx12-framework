@@ -144,19 +144,13 @@ void SkyboxPass::Execute(const RenderFrameContext& frame, const FramePacket& pac
 
   struct SkyboxCB {
     uint32_t cubemap_srv_index;
-    uint32_t padding[3];
+    float fallback_color[3];
   };
   static_assert(sizeof(SkyboxCB) == 16);
 
-  SkyboxCB skybox_cb = {srv_index, {}};
+  SkyboxCB skybox_cb = {srv_index, {bg.clear_color.x, bg.clear_color.y, bg.clear_color.z}};
   constexpr auto SKYBOX_CB = RootSlot::ConstantBuffer::Light;
   cmd.SetConstantBufferOverride(SKYBOX_CB, skybox_cb);
-
-  if (bg.mode == BackgroundMode::ClearColor) {
-    ObjectCB object_cb = {};
-    object_cb.color = bg.clear_color;
-    cmd.SetObjectConstants(object_cb);
-  }
 
   frame.command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
   cube_mesh_.Draw(frame.command_list);

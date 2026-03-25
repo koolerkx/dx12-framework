@@ -8,7 +8,7 @@ namespace RootSlot {
 // Root constants and CBVs
 enum class ConstantBuffer : uint32_t {
   Frame = 0,     // FrameCB - per-frame constants (view, proj, camera, time, etc)
-  Object = 1,    // ObjectCB - per-object constants (world matrix, color, etc)
+  Reserved1 = 1, // Unused — was ObjectCB, kept to preserve slot indices
   Light = 2,     // LightingCB - lighting data
   Material = 3,  // Reserved (previously MaterialCB)
   Shadow = 4,    // ShadowCB - shadow mapping data (b4)

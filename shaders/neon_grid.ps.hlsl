@@ -1,5 +1,4 @@
 #include "ConstantBuffer/custom_cb.hlsli"
-#include "ConstantBuffer/object_cb.hlsli"
 
 struct NeonGridCB {
   float3 gridColor;

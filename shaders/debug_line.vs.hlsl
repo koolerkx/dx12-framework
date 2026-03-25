@@ -1,4 +1,4 @@
-#include "ConstantBuffer/object_cb.hlsli"
+#include "ConstantBuffer/frame_cb.hlsli"
 
 struct VSIN {
   float3 position : POSITION;
@@ -12,7 +12,7 @@ struct VSOUT {
 
 VSOUT main(VSIN input) {
   VSOUT output;
-  output.position = mul(float4(input.position, 1.0f), g_ObjectCB.worldViewProj);
+  output.position = mul(float4(input.position, 1.0f), g_FrameCB.viewProj);
   output.color = input.color;
   return output;
 }

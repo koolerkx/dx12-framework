@@ -15,7 +15,6 @@ enum class ObjectFlags : uint32_t {
   Lit = 1u << 0,
   Opaque = 1u << 1,
   ReceiveShadow = 1u << 2,
-  Instanced = 1u << 3,
 };
 
 struct alignas(256) FrameCB {
@@ -30,19 +29,6 @@ struct alignas(256) FrameCB {
   Vector2 _pad;
 };
 static_assert(sizeof(FrameCB) == 512);
-
-struct alignas(256) ObjectCB {
-  Matrix4 world;
-  Matrix4 worldViewProj;
-  Matrix4 normalMatrix;
-  Vector4 color;
-  Vector2 uvOffset;
-  Vector2 uvScale;
-  uint32_t materialDescriptorIndex;
-  uint32_t flags;
-  uint32_t _pad[2];
-};
-static_assert(sizeof(ObjectCB) == 256);
 
 struct alignas(256) LightingCB {
   Vector3 lightDirection;

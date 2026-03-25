@@ -114,7 +114,7 @@ bool ShaderManager::CreateStandardRS() {
         .AllowInputLayout()
         // Fixed CBV slots
         .AddRootCBV(0, 0)  // Slot 0: Frame (b0)
-        .AddRootCBV(1, 0)  // Slot 1: Object (b1)
+        .AddRootCBV(1, 0)  // Slot 1: Reserved (b1, was ObjectCB)
         .AddRootCBV(2, 0)  // Slot 2: Light (b2)
         // Material data (texture indices, etc)
         .AddRootCBV(3, 0)  // Slot 3: Material (b3)
