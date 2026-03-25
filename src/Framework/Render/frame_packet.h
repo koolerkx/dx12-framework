@@ -81,6 +81,7 @@ struct InstanceDataRef {
 struct InternalInstancedRequest {
   InstancedRenderRequest request;
   InstanceDataRef instance_data;
+  uint32_t object_index = UINT32_MAX;
 };
 
 struct FramePacket {

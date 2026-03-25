@@ -1,7 +1,7 @@
 #include "ConstantBuffer/frame_cb.hlsli"
 #include "ConstantBuffer/lighting_cb.hlsli"
 #include "ConstantBuffer/material_descriptor.hlsli"
-#include "ConstantBuffer/object_cb.hlsli"
+#include "ConstantBuffer/object_data.hlsli"
 
 struct PSIN {
   float4 position : SV_POSITION;
@@ -10,6 +10,7 @@ struct PSIN {
   float4 color : BASE_COLOR;
   float3 worldPos : TEXCOORD1;
   float4 overlayColor : OVERLAY_COLOR;
+  nointerpolation uint objectIndex : OBJECT_INDEX;
 };
 
 Texture2D g_Textures[] : register(t0, space1);
@@ -17,24 +18,25 @@ Texture2D g_Textures[] : register(t0, space1);
 #include "ConstantBuffer/shadow_cb.hlsli"
 
 float4 main(PSIN input) : SV_TARGET {
-  MaterialDescriptor mat = LoadMaterial(g_ObjectCB.materialDescriptorIndex);
+  ObjectData obj = g_ObjectBuffer[input.objectIndex];
+  MaterialDescriptor mat = LoadMaterial(obj.materialDescriptorIndex);
 
   float4 tex = g_Textures[mat.albedoTextureIndex].Sample(
       g_Samplers[mat.samplerIndex], input.uv);
 
-  float4 baseColor = tex * input.color * g_ObjectCB.color;
+  float4 baseColor = tex * input.color;
 
-  if ((g_ObjectCB.flags & OBJECT_FLAG_OPAQUE) && baseColor.a < 0.5) {
+  if ((obj.flags & OBJECT_FLAG_OPAQUE) && baseColor.a < 0.5) {
     discard;
   }
 
-  if (g_ObjectCB.flags & OBJECT_FLAG_LIT) {
+  if (obj.flags & OBJECT_FLAG_LIT) {
     float3 N = normalize(input.worldNormal);
     float3 L = normalize(-g_LightingCB.lightDirection);
     float NdotL = saturate(dot(N, L));
 
     float shadow = 1.0;
-    if (g_ObjectCB.flags & OBJECT_FLAG_RECEIVE_SHADOW) {
+    if (obj.flags & OBJECT_FLAG_RECEIVE_SHADOW) {
       shadow = CalculateShadow(input.worldPos, N, input.position.xy);
     }
 

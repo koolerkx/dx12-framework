@@ -1,11 +1,13 @@
 #include "material_renderer.h"
 
 #include <bit>
+#include <cstring>
 
 #include "Command/render_command_list.h"
 #include "Frame/constant_buffers.h"
-#include "Framework/Logging/logger.h"
+#include "Frame/object_data_buffer.h"
 #include "Pipeline/material.h"
+#include "Render/object_index_utils.h"
 #include "Render/shadow_config.h"
 #include "Resource/Material/material_descriptor_pool.h"
 
@@ -71,7 +73,7 @@ MaterialRenderer::FrameSetup MaterialRenderer::SetupFrameState(const RenderFrame
   uint32_t screen_height,
   float time,
   const Material* first_material) {
-  RenderCommandList cmd(frame.command_list, frame.dynamic_allocator, frame.frame_cb, frame.object_cb_allocator);
+  RenderCommandList cmd(frame.command_list, frame.dynamic_allocator, frame.object_cb_allocator);
 
   cmd.BindDescriptorHeaps(frame.global_heap_manager);
   cmd.GetNative()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -124,6 +126,10 @@ MaterialRenderer::FrameSetup MaterialRenderer::SetupFrameState(const RenderFrame
     cmd.SetMaterialDescriptorSRV(frame.material_descriptor_pool->GetBufferAddress());
   }
 
+  if (frame.object_data_buffer && frame.object_data_buffer->GetBufferAddress()) {
+    cmd.SetObjectBufferSRV(frame.object_data_buffer->GetBufferAddress());
+  }
+
   return {std::move(cmd), camera.view_proj, first_material};
 }
 
@@ -146,10 +152,13 @@ void MaterialRenderer::RecordResolvedCommands(const RenderFrameContext& frame,
   }
   if (!first_material) return;
 
-  auto [cmd, view_proj, current_material] =
-    SetupFrameState(frame, camera, lighting, shadow, screen_width, screen_height, time, first_material);
+  auto [cmd, _, current_material] = SetupFrameState(frame, camera, lighting, shadow, screen_width, screen_height, time, first_material);
 
-  for (const auto& draw_cmd : commands) {
+  // Batch-allocate objectIndex values for all single draws (avoids per-draw 256B-aligned allocation)
+  auto single_index_alloc = BatchAllocateSingleObjectIndices(cmd, commands);
+
+  for (size_t i = 0; i < commands.size(); ++i) {
+    const auto& draw_cmd = commands[i];
     if (!draw_cmd.material || !draw_cmd.material->IsValid()) continue;
 
     if (current_material != draw_cmd.material) {
@@ -157,34 +166,14 @@ void MaterialRenderer::RecordResolvedCommands(const RenderFrameContext& frame,
       current_material = draw_cmd.material;
     }
 
-    RecordResolved(cmd, draw_cmd, view_proj);
+    RecordResolved(cmd, draw_cmd, single_index_alloc);
   }
 }
 
-void MaterialRenderer::RecordResolved(RenderCommandList& cmd, const ResolvedDrawCommand& draw_cmd, const Matrix4& view_proj) {
-  ObjectCB obj_data = {};
-  obj_data.world = draw_cmd.world_matrix;
-  obj_data.worldViewProj = draw_cmd.world_matrix * view_proj;
-  if (draw_cmd.instance_count <= 1) {
-    obj_data.normalMatrix = draw_cmd.world_matrix.Inverted().Transposed();
-  }
-  obj_data.color = draw_cmd.color;
-  obj_data.uvOffset = draw_cmd.uv_offset;
-  obj_data.uvScale = draw_cmd.uv_scale;
-  obj_data.flags = draw_cmd.object_flags;
-  obj_data.materialDescriptorIndex = draw_cmd.material_handle.IsValid() ? draw_cmd.material_handle.index : 0;
-
-  if (draw_cmd.instance_count > 1) {
-    obj_data.flags |= static_cast<uint32_t>(ObjectFlags::Instanced);
-    cmd.SetObjectConstants(obj_data);
-    cmd.SetInstanceBufferSRV(draw_cmd.instance_buffer_address);
-  } else {
-    cmd.SetObjectConstants(obj_data);
-  }
-
+void MaterialRenderer::RecordResolved(RenderCommandList& cmd, const ResolvedDrawCommand& draw_cmd, BatchIndexAllocation& batch) {
   if (draw_cmd.custom_data.active) {
     CustomCB custom_cb = {};
-    memcpy(custom_cb.data, draw_cmd.custom_data.data.data(), sizeof(float) * 20);
+    std::memcpy(custom_cb.data, draw_cmd.custom_data.data.data(), sizeof(float) * 20);
     cmd.SetCustomConstants(custom_cb);
   }
 
@@ -192,6 +181,9 @@ void MaterialRenderer::RecordResolved(RenderCommandList& cmd, const ResolvedDraw
   auto ibv = draw_cmd.geometry.ibv;
   cmd.GetNative()->IASetVertexBuffers(0, 1, &vbv);
   cmd.GetNative()->IASetIndexBuffer(&ibv);
+
+  BindObjectIndexStream(cmd.GetNative(), draw_cmd, batch);
+
   cmd.GetNative()->DrawIndexedInstanced(
     draw_cmd.geometry.index_count, draw_cmd.instance_count, draw_cmd.geometry.index_offset, draw_cmd.geometry.vertex_offset, 0);
 }

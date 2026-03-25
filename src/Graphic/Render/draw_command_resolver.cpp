@@ -32,6 +32,8 @@ void DrawCommandResolver::ResolveSingleRequests(
     cmd.depth = req.depth;
     cmd.depth_write = req.render_settings.depth_write;
     cmd.custom_data = req.custom_data;
+    cmd.object_index = req.object_index;
+
     out.push_back(cmd);
   }
 }
@@ -62,29 +64,37 @@ void DrawCommandResolver::ResolveInstancedRequests(const ResolveContext& ctx,
     cmd.depth_write = req.render_settings.depth_write;
     cmd.custom_data = req.custom_data;
 
-    if (data_ref.count == 1) {
-      const auto* instance = reinterpret_cast<const InstanceData*>(instance_data_pool.data() + data_ref.offset);
-      cmd.world_matrix = instance->world;
-      cmd.color = {
-        instance->color.x * req.color.x, instance->color.y * req.color.y, instance->color.z * req.color.z, instance->color.w * req.color.w};
-      cmd.uv_offset = instance->uv_offset;
-      cmd.uv_scale = instance->uv_scale;
-      cmd.object_flags = BuildObjectFlags(req.tags, req.layer, ctx.shadow_enabled);
-      cmd.instance_count = 1;
-    } else {
-      auto alloc = ctx.instance_allocator->Allocate(data_ref.size);
-      if (!alloc.cpu_ptr) continue;
-      memcpy(alloc.cpu_ptr, instance_data_pool.data() + data_ref.offset, data_ref.size);
+    uint32_t base_flags = BuildObjectFlags(req.tags, req.layer, ctx.shadow_enabled);
+    const auto* instances = reinterpret_cast<const InstanceData*>(instance_data_pool.data() + data_ref.offset);
 
-      // Per-instance fields (world, uv_offset, uv_scale) live in the
-      // StructuredBuffer and are read by VS via g_InstanceBuffer[instanceID].
-      // color is set from req because it carries per-submesh material tint
-      // (e.g. base_color_factor), which is distinct from per-instance color.
+    if (data_ref.count == 1) {
+      cmd.world_matrix = instances[0].world;
+      cmd.color = {instances[0].color.x * req.color.x,
+        instances[0].color.y * req.color.y,
+        instances[0].color.z * req.color.z,
+        instances[0].color.w * req.color.w};
+      cmd.uv_offset = instances[0].uv_offset;
+      cmd.uv_scale = instances[0].uv_scale;
+      cmd.object_flags = base_flags;
+      cmd.instance_count = 1;
+      cmd.object_index = internal.object_index;
+    } else {
+      cmd.object_flags = base_flags;
+      cmd.instance_count = data_ref.count;
+      cmd.object_index = internal.object_index;
+
+      // Build objectIndex stream — indices are contiguous starting from object_index
+      size_t stream_size = data_ref.count * sizeof(uint32_t);
+      auto stream_alloc = ctx.instance_allocator->Allocate(stream_size);
+      if (!stream_alloc.cpu_ptr) continue;
+      auto* index_stream = static_cast<uint32_t*>(stream_alloc.cpu_ptr);
+      for (uint32_t i = 0; i < data_ref.count; ++i) {
+        index_stream[i] = internal.object_index + i;
+      }
+      cmd.instance_buffer_address = stream_alloc.gpu_ptr;
+
       cmd.world_matrix = Math::Matrix4::Identity;
       cmd.color = req.color;
-      cmd.object_flags = BuildObjectFlags(req.tags, req.layer, ctx.shadow_enabled) | static_cast<uint32_t>(ObjectFlags::Instanced);
-      cmd.instance_count = data_ref.count;
-      cmd.instance_buffer_address = alloc.gpu_ptr;
     }
 
     out.push_back(cmd);

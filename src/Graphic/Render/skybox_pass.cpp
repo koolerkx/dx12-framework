@@ -120,7 +120,7 @@ void SkyboxPass::Execute(const RenderFrameContext& frame, const FramePacket& pac
   if (bg.mode != BackgroundMode::ClearColor && bg.cubemap_srv_index == UINT32_MAX) return;
   if (!pipeline_state_) return;
 
-  RenderCommandList cmd(frame.command_list, frame.dynamic_allocator, frame.frame_cb, frame.object_cb_allocator);
+  RenderCommandList cmd(frame.command_list, frame.dynamic_allocator, frame.object_cb_allocator);
 
   // TODO: replace with cmd.SetMaterial() when skybox becomes a proper Material
   frame.command_list->SetPipelineState(pipeline_state_.Get());

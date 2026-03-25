@@ -1,6 +1,5 @@
 #include "ConstantBuffer/frame_cb.hlsli"
-#include "ConstantBuffer/instance_cb.hlsli"
-#include "ConstantBuffer/object_cb.hlsli"
+#include "ConstantBuffer/object_data.hlsli"
 #include "common_types.hlsli"
 
 struct VSOUT {
@@ -12,32 +11,14 @@ struct VSOUT {
   float3 worldTangent : TEXCOORD2;
   float3 worldBitangent : TEXCOORD3;
   float4 overlayColor : OVERLAY_COLOR;
+  nointerpolation uint objectIndex : OBJECT_INDEX;
 };
 
-VSOUT main(VS_IN_PBR input, uint instanceID : SV_InstanceID) {
-  float4x4 worldMat;
-  float3x3 normalMat;
-  float4 instColor;
-  float4 overlayCol;
-  float2 uvOffset;
-  float2 uvScale;
+VSOUT main(VS_IN_PBR input, uint objectIndex : OBJECT_INDEX) {
+  ObjectData obj = g_ObjectBuffer[objectIndex];
 
-  if (g_ObjectCB.flags & OBJECT_FLAG_INSTANCED) {
-    InstanceData inst = g_InstanceBuffer[instanceID];
-    worldMat = inst.world;
-    normalMat = ComputeNormalMatrix(inst.world);
-    instColor = inst.color;
-    overlayCol = inst.overlayColor;
-    uvOffset = inst.uvOffset;
-    uvScale = inst.uvScale;
-  } else {
-    worldMat = g_ObjectCB.world;
-    normalMat = (float3x3)g_ObjectCB.normalMatrix;
-    instColor = float4(1, 1, 1, 1);
-    overlayCol = float4(0, 0, 0, 0);
-    uvOffset = g_ObjectCB.uvOffset;
-    uvScale = g_ObjectCB.uvScale;
-  }
+  float4x4 worldMat = obj.world;
+  float3x3 normalMat = ComputeNormalMatrix(obj.world);
 
   VSOUT output;
   float4 worldPos = mul(float4(input.position, 1.0f), worldMat);
@@ -49,8 +30,9 @@ VSOUT main(VS_IN_PBR input, uint instanceID : SV_InstanceID) {
   output.worldBitangent =
       cross(output.worldNormal, output.worldTangent) * input.tangent.w;
 
-  output.uv = input.uv * uvScale + uvOffset;
-  output.color = input.color * instColor;
-  output.overlayColor = overlayCol;
+  output.uv = input.uv * obj.uvScale + obj.uvOffset;
+  output.color = input.color * obj.color;
+  output.overlayColor = obj.overlayColor;
+  output.objectIndex = objectIndex;
   return output;
 }

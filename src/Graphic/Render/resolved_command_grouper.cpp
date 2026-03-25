@@ -3,9 +3,7 @@
 #include <algorithm>
 #include <unordered_map>
 
-#include "Frame/constant_buffers.h"
 #include "Frame/dynamic_upload_buffer.h"
-#include "Framework/Render/instance_data.h"
 
 namespace {
 
@@ -63,16 +61,6 @@ bool IsGroupable(const ResolvedDrawCommand& cmd) {
   return true;
 }
 
-InstanceData BuildInstanceData(const ResolvedDrawCommand& cmd) {
-  InstanceData data;
-  data.world = cmd.world_matrix;
-  data.color = cmd.color;
-  data.uv_offset = cmd.uv_offset;
-  data.uv_scale = cmd.uv_scale;
-  data.overlay_color = Math::Vector4(0, 0, 0, 0);
-  return data;
-}
-
 template <typename Key, typename Hash>
 void GroupByKey(std::vector<ResolvedDrawCommand>& commands, DynamicUploadBuffer* allocator, auto make_key) {
   std::unordered_map<Key, std::vector<size_t>, Hash> groups;
@@ -86,14 +74,14 @@ void GroupByKey(std::vector<ResolvedDrawCommand>& commands, DynamicUploadBuffer*
     if (indices.size() < 2) continue;
 
     uint32_t count = static_cast<uint32_t>(indices.size());
-    size_t data_size = count * sizeof(InstanceData);
-    auto alloc = allocator->Allocate(data_size);
+    size_t stream_size = count * sizeof(uint32_t);
+    auto alloc = allocator->Allocate(stream_size);
 
-    auto* gpu_data = static_cast<InstanceData*>(alloc.cpu_ptr);
+    auto* index_stream = static_cast<uint32_t*>(alloc.cpu_ptr);
     float min_depth = commands[indices[0]].depth;
 
     for (uint32_t i = 0; i < count; ++i) {
-      gpu_data[i] = BuildInstanceData(commands[indices[i]]);
+      index_stream[i] = commands[indices[i]].object_index;
       min_depth = (std::min)(min_depth, commands[indices[i]].depth);
     }
 
@@ -101,7 +89,6 @@ void GroupByKey(std::vector<ResolvedDrawCommand>& commands, DynamicUploadBuffer*
     representative.instance_buffer_address = alloc.gpu_ptr;
     representative.instance_count = count;
     representative.depth = min_depth;
-    representative.object_flags |= static_cast<uint32_t>(ObjectFlags::Instanced);
 
     for (size_t i = indices.size() - 1; i >= 1; --i) {
       commands[indices[i]] = ResolvedDrawCommand{};

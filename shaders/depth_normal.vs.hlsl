@@ -1,10 +1,10 @@
 #include "ConstantBuffer/frame_cb.hlsli"
-#include "ConstantBuffer/instance_cb.hlsli"
-#include "ConstantBuffer/object_cb.hlsli"
+#include "ConstantBuffer/object_data.hlsli"
 
 struct VSInput {
   float3 position : POSITION;
   float3 normal : NORMAL;
+  uint objectIndex : OBJECT_INDEX;
 };
 
 struct VSOutput {
@@ -13,18 +13,11 @@ struct VSOutput {
   float viewDepth : TEXCOORD1;
 };
 
-VSOutput main(VSInput input, uint instanceID : SV_InstanceID) {
-  float4x4 worldMat;
-  float3x3 normalMat;
+VSOutput main(VSInput input) {
+  ObjectData obj = g_ObjectBuffer[input.objectIndex];
 
-  if (g_ObjectCB.flags & OBJECT_FLAG_INSTANCED) {
-    InstanceData inst = g_InstanceBuffer[instanceID];
-    worldMat = inst.world;
-    normalMat = ComputeNormalMatrix(inst.world);
-  } else {
-    worldMat = g_ObjectCB.world;
-    normalMat = (float3x3)g_ObjectCB.normalMatrix;
-  }
+  float4x4 worldMat = obj.world;
+  float3x3 normalMat = ComputeNormalMatrix(obj.world);
 
   VSOutput output;
   float4 worldPos = mul(float4(input.position, 1.0), worldMat);

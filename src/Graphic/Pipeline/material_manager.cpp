@@ -119,8 +119,8 @@ Material MaterialManager::CreateMaterialInternal(ShaderId shader_id, const Rende
   D3D12_CULL_MODE cull_mode = settings.double_sided ? D3D12_CULL_MODE_NONE : D3D12_CULL_MODE_BACK;
   D3D12_PRIMITIVE_TOPOLOGY_TYPE primitive_topology = metadata.render_hints.topology;
 
-  // Create PSO
-  std::vector<D3D12_INPUT_ELEMENT_DESC> input_layout_vec(metadata.input_layout.begin(), metadata.input_layout.end());
+  // Create PSO with objectIndex element for shaders that use ObjectData
+  auto input_layout_vec = Graphics::Vertex::WithObjectIndex(metadata.input_layout);
   auto pso = PipelineStateBuilder()
                .SetRootSignature(rs)
                .SetVertexShader(vs_blob)

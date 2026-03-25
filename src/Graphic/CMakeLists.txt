@@ -83,6 +83,9 @@ add_library(graphic STATIC
   Frame/render_frame_context.h
   Frame/constant_buffers.h
   Frame/resolved_draw_command.h
+  Frame/object_data.h
+  Frame/object_data_buffer.h
+  Frame/object_data_buffer.cpp
 
   Command/buffer.h
   Command/command_context.h

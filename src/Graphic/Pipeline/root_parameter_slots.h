@@ -23,9 +23,9 @@ enum class DescriptorTable : uint32_t {
 
 // Root SRVs
 enum class ShaderResource : uint32_t {
-  PointLights = 7,       // StructuredBuffer<PointLight> (t0, space2)
-  InstanceBuffer = 8,    // StructuredBuffer<InstanceData> (t0, space3)
-  MeshDescriptors = 10,       // StructuredBuffer<MeshDescriptor> (t0, space4)
+  PointLights = 7,           // StructuredBuffer<PointLight> (t0, space2)
+  ObjectBuffer = 8,          // StructuredBuffer<ObjectData> (t0, space3)
+  MeshDescriptors = 10,      // StructuredBuffer<MeshDescriptor> (t0, space4)
   MaterialDescriptors = 11,  // StructuredBuffer<MaterialDescriptor> (t0, space5)
 };
 

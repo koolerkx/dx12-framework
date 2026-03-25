@@ -22,6 +22,7 @@
 
 #include <array>
 #include <span>
+#include <vector>
 
 #include "Framework/Math/Math.h"
 
@@ -154,5 +155,15 @@ static_assert(sizeof(DepthNormalVertex) == 24);
 using LineVertex = PositionColor;
 using SpriteVertex = PositionTexCoordColor;
 using Basic3DVertex = PositionNormalTexCoordColor;
+
+// IA slot 1 per-instance element for objectIndex (uint32_t, step rate 1)
+constexpr D3D12_INPUT_ELEMENT_DESC OBJECT_INDEX_ELEMENT = {
+  "OBJECT_INDEX", 0, DXGI_FORMAT_R32_UINT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1};
+
+inline std::vector<D3D12_INPUT_ELEMENT_DESC> WithObjectIndex(std::span<const D3D12_INPUT_ELEMENT_DESC> base_layout) {
+  std::vector<D3D12_INPUT_ELEMENT_DESC> result(base_layout.begin(), base_layout.end());
+  result.push_back(OBJECT_INDEX_ELEMENT);
+  return result;
+}
 
 }  // namespace Graphics::Vertex

@@ -2,6 +2,7 @@
 
 #include "Command/render_command_list.h"
 #include "Frame/constant_buffers.h"
+#include "Frame/object_data_buffer.h"
 #include "Framework/Logging/logger.h"
 #include "Pipeline/pipeline_state_builder.h"
 #include "Pipeline/shader_descriptors.h"
@@ -34,7 +35,7 @@ bool DepthNormalPass::CreatePipelineState() {
                       .SetRootSignature(root_signature)
                       .SetVertexShader(vs)
                       .SetPixelShader(ps)
-                      .SetInputLayout(Graphics::DepthNormalShader::GetInputLayout())
+                      .SetInputLayout(Graphics::Vertex::WithObjectIndex(Graphics::DepthNormalShader::GetInputLayout()))
                       .SetRenderTargetFormat(DXGI_FORMAT_R16G16B16A16_FLOAT)
                       .SetDepthStencilFormat(DXGI_FORMAT_D32_FLOAT)
                       .EnableDepthTest()
@@ -48,7 +49,7 @@ bool DepthNormalPass::CreatePipelineState() {
 void DepthNormalPass::Execute(const RenderFrameContext& frame, const FramePacket& packet) {
   if (!pipeline_state_) return;
 
-  RenderCommandList cmd(frame.command_list, frame.dynamic_allocator, frame.frame_cb, frame.object_cb_allocator);
+  RenderCommandList cmd(frame.command_list, frame.dynamic_allocator, frame.object_cb_allocator);
 
   auto* root_signature = shader_manager_->GetRootSignature(Graphics::RSPreset::Standard);
   frame.command_list->SetGraphicsRootSignature(root_signature);
@@ -60,6 +61,10 @@ void DepthNormalPass::Execute(const RenderFrameContext& frame, const FramePacket
   frame_cb_data.proj = packet.main_camera.proj;
   frame_cb_data.viewProj = packet.main_camera.view * packet.main_camera.proj;
   cmd.SetFrameConstants(frame_cb_data);
+
+  if (frame.object_data_buffer && frame.object_data_buffer->GetBufferAddress()) {
+    cmd.SetObjectBufferSRV(frame.object_data_buffer->GetBufferAddress());
+  }
 
   resolved_commands_.clear();
   DrawCommandResolver::ResolveContext resolve_ctx{
@@ -83,11 +88,5 @@ void DepthNormalPass::Execute(const RenderFrameContext& frame, const FramePacket
 
   ResolvedCommandGrouper::GroupForPrepass(resolved_commands_, resolve_ctx.instance_allocator);
 
-  RecordPrepassCommands(cmd, resolved_commands_, [](const ResolvedDrawCommand& dc) {
-    ObjectCB obj{};
-    obj.world = dc.world_matrix;
-    obj.normalMatrix = dc.world_matrix.Inverted().Transposed();
-    obj.flags = dc.object_flags;
-    return obj;
-  });
+  RecordPrepassCommands(cmd, resolved_commands_);
 }

@@ -29,6 +29,7 @@ struct RenderRequest {
   float depth = 0.0f;
 
   CustomShaderData custom_data;
+  uint32_t object_index = UINT32_MAX;
 
   template <typename ShaderType>
   RenderRequest& SetShader() {

@@ -1,7 +1,7 @@
 #include "ConstantBuffer/custom_cb.hlsli"
 #include "ConstantBuffer/frame_cb.hlsli"
 #include "ConstantBuffer/material_descriptor.hlsli"
-#include "ConstantBuffer/object_cb.hlsli"
+#include "ConstantBuffer/object_data.hlsli"
 
 Texture2D g_Textures[] : register(t0, space1);
 #include "ConstantBuffer/sampler.hlsli"
@@ -19,10 +19,12 @@ struct PSIN {
   float2 uv : TEXCOORD;
   float4 color : BASE_COLOR;
   float4 overlayColor : OVERLAY_COLOR;
+  nointerpolation uint objectIndex : OBJECT_INDEX;
 };
 
 float4 main(PSIN input) : SV_TARGET {
-  MaterialDescriptor mat = LoadMaterial(g_ObjectCB.materialDescriptorIndex);
+  ObjectData obj = g_ObjectBuffer[input.objectIndex];
+  MaterialDescriptor mat = LoadMaterial(obj.materialDescriptorIndex);
   float4 texColor = g_Textures[mat.albedoTextureIndex].Sample(
       g_Samplers[mat.samplerIndex], input.uv);
 

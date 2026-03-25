@@ -31,6 +31,7 @@ struct ResolvedDrawCommand {
   uint32_t instance_count = 1;
   D3D12_GPU_VIRTUAL_ADDRESS instance_buffer_address = 0;
   MaterialHandle material_handle;
+  uint32_t object_index = UINT32_MAX;
 
   RenderLayer layer = RenderLayer::Opaque;
   RenderTagMask tags = 0;

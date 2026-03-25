@@ -1,7 +1,7 @@
 #include "ConstantBuffer/frame_cb.hlsli"
 #include "ConstantBuffer/lighting_cb.hlsli"
 #include "ConstantBuffer/material_descriptor.hlsli"
-#include "ConstantBuffer/object_cb.hlsli"
+#include "ConstantBuffer/object_data.hlsli"
 
 struct PSIN {
   float4 position : SV_POSITION;
@@ -12,6 +12,7 @@ struct PSIN {
   float3 worldTangent : TEXCOORD2;
   float3 worldBitangent : TEXCOORD3;
   float4 overlayColor : OVERLAY_COLOR;
+  nointerpolation uint objectIndex : OBJECT_INDEX;
 };
 
 Texture2D g_Textures[] : register(t0, space1);
@@ -43,12 +44,13 @@ float3 FresnelSchlick(float cosTheta, float3 F0) {
 }
 
 float4 main(PSIN input) : SV_TARGET {
-  MaterialDescriptor mat = LoadMaterial(g_ObjectCB.materialDescriptorIndex);
+  ObjectData obj = g_ObjectBuffer[input.objectIndex];
+  MaterialDescriptor mat = LoadMaterial(obj.materialDescriptorIndex);
 
   float4 albedoTex = g_Textures[mat.albedoTextureIndex].Sample(
       g_Samplers[mat.samplerIndex], input.uv);
 
-  float4 baseColor = albedoTex * input.color * g_ObjectCB.color;
+  float4 baseColor = albedoTex * input.color;
 
   if (HasFlag(mat.flags, MATERIAL_FLAG_ALPHA_TEST) && baseColor.a < 0.5) {
     discard;
@@ -88,7 +90,7 @@ float4 main(PSIN input) : SV_TARGET {
   float3 F0 = lerp(float3(0.04, 0.04, 0.04), albedo, metallic);
 
   float shadow = 1.0;
-  if (g_ObjectCB.flags & OBJECT_FLAG_RECEIVE_SHADOW) {
+  if (obj.flags & OBJECT_FLAG_RECEIVE_SHADOW) {
     shadow = CalculateShadow(input.worldPos, N, input.position.xy);
   }
   float3 shadowTint = lerp(g_ShadowCB.shadowColor, float3(1, 1, 1), shadow);

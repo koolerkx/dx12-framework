@@ -34,7 +34,7 @@ class FullscreenPass : public IRenderPass {
   void Execute(const RenderFrameContext& frame, const FramePacket& packet) override {
     if (!ShouldExecute(frame, packet)) return;
 
-    RenderCommandList cmd(frame.command_list, frame.dynamic_allocator, frame.frame_cb, frame.object_cb_allocator);
+    RenderCommandList cmd(frame.command_list, frame.dynamic_allocator, frame.object_cb_allocator);
 
     auto* root_sig = shader_manager_->GetRootSignature(Graphics::RSPreset::Standard);
     frame.command_list->SetGraphicsRootSignature(root_sig);

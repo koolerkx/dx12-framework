@@ -134,8 +134,8 @@ bool ShaderManager::CreateStandardRS() {
           D3D12_SHADER_VISIBILITY_PIXEL)  // Slot 6: Samplers
         // Point light structured buffer
         .AddRootSRV(0, 2)  // Slot 7: PointLights (t0, space2)
-        // Instance data structured buffer
-        .AddRootSRV(0, 3)  // Slot 8: InstanceBuffer (t0, space3)
+        // Object data structured buffer
+        .AddRootSRV(0, 3)  // Slot 8: ObjectBuffer (t0, space3)
         .AddRootCBV(5, 0)  // Slot 9: Custom (b5)
         .AddRootSRV(0, 4)  // Slot 10: MeshDescriptors (t0, space4)
         .AddRootSRV(0, 5)  // Slot 11: MaterialDescriptors (t0, space5)

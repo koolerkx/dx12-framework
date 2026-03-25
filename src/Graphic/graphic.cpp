@@ -10,14 +10,18 @@
 #include <vector>
 
 #include "Core/types.h"
-#include "Framework/Render/frame_packet.h"
+#include "Frame/object_data.h"
+#include "Frame/object_data_buffer.h"
 #include "Framework/Logging/logger.h"
 #include "Framework/Math/Math.h"
+#include "Framework/Render/frame_packet.h"
+#include "Framework/Render/instance_data.h"
 #include "Presentation/swapchain_manager.h"
 #include "Render/blit_pass.h"
 #include "Render/chromatic_aberration_pass.h"
 #include "Render/debug_pass.h"
 #include "Render/depth_view_pass.h"
+#include "Render/draw_command_resolver.h"
 #include "Render/fog_pass.h"
 #include "Render/material_pass.h"
 #include "Render/outline_pass.h"
@@ -30,7 +34,6 @@
 #include "Render/ssao_pass_group.h"
 #include "Render/ui_blur_pass_group.h"
 #include "Render/vignette_pass.h"
-#include "Resource/Mesh/mesh_buffer_pool.h"
 
 using Math::Vector3;
 using Math::Vector4;
@@ -525,6 +528,7 @@ RenderFrameContext Graphic::BeginFrame() {
   render_services_->OnFrameBegin(frame_index, completed_fence);
 
   object_cb_allocators_[frame_index]->Reset();
+  object_data_buffers_[frame_index].Reset();
 
   command_context_->BeginFrame(frame_index);
   auto* cmd = command_context_->GetCommandList();
@@ -553,7 +557,8 @@ RenderFrameContext Graphic::BeginFrame() {
     .ssao_srv_index = (ssao_handle_ != RenderGraphHandle::Invalid) ? render_graph_->GetSrvIndex(ssao_handle_) : UINT32_MAX,
     .mesh_buffer_pool = &render_services_->GetMeshBufferPool(),
     .material_descriptor_pool = &render_services_->GetMaterialDescriptorPool(),
-    .material_manager = &render_services_->GetMaterialManager()};
+    .material_manager = &render_services_->GetMaterialManager(),
+    .object_data_buffer = &object_data_buffers_[frame_index]};
 }
 
 void Graphic::EndFrame(const RenderFrameContext& frame) {
@@ -602,9 +607,65 @@ void Graphic::UploadPointLights(RenderFrameContext& frame, const FramePacket& wo
   frame.point_light_count = light_count;
 }
 
-void Graphic::RenderScene(RenderFrameContext& frame, const FramePacket& world) {
+void Graphic::RenderScene(RenderFrameContext& frame, FramePacket& world) {
   UploadPointLights(frame, world);
+  PopulateObjectDataBuffer(frame, world);
   render_graph_->Execute(frame, world);
+}
+
+void Graphic::PopulateObjectDataBuffer(RenderFrameContext& frame, FramePacket& packet) {
+  auto* obj_buffer = frame.object_data_buffer;
+  if (!obj_buffer) return;
+
+  static auto MakeObjectData = [](const Math::Matrix4& world,
+                                 const Math::Vector4& color,
+                                 const Math::Vector2& uv_offset,
+                                 const Math::Vector2& uv_scale,
+                                 const Math::Vector4& overlay_color,
+                                 MaterialHandle material,
+                                 uint32_t flags) -> ObjectData {
+    ObjectData data = {};
+    data.world = world;
+    data.color = color;
+    data.uv_offset = uv_offset;
+    data.uv_scale = uv_scale;
+    data.overlay_color = overlay_color;
+    data.material_descriptor_index = material.IsValid() ? material.index : 0;
+    data.flags = flags;
+    return data;
+  };
+
+  static auto BlendColor = [](const Math::Vector4& a, const Math::Vector4& b) -> Math::Vector4 {
+    return {a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w};
+  };
+
+  for (auto& req : packet.single_requests) {
+    uint32_t flags = DrawCommandResolver::BuildObjectFlags(req.tags, req.layer, packet.shadow.enabled);
+    req.object_index = obj_buffer->Append(
+      MakeObjectData(req.world_matrix, req.color, req.uv_offset, req.uv_scale, Math::Vector4(0, 0, 0, 0), req.material, flags));
+  }
+
+  for (auto& internal : packet.instanced_requests) {
+    auto& req = internal.request;
+    const auto& data_ref = internal.instance_data;
+    if (!data_ref.IsValid()) continue;
+
+    const auto* instances = reinterpret_cast<const InstanceData*>(packet.instance_data_pool.data() + data_ref.offset);
+    uint32_t flags = DrawCommandResolver::BuildObjectFlags(req.tags, req.layer, packet.shadow.enabled);
+
+    internal.object_index = obj_buffer->GetObjectCount();
+    for (uint32_t i = 0; i < data_ref.count; ++i) {
+      obj_buffer->Append(MakeObjectData(instances[i].world,
+        BlendColor(instances[i].color, req.color),
+        instances[i].uv_offset,
+        instances[i].uv_scale,
+        instances[i].overlay_color,
+        req.material,
+        flags));
+    }
+  }
+
+  obj_buffer->Upload(*frame.object_cb_allocator);
 }
 
 void Graphic::SetShadowMapResolution(uint32_t resolution) {

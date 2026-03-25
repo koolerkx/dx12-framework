@@ -14,6 +14,7 @@
 class MaterialDescriptorPool;
 class MaterialManager;
 class MeshBufferPool;
+class ObjectDataBuffer;
 class RenderGraph;
 
 struct ShadowFrameData {
@@ -49,4 +50,6 @@ struct RenderFrameContext {
   MeshBufferPool* mesh_buffer_pool = nullptr;
   MaterialDescriptorPool* material_descriptor_pool = nullptr;
   MaterialManager* material_manager = nullptr;
+
+  ObjectDataBuffer* object_data_buffer = nullptr;
 };

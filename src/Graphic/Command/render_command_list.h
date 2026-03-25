@@ -1,7 +1,6 @@
 #pragma once
 #include <d3d12.h>
 
-#include "Command/buffer.h"
 #include "Descriptor/descriptor_heap_manager.h"
 #include "Frame/constant_buffers.h"
 #include "Frame/dynamic_upload_buffer.h"
@@ -15,13 +14,9 @@ struct Texture;
 
 class RenderCommandList {
  public:
-  RenderCommandList(ID3D12GraphicsCommandList* cmd,
-    DescriptorHeapAllocator* dynamic_heap,
-    ConstantBuffer<FrameCB>* frame_cb,
-    DynamicUploadBuffer* object_allocator)
+  RenderCommandList(ID3D12GraphicsCommandList* cmd, DescriptorHeapAllocator* dynamic_heap, DynamicUploadBuffer* object_allocator)
       : cmd_(cmd),
         dynamic_heap_(dynamic_heap),
-        frame_cb_(frame_cb),
         object_allocator_(object_allocator),
         current_material_(nullptr),
         current_root_signature_(nullptr) {
@@ -134,8 +129,8 @@ class RenderCommandList {
     cmd_->SetGraphicsRootShaderResourceView(RootSlot::ToIndex(RootSlot::ShaderResource::PointLights), address);
   }
 
-  void SetInstanceBufferSRV(D3D12_GPU_VIRTUAL_ADDRESS address) {
-    cmd_->SetGraphicsRootShaderResourceView(RootSlot::ToIndex(RootSlot::ShaderResource::InstanceBuffer), address);
+  void SetObjectBufferSRV(D3D12_GPU_VIRTUAL_ADDRESS address) {
+    cmd_->SetGraphicsRootShaderResourceView(RootSlot::ToIndex(RootSlot::ShaderResource::ObjectBuffer), address);
   }
 
   void SetMeshDescriptorSRV(D3D12_GPU_VIRTUAL_ADDRESS address) {
@@ -163,10 +158,13 @@ class RenderCommandList {
     }
   }
 
+  DynamicUploadBuffer::Allocation AllocateUpload(size_t size_in_bytes) {
+    return object_allocator_->Allocate(size_in_bytes);
+  }
+
  private:
   ID3D12GraphicsCommandList* cmd_;
   DescriptorHeapAllocator* dynamic_heap_;
-  ConstantBuffer<FrameCB>* frame_cb_;
   DynamicUploadBuffer* object_allocator_;
   const Material* current_material_ = nullptr;
   ID3D12RootSignature* current_root_signature_ = nullptr;

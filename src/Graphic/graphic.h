@@ -15,9 +15,10 @@
 #include "Device/frame_synchronizer.h"
 #include "Frame/constant_buffers.h"
 #include "Frame/dynamic_upload_buffer.h"
-#include "Framework/Render/frame_packet.h"
+#include "Frame/object_data_buffer.h"
 #include "Frame/per_frame_constant_buffer.h"
 #include "Frame/render_frame_context.h"
+#include "Framework/Render/frame_packet.h"
 #include "Pipeline/material_manager.h"
 #include "Pipeline/shader_manager.h"
 #include "Presentation/presentation_context.h"
@@ -73,7 +74,7 @@ class Graphic {
 
   RenderFrameContext BeginFrame();
   void EndFrame(const RenderFrameContext& frame);
-  void RenderScene(RenderFrameContext& frame, const FramePacket& world);
+  void RenderScene(RenderFrameContext& frame, FramePacket& world);
 
   void AddDebugLine(const Math::Vector3& start, const Math::Vector3& end, const Math::Vector4& color = colors::White);
 
@@ -263,6 +264,7 @@ class Graphic {
 
   PerFrameConstantBuffer<FrameCB> frame_cb_storage_;
   std::vector<std::unique_ptr<DynamicUploadBuffer>> object_cb_allocators_;
+  ObjectDataBuffer object_data_buffers_[FRAME_BUFFER_COUNT];
 
   // TODO: Abstract as UplaodStructuredBuffer when more structured buffers are needed
   Graphics::StructuredBuffer<PointLightData> point_light_buffers_[FRAME_BUFFER_COUNT];
@@ -286,6 +288,7 @@ class Graphic {
   void BuildRenderPipeline();
   void MarkActivePreviewResources();
   void UploadPointLights(RenderFrameContext& frame, const FramePacket& world);
+  void PopulateObjectDataBuffer(RenderFrameContext& frame, FramePacket& packet);
 
  public:
   void RequestPipelineRebuild();

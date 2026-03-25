@@ -9,6 +9,7 @@
 #include "Frame/render_frame_context.h"
 #include "Frame/resolved_draw_command.h"
 #include "draw_command_resolver.h"
+#include "object_index_utils.h"
 #include "resolved_command_grouper.h"
 
 class DynamicUploadBuffer;
@@ -62,7 +63,7 @@ class MaterialRenderer {
     float time,
     const Material* first_material);
 
-  void RecordResolved(RenderCommandList& cmd, const ResolvedDrawCommand& draw_cmd, const Matrix4& view_proj);
+  void RecordResolved(RenderCommandList& cmd, const ResolvedDrawCommand& draw_cmd, BatchIndexAllocation& batch);
 };
 
 class OpaqueRenderer : public MaterialRenderer {

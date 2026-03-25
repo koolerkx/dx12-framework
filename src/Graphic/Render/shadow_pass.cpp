@@ -6,15 +6,16 @@
 
 #include "Command/render_command_list.h"
 #include "Frame/constant_buffers.h"
+#include "Frame/object_data_buffer.h"
 #include "Framework/Logging/logger.h"
 #include "Framework/Math/Math.h"
+#include "Framework/Render/shadow_config.h"
 #include "Pipeline/pipeline_state_builder.h"
 #include "Pipeline/shader_descriptors.h"
 #include "Pipeline/shader_manager.h"
 #include "Render/draw_command_resolver.h"
 #include "Render/prepass_record_utils.h"
 #include "Render/resolved_command_grouper.h"
-#include "Framework/Render/shadow_config.h"
 
 using Math::Matrix4;
 using Math::Vector3;
@@ -63,7 +64,7 @@ bool ShadowPass::CreatePipelineState() {
     PipelineStateBuilder()
       .SetRootSignature(root_signature)
       .SetVertexShader(vs)
-      .SetInputLayout(Graphics::ShadowDepthShader::GetInputLayout())
+      .SetInputLayout(Graphics::Vertex::WithObjectIndex(Graphics::ShadowDepthShader::GetInputLayout()))
       .SetCullMode(D3D12_CULL_MODE_BACK)
       .EnableDepthTest()
       .SetDepthBias(ShadowHardwareConfig::DEPTH_BIAS, ShadowHardwareConfig::DEPTH_BIAS_CLAMP, ShadowHardwareConfig::SLOPE_SCALED_DEPTH_BIAS)
@@ -184,7 +185,7 @@ void ShadowPass::Execute(const RenderFrameContext& frame, const FramePacket& pac
     ComputeLightViewProj(packet.main_camera, packet.lighting.direction, near_dist, far_dist, packet.shadow.light_distance);
   shadow_data_->light_view_proj[cascade_index_] = light_view_proj;
 
-  RenderCommandList cmd(frame.command_list, frame.dynamic_allocator, frame.frame_cb, frame.object_cb_allocator);
+  RenderCommandList cmd(frame.command_list, frame.dynamic_allocator, frame.object_cb_allocator);
 
   auto* root_signature = shader_manager_->GetRootSignature(Graphics::RSPreset::Standard);
   frame.command_list->SetGraphicsRootSignature(root_signature);
@@ -194,6 +195,10 @@ void ShadowPass::Execute(const RenderFrameContext& frame, const FramePacket& pac
   FrameCB frame_cb_data = {};
   frame_cb_data.viewProj = light_view_proj;
   cmd.SetFrameConstants(frame_cb_data);
+
+  if (frame.object_data_buffer && frame.object_data_buffer->GetBufferAddress()) {
+    cmd.SetObjectBufferSRV(frame.object_data_buffer->GetBufferAddress());
+  }
 
   resolved_commands_.clear();
   DrawCommandResolver::ResolveContext resolve_ctx{
@@ -217,10 +222,5 @@ void ShadowPass::Execute(const RenderFrameContext& frame, const FramePacket& pac
 
   ResolvedCommandGrouper::GroupForPrepass(resolved_commands_, resolve_ctx.instance_allocator);
 
-  RecordPrepassCommands(cmd, resolved_commands_, [](const ResolvedDrawCommand& dc) {
-    ObjectCB obj{};
-    obj.world = dc.world_matrix;
-    obj.flags = dc.object_flags;
-    return obj;
-  });
+  RecordPrepassCommands(cmd, resolved_commands_);
 }

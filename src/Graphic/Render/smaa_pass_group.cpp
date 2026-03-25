@@ -98,7 +98,7 @@ class SMAAEdgePass : public IRenderPass {
   void Execute(const RenderFrameContext& frame, const FramePacket&) override {
     if (!pipeline_state_) return;
 
-    RenderCommandList cmd(frame.command_list, frame.dynamic_allocator, frame.frame_cb, frame.object_cb_allocator);
+    RenderCommandList cmd(frame.command_list, frame.dynamic_allocator, frame.object_cb_allocator);
 
     frame.command_list->SetPipelineState(pipeline_state_.Get());
     frame.command_list->SetGraphicsRootSignature(shader_manager_->GetRootSignature(Graphics::RSPreset::Standard));
@@ -165,7 +165,7 @@ class SMAABlendWeightPass : public IRenderPass {
   void Execute(const RenderFrameContext& frame, const FramePacket&) override {
     if (!pipeline_state_) return;
 
-    RenderCommandList cmd(frame.command_list, frame.dynamic_allocator, frame.frame_cb, frame.object_cb_allocator);
+    RenderCommandList cmd(frame.command_list, frame.dynamic_allocator, frame.object_cb_allocator);
 
     frame.command_list->SetPipelineState(pipeline_state_.Get());
     frame.command_list->SetGraphicsRootSignature(shader_manager_->GetRootSignature(Graphics::RSPreset::Standard));
@@ -231,7 +231,7 @@ class SMAANeighborhoodPass : public IRenderPass {
   void Execute(const RenderFrameContext& frame, const FramePacket&) override {
     if (!pipeline_state_) return;
 
-    RenderCommandList cmd(frame.command_list, frame.dynamic_allocator, frame.frame_cb, frame.object_cb_allocator);
+    RenderCommandList cmd(frame.command_list, frame.dynamic_allocator, frame.object_cb_allocator);
 
     frame.command_list->SetPipelineState(pipeline_state_.Get());
     frame.command_list->SetGraphicsRootSignature(shader_manager_->GetRootSignature(Graphics::RSPreset::Standard));
