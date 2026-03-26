@@ -27,7 +27,7 @@ struct Model {
 };
 
 struct DebugLine {
-  static constexpr std::wstring_view PATH = L"Content/shaders/debug_line.vs.cso";
+  static constexpr std::wstring_view PATH = L"Content/shaders/debug_line_instanced.vs.cso";
   static constexpr VertexFormat VERTEX_FORMAT = VertexFormat::Line;
   static constexpr TopologyType TOPOLOGY = TopologyType::Line;
 };

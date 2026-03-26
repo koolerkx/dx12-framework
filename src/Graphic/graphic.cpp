@@ -35,9 +35,6 @@
 #include "Render/ui_blur_pass_group.h"
 #include "Render/vignette_pass.h"
 
-using Math::Vector3;
-using Math::Vector4;
-
 bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_height, const Graphic::GraphicInitProps& props) {
   Shutdown();
   is_shutting_down_ = false;
@@ -707,12 +704,6 @@ uint32_t Graphic::GetUIBlurSrvIndex() const {
 
 void Graphic::RequestPipelineRebuild() {
   pending_pipeline_rebuild_ = true;
-}
-
-void Graphic::AddDebugLine(const Vector3& start, const Vector3& end, const Vector4& color) {
-  if (debug_line_renderer_) {
-    debug_line_renderer_->AddLine(start, end, color);
-  }
 }
 
 void Graphic::ExecuteSync(std::function<void(ID3D12GraphicsCommandList*)> cb) {

@@ -5,9 +5,8 @@
 
 void RenderSystem::Render(FramePacket& packet) {
   for (auto* renderable : renderables_) {
-    if (renderable->IsRenderEnabled()) {
-      renderable->OnRender(packet);
-    }
+    if (!renderable->IsRenderEnabled()) continue;
+    renderable->OnRender(packet);
   }
 }
 

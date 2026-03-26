@@ -2,7 +2,6 @@
 #include "scene.h"
 
 #include "Component/camera_component.h"
-#include "Framework/Logging/logger.h"
 #include "Framework/Render/render_service.h"
 #include "game_object.h"
 

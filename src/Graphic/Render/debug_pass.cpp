@@ -11,11 +11,11 @@ DebugPass::DebugPass(DebugLineRenderer* renderer, MaterialManager* material_mgr,
 
 void DebugPass::Execute(const RenderFrameContext& frame, const FramePacket& packet) {
   if (!debug_line_renderer_ || !material_manager_) return;
+  if (!debug_line_renderer_->HasLines()) return;
 
-  Rendering::RenderSettings settings = MaterialManager::GetDefaultSettings(Shaders::DebugLine::ID);
+  auto settings = MaterialManager::GetDefaultSettings(Shaders::DebugLine::ID);
+  const Material* material = material_manager_->GetOrCreateMaterial<Shaders::DebugLine>(settings);
+  if (!material) return;
 
-  const Material* line_material = material_manager_->GetOrCreateMaterial<Shaders::DebugLine>(settings);
-  if (!line_material) return;
-
-  debug_line_renderer_->Render(frame, line_material, packet.main_camera.view_proj);
+  debug_line_renderer_->Render(frame, material, packet.main_camera.view_proj);
 }
