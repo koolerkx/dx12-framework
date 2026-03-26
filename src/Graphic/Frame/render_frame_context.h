@@ -52,4 +52,5 @@ struct RenderFrameContext {
   MaterialManager* material_manager = nullptr;
 
   ObjectDataBuffer* object_data_buffer = nullptr;
+  ID3D12CommandSignature* command_signature = nullptr;
 };

@@ -116,6 +116,18 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
     }
   }
 
+  {
+    D3D12_INDIRECT_ARGUMENT_DESC arg_desc = {};
+    arg_desc.Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED;
+    D3D12_COMMAND_SIGNATURE_DESC command_signature_desc = {};
+    command_signature_desc.ByteStride = sizeof(D3D12_DRAW_INDEXED_ARGUMENTS);
+    command_signature_desc.NumArgumentDescs = 1;
+    command_signature_desc.pArgumentDescs = &arg_desc;
+    if (FAILED(device_->CreateCommandSignature(&command_signature_desc, nullptr, IID_PPV_ARGS(&command_signature_)))) {
+      return false;
+    }
+  }
+
   for (uint32_t i = 0; i < FRAME_BUFFER_COUNT; ++i) {
     std::wstring name = L"PointLightBuffer_Frame" + std::to_wstring(i);
     if (!point_light_buffers_[i].Initialize(device_.Get(), MAX_POINT_LIGHTS, name)) {
@@ -558,7 +570,8 @@ RenderFrameContext Graphic::BeginFrame() {
     .mesh_buffer_pool = &render_services_->GetMeshBufferPool(),
     .material_descriptor_pool = &render_services_->GetMaterialDescriptorPool(),
     .material_manager = &render_services_->GetMaterialManager(),
-    .object_data_buffer = &object_data_buffers_[frame_index]};
+    .object_data_buffer = &object_data_buffers_[frame_index],
+    .command_signature = command_signature_.Get()};
 }
 
 void Graphic::EndFrame(const RenderFrameContext& frame) {

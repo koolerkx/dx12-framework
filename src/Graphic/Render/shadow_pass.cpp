@@ -220,7 +220,7 @@ void ShadowPass::Execute(const RenderFrameContext& frame, const FramePacket& pac
   }
   DrawCommandResolver::ResolveInstancedRequests(resolve_ctx, filtered_instanced, packet.instance_data_pool, resolved_commands_);
 
-  ResolvedCommandGrouper::GroupForPrepass(resolved_commands_, resolve_ctx.instance_allocator);
+  ResolvedCommandGrouper::GroupForPrepass(resolved_commands_);
 
-  RecordPrepassCommands(cmd, resolved_commands_);
+  RecordPrepassCommands(cmd, resolved_commands_, frame);
 }

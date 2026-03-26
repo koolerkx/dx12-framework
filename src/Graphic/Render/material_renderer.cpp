@@ -130,11 +130,11 @@ MaterialRenderer::FrameSetup MaterialRenderer::SetupFrameState(const RenderFrame
     cmd.SetObjectBufferSRV(frame.object_data_buffer->GetBufferAddress());
   }
 
-  return {std::move(cmd), camera.view_proj, first_material};
+  return {std::move(cmd), first_material};
 }
 
 void MaterialRenderer::RecordResolvedCommands(const RenderFrameContext& frame,
-  const std::vector<ResolvedDrawCommand>& commands,
+  std::vector<ResolvedDrawCommand>& commands,
   const CameraData& camera,
   const LightingConfig& lighting,
   const ShadowConfig& shadow,
@@ -152,38 +152,81 @@ void MaterialRenderer::RecordResolvedCommands(const RenderFrameContext& frame,
   }
   if (!first_material) return;
 
-  auto [cmd, _, current_material] = SetupFrameState(frame, camera, lighting, shadow, screen_width, screen_height, time, first_material);
+  auto [cmd, current_material] = SetupFrameState(frame, camera, lighting, shadow, screen_width, screen_height, time, first_material);
 
-  // Batch-allocate objectIndex values for all single draws (avoids per-draw 256B-aligned allocation)
-  auto single_index_alloc = BatchAllocateSingleObjectIndices(cmd, commands);
+  auto unified = BuildUnifiedObjectIndexBuffer(cmd, commands);
+  BindUnifiedObjectIndexBuffer(cmd.GetNative(), unified);
 
-  for (size_t i = 0; i < commands.size(); ++i) {
-    const auto& draw_cmd = commands[i];
-    if (!draw_cmd.material || !draw_cmd.material->IsValid()) continue;
+  if (frame.command_signature) {
+    RecordWithExecuteIndirect(cmd, commands, frame);
+  } else {
+    RecordWithDirectDraws(cmd, commands);
+  }
+}
+
+void MaterialRenderer::RecordWithExecuteIndirect(
+  RenderCommandList& cmd, const std::vector<ResolvedDrawCommand>& commands, const RenderFrameContext& frame) {
+  const Material* current_material = nullptr;
+  size_t group_start = 0;
+
+  for (size_t i = 0; i <= commands.size(); ++i) {
+    bool boundary =
+      (i == commands.size()) || !commands[i].material || !commands[i].material->IsValid() || commands[i].material != current_material;
+
+    if (boundary && i > group_start && current_material) {
+      EmitExecuteIndirect(cmd, commands, group_start, i, frame.command_signature);
+
+      for (size_t j = group_start; j < i; ++j) {
+        if (!commands[j].custom_data.active) continue;
+        CustomCB custom_cb = {};
+        std::memcpy(custom_cb.data, commands[j].custom_data.data.data(), sizeof(float) * 20);
+        cmd.SetCustomConstants(custom_cb);
+        auto vbv = commands[j].geometry.vbv;
+        auto ibv = commands[j].geometry.ibv;
+        cmd.GetNative()->IASetVertexBuffers(0, 1, &vbv);
+        cmd.GetNative()->IASetIndexBuffer(&ibv);
+        cmd.GetNative()->DrawIndexedInstanced(commands[j].geometry.index_count,
+          commands[j].instance_count,
+          commands[j].geometry.index_offset,
+          commands[j].geometry.vertex_offset,
+          commands[j].start_instance_location);
+      }
+    }
+
+    if (i < commands.size() && commands[i].material && commands[i].material->IsValid()) {
+      if (commands[i].material != current_material) {
+        current_material = commands[i].material;
+        cmd.SetMaterial(current_material);
+        group_start = i;
+      }
+    }
+  }
+}
+
+void MaterialRenderer::RecordWithDirectDraws(RenderCommandList& cmd, const std::vector<ResolvedDrawCommand>& commands) {
+  const Material* current_material = nullptr;
+  for (const auto& draw_cmd : commands) {
+    if (!draw_cmd.IsDrawable() || !draw_cmd.material->IsValid()) continue;
 
     if (current_material != draw_cmd.material) {
       cmd.SetMaterial(draw_cmd.material);
       current_material = draw_cmd.material;
     }
 
-    RecordResolved(cmd, draw_cmd, single_index_alloc);
+    if (draw_cmd.custom_data.active) {
+      CustomCB custom_cb = {};
+      std::memcpy(custom_cb.data, draw_cmd.custom_data.data.data(), sizeof(float) * 20);
+      cmd.SetCustomConstants(custom_cb);
+    }
+
+    auto vbv = draw_cmd.geometry.vbv;
+    auto ibv = draw_cmd.geometry.ibv;
+    cmd.GetNative()->IASetVertexBuffers(0, 1, &vbv);
+    cmd.GetNative()->IASetIndexBuffer(&ibv);
+    cmd.GetNative()->DrawIndexedInstanced(draw_cmd.geometry.index_count,
+      draw_cmd.instance_count,
+      draw_cmd.geometry.index_offset,
+      draw_cmd.geometry.vertex_offset,
+      draw_cmd.start_instance_location);
   }
-}
-
-void MaterialRenderer::RecordResolved(RenderCommandList& cmd, const ResolvedDrawCommand& draw_cmd, BatchIndexAllocation& batch) {
-  if (draw_cmd.custom_data.active) {
-    CustomCB custom_cb = {};
-    std::memcpy(custom_cb.data, draw_cmd.custom_data.data.data(), sizeof(float) * 20);
-    cmd.SetCustomConstants(custom_cb);
-  }
-
-  auto vbv = draw_cmd.geometry.vbv;
-  auto ibv = draw_cmd.geometry.ibv;
-  cmd.GetNative()->IASetVertexBuffers(0, 1, &vbv);
-  cmd.GetNative()->IASetIndexBuffer(&ibv);
-
-  BindObjectIndexStream(cmd.GetNative(), draw_cmd, batch);
-
-  cmd.GetNative()->DrawIndexedInstanced(
-    draw_cmd.geometry.index_count, draw_cmd.instance_count, draw_cmd.geometry.index_offset, draw_cmd.geometry.vertex_offset, 0);
 }

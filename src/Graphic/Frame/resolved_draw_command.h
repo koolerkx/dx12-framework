@@ -2,6 +2,7 @@
 #include <d3d12.h>
 
 #include <cstdint>
+#include <vector>
 
 #include "Framework/Math/Math.h"
 #include "Framework/Render/render_handles.h"
@@ -29,14 +30,17 @@ struct ResolvedDrawCommand {
 
   uint32_t object_flags = 0;
   uint32_t instance_count = 1;
-  D3D12_GPU_VIRTUAL_ADDRESS instance_buffer_address = 0;
   MaterialHandle material_handle;
   uint32_t object_index = UINT32_MAX;
+  uint32_t start_instance_location = 0;
+  std::vector<uint32_t> grouped_object_indices;
 
   RenderLayer layer = RenderLayer::Opaque;
   RenderTagMask tags = 0;
   float depth = 0.0f;
   bool depth_write = true;
+
+  bool IsDrawable() const { return material && geometry.index_count > 0; }
 
   CustomShaderData custom_data;
 };

@@ -82,17 +82,6 @@ void DrawCommandResolver::ResolveInstancedRequests(const ResolveContext& ctx,
       cmd.object_flags = base_flags;
       cmd.instance_count = data_ref.count;
       cmd.object_index = internal.object_index;
-
-      // Build objectIndex stream — indices are contiguous starting from object_index
-      size_t stream_size = data_ref.count * sizeof(uint32_t);
-      auto stream_alloc = ctx.instance_allocator->Allocate(stream_size);
-      if (!stream_alloc.cpu_ptr) continue;
-      auto* index_stream = static_cast<uint32_t*>(stream_alloc.cpu_ptr);
-      for (uint32_t i = 0; i < data_ref.count; ++i) {
-        index_stream[i] = internal.object_index + i;
-      }
-      cmd.instance_buffer_address = stream_alloc.gpu_ptr;
-
       cmd.world_matrix = Math::Matrix4::Identity;
       cmd.color = req.color;
     }

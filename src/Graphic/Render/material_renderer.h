@@ -5,11 +5,10 @@
 #include <vector>
 
 #include "Command/render_command_list.h"
-#include "Framework/Render/frame_packet.h"
 #include "Frame/render_frame_context.h"
 #include "Frame/resolved_draw_command.h"
+#include "Framework/Render/frame_packet.h"
 #include "draw_command_resolver.h"
-#include "object_index_utils.h"
 #include "resolved_command_grouper.h"
 
 class DynamicUploadBuffer;
@@ -39,7 +38,7 @@ class MaterialRenderer {
   }
 
   void RecordResolvedCommands(const RenderFrameContext& frame,
-    const std::vector<ResolvedDrawCommand>& commands,
+    std::vector<ResolvedDrawCommand>& commands,
     const CameraData& camera,
     const LightingConfig& lighting,
     const ShadowConfig& shadow,
@@ -50,7 +49,6 @@ class MaterialRenderer {
  private:
   struct FrameSetup {
     RenderCommandList cmd;
-    Matrix4 view_proj;
     const Material* current_material;
   };
 
@@ -63,7 +61,9 @@ class MaterialRenderer {
     float time,
     const Material* first_material);
 
-  void RecordResolved(RenderCommandList& cmd, const ResolvedDrawCommand& draw_cmd, BatchIndexAllocation& batch);
+  void RecordWithExecuteIndirect(RenderCommandList& cmd, const std::vector<ResolvedDrawCommand>& commands, const RenderFrameContext& frame);
+
+  void RecordWithDirectDraws(RenderCommandList& cmd, const std::vector<ResolvedDrawCommand>& commands);
 };
 
 class OpaqueRenderer : public MaterialRenderer {
@@ -77,7 +77,7 @@ class OpaqueRenderer : public MaterialRenderer {
     const DrawCommandResolver::ResolveContext& ctx,
     std::vector<ResolvedDrawCommand>& out) override {
     MaterialRenderer::BuildResolved(packet, target_layer, ctx, out);
-    ResolvedCommandGrouper::Group(out, ctx.instance_allocator);
+    ResolvedCommandGrouper::Group(out);
     std::sort(out.begin(), out.end(), [](const ResolvedDrawCommand& a, const ResolvedDrawCommand& b) {
       return SortKey::MaterialFirst(a, true) < SortKey::MaterialFirst(b, true);
     });
@@ -104,7 +104,7 @@ class UiRenderer : public MaterialRenderer {
     const DrawCommandResolver::ResolveContext& ctx,
     std::vector<ResolvedDrawCommand>& out) override {
     MaterialRenderer::BuildResolved(packet, target_layer, ctx, out);
-    ResolvedCommandGrouper::Group(out, ctx.instance_allocator);
+    ResolvedCommandGrouper::Group(out);
     std::sort(out.begin(), out.end(), [](const ResolvedDrawCommand& a, const ResolvedDrawCommand& b) {
       return SortKey::DepthFirst(a, false) < SortKey::DepthFirst(b, false);
     });

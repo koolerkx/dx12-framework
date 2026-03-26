@@ -3,8 +3,6 @@
 #include <algorithm>
 #include <unordered_map>
 
-#include "Frame/dynamic_upload_buffer.h"
-
 namespace {
 
 struct GroupKey {
@@ -62,7 +60,7 @@ bool IsGroupable(const ResolvedDrawCommand& cmd) {
 }
 
 template <typename Key, typename Hash>
-void GroupByKey(std::vector<ResolvedDrawCommand>& commands, DynamicUploadBuffer* allocator, auto make_key) {
+void GroupByKey(std::vector<ResolvedDrawCommand>& commands, auto make_key) {
   std::unordered_map<Key, std::vector<size_t>, Hash> groups;
 
   for (size_t i = 0; i < commands.size(); ++i) {
@@ -74,19 +72,17 @@ void GroupByKey(std::vector<ResolvedDrawCommand>& commands, DynamicUploadBuffer*
     if (indices.size() < 2) continue;
 
     uint32_t count = static_cast<uint32_t>(indices.size());
-    size_t stream_size = count * sizeof(uint32_t);
-    auto alloc = allocator->Allocate(stream_size);
-
-    auto* index_stream = static_cast<uint32_t*>(alloc.cpu_ptr);
     float min_depth = commands[indices[0]].depth;
 
+    std::vector<uint32_t> object_indices;
+    object_indices.reserve(count);
     for (uint32_t i = 0; i < count; ++i) {
-      index_stream[i] = commands[indices[i]].object_index;
+      object_indices.push_back(commands[indices[i]].object_index);
       min_depth = (std::min)(min_depth, commands[indices[i]].depth);
     }
 
     ResolvedDrawCommand& representative = commands[indices[0]];
-    representative.instance_buffer_address = alloc.gpu_ptr;
+    representative.grouped_object_indices = std::move(object_indices);
     representative.instance_count = count;
     representative.depth = min_depth;
 
@@ -100,10 +96,8 @@ void GroupByKey(std::vector<ResolvedDrawCommand>& commands, DynamicUploadBuffer*
 
 }  // namespace
 
-void ResolvedCommandGrouper::Group(std::vector<ResolvedDrawCommand>& commands, DynamicUploadBuffer* allocator) {
-  if (!allocator) return;
-
-  GroupByKey<GroupKey, GroupKeyHash>(commands, allocator, [](const ResolvedDrawCommand& cmd) -> GroupKey {
+void ResolvedCommandGrouper::Group(std::vector<ResolvedDrawCommand>& commands) {
+  GroupByKey<GroupKey, GroupKeyHash>(commands, [](const ResolvedDrawCommand& cmd) -> GroupKey {
     return {
       .material = cmd.material,
       .vbv_location = cmd.geometry.vbv.BufferLocation,
@@ -117,10 +111,8 @@ void ResolvedCommandGrouper::Group(std::vector<ResolvedDrawCommand>& commands, D
   });
 }
 
-void ResolvedCommandGrouper::GroupForPrepass(std::vector<ResolvedDrawCommand>& commands, DynamicUploadBuffer* allocator) {
-  if (!allocator) return;
-
-  GroupByKey<PrepassGroupKey, PrepassGroupKeyHash>(commands, allocator, [](const ResolvedDrawCommand& cmd) -> PrepassGroupKey {
+void ResolvedCommandGrouper::GroupForPrepass(std::vector<ResolvedDrawCommand>& commands) {
+  GroupByKey<PrepassGroupKey, PrepassGroupKeyHash>(commands, [](const ResolvedDrawCommand& cmd) -> PrepassGroupKey {
     return {
       .vbv_location = cmd.geometry.vbv.BufferLocation,
       .ibv_location = cmd.geometry.ibv.BufferLocation,

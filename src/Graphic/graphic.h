@@ -265,6 +265,7 @@ class Graphic {
   PerFrameConstantBuffer<FrameCB> frame_cb_storage_;
   std::vector<std::unique_ptr<DynamicUploadBuffer>> object_cb_allocators_;
   ObjectDataBuffer object_data_buffers_[FRAME_BUFFER_COUNT];
+  ComPtr<ID3D12CommandSignature> command_signature_;
 
   // TODO: Abstract as UplaodStructuredBuffer when more structured buffers are needed
   Graphics::StructuredBuffer<PointLightData> point_light_buffers_[FRAME_BUFFER_COUNT];

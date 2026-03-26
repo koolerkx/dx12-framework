@@ -13,6 +13,8 @@ class DynamicUploadBuffer {
   struct Allocation {
     void* cpu_ptr;
     D3D12_GPU_VIRTUAL_ADDRESS gpu_ptr;
+    ID3D12Resource* resource;
+    size_t offset_in_resource;
   };
 
   DynamicUploadBuffer() = default;
@@ -70,6 +72,8 @@ class DynamicUploadBuffer {
     Allocation alloc;
     alloc.cpu_ptr = current_page.cpu_ptr + cursor_;
     alloc.gpu_ptr = current_page.gpu_ptr + cursor_;
+    alloc.resource = current_page.resource.Get();
+    alloc.offset_in_resource = cursor_;
 
     cursor_ += aligned_size;
     return alloc;
