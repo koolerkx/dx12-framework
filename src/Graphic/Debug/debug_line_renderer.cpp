@@ -1,7 +1,6 @@
 #include "debug_line_renderer.h"
 
 #include "Frame/constant_buffers.h"
-#include "Framework/Core/color.h"
 #include "Framework/Logging/logger.h"
 
 bool DebugLineRenderer::Initialize(ID3D12Device* device) {
@@ -14,13 +13,22 @@ void DebugLineRenderer::Shutdown() {
 }
 
 void DebugLineRenderer::Clear() {
+  last_frame_vertex_count_ = vertices_.size();
   vertices_.clear();
+  vertices_.reserve(last_frame_vertex_count_);
   batches_.clear();
 }
 
 void DebugLineRenderer::AddLine(const Vector3& start, const Vector3& end, const Vector4& color) {
   vertices_.push_back({.position = start, .color = color});
   vertices_.push_back({.position = end, .color = color});
+}
+
+std::span<LineVertex> DebugLineRenderer::ReserveLines(uint32_t line_count) {
+  size_t vertex_count = static_cast<size_t>(line_count) * 2;
+  size_t start = vertices_.size();
+  vertices_.resize(start + vertex_count);
+  return {vertices_.data() + start, vertex_count};
 }
 
 void DebugLineRenderer::UploadVertices(const RenderFrameContext& frame) {

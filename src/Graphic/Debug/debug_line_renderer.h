@@ -1,6 +1,7 @@
 #pragma once
 #include <d3d12.h>
 
+#include <span>
 #include <vector>
 
 #include "Frame/render_frame_context.h"
@@ -20,6 +21,9 @@ class DebugLineRenderer {
   void Shutdown();
 
   void AddLine(const Vector3& start, const Vector3& end, const Vector4& color);
+
+  // Reserve space for multiple lines at once, returns span of vertex pairs (2 vertices per line)
+  std::span<LineVertex> ReserveLines(uint32_t line_count);
 
   void Clear();
 
@@ -43,4 +47,5 @@ class DebugLineRenderer {
   ID3D12Device* device_ = nullptr;
   std::vector<LineVertex> vertices_;
   std::vector<Batch> batches_;
+  size_t last_frame_vertex_count_ = 0;
 };

@@ -3,6 +3,9 @@
 #include <cassert>
 #include <cmath>
 
+#include "Framework/Math/unit_circle_lut.h"
+#include "Framework/Render/render_service.h"
+
 DebugDrawer::DebugDrawer(IDebugDrawService* service) : debug_draw_service_(service) {
 }
 
@@ -19,19 +22,20 @@ void DebugDrawer::DrawCircle(const Vector3& center, float radius, const Vector4&
   assert(props.normal.LengthSquared() > 0.0001f);
 
   Vector4 final_color = ApplyOpacity(color);
-  float angle_step = Math::TwoPi / props.segments;
 
-  // Build orthonormal basis from normal
   Vector3 n = props.normal.Normalized();
   Vector3 u = (std::abs(n.y) < 0.999f) ? Vector3::Up.Cross(n).Normalized() : Vector3::Right.Cross(n).Normalized();
   Vector3 v = n.Cross(u);
 
-  for (int i = 0; i < props.segments; ++i) {
-    float a1 = i * angle_step;
-    float a2 = (i + 1) * angle_step;
-    Vector3 p1 = center + (u * Math::Cos(a1) + v * Math::Sin(a1)) * radius;
-    Vector3 p2 = center + (u * Math::Cos(a2) + v * Math::Sin(a2)) * radius;
-    debug_draw_service_->AddDebugLine(p1, p2, final_color);
+  const auto& lut = Math::GetCircleLUT<32>();
+  const int seg = (std::min)(props.segments, static_cast<int>(lut.points.size()));
+
+  auto span = debug_draw_service_->ReserveDebugLines(seg);
+  for (int i = 0; i < seg; ++i) {
+    int next = (i + 1) % seg;
+    uint32_t idx = static_cast<uint32_t>(i) * 2;
+    span[idx] = {center + (u * lut.points[i].cos + v * lut.points[i].sin) * radius, final_color};
+    span[idx + 1] = {center + (u * lut.points[next].cos + v * lut.points[next].sin) * radius, final_color};
   }
 }
 
@@ -46,10 +50,11 @@ void DebugDrawer::DrawRect(const Vector3& min, const Vector3& max, const Vector4
     {min.x, y, max.z},
   };
 
-  debug_draw_service_->AddDebugLine(corners[0], corners[1], final_color);
-  debug_draw_service_->AddDebugLine(corners[1], corners[2], final_color);
-  debug_draw_service_->AddDebugLine(corners[2], corners[3], final_color);
-  debug_draw_service_->AddDebugLine(corners[3], corners[0], final_color);
+  auto span = debug_draw_service_->ReserveDebugLines(4);
+  for (int i = 0; i < 4; ++i) {
+    span[i * 2] = {corners[i], final_color};
+    span[i * 2 + 1] = {corners[(i + 1) % 4], final_color};
+  }
 }
 
 void DebugDrawer::DrawWireCube(const Vector3& min, const Vector3& max, const Vector4& color) {
@@ -66,23 +71,24 @@ void DebugDrawer::DrawWireCube(const Vector3& min, const Vector3& max, const Vec
     {min.x, max.y, max.z},
   };
 
+  auto span = debug_draw_service_->ReserveDebugLines(12);
+  uint32_t idx = 0;
+
   // Bottom face
-  debug_draw_service_->AddDebugLine(corners[0], corners[1], final_color);
-  debug_draw_service_->AddDebugLine(corners[1], corners[2], final_color);
-  debug_draw_service_->AddDebugLine(corners[2], corners[3], final_color);
-  debug_draw_service_->AddDebugLine(corners[3], corners[0], final_color);
-
+  for (int i = 0; i < 4; ++i) {
+    span[idx++] = {corners[i], final_color};
+    span[idx++] = {corners[(i + 1) % 4], final_color};
+  }
   // Top face
-  debug_draw_service_->AddDebugLine(corners[4], corners[5], final_color);
-  debug_draw_service_->AddDebugLine(corners[5], corners[6], final_color);
-  debug_draw_service_->AddDebugLine(corners[6], corners[7], final_color);
-  debug_draw_service_->AddDebugLine(corners[7], corners[4], final_color);
-
+  for (int i = 4; i < 8; ++i) {
+    span[idx++] = {corners[i], final_color};
+    span[idx++] = {corners[4 + (i - 4 + 1) % 4], final_color};
+  }
   // Vertical edges
-  debug_draw_service_->AddDebugLine(corners[0], corners[4], final_color);
-  debug_draw_service_->AddDebugLine(corners[1], corners[5], final_color);
-  debug_draw_service_->AddDebugLine(corners[2], corners[6], final_color);
-  debug_draw_service_->AddDebugLine(corners[3], corners[7], final_color);
+  for (int i = 0; i < 4; ++i) {
+    span[idx++] = {corners[i], final_color};
+    span[idx++] = {corners[i + 4], final_color};
+  }
 }
 
 void DebugDrawer::DrawWireSphere(const Vector3& center, float radius, const Vector4& color, int segments) {
@@ -90,32 +96,30 @@ void DebugDrawer::DrawWireSphere(const Vector3& center, float radius, const Vect
   assert(segments % 2 == 0);
 
   Vector4 final_color = ApplyOpacity(color);
-  float angle_step = Math::TwoPi / segments;
+  const auto& lut = Math::GetCircleLUT<16>();
+  const int seg = (std::min)(segments, static_cast<int>(lut.points.size()));
 
-  for (int i = 0; i < segments; ++i) {
-    float angle1 = i * angle_step;
-    float angle2 = (i + 1) * angle_step;
+  auto span = debug_draw_service_->ReserveDebugLines(seg * 3);
+  uint32_t idx = 0;
 
-    // XY plane circle
-    {
-      Vector3 p1(center.x + radius * Math::Cos(angle1), center.y + radius * Math::Sin(angle1), center.z);
-      Vector3 p2(center.x + radius * Math::Cos(angle2), center.y + radius * Math::Sin(angle2), center.z);
-      debug_draw_service_->AddDebugLine(p1, p2, final_color);
-    }
+  for (int i = 0; i < seg; ++i) {
+    int next = (i + 1) % seg;
+    float c1 = lut.points[i].cos * radius;
+    float s1 = lut.points[i].sin * radius;
+    float c2 = lut.points[next].cos * radius;
+    float s2 = lut.points[next].sin * radius;
 
-    // XZ plane circle
-    {
-      Vector3 p1(center.x + radius * Math::Cos(angle1), center.y, center.z + radius * Math::Sin(angle1));
-      Vector3 p2(center.x + radius * Math::Cos(angle2), center.y, center.z + radius * Math::Sin(angle2));
-      debug_draw_service_->AddDebugLine(p1, p2, final_color);
-    }
+    // XY plane
+    span[idx++] = {{center.x + c1, center.y + s1, center.z}, final_color};
+    span[idx++] = {{center.x + c2, center.y + s2, center.z}, final_color};
 
-    // YZ plane circle
-    {
-      Vector3 p1(center.x, center.y + radius * Math::Cos(angle1), center.z + radius * Math::Sin(angle1));
-      Vector3 p2(center.x, center.y + radius * Math::Cos(angle2), center.z + radius * Math::Sin(angle2));
-      debug_draw_service_->AddDebugLine(p1, p2, final_color);
-    }
+    // XZ plane
+    span[idx++] = {{center.x + c1, center.y, center.z + s1}, final_color};
+    span[idx++] = {{center.x + c2, center.y, center.z + s2}, final_color};
+
+    // YZ plane
+    span[idx++] = {{center.x, center.y + c1, center.z + s1}, final_color};
+    span[idx++] = {{center.x, center.y + c2, center.z + s2}, final_color};
   }
 }
 
@@ -125,34 +129,32 @@ void DebugDrawer::DrawGrid(const GridConfig& config) {
   int num_cells = static_cast<int>(config.size / config.cell_size);
   int num_lines = num_cells + 1;
 
+  auto span = debug_draw_service_->ReserveDebugLines(num_lines * 2);
+  uint32_t idx = 0;
+
   for (int i = 0; i < num_lines; ++i) {
     float x = -half_size + (i * config.cell_size);
-    Vector3 start(x, config.y_level, -half_size);
-    Vector3 end(x, config.y_level, half_size);
-
-    Vector4 line_color = (std::abs(x) < 0.001f) ? config.axis_color : config.color;
-    debug_draw_service_->AddDebugLine(start, end, ApplyOpacity(line_color));
+    Vector4 line_color = ApplyOpacity((std::abs(x) < 0.001f) ? config.axis_color : config.color);
+    span[idx++] = {{x, config.y_level, -half_size}, line_color};
+    span[idx++] = {{x, config.y_level, half_size}, line_color};
   }
 
   for (int i = 0; i < num_lines; ++i) {
     float z = -half_size + (i * config.cell_size);
-    Vector3 start(-half_size, config.y_level, z);
-    Vector3 end(half_size, config.y_level, z);
-
-    Vector4 line_color = (std::abs(z) < 0.001f) ? config.axis_color : config.color;
-    debug_draw_service_->AddDebugLine(start, end, ApplyOpacity(line_color));
+    Vector4 line_color = ApplyOpacity((std::abs(z) < 0.001f) ? config.axis_color : config.color);
+    span[idx++] = {{-half_size, config.y_level, z}, line_color};
+    span[idx++] = {{half_size, config.y_level, z}, line_color};
   }
 }
 
 void DebugDrawer::DrawAxisGizmo(const AxisGizmoConfig& config) {
   Vector3 origin = config.position;
 
-  Vector3 x_end(origin.x + config.length, origin.y, origin.z);
-  debug_draw_service_->AddDebugLine(origin, x_end, ApplyOpacity(colors::Blue));
-
-  Vector3 y_end(origin.x, origin.y + config.length, origin.z);
-  debug_draw_service_->AddDebugLine(origin, y_end, ApplyOpacity(colors::Red));
-
-  Vector3 z_end(origin.x, origin.y, origin.z + config.length);
-  debug_draw_service_->AddDebugLine(origin, z_end, ApplyOpacity(colors::Lime));
+  auto span = debug_draw_service_->ReserveDebugLines(3);
+  span[0] = {origin, ApplyOpacity(colors::Blue)};
+  span[1] = {{origin.x + config.length, origin.y, origin.z}, ApplyOpacity(colors::Blue)};
+  span[2] = {origin, ApplyOpacity(colors::Red)};
+  span[3] = {{origin.x, origin.y + config.length, origin.z}, ApplyOpacity(colors::Red)};
+  span[4] = {origin, ApplyOpacity(colors::Lime)};
+  span[5] = {{origin.x, origin.y, origin.z + config.length}, ApplyOpacity(colors::Lime)};
 }

@@ -6,6 +6,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <span>
 #include <string_view>
 
 #include "Framework/Math/Math.h"
@@ -20,10 +21,16 @@ class IShaderNameService {
   virtual std::optional<ShaderId> FindIdByName(std::string_view name) const = 0;
 };
 
+struct DebugLineVertex {
+  Math::Vector3 position;
+  Math::Vector4 color;
+};
+
 class IDebugDrawService {
  public:
   virtual ~IDebugDrawService() = default;
   virtual void AddDebugLine(const Math::Vector3& start, const Math::Vector3& end, const Math::Vector4& color) = 0;
+  virtual std::span<DebugLineVertex> ReserveDebugLines(uint32_t line_count) = 0;
 };
 
 class IRenderService {
