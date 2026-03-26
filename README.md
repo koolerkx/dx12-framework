@@ -4,6 +4,16 @@
 
 Please use MSVC to compile.
 
+### Required: Shader Code Generation
+
+Before configuring or building the project, generate shader CB headers first:
+
+```bash
+tools\shader-codegen.exe generate --config codegen.yaml
+```
+
+This generates required headers under `src/generated/shader/`.
+
 The build path is expected in `{ProjectDir}/out/build`.
 
 Executable output is typically located in: `{ProjectDir}/out/build/<preset>/<Config>/<target>.exe`

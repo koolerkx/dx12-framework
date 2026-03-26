@@ -1,0 +1,47 @@
+paths:
+  hlsl_dir: shaders/
+  scan_pattern: ".*(neon_grid|ui_glass|soft_particle|laser_beam|radar_range|path_pulse)\\.ps\\.hlsl$"
+  cache_dir: .codegen-cache/
+  output_dir: src/generated/shader/
+
+profiles:
+  vs: vs_6_6
+  ps: ps_6_6
+
+type_mapping:
+  float: float
+  float2: Math::Vector2
+  float3: Math::Vector3
+  float4: Math::Vector4
+  float4x4: Math::Matrix4
+  uint: uint32_t
+  int: int32_t
+  bool: uint32_t
+
+includes:
+  - "Framework/Math/Math.h"
+
+generate:
+  - shader: neon_grid.ps
+    constant_buffers:
+      - g_NeonGridCB
+  - shader: ui_glass.ps
+    constant_buffers:
+      - g_GlassCB
+  - shader: soft_particle.ps
+    constant_buffers:
+      - g_SoftParticleCB
+  - shader: laser_beam.ps
+    constant_buffers:
+      - g_LaserCB
+  - shader: radar_range.ps
+    constant_buffers:
+      - g_RadarCB
+  - shader: path_pulse.ps
+    constant_buffers:
+      - g_PulseCB
+
+shared:
+  auto_detect: false
+  default_alignment: 0
+  output_dir: src/generated/shader/shared/

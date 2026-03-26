@@ -75,6 +75,9 @@ jobs:
         with:
           arch: x64
 
+      - name: Generate shader code
+        run: tools\shader-codegen.exe generate --config codegen.yaml
+
       - name: Configure
         run: cmake --preset ${{ matrix.configure_preset }}
 

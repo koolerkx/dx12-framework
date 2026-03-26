@@ -14,8 +14,8 @@
 using Math::Quaternion;
 using Math::Vector3;
 
-PulsePathComponent::PulsePathComponent(GameObject* owner, const Props& props)
-    : BehaviorComponent(owner), props_(props) {}
+PulsePathComponent::PulsePathComponent(GameObject* owner, const Props& props) : BehaviorComponent(owner), props_(props) {
+}
 
 void PulsePathComponent::OnUpdate(float /*dt*/) {
   if (!target_) return;
@@ -42,7 +42,7 @@ void PulsePathComponent::OnDestroy() {
   DestroySegments();
 }
 
-void PulsePathComponent::Show(GameObject* target, const PathPulseParams& params) {
+void PulsePathComponent::Show(GameObject* target, const PulseCB& params) {
   DestroySegments();
   target_ = target;
   shader_params_ = params;
@@ -74,12 +74,13 @@ void PulsePathComponent::RebuildSegments() {
       .vs_path = VS::Basic3D::PATH,
       .ps_path = L"Content/shaders/path_pulse.ps.cso",
       .vertex_format = VS::Basic3D::VERTEX_FORMAT,
-      .default_settings = {
-        .blend_mode = Rendering::BlendMode::Additive,
-        .depth_test = true,
-        .double_sided = true,
-        .render_target_format = Rendering::RenderTargetFormat::HDR,
-      },
+      .default_settings =
+        {
+          .blend_mode = Rendering::BlendMode::Additive,
+          .depth_test = true,
+          .double_sided = true,
+          .render_target_format = Rendering::RenderTargetFormat::HDR,
+        },
     };
     reg->RegisterShader(desc);
   }
@@ -114,8 +115,8 @@ void PulsePathComponent::RebuildSegments() {
     });
 
     auto params = shader_params_;
-    params.distance_offset = accumulated_dist;
-    params.segment_length = distance;
+    params.distanceOffset = accumulated_dist;
+    params.segmentLength = distance;
     renderer->SetShaderId(HashShaderName("PathPulse"));
     renderer->SetRenderLayer(RenderLayer::Transparent);
     renderer->SetRenderSettings({

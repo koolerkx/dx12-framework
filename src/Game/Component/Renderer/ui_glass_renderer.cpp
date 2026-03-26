@@ -10,6 +10,7 @@
 #include "Framework/Shader/shader_descriptor.h"
 #include "Framework/Shader/shader_registration.h"
 #include "Framework/Shader/vertex_shaders.h"
+#include "GlassCB.generated.h"
 #include "game_context.h"
 
 using Math::Matrix4;
@@ -42,44 +43,21 @@ void UIGlassRenderer::OnRender(FramePacket& packet) {
 
   uint32_t blur_srv_index = context->GetRenderService()->GetUIBlurSrvIndex();
 
-  struct GlassParams {
-    uint32_t blur_srv_index;    // SRV index into bindless texture array for blurred background
-    float distortion_strength;  // UV offset magnitude for refraction (higher = more warping)
-    float tint_alpha;           // blend factor between blurred background and tint color
-    float chromatic_strength;   // R/G/B channel separation along distortion direction
-    float tint_r, tint_g, tint_b, tint_a;
-    float fresnel_power;       // exponent controlling rim light falloff (higher = thinner rim)
-    float fresnel_intensity;   // brightness of the rim/edge glow
-    float specular_intensity;  // peak brightness of the fake specular highlight blob
-    float specular_sharpness;  // gaussian falloff rate (higher = smaller, sharper highlight)
-    float specular_offset_x;   // highlight center offset from panel center in UV space
-    float specular_offset_y;
-    float edge_shadow_strength;  // darkening at panel edges via smoothstep vignette
-    float panel_aspect;          // width / height for uniform corner rounding
-    float darken;                // 0.0 = no darkening, 1.0 = fully black
-    float _pad[3] = {};
-  };
-  static_assert(sizeof(GlassParams) == 80);
-
-  GlassParams params{
-    .blur_srv_index = blur_srv_index,
-    .distortion_strength = distortion_strength_,
-    .tint_alpha = tint_alpha_,
-    .chromatic_strength = chromatic_strength_,
-    .tint_r = tint_color_.x,
-    .tint_g = tint_color_.y,
-    .tint_b = tint_color_.z,
-    .tint_a = tint_color_.w,
-    .fresnel_power = fresnel_power_,
-    .fresnel_intensity = fresnel_intensity_,
-    .specular_intensity = specular_intensity_,
-    .specular_sharpness = specular_sharpness_,
-    .specular_offset_x = specular_offset_.x,
-    .specular_offset_y = specular_offset_.y,
-    .edge_shadow_strength = edge_shadow_strength_,
-    .panel_aspect = size_.x / size_.y,
-    .darken = darken_,
-  };
+  GlassCB params{};
+  params.blurSrvIndex = blur_srv_index;
+  params.distortionStrength = distortion_strength_;
+  params.tintAlpha = tint_alpha_;
+  params.chromaticStrength = chromatic_strength_;
+  params.tintColor = {tint_color_.x, tint_color_.y, tint_color_.z, tint_color_.w};
+  params.fresnelPower = fresnel_power_;
+  params.fresnelIntensity = fresnel_intensity_;
+  params.specularIntensity = specular_intensity_;
+  params.specularSharpness = specular_sharpness_;
+  params.specularOffsetX = specular_offset_.x;
+  params.specularOffsetY = specular_offset_.y;
+  params.edgeShadowStrength = edge_shadow_strength_;
+  params.panelAspect = size_.x / size_.y;
+  params.darken = darken_;
 
   float aspect = size_.x / size_.y;
   float min_dim = (std::min)(size_.x, size_.y);

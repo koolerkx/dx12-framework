@@ -8,6 +8,9 @@
 
 [Ll]og
 
+src/generated
+.codegen-cache
+
 tmp
 nul
 

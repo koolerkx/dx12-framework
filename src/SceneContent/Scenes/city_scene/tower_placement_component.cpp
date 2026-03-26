@@ -19,6 +19,7 @@
 #include "Map/ground_ray_caster.h"
 #include "Map/nav_grid.h"
 #include "Map/nav_grid_events.h"
+#include "RadarCB.generated.h"
 #include "SceneSetting/active_camera_setting.h"
 #include "Scenes/city_scene/city_scene_config.h"
 #include "Scenes/city_scene/city_scene_events.h"
@@ -42,16 +43,6 @@ struct RadarColor {
 
 constexpr RadarColor RADAR_COLOR_PREVIEW = {0.3f, 0.5f, 1.0f};
 constexpr RadarColor RADAR_COLOR_PLACED = {0.2f, 1.0f, 0.3f};
-
-struct RadarRangeParams {
-  float radar_r, radar_g, radar_b;
-  float scan_speed;
-  float ring_count;
-  float opacity;
-  float emissive_intensity;
-  float ring_width;
-};
-static_assert(sizeof(RadarRangeParams) == 32);
 
 GameObject* CreateRadarDisc(IScene* scene, const Math::Vector3& world_pos, float range, RadarColor color) {
   if (auto* reg = scene->GetContext()->GetShaderRegistration()) {
@@ -91,15 +82,13 @@ GameObject* CreateRadarDisc(IScene* scene, const Math::Vector3& world_pos, float
     .double_sided = true,
     .render_target_format = Rendering::RenderTargetFormat::HDR,
   });
-  renderer->SetCustomData(RadarRangeParams{
-    .radar_r = color.r,
-    .radar_g = color.g,
-    .radar_b = color.b,
-    .scan_speed = 0.4f,
-    .ring_count = 4.0f,
+  renderer->SetCustomData(RadarCB{
+    .radarColor = {color.r, color.g, color.b},
+    .scanSpeed = 0.4f,
+    .ringCount = 4.0f,
     .opacity = 0.5f,
-    .emissive_intensity = 3.0f,
-    .ring_width = 2.0f,
+    .emissiveIntensity = 3.0f,
+    .ringWidth = 2.0f,
   });
 
   return radar;

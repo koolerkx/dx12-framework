@@ -1,3 +1,5 @@
+include(${CMAKE_SOURCE_DIR}/src/generated/shader/shader-codegen.cmake)
+
 set(GAME_SOURCES
     game.h
     game.cpp
@@ -108,6 +110,7 @@ function(setup_game_target target_name)
     target_include_directories(${target_name} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
     target_include_directories(${target_name} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../)
     target_link_libraries(${target_name} PUBLIC graphic)
+    target_link_shader_codegen(${target_name})
 endfunction()
 
 setup_game_target(game)

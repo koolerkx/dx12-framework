@@ -39,13 +39,13 @@ class PlayerControlComponent : public BehaviorComponent<PlayerControlComponent> 
   PulsePathComponent* pulse_path_ = nullptr;
   GameObject* hovered_enemy_ = nullptr;
 
-  PathPulseParams pulse_params_ = {
-    .pulse_r = 1.0f,
-    .pulse_g = 0.15f,
-    .pulse_b = 0.1f,
-    .emissive_intensity = 8.0f,
-    .pulse_speed = 1.5f,
-    .pulse_frequency = 0.4f,
-    .pulse_width = 1.0f,
-  };
+  PulseCB pulse_params_ = [] {
+    PulseCB params{};
+    params.pulseColor = {1.0f, 0.15f, 0.1f};
+    params.emissiveIntensity = 8.0f;
+    params.pulseSpeed = 1.5f;
+    params.pulseFrequency = 0.4f;
+    params.pulseWidth = 1.0f;
+    return params;
+  }();
 };

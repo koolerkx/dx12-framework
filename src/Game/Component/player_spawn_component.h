@@ -10,6 +10,7 @@
 #include "Framework/Shader/shader_descriptor.h"
 #include "Framework/Shader/shader_registration.h"
 #include "Framework/Shader/vertex_shaders.h"
+#include "NeonGridCB.generated.h"
 #include "ProceduralTexture/procedural_texture_factory.h"
 #include "game_context.h"
 #include "game_object.h"
@@ -40,16 +41,6 @@ class PlayerSpawnComponent : public BehaviorComponent<PlayerSpawnComponent> {
       reg->RegisterShader(desc);
     }
 
-    struct NeonGridParams {
-      float grid_r, grid_g, grid_b;
-      float grid_divisions;
-      float fill_r, fill_g, fill_b;
-      float fill_opacity;
-      float grid_line_width;
-      float glow_intensity;
-    };
-    static_assert(sizeof(NeonGridParams) == 40);
-
     auto* renderer = GetOwner()->AddComponent<MeshRenderer>(MeshRenderer::Props{
       .mesh_handle = mesh,
     });
@@ -62,18 +53,14 @@ class PlayerSpawnComponent : public BehaviorComponent<PlayerSpawnComponent> {
       .double_sided = true,
       .render_target_format = Rendering::RenderTargetFormat::HDR,
     });
-    renderer->SetCustomData(NeonGridParams{
-      .grid_r = 0.0f,
-      .grid_g = 1.0f,
-      .grid_b = 0.8f,
-      .grid_divisions = 4.0f,
-      .fill_r = 0.0f,
-      .fill_g = 0.9f,
-      .fill_b = 0.7f,
-      .fill_opacity = 0.5f,
-      .grid_line_width = 0.05f,
-      .glow_intensity = 1.1f,
-    });
+    NeonGridCB neon_grid_params{};
+    neon_grid_params.gridColor = {0.0f, 1.0f, 0.8f};
+    neon_grid_params.gridDivisions = 4.0f;
+    neon_grid_params.fillColor = {0.0f, 0.9f, 0.7f};
+    neon_grid_params.fillOpacity = 0.5f;
+    neon_grid_params.gridLineWidth = 0.05f;
+    neon_grid_params.glowIntensity = 1.1f;
+    renderer->SetCustomData(neon_grid_params);
 
     RegisterProceduralTexture(assets);
     CreateParticleEmitter();

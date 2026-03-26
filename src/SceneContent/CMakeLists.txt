@@ -1,3 +1,5 @@
+include(${CMAKE_SOURCE_DIR}/src/generated/shader/shader-codegen.cmake)
+
 set(SCENE_CONTENT_SOURCES
     scene_registration.h
     scene_registration.cpp
@@ -63,6 +65,7 @@ function(setup_scene_target target_name game_target)
     target_include_directories(${target_name} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
     target_include_directories(${target_name} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../)
     target_link_libraries(${target_name} PUBLIC ${game_target})
+    target_link_shader_codegen(${target_name})
 endfunction()
 
 setup_scene_target(scene_content game)

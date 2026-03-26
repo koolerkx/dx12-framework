@@ -1,4 +1,5 @@
 include(shader)
+include(${CMAKE_SOURCE_DIR}/src/generated/shader/shader-codegen.cmake)
 
 add_library(graphic STATIC
   graphic.cpp
@@ -172,6 +173,7 @@ add_library(graphic STATIC
 )
 
 target_link_libraries(graphic PUBLIC framework)
+target_link_shader_codegen(graphic)
 
 target_include_directories(graphic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
 target_include_directories(graphic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../Framework)

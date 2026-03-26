@@ -10,6 +10,7 @@
 #include "Framework/Shader/shader_id.h"
 #include "Framework/Shader/shader_registration.h"
 #include "Framework/Shader/vertex_shaders.h"
+#include "SoftParticleCB.generated.h"
 #include "game_context.h"
 
 thread_local std::mt19937 ParticleEmitter::rng_{std::random_device{}()};
@@ -160,14 +161,6 @@ void ParticleEmitter::OnRender(FramePacket& packet) {
     });
   }
 
-  struct SoftParticleParams {
-    uint32_t depth_srv_index;
-    float emissive_intensity;
-    float soft_distance;
-    uint32_t _pad;
-  };
-  static_assert(sizeof(SoftParticleParams) == 16);
-
   InstancedRenderRequest request;
   request.mesh = rect_handle;
   request.shader_id = HashShaderName("SoftParticle");
@@ -177,11 +170,10 @@ void ParticleEmitter::OnRender(FramePacket& packet) {
   request.layer = RenderLayer::Transparent;
   request.tags = 0;
 
-  SoftParticleParams params{
-    .depth_srv_index = rs->GetNormalDepthSrvIndex(),
-    .emissive_intensity = emissive_intensity_,
-    .soft_distance = soft_distance_,
-  };
+  SoftParticleCB params{};
+  params.depthSrvIndex = rs->GetNormalDepthSrvIndex();
+  params.emissiveIntensity = emissive_intensity_;
+  params.softDistance = soft_distance_;
   static_assert(sizeof(params) <= sizeof(request.custom_data.data));
   memcpy(request.custom_data.data.data(), &params, sizeof(params));
   request.custom_data.active = true;
