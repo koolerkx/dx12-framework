@@ -2,6 +2,7 @@
 #include <d3d12.h>
 
 #include <cstdint>
+#include <vector>
 
 #include "Command/buffer.h"
 #include "Descriptor/descriptor_heap_allocator.h"
@@ -16,6 +17,7 @@ class MaterialManager;
 class MeshBufferPool;
 class ObjectDataBuffer;
 class RenderGraph;
+struct ResolvedDrawCommand;
 
 struct ShadowFrameData {
   Math::Matrix4 light_view_proj[ShadowCascadeConfig::MAX_CASCADES];
@@ -53,4 +55,6 @@ struct RenderFrameContext {
 
   ObjectDataBuffer* object_data_buffer = nullptr;
   ID3D12CommandSignature* command_signature = nullptr;
+
+  std::vector<ResolvedDrawCommand>* resolve_command_cache = nullptr;
 };

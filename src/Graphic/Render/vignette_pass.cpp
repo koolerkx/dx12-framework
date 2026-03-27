@@ -34,6 +34,9 @@ class VignettePass : public FullscreenPass<Graphics::PostProcessVignetteShader> 
   const char* GetName() const override {
     return "Vignette Pass";
   }
+  const wchar_t* GetWideName() const override {
+    return L"Vignette Pass";
+  }
 
  protected:
   void SetupConstants(RenderCommandList& cmd, const RenderFrameContext& frame, const FramePacket&) override {

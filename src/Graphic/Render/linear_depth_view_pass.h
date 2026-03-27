@@ -16,20 +16,24 @@ struct LinearDepthViewPassProps {
 class LinearDepthViewPass : public FullscreenPass<Graphics::PostProcessLinearDepthViewShader> {
  public:
   explicit LinearDepthViewPass(const LinearDepthViewPassProps& props)
-      : FullscreenPass(props.device, props.shader_manager, props.pass_setup,
-                        {.pso_name = L"LinearDepthViewPass_PSO"}),
+      : FullscreenPass(props.device, props.shader_manager, props.pass_setup, {.pso_name = L"LinearDepthViewPass_PSO"}),
         source_handle_(props.source_handle),
-        config_(props.config) {}
+        config_(props.config) {
+  }
 
-  const char* GetName() const override { return "Linear Depth View Pass"; }
+  const char* GetName() const override {
+    return "Linear Depth View Pass";
+  }
+  const wchar_t* GetWideName() const override {
+    return L"Linear Depth View Pass";
+  }
 
  protected:
   bool ShouldExecute(const RenderFrameContext&, const FramePacket&) const override {
     return pipeline_state_ && config_->enabled;
   }
 
-  void SetupConstants(RenderCommandList& cmd, const RenderFrameContext& frame,
-                      const FramePacket&) override {
+  void SetupConstants(RenderCommandList& cmd, const RenderFrameContext& frame, const FramePacket&) override {
     struct LinearDepthViewCB {
       uint32_t src_srv_index;
       float near_plane;

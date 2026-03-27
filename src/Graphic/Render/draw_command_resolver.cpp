@@ -3,7 +3,6 @@
 #include <cassert>
 
 #include "Frame/constant_buffers.h"
-#include "Frame/dynamic_upload_buffer.h"
 #include "Pipeline/material_manager.h"
 #include "Resource/Mesh/mesh_buffer_pool.h"
 #include "Resource/Mesh/mesh_descriptor.h"
@@ -20,6 +19,7 @@ void DrawCommandResolver::ResolveSingleRequests(
     ResolvedDrawCommand cmd;
     cmd.material = material;
     cmd.geometry = geo;
+    cmd.mesh = req.mesh;
     cmd.world_matrix = req.world_matrix;
     cmd.color = req.color;
     cmd.uv_offset = req.uv_offset;
@@ -57,6 +57,7 @@ void DrawCommandResolver::ResolveInstancedRequests(const ResolveContext& ctx,
     ResolvedDrawCommand cmd;
     cmd.material = material;
     cmd.geometry = geo;
+    cmd.mesh = req.mesh;
     cmd.material_handle = req.material;
     cmd.layer = req.layer;
     cmd.tags = req.tags;
@@ -88,6 +89,13 @@ void DrawCommandResolver::ResolveInstancedRequests(const ResolveContext& ctx,
 
     out.push_back(cmd);
   }
+}
+
+void DrawCommandResolver::ResolveAll(const ResolveContext& ctx, const FramePacket& packet, std::vector<ResolvedDrawCommand>& out) {
+  out.clear();
+  out.reserve(packet.single_requests.size() + packet.instanced_requests.size());
+  ResolveSingleRequests(ctx, packet.single_requests, out);
+  ResolveInstancedRequests(ctx, packet.instanced_requests, packet.instance_data_pool, out);
 }
 
 MeshGeometry DrawCommandResolver::ResolveMeshGeometry(MeshBufferPool* pool, MeshHandle handle) {

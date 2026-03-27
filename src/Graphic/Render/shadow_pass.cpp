@@ -16,6 +16,7 @@
 #include "Render/draw_command_resolver.h"
 #include "Render/prepass_record_utils.h"
 #include "Render/resolved_command_grouper.h"
+#include "Resource/Mesh/mesh_buffer_pool.h"
 
 using Math::Matrix4;
 using Math::Vector3;
@@ -200,25 +201,48 @@ void ShadowPass::Execute(const RenderFrameContext& frame, const FramePacket& pac
     cmd.SetObjectBufferSRV(frame.object_data_buffer->GetBufferAddress());
   }
 
+  Math::Frustum cascade_frustum = Math::Frustum::FromViewProjection(light_view_proj);
+
   resolved_commands_.clear();
-  DrawCommandResolver::ResolveContext resolve_ctx{
-    .material_manager = frame.material_manager,
-    .mesh_buffer_pool = frame.mesh_buffer_pool,
-    .instance_allocator = frame.object_cb_allocator,
-    .shadow_enabled = packet.shadow.enabled,
-  };
 
-  std::vector<RenderRequest> filtered_single;
-  for (const auto& req : packet.single_requests) {
-    if (HasTag(req.tags, RenderTag::CastShadow)) filtered_single.push_back(req);
-  }
-  DrawCommandResolver::ResolveSingleRequests(resolve_ctx, filtered_single, resolved_commands_);
+  if (frame.resolve_command_cache) {
+    for (const auto& cmd_entry : *frame.resolve_command_cache) {
+      if (!HasTag(cmd_entry.tags, RenderTag::CastShadow)) continue;
 
-  std::vector<InternalInstancedRequest> filtered_instanced;
-  for (const auto& req : packet.instanced_requests) {
-    if (HasTag(req.request.tags, RenderTag::CastShadow)) filtered_instanced.push_back(req);
+      // skip culling
+      if (cmd_entry.instance_count == 1 && cmd_entry.mesh.IsValid()) {
+        const auto& local_bounds = frame.mesh_buffer_pool->GetBounds(cmd_entry.mesh);
+        Math::AABB world_bounds = Math::TransformAABB(local_bounds, cmd_entry.world_matrix);
+        if (!cascade_frustum.Intersects(world_bounds)) continue;
+      }
+
+      resolved_commands_.push_back(cmd_entry);
+    }
+  } else {
+    DrawCommandResolver::ResolveContext resolve_ctx{
+      .material_manager = frame.material_manager,
+      .mesh_buffer_pool = frame.mesh_buffer_pool,
+      .instance_allocator = frame.object_cb_allocator,
+      .shadow_enabled = packet.shadow.enabled,
+    };
+
+    std::vector<RenderRequest> filtered_single;
+    for (const auto& req : packet.single_requests) {
+      if (!HasTag(req.tags, RenderTag::CastShadow)) continue;
+      const auto& local_bounds = frame.mesh_buffer_pool->GetBounds(req.mesh);
+      Math::AABB world_bounds = Math::TransformAABB(local_bounds, req.world_matrix);
+      if (!cascade_frustum.Intersects(world_bounds)) continue;
+      filtered_single.push_back(req);
+    }
+    DrawCommandResolver::ResolveSingleRequests(resolve_ctx, filtered_single, resolved_commands_);
+
+    std::vector<InternalInstancedRequest> filtered_instanced;
+    for (const auto& req : packet.instanced_requests) {
+      if (!HasTag(req.request.tags, RenderTag::CastShadow)) continue;
+      filtered_instanced.push_back(req);
+    }
+    DrawCommandResolver::ResolveInstancedRequests(resolve_ctx, filtered_instanced, packet.instance_data_pool, resolved_commands_);
   }
-  DrawCommandResolver::ResolveInstancedRequests(resolve_ctx, filtered_instanced, packet.instance_data_pool, resolved_commands_);
 
   ResolvedCommandGrouper::GroupForPrepass(resolved_commands_);
 

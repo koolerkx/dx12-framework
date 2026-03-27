@@ -38,6 +38,9 @@ class OutlinePass : public FullscreenPass<Graphics::PostProcessOutlineShader> {
   const char* GetName() const override {
     return "Outline Pass";
   }
+  const wchar_t* GetWideName() const override {
+    return L"Outline Pass";
+  }
 
  protected:
   void SetupConstants(RenderCommandList& cmd, const RenderFrameContext& frame, const FramePacket& packet) override {

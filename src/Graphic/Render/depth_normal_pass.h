@@ -24,6 +24,9 @@ class DepthNormalPass : public IRenderPass {
   const char* GetName() const override {
     return "Depth Normal Pass";
   }
+  const wchar_t* GetWideName() const override {
+    return L"Depth Normal Pass";
+  }
 
   void Execute(const RenderFrameContext& frame, const FramePacket& packet) override;
 

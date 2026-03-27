@@ -21,6 +21,9 @@ class BlitPass : public FullscreenPass<Graphics::PostProcessBlitShader> {
   const char* GetName() const override {
     return "Blit Pass";
   }
+  const wchar_t* GetWideName() const override {
+    return L"Blit Pass";
+  }
 
  protected:
   void SetupConstants(RenderCommandList& cmd, const RenderFrameContext& frame, const FramePacket&) override {

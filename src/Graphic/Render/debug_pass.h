@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Framework/Render/frame_packet.h"
 #include "Frame/render_frame_context.h"
+#include "Framework/Render/frame_packet.h"
 #include "render_pass.h"
 
 class DebugLineRenderer;
@@ -15,6 +15,9 @@ class DebugPass : public IRenderPass {
 
   const char* GetName() const override {
     return "Debug Pass";
+  }
+  const wchar_t* GetWideName() const override {
+    return L"Debug Pass";
   }
 
  private:

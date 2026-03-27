@@ -6,7 +6,6 @@
 #include "Frame/resolved_draw_command.h"
 #include "Framework/Render/frame_packet.h"
 
-
 class DynamicUploadBuffer;
 class MaterialManager;
 class MeshBufferPool;
@@ -27,6 +26,8 @@ class DrawCommandResolver {
     std::span<const InternalInstancedRequest> requests,
     const std::vector<std::byte>& instance_data_pool,
     std::vector<ResolvedDrawCommand>& out);
+
+  static void ResolveAll(const ResolveContext& ctx, const FramePacket& packet, std::vector<ResolvedDrawCommand>& out);
 
   static uint32_t BuildObjectFlags(RenderTagMask tags, RenderLayer layer, bool shadow_enabled);
 

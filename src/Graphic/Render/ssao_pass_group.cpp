@@ -40,6 +40,9 @@ class SSAOPass : public FullscreenPass<Graphics::PostProcessSSAOShader> {
   const char* GetName() const override {
     return "SSAO Pass";
   }
+  const wchar_t* GetWideName() const override {
+    return L"SSAO Pass";
+  }
 
  protected:
   void SetupConstants(RenderCommandList& cmd, const RenderFrameContext& frame, const FramePacket& packet) override {

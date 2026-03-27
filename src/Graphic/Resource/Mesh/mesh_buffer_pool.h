@@ -8,10 +8,11 @@
 #include <vector>
 
 #include "Core/types.h"
+#include "Framework/Math/Math.h"
 #include "Framework/Render/mesh_data.h"
 #include "Framework/Render/render_handles.h"
-#include "Resource/Allocator/free_block_allocator.h"
 #include "Pipeline/vertex_types.h"
+#include "Resource/Allocator/free_block_allocator.h"
 #include "Resource/Mesh/mesh_descriptor.h"
 
 using Graphics::Vertex::ModelVertex;
@@ -52,6 +53,7 @@ class MeshBufferPool {
   D3D12_GPU_VIRTUAL_ADDRESS GetDescriptorBufferAddress() const;
 
   const MeshDescriptor* GetDescriptor(MeshHandle handle) const;
+  const Math::AABB& GetBounds(MeshHandle handle) const;
   VertexLayout GetVertexLayout(MeshHandle handle) const;
   bool IsValid(MeshHandle handle) const;
 
@@ -69,6 +71,7 @@ class MeshBufferPool {
  private:
   struct SlotData {
     MeshDescriptor descriptor;
+    Math::AABB bounds;
     uint32_t generation = 0;
     VertexLayout layout = VertexLayout::Model;
     bool occupied = false;

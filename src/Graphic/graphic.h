@@ -50,6 +50,7 @@ class Graphic {
 
   struct GraphicInitProps {
     bool enable_vsync = true;
+    bool enable_debug_layer = true;
     BloomConfig bloom;
     SSAOConfig ssao;
     SMAAConfig smaa;

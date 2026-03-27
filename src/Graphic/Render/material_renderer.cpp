@@ -46,23 +46,31 @@ template uint64_t DepthFirst(const ResolvedDrawCommand&, bool);
 
 }  // namespace SortKey
 
-void MaterialRenderer::BuildResolved(const FramePacket& packet,
+void MaterialRenderer::BuildResolved(const RenderFrameContext& frame,
+  const FramePacket& packet,
   RenderLayer target_layer,
   const DrawCommandResolver::ResolveContext& ctx,
   std::vector<ResolvedDrawCommand>& out_commands) {
   out_commands.clear();
 
-  std::vector<RenderRequest> filtered;
-  for (const auto& req : packet.single_requests) {
-    if (req.layer == target_layer) filtered.push_back(req);
-  }
-  DrawCommandResolver::ResolveSingleRequests(ctx, filtered, out_commands);
+  if (frame.resolve_command_cache) {
+    for (const auto& cmd_entry : *frame.resolve_command_cache) {
+      if (cmd_entry.layer != target_layer) continue;
+      out_commands.push_back(cmd_entry);
+    }
+  } else {
+    std::vector<RenderRequest> filtered;
+    for (const auto& req : packet.single_requests) {
+      if (req.layer == target_layer) filtered.push_back(req);
+    }
+    DrawCommandResolver::ResolveSingleRequests(ctx, filtered, out_commands);
 
-  std::vector<InternalInstancedRequest> filtered_instanced;
-  for (const auto& req : packet.instanced_requests) {
-    if (req.request.layer == target_layer) filtered_instanced.push_back(req);
+    std::vector<InternalInstancedRequest> filtered_instanced;
+    for (const auto& req : packet.instanced_requests) {
+      if (req.request.layer == target_layer) filtered_instanced.push_back(req);
+    }
+    DrawCommandResolver::ResolveInstancedRequests(ctx, filtered_instanced, packet.instance_data_pool, out_commands);
   }
-  DrawCommandResolver::ResolveInstancedRequests(ctx, filtered_instanced, packet.instance_data_pool, out_commands);
 }
 
 MaterialRenderer::FrameSetup MaterialRenderer::SetupFrameState(const RenderFrameContext& frame,

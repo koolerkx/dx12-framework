@@ -24,6 +24,9 @@ class DepthViewPass : public FullscreenPass<Graphics::PostProcessDepthViewShader
   const char* GetName() const override {
     return "Depth View Pass";
   }
+  const wchar_t* GetWideName() const override {
+    return L"Depth View Pass";
+  }
 
  protected:
   bool ShouldExecute(const RenderFrameContext&, const FramePacket&) const override {

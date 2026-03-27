@@ -507,6 +507,8 @@ struct AABB {
 
   void Encapsulate(const Vector3& point);
   void Encapsulate(const AABB& other);
+
+  static AABB Inverted();
 };
 
 struct Capsule {
@@ -521,6 +523,15 @@ struct Capsule {
   bool Intersects(const Sphere& sphere) const;
   bool Intersects(const Capsule& other) const;
 };
+
+struct Frustum {
+  Plane planes[6];
+
+  static Frustum FromViewProjection(const Matrix4& view_proj);
+  bool Intersects(const AABB& box) const;
+};
+
+AABB TransformAABB(const AABB& local, const Matrix4& transform);
 
 // Intersection tests
 // Returns t >= 0; use IntersectsSigned for negative t when inside

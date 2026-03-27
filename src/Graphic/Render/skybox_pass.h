@@ -2,8 +2,8 @@
 
 #include <d3d12.h>
 
-#include "Framework/Render/frame_packet.h"
 #include "Frame/render_frame_context.h"
+#include "Framework/Render/frame_packet.h"
 #include "Render/render_pass.h"
 #include "Resource/mesh.h"
 
@@ -16,6 +16,9 @@ class SkyboxPass : public IRenderPass {
 
   const char* GetName() const override {
     return "Skybox Pass";
+  }
+  const wchar_t* GetWideName() const override {
+    return L"Skybox Pass";
   }
 
   void Execute(const RenderFrameContext& frame, const FramePacket& packet) override;

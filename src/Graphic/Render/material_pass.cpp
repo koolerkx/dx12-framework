@@ -16,8 +16,8 @@ void MaterialPass::Execute(const RenderFrameContext& frame, const FramePacket& p
     .instance_allocator = frame.object_cb_allocator,
     .shadow_enabled = packet.shadow.enabled,
   };
-  renderer_->BuildResolved(packet, layer_, ctx, resolved_cache_);
+  renderer_->BuildResolved(frame, packet, layer_, ctx, resolve_command_cache_);
 
   renderer_->RecordResolvedCommands(
-    frame, resolved_cache_, camera, packet.lighting, packet.shadow, frame.screen_width, frame.screen_height, packet.time);
+    frame, resolve_command_cache_, camera, packet.lighting, packet.shadow, frame.screen_width, frame.screen_height, packet.time);
 }

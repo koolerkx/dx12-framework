@@ -28,6 +28,7 @@ struct ResolvedDrawCommand {
   Math::Vector2 uv_offset{0, 0};
   Math::Vector2 uv_scale{1, 1};
 
+  MeshHandle mesh;
   uint32_t object_flags = 0;
   uint32_t instance_count = 1;
   MaterialHandle material_handle;
@@ -40,7 +41,9 @@ struct ResolvedDrawCommand {
   float depth = 0.0f;
   bool depth_write = true;
 
-  bool IsDrawable() const { return material && geometry.index_count > 0; }
+  bool IsDrawable() const {
+    return material && geometry.index_count > 0;
+  }
 
   CustomShaderData custom_data;
 };

@@ -94,6 +94,9 @@ class SMAAEdgePass : public IRenderPass {
   const char* GetName() const override {
     return "SMAA Edge Detection";
   }
+  const wchar_t* GetWideName() const override {
+    return L"SMAA Edge Detection";
+  }
 
   void Execute(const RenderFrameContext& frame, const FramePacket&) override {
     if (!pipeline_state_) return;
@@ -161,6 +164,9 @@ class SMAABlendWeightPass : public IRenderPass {
   const char* GetName() const override {
     return "SMAA Blend Weight";
   }
+  const wchar_t* GetWideName() const override {
+    return L"SMAA Blend Weight";
+  }
 
   void Execute(const RenderFrameContext& frame, const FramePacket&) override {
     if (!pipeline_state_) return;
@@ -226,6 +232,9 @@ class SMAANeighborhoodPass : public IRenderPass {
 
   const char* GetName() const override {
     return "SMAA Neighborhood Blending";
+  }
+  const wchar_t* GetWideName() const override {
+    return L"SMAA Neighborhood Blending";
   }
 
   void Execute(const RenderFrameContext& frame, const FramePacket&) override {

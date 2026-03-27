@@ -2,14 +2,17 @@
 #include <Windows.h>
 #include <d3d12.h>
 #include <dxgi1_6.h>
+
 #include <exception>
 
 #include "Application/Application.h"
+
 #ifdef ENABLE_EDITOR
 #include "Editor/editor_layer.h"
 #endif
 #include "Application/config_loader.h"
 #include "Core/utils.h"
+#include "Framework/Core/types.h"
 #include "Framework/Event/event_bus.hpp"
 #include "Framework/Event/input_event_generator.h"
 #include "Framework/Event/thread_pool.hpp"
@@ -26,7 +29,6 @@
 #include "Graphic/debug_draw_service.h"
 #include "Graphic/graphic.h"
 #include "Graphic/render_service.h"
-#include "Framework/Core/types.h"
 #include "SceneContent/scene_registration.h"
 
 void InitializeLogger();
@@ -49,6 +51,7 @@ int WINAPI wWinMain([[maybe_unused]] HINSTANCE hInstance,
 
   Graphic::GraphicInitProps graphic_props{
     .enable_vsync = config.vsync,
+    .enable_debug_layer = config.enable_debug_layer_for_debug_build_only,
     .bloom = config.bloom,
     .ssao = config.ssao,
     .smaa = config.smaa,

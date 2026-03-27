@@ -30,6 +30,9 @@ class ChromaticAberrationPass : public FullscreenPass<Graphics::PostProcessChrom
   const char* GetName() const override {
     return "Chromatic Aberration Pass";
   }
+  const wchar_t* GetWideName() const override {
+    return L"Chromatic Aberration Pass";
+  }
 
  protected:
   void SetupConstants(RenderCommandList& cmd, const RenderFrameContext& frame, const FramePacket&) override {

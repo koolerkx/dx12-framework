@@ -54,7 +54,7 @@ bool Graphic::Initialize(HWND hwnd, UINT frame_buffer_width, UINT frame_buffer_h
 
   gfx::DeviceContext::CreateInfo device_info{};
 #if defined(DEBUG) || defined(_DEBUG)
-  device_info.enable_debug_layer = true;
+  device_info.enable_debug_layer = props.enable_debug_layer;
 #endif
   device_context_ = gfx::DeviceContext::Create(device_info);
   if (!device_context_) {
@@ -620,7 +620,20 @@ void Graphic::UploadPointLights(RenderFrameContext& frame, const FramePacket& wo
 void Graphic::RenderScene(RenderFrameContext& frame, FramePacket& world) {
   UploadPointLights(frame, world);
   PopulateObjectDataBuffer(frame, world);
+
+  DrawCommandResolver::ResolveContext resolve_ctx{
+    .material_manager = frame.material_manager,
+    .mesh_buffer_pool = frame.mesh_buffer_pool,
+    .instance_allocator = frame.object_cb_allocator,
+    .shadow_enabled = world.shadow.enabled,
+  };
+  std::vector<ResolvedDrawCommand> resolve_command_cache;
+  DrawCommandResolver::ResolveAll(resolve_ctx, world, resolve_command_cache);
+  frame.resolve_command_cache = &resolve_command_cache;
+
   render_graph_->Execute(frame, world);
+
+  frame.resolve_command_cache = nullptr;
 }
 
 void Graphic::PopulateObjectDataBuffer(RenderFrameContext& frame, FramePacket& packet) {

@@ -14,7 +14,6 @@
 #include "Presentation/swapchain_manager.h"
 #include "Render/render_texture.h"
 
-
 RenderGraph::RenderGraph() = default;
 RenderGraph::~RenderGraph() = default;
 
@@ -144,14 +143,14 @@ void RenderGraph::Execute(const RenderFrameContext& frame, const FramePacket& pa
     if (!same_group) {
       if (current_group) frame.command_list->EndEvent();
       if (group) {
-        auto wide = utils::utf8_to_wstring(group);
-        auto bytes = static_cast<UINT>((wide.size() + 1) * sizeof(wchar_t));
-        frame.command_list->BeginEvent(0, wide.c_str(), bytes);
+        const wchar_t* wide = pass->GetWideGroupName();
+        auto bytes = static_cast<UINT>((std::wcslen(wide) + 1) * sizeof(wchar_t));
+        frame.command_list->BeginEvent(0, wide, bytes);
       }
       current_group = group;
     }
 
-    utils::CommandListEventGroup(frame.command_list, utils::utf8_to_wstring(pass->GetName()).c_str(), [&]() {
+    utils::CommandListEventGroup(frame.command_list, pass->GetWideName(), [&]() {
       ApplyPassSetup(frame.command_list, pass->GetPassSetup());
       pass->Execute(frame, packet);
     });

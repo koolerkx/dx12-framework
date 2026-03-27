@@ -1,6 +1,7 @@
 #include "Math.h"
 
 #include <cassert>
+#include <cfloat>
 #include <cmath>
 #include <limits>
 
@@ -1213,6 +1214,72 @@ void AABB::Encapsulate(const Vector3& point) {
 void AABB::Encapsulate(const AABB& other) {
   min = Vector3::Min(min, other.min);
   max = Vector3::Max(max, other.max);
+}
+
+AABB AABB::Inverted() {
+  AABB result;
+  result.min = Vector3(FLT_MAX, FLT_MAX, FLT_MAX);
+  result.max = Vector3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+  return result;
+}
+
+// Frustum Implementation
+Frustum Frustum::FromViewProjection(const Matrix4& vp) {
+  Frustum f;
+  // Gribb/Hartmann plane extraction from view-projection matrix
+  // Matrix4 is row-major: row i = m[i][0..3]
+  auto row = [&](int r) -> Vector4 { return {vp.m[r][0], vp.m[r][1], vp.m[r][2], vp.m[r][3]}; };
+
+  Vector4 r0 = row(0), r1 = row(1), r2 = row(2), r3 = row(3);
+
+  auto make_plane = [](Vector4 v) -> Plane {
+    Vector3 n(v.x, v.y, v.z);
+    float len = n.Length();
+    if (len > 1e-8f) {
+      n /= len;
+      return Plane(n, v.w / len);
+    }
+    return Plane(Vector3::Up, 0.0f);
+  };
+
+  f.planes[0] = make_plane({r3.x + r0.x, r3.y + r0.y, r3.z + r0.z, r3.w + r0.w});  // Left
+  f.planes[1] = make_plane({r3.x - r0.x, r3.y - r0.y, r3.z - r0.z, r3.w - r0.w});  // Right
+  f.planes[2] = make_plane({r3.x + r1.x, r3.y + r1.y, r3.z + r1.z, r3.w + r1.w});  // Bottom
+  f.planes[3] = make_plane({r3.x - r1.x, r3.y - r1.y, r3.z - r1.z, r3.w - r1.w});  // Top
+  f.planes[4] = make_plane({r2.x, r2.y, r2.z, r2.w});                              // Near
+  f.planes[5] = make_plane({r3.x - r2.x, r3.y - r2.y, r3.z - r2.z, r3.w - r2.w});  // Far
+
+  return f;
+}
+
+bool Frustum::Intersects(const AABB& box) const {
+  Vector3 center = box.GetCenter();
+  Vector3 extents = box.GetExtents();
+
+  for (int i = 0; i < 6; ++i) {
+    const Plane& p = planes[i];
+    // Project extents onto plane normal (absolute dot product)
+    float r = extents.x * std::abs(p.normal.x) + extents.y * std::abs(p.normal.y) + extents.z * std::abs(p.normal.z);
+    float dist = p.normal.Dot(center) + p.d;
+    if (dist < -r) return false;
+  }
+  return true;
+}
+
+// Arvo's optimized AABB transform: O(9 mul + 9 abs) instead of transforming 8 corners
+AABB TransformAABB(const AABB& local, const Matrix4& t) {
+  Vector3 center = local.GetCenter();
+  Vector3 extents = local.GetExtents();
+
+  Vector3 new_center(t.m[0][0] * center.x + t.m[0][1] * center.y + t.m[0][2] * center.z + t.m[0][3],
+    t.m[1][0] * center.x + t.m[1][1] * center.y + t.m[1][2] * center.z + t.m[1][3],
+    t.m[2][0] * center.x + t.m[2][1] * center.y + t.m[2][2] * center.z + t.m[2][3]);
+
+  Vector3 new_extents(std::abs(t.m[0][0]) * extents.x + std::abs(t.m[0][1]) * extents.y + std::abs(t.m[0][2]) * extents.z,
+    std::abs(t.m[1][0]) * extents.x + std::abs(t.m[1][1]) * extents.y + std::abs(t.m[1][2]) * extents.z,
+    std::abs(t.m[2][0]) * extents.x + std::abs(t.m[2][1]) * extents.y + std::abs(t.m[2][2]) * extents.z);
+
+  return AABB(new_center - new_extents, new_center + new_extents);
 }
 
 // Circle Implementation

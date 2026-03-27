@@ -18,5 +18,6 @@ struct AppConfig {
   SceneDefaults scene_defaults;
   std::string startup_scene = "title";
   bool debug_draw_enabled = false;
+  bool enable_debug_layer_for_debug_build_only = true;
   float editor_bg_color[4] = {0.15f, 0.15f, 0.15f, 1.0f};
 };

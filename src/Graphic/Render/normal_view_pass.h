@@ -21,6 +21,9 @@ class NormalViewPass : public FullscreenPass<Graphics::PostProcessNormalViewShad
   const char* GetName() const override {
     return "Normal View Pass";
   }
+  const wchar_t* GetWideName() const override {
+    return L"Normal View Pass";
+  }
 
  protected:
   void SetupConstants(RenderCommandList& cmd, const RenderFrameContext& frame, const FramePacket&) override {

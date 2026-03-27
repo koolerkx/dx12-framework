@@ -28,7 +28,8 @@ class MaterialRenderer {
   MaterialRenderer() = default;
   virtual ~MaterialRenderer() = default;
 
-  virtual void BuildResolved(const FramePacket& packet,
+  virtual void BuildResolved(const RenderFrameContext& frame,
+    const FramePacket& packet,
     RenderLayer target_layer,
     const DrawCommandResolver::ResolveContext& ctx,
     std::vector<ResolvedDrawCommand>& out_commands);
@@ -72,11 +73,12 @@ class OpaqueRenderer : public MaterialRenderer {
     return SortKey::MaterialFirst(cmd, true);
   }
 
-  void BuildResolved(const FramePacket& packet,
+  void BuildResolved(const RenderFrameContext& frame,
+    const FramePacket& packet,
     RenderLayer target_layer,
     const DrawCommandResolver::ResolveContext& ctx,
     std::vector<ResolvedDrawCommand>& out) override {
-    MaterialRenderer::BuildResolved(packet, target_layer, ctx, out);
+    MaterialRenderer::BuildResolved(frame, packet, target_layer, ctx, out);
     ResolvedCommandGrouper::Group(out);
     std::sort(out.begin(), out.end(), [](const ResolvedDrawCommand& a, const ResolvedDrawCommand& b) {
       return SortKey::MaterialFirst(a, true) < SortKey::MaterialFirst(b, true);
@@ -86,11 +88,12 @@ class OpaqueRenderer : public MaterialRenderer {
 
 class TransparentRenderer : public MaterialRenderer {
  public:
-  void BuildResolved(const FramePacket& packet,
+  void BuildResolved(const RenderFrameContext& frame,
+    const FramePacket& packet,
     RenderLayer target_layer,
     const DrawCommandResolver::ResolveContext& ctx,
     std::vector<ResolvedDrawCommand>& out) override {
-    MaterialRenderer::BuildResolved(packet, target_layer, ctx, out);
+    MaterialRenderer::BuildResolved(frame, packet, target_layer, ctx, out);
     std::sort(out.begin(), out.end(), [](const ResolvedDrawCommand& a, const ResolvedDrawCommand& b) {
       return SortKey::DepthFirst(a, false) < SortKey::DepthFirst(b, false);
     });
@@ -99,11 +102,12 @@ class TransparentRenderer : public MaterialRenderer {
 
 class UiRenderer : public MaterialRenderer {
  public:
-  void BuildResolved(const FramePacket& packet,
+  void BuildResolved(const RenderFrameContext& frame,
+    const FramePacket& packet,
     RenderLayer target_layer,
     const DrawCommandResolver::ResolveContext& ctx,
     std::vector<ResolvedDrawCommand>& out) override {
-    MaterialRenderer::BuildResolved(packet, target_layer, ctx, out);
+    MaterialRenderer::BuildResolved(frame, packet, target_layer, ctx, out);
     ResolvedCommandGrouper::Group(out);
     std::sort(out.begin(), out.end(), [](const ResolvedDrawCommand& a, const ResolvedDrawCommand& b) {
       return SortKey::DepthFirst(a, false) < SortKey::DepthFirst(b, false);

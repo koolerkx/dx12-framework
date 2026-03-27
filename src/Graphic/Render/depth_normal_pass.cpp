@@ -67,24 +67,32 @@ void DepthNormalPass::Execute(const RenderFrameContext& frame, const FramePacket
   }
 
   resolved_commands_.clear();
-  DrawCommandResolver::ResolveContext resolve_ctx{
-    .material_manager = frame.material_manager,
-    .mesh_buffer_pool = frame.mesh_buffer_pool,
-    .instance_allocator = frame.object_cb_allocator,
-    .shadow_enabled = false,
-  };
 
-  std::vector<RenderRequest> filtered_single;
-  for (const auto& req : packet.single_requests) {
-    if (req.render_settings.depth_write) filtered_single.push_back(req);
-  }
-  DrawCommandResolver::ResolveSingleRequests(resolve_ctx, filtered_single, resolved_commands_);
+  if (frame.resolve_command_cache) {
+    for (const auto& cmd_entry : *frame.resolve_command_cache) {
+      if (!cmd_entry.depth_write) continue;
+      resolved_commands_.push_back(cmd_entry);
+    }
+  } else {
+    DrawCommandResolver::ResolveContext resolve_ctx{
+      .material_manager = frame.material_manager,
+      .mesh_buffer_pool = frame.mesh_buffer_pool,
+      .instance_allocator = frame.object_cb_allocator,
+      .shadow_enabled = false,
+    };
 
-  std::vector<InternalInstancedRequest> filtered_instanced;
-  for (const auto& req : packet.instanced_requests) {
-    if (req.request.render_settings.depth_write) filtered_instanced.push_back(req);
+    std::vector<RenderRequest> filtered_single;
+    for (const auto& req : packet.single_requests) {
+      if (req.render_settings.depth_write) filtered_single.push_back(req);
+    }
+    DrawCommandResolver::ResolveSingleRequests(resolve_ctx, filtered_single, resolved_commands_);
+
+    std::vector<InternalInstancedRequest> filtered_instanced;
+    for (const auto& req : packet.instanced_requests) {
+      if (req.request.render_settings.depth_write) filtered_instanced.push_back(req);
+    }
+    DrawCommandResolver::ResolveInstancedRequests(resolve_ctx, filtered_instanced, packet.instance_data_pool, resolved_commands_);
   }
-  DrawCommandResolver::ResolveInstancedRequests(resolve_ctx, filtered_instanced, packet.instance_data_pool, resolved_commands_);
 
   ResolvedCommandGrouper::GroupForPrepass(resolved_commands_);
 

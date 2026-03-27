@@ -2,6 +2,7 @@ WindowWidth: 1920
 WindowHeight: 1080
 VSync: false
 DebugDraw: false
+EnableDebugLayerForDebugBuildOnly: true
 StartupScene: "title"
 
 Bloom:

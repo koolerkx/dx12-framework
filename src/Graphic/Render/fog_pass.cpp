@@ -38,6 +38,9 @@ class FogPass : public FullscreenPass<Graphics::PostProcessFogShader> {
   const char* GetName() const override {
     return "Fog Pass";
   }
+  const wchar_t* GetWideName() const override {
+    return L"Fog Pass";
+  }
 
  protected:
   void SetupConstants(RenderCommandList& cmd, const RenderFrameContext& frame, const FramePacket& packet) override {
